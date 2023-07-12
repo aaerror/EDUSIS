@@ -5,9 +5,15 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="clr-namespace:WPF_Desktop"
     mc:Ignorable="d"
-    Title="EDUSIS" Height="450" Width="800">
+    Title="EDUSIS" Height="768" Width="1366" BorderThickness="1,1,1,1" WindowState="Maximized" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="#66757575">
+    <Window.Background>
+        <SolidColorBrush Color="#FFFFFFFF"/>
+    </Window.Background>
 
-    <Grid Background="#7FF3F3F3" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,0">
-        <Button x:Name="btnRegistrar" Content="Registrar" Style="{ DynamicResource EDUSIS_ButtonStyle }" Margin="20,16,-20,-16"/>
+    <Grid x:Name="Container" VerticalAlignment="Center" HorizontalAlignment="Center" Width="1328" Height="751" MinHeight="1">
+        <Grid x:Name="GridCommand" HorizontalAlignment="Left" VerticalAlignment="Center" Height="694" Width="413" >
+        </Grid>
+        <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Background="#FFB10000" Height="732" Width="910"/>
+        <!-- <Button x:Name="btnRegistrar" Content="Registrar" Style="{ DynamicResource EDUSIS_ButtonStyle }" Margin="20,16,-20,-16"/> -->
     </Grid>
 </Window>
