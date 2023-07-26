@@ -5,7 +5,11 @@ VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{CDC6ED89-A793-448D-BD16-0FAC8970996A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPF_Desktop", "WPF_Desktop\WPF_Desktop.csproj", "{3B06DCF5-574C-4E66-8D0D-4B95653B2798}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPF_Desktop", "WPF_Desktop\WPF_Desktop.csproj", "{3B06DCF5-574C-4E66-8D0D-4B95653B2798}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{B2A3A095-656A-40B1-8265-B1E569DA85BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{8906ED1A-8CBD-4C7B-A01B-3C9DB956FEF0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{3B06DCF5-574C-4E66-8D0D-4B95653B2798}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B06DCF5-574C-4E66-8D0D-4B95653B2798}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B06DCF5-574C-4E66-8D0D-4B95653B2798}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2A3A095-656A-40B1-8265-B1E569DA85BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2A3A095-656A-40B1-8265-B1E569DA85BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2A3A095-656A-40B1-8265-B1E569DA85BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2A3A095-656A-40B1-8265-B1E569DA85BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8906ED1A-8CBD-4C7B-A01B-3C9DB956FEF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8906ED1A-8CBD-4C7B-A01B-3C9DB956FEF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8906ED1A-8CBD-4C7B-A01B-3C9DB956FEF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8906ED1A-8CBD-4C7B-A01B-3C9DB956FEF0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,4 @@
-﻿namespace Domain.Exceptions
+﻿namespace Domain.Personas.Exceptions
 {
     public class ExcesoCaracteresException : Exception
     {

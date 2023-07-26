@@ -12,7 +12,7 @@ namespace Domain.Personas
         public string Nacionalidad { get; private set; }
 
 
-        private InformacionPersonal(string apellido, string nombre, string dni, Sexo sexo, DateTime fechaNacimiento, string nacionalidad)
+        private InformacionPersonal(string apellido, string nombre, string documento, Sexo sexo, DateTime fechaNacimiento, string nacionalidad)
         {
             var mensajeError = "La información personal posee datos incompletos.";
             // Corroboramos los datos que se ingresa
@@ -26,16 +26,16 @@ namespace Domain.Personas
                 throw new ArgumentNullException(nameof(nombre), mensajeError);
             }
 
-            if (string.IsNullOrWhiteSpace(dni.Trim()))
+            if (string.IsNullOrWhiteSpace(documento.Trim()))
             {
-                throw new ArgumentNullException(nameof(dni), mensajeError);
+                throw new ArgumentNullException(nameof(documento), mensajeError);
             }
 
             // Validamos el formato del documento ingresado.
             Regex re = new Regex(@"^(\d{7,8})$");
-            if (!re.IsMatch(dni))
+            if (!re.IsMatch(documento))
             {
-                throw new FormatException($"El formato del DNI, {dni}, es inválido. Formatos habilitados: xxxxxxxx");
+                throw new FormatException($"El formato del DNI, { documento }, es inválido. Formatos habilitados: xxxxxxxx");
             }
 
             if (Sexo.Equals(sexo))
@@ -53,7 +53,7 @@ namespace Domain.Personas
 
             Apellido = apellido;
             Nombre = nombre;
-            Documento = dni;
+            Documento = documento;
             Sexo = sexo;
             EstablecerFechaNacimiento(fechaNacimiento);
             Nacionalidad = nacionalidad;

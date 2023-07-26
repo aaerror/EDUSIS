@@ -4,18 +4,18 @@ namespace Domain.Personas.Domicilios
 {
     public class Ubicacion
     {
-        public string Ciudad { get; private set; }
+        public string Localidad { get; private set; }
         public string Provincia { get; private set; }
         public string CodigoPostal { get; private set; }
         public string Pais { get; private set; } = "Argentina";
 
 
-        private Ubicacion(string ciudad, string provincia, string codigoPostal, string pais)
+        private Ubicacion(string localidad, string provincia, string codigoPostal, string pais)
         {
             // Comprobamos datos nulos o incompletos
-            if (string.IsNullOrWhiteSpace(ciudad))
+            if (string.IsNullOrWhiteSpace(localidad))
             {
-                throw new ArgumentNullException(nameof(ciudad), "La ubicación posee datos incompletos.");
+                throw new ArgumentNullException(nameof(localidad), "La ubicación posee datos incompletos.");
             }
 
             if (string.IsNullOrWhiteSpace(provincia))
@@ -36,9 +36,9 @@ namespace Domain.Personas.Domicilios
             // Validamos que se ingresen letras y no números
             string regularExpression = @"^([A-Z]{1}[a-zñáéíóúü]+[\s]?)+$";
             Regex re = new(regularExpression);
-            if (!re.IsMatch(ciudad.Trim()))
+            if (!re.IsMatch(localidad.Trim()))
             {
-                throw new FormatException($"La ciudad {ciudad} debe ingresarse como un nombre propio.");
+                throw new FormatException($"La ciudad {localidad} debe ingresarse como un nombre propio.");
             }
 
             if (!re.IsMatch(provincia.Trim()))
@@ -58,15 +58,15 @@ namespace Domain.Personas.Domicilios
                 throw new FormatException($"El codigo postal {codigoPostal} debe contener 4 digitos.");
             }
 
-            Ciudad = ciudad.Trim();
+            Localidad = localidad.Trim();
             Provincia = provincia.Trim();
             CodigoPostal = codigoPostal.Trim();
             Pais = pais.Trim();
         }
 
-        public static Ubicacion Crear(string ciudad, string provincia, string codigoPostal, string pais)
+        public static Ubicacion Crear(string localidad, string provincia, string codigoPostal, string pais)
         {
-            return new(ciudad, provincia, codigoPostal, pais);
+            return new(localidad, provincia, codigoPostal, pais);
         }
     }
 }

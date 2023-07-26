@@ -1,4 +1,4 @@
-﻿using Domain.Exceptions;
+﻿using Domain.Personas.Exceptions;
 
 namespace Domain.Personas.Domicilios
 {

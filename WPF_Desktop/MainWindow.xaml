@@ -3,17 +3,238 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="clr-namespace:WPF_Desktop"
-    mc:Ignorable="d"
-    Title="EDUSIS" Height="768" Width="1366" BorderThickness="1,1,1,1" WindowState="Maximized" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="#66757575">
-    <Window.Background>
-        <SolidColorBrush Color="#FFFFFFFF"/>
-    </Window.Background>
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+    xmlns:viewModel="clr-namespace:WPF_Desktop.ViewModels.GestionAlumnos"
+    mc:Ignorable="d" Title="RegistrarAlumno" Height="760" Width="1280" ResizeMode="NoResize" HorizontalAlignment="Center" VerticalAlignment="Center" AllowsTransparency="True" Background="Transparent" WindowStyle="None" WindowStartupLocation="CenterScreen">
+    <!-- DATA VIEW MODEL -->
+    <Window.DataContext>
+        <viewModel:RegistrarAlumnoViewModel/>
+    </Window.DataContext>
 
-    <Grid x:Name="Container" VerticalAlignment="Center" HorizontalAlignment="Center" Width="1328" Height="751" MinHeight="1">
-        <Grid x:Name="GridCommand" HorizontalAlignment="Left" VerticalAlignment="Center" Height="694" Width="413" >
+    <Border Background="Transparent" BorderBrush="#40757575" BorderThickness="1" CornerRadius="8">
+        <Grid x:Name="Container">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="4*"/>
+            </Grid.ColumnDefinitions>
+            <!-- LEFT MENU -->
+            <Border Grid.Column="0" BorderBrush="Transparent"
+                    BorderThickness="0" CornerRadius="8 0 0 8">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#119B15" Offset=".25"/>
+                        <GradientStop Color="#119C72" Offset=".75"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <DockPanel Margin="10,10">
+                    <!-- LOGO -->
+                    <TextBlock DockPanel.Dock="Top" Foreground="White" Style="{ StaticResource TextBlock }"
+                               FontSize="45" TextAlignment="Center" Padding="5">
+                        EDUSIS
+                    </TextBlock>
+
+                    <!-- BUTTONS -->
+                    <StackPanel DockPanel.Dock="Top" HorizontalAlignment="Stretch" Margin="10 20 10 10">
+                        <Button Content="Gestión Alumnos" Height="45" Width="200" Margin="0,10"
+                                Style="{ StaticResource MenuButton }"/>
+                        <Button Content="Rendimiento Académico" Height="45" Width="200" Margin="0 30 0 20"
+                                Style="{ StaticResource MenuButton }"/>
+                        <Button Content="Asistencia" Height="45" Width="200" Margin="0 30 0 20"
+                                Style="{ StaticResource MenuButton }"/>
+                        <Button Content="Listado de Alumnos" Height="45" Width="200" Margin="0 30 0 20"
+                                Style="{ StaticResource MenuButton }"/>
+                        <Button Content="Listado de Alumnos" Height="45" Width="200" Margin="0 30 0 20"
+                                Style="{ StaticResource MenuButton }"/>
+                    </StackPanel>
+
+                    <!-- USER INFO -->
+                    <!-- TODO: Pensar que agregar -->
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center"
+                                Margin="10 80 10 0" Height="90">
+                        <Border BorderBrush="Transparent" BorderThickness="1" CornerRadius="8" Width="200">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,1" EndPoint="1,0">
+                                    <GradientStop Color="#FEFEFA" Offset=".25"/>
+                                    <GradientStop Color="#FEFEFB" Offset=".5"/>
+                                    <GradientStop Color="#FEFEFC" Offset=".75"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <StackPanel Margin="10" VerticalAlignment="Center">
+                                <TextBlock Text="Usuario" TextAlignment="Center" FontSize="16"
+                                           FontWeight="SemiBold" Foreground="{ StaticResource AccentPrimaryBrush }"/>
+                                <TextBlock Text="Cargo" TextAlignment="Center" FontSize="12"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- MAIN -->
+            <Border Grid.Column="1" BorderBrush="White" BorderThickness="1"
+                    CornerRadius="0 8 8 0">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,1" EndPoint="1,0">
+                        <GradientStop Color="#FEFEFA" Offset=".25"/>
+                        <GradientStop Color="#FEFEFB" Offset=".5"/>
+                        <GradientStop Color="#FEFEFC" Offset=".75"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="100"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- TITTLE AND SUBTITLE -->
+                    <Border Grid.Row="0" Margin="10,10,10,10">
+                        <StackPanel Orientation="Vertical" Margin="0 0 10 0">
+                            <TextBlock FontSize="36" Foreground="#262626" Style="{ StaticResource TextBlock }" 
+                                       Margin="20,0">
+                                Gestión Alumnos
+                            </TextBlock>
+                            <Separator Background="#171717" Height="1" Margin="10,0"/>
+                            <TextBlock FontSize="24" Foreground="#404040" Style="{ StaticResource TextBlock }"
+                                       Margin="20,0">
+                                Registrar Alumnos
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- INPUTS -->
+                    <Border Grid.Row="1" Background="#f5f5f5" CornerRadius="8" Margin="20,10,20,5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="1*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- FORM TITLE -->
+                            <!-- LEFT SIDE -->
+                            <TextBlock Grid.Column="0" Grid.Row="0" FontSize="18" Foreground="#a3a3a3" 
+                                       Margin="15 10 15 5">Información Personal</TextBlock>
+                            <StackPanel Grid.Column="0" Grid.Row="1" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Apellido</TextBlock>
+                                <TextBox TextWrapping="Wrap"
+                                         Text="{ Binding Apellido, UpdateSourceTrigger=PropertyChanged }"
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="0" Grid.Row="2" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Nombre</TextBlock>
+                                <TextBox TextWrapping="Wrap"
+                                         Text="{ Binding Nombre, UpdateSourceTrigger=PropertyChanged }"
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="0" Grid.Row="3" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Documento</TextBlock>
+                                <TextBox TextWrapping="Wrap"
+                                         Text="{ Binding Documento, UpdateSourceTrigger=PropertyChanged }"
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="0" Grid.Row="4" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Fecha de Nacimiento</TextBlock>
+                                <DatePicker DisplayDate="{ Binding FechaNacimiento }" Margin="0"
+                                            HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="0" Grid.Row="5" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Sexo</TextBlock>
+                                <ComboBox Margin="0">
+                                    <ComboBoxItem IsSelected="True">Sexo</ComboBoxItem>
+                                    <ComboBoxItem>Femenino</ComboBoxItem>
+                                    <ComboBoxItem>Masculino</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="0" Grid.Row="6" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Nacionalidad</TextBlock>
+                                <TextBox TextWrapping="Wrap" Text="{ Binding Nacionalidad }"
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                            <!-- CONTACTO -->
+                            <StackPanel Grid.Column="0" Grid.Row="7" Margin="15,5">
+                                <TextBlock Grid.Column="0" Grid.Row="0" FontSize="18" Foreground="#a3a3a3">
+                                    Contacto
+                                </TextBlock>
+                                <StackPanel Orientation="Vertical" Margin="10 5 10 5">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBox HorizontalAlignment="Stretch" TextWrapping="Wrap"
+                                                 Text="ingresar contacto..." Style="{ StaticResource TextBox }"/>
+                                        <ComboBox Height="32" Width="150"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- RIGTH SIDE -->
+                            <TextBlock Grid.Column="1" Grid.Row="0" FontSize="18" Foreground="#a3a3a3" 
+                                       Margin="15 10 15 5">Domicilio</TextBlock>
+                            <StackPanel Grid.Column="1" Grid.Row="1" Margin="20 5 20 5" Orientation="Horizontal">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0 0 5 0">
+                                        <TextBlock FontSize="16" Margin="10 0 5 5">Calle</TextBlock>
+                                        <TextBox TextWrapping="Wrap" Text="ingresar la calle..."
+                                                 Style="{ StaticResource TextBox }"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="5 0 5 0">
+                                        <TextBlock FontSize="16" Margin="10 0 5 5">Altura</TextBlock>
+                                        <TextBox TextWrapping="Wrap" Text="ingresar la altura..."
+                                                 Style="{ StaticResource TextBox }"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Margin="5 0 5 0">
+                                        <TextBlock FontSize="16" Margin="10 0 5 5">Vivienda</TextBlock>
+                                        <TextBox TextWrapping="Wrap" Text="vivienda..."
+                                                 Style="{ StaticResource TextBox }"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Grid.Row="2" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Barrio</TextBlock>
+                                <TextBox TextWrapping="Wrap" Text="barrio..."
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Grid.Row="3" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Observación</TextBlock>
+                                <TextBox TextWrapping="Wrap" Text="observaciones..."
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Grid.Row="4" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Localidad</TextBlock>
+                                <TextBox TextWrapping="Wrap" Text="ingresar la localidad..."
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Grid.Row="5" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">Provincia</TextBlock>
+                                <TextBox TextWrapping="Wrap" Text="ingresar la provincia..."
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Grid.Row="6" Margin="20 5 20 5">
+                                <TextBlock FontSize="16" Margin="10 0 0 5">País</TextBlock>
+                                <TextBox TextWrapping="Wrap" Text="ingresar el país..."
+                                         Style="{ StaticResource TextBox }"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <WrapPanel Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20 0 20 0">
+                        <Button Content="Registrar" Margin="5" Style="{ StaticResource StandardButton }" Command="{Binding RegistrarAlumno }"/>
+                    </WrapPanel>
+                </Grid>
+            </Border>
         </Grid>
-        <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Background="#FFB10000" Height="732" Width="910"/>
-        <!-- <Button x:Name="btnRegistrar" Content="Registrar" Style="{ DynamicResource EDUSIS_ButtonStyle }" Margin="20,16,-20,-16"/> -->
-    </Grid>
+    </Border>
 </Window>
