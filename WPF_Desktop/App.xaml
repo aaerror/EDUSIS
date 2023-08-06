@@ -7,7 +7,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Theme/EDUSIS_Brushes.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_Icons.xaml"/>
-                <ResourceDictionary Source="/Theme/EDUSIS_Inputs.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_ComboBox.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_Forms.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_ButtonStyle.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_TextBlock.xaml"/>
             </ResourceDictionary.MergedDictionaries>

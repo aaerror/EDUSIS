@@ -1,9 +1,7 @@
-﻿namespace Domain.Personas
+﻿namespace Domain.Personas;
+
+public enum TipoContacto
 {
-    public enum TipoContacto
-    {
-        EMPTY = 0,
-        Email = 1,
-        Telefono = 2
-    }
+    Email = 0,
+    Telefono = 1
 }

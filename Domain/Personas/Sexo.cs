@@ -1,9 +1,7 @@
-﻿namespace Domain.Personas
+﻿namespace Domain.Personas;
+
+public enum Sexo
 {
-    public enum Sexo
-    {
-        EMPTY = 0,
-        Femenino = 1,
-        Masculino = 2
-    }
+    Femenino = 0,
+    Masculino = 1
 }

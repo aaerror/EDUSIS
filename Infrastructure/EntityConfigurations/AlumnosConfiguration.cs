@@ -3,19 +3,18 @@ using Domain.Personas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Infrastructure.EntityConfigurations
+namespace Infrastructure.EntityConfigurations;
+
+public class AlumnosConfiguration : IEntityTypeConfiguration<Alumno>
 {
-    public class AlumnosConfiguration : IEntityTypeConfiguration<Alumno>
+    public void Configure(EntityTypeBuilder<Alumno> builder)
     {
-        public void Configure(EntityTypeBuilder<Alumno> builder)
-        {
-            builder.HasBaseType<Persona>();
+        builder.HasBaseType<Persona>();
 
-            builder.ToTable("Alumnos");
+        builder.ToTable("Alumnos");
 
-            builder.Property(a => a.Legajo)
-                .HasColumnName("legajo")
-                .IsRequired();
-        }
+        builder.Property(a => a.Legajo)
+            .HasColumnName("legajo")
+            .IsRequired();
     }
 }

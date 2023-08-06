@@ -1,9 +1,7 @@
-﻿namespace Domain.Personas.Domicilios
+﻿namespace Domain.Personas.Domicilios;
+
+public enum Vivienda
 {
-	public enum Vivienda
-	{
-		EMPTY = 0,
-		Casa = 1,
-		Departamento = 2
-	}
+    Casa = 0,
+    Departamento = 1
 }

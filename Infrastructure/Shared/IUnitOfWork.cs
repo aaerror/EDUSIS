@@ -1,10 +1,9 @@
 ﻿using Domain.Alumno;
 
-namespace Infrastructure.Shared
+namespace Infrastructure.Shared;
+
+public interface IUnitOfWork : IDisposable
 {
-    public interface IUnitOfWork : IDisposable
-    {
-        IAlumnoRepository Alumnos { get; }
-        void GuardarCambios();
-    }
+    IAlumnoRepository Alumnos { get; }
+    void GuardarCambios();
 }

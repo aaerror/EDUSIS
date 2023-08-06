@@ -9,7 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPF_Desktop", "WPF_Desktop\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{B2A3A095-656A-40B1-8265-B1E569DA85BA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{8906ED1A-8CBD-4C7B-A01B-3C9DB956FEF0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Application\Core.csproj", "{8906ED1A-8CBD-4C7B-A01B-3C9DB956FEF0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B2A3A095-656A-40B1-8265-B1E569DA85BA} = {B2A3A095-656A-40B1-8265-B1E569DA85BA}
+		{CDC6ED89-A793-448D-BD16-0FAC8970996A} = {CDC6ED89-A793-448D-BD16-0FAC8970996A}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

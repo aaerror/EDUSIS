@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(EdusisDBContext))]
-    [Migration("20230726041319_InitialCreate")]
+    [Migration("20230728043848_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -27,18 +27,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Personas.Persona", b =>
                 {
-                    b.Property<int>("persona_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("persona_id");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("persona_id"));
-
-                    b.Property<string>("Id")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("persona_guid");
-
-                    b.HasKey("persona_id");
+                    b.HasKey("Id");
 
                     b.ToTable("Personas", (string)null);
 
@@ -59,53 +52,22 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Personas.Persona", b =>
                 {
-                    b.OwnsMany("Domain.Personas.Contacto", "Contactos", b1 =>
-                        {
-                            b1.Property<int>("contacto_id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("int");
-
-                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("contacto_id"));
-
-                            b1.Property<int>("persona_id")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("Descripcion")
-                                .IsRequired()
-                                .HasColumnType("varchar(30)")
-                                .HasColumnName("description");
-
-                            b1.Property<string>("TipoContacto")
-                                .IsRequired()
-                                .HasColumnType("varchar(10)")
-                                .HasColumnName("tipo_contacto");
-
-                            b1.HasKey("contacto_id", "persona_id");
-
-                            b1.HasIndex("persona_id");
-
-                            b1.ToTable("Contactos", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("persona_id");
-                        });
-
                     b.OwnsOne("Domain.Personas.Domicilios.Domicilio", "Domicilio", b1 =>
                         {
-                            b1.Property<int>("persona_id")
-                                .HasColumnType("int");
+                            b1.Property<Guid>("PersonaId")
+                                .HasColumnType("uniqueidentifier");
 
-                            b1.HasKey("persona_id");
+                            b1.HasKey("PersonaId");
 
                             b1.ToTable("Domicilios", (string)null);
 
                             b1.WithOwner()
-                                .HasForeignKey("persona_id");
+                                .HasForeignKey("PersonaId");
 
                             b1.OwnsOne("Domain.Personas.Domicilios.Direccion", "Direccion", b2 =>
                                 {
-                                    b2.Property<int>("Domiciliopersona_id")
-                                        .HasColumnType("int");
+                                    b2.Property<Guid>("DomicilioPersonaId")
+                                        .HasColumnType("uniqueidentifier");
 
                                     b2.Property<int>("Altura")
                                         .HasColumnType("int")
@@ -126,23 +88,18 @@ namespace Infrastructure.Migrations
                                         .HasColumnType("varchar(10)")
                                         .HasColumnName("vivienda");
 
-                                    b2.HasKey("Domiciliopersona_id");
+                                    b2.HasKey("DomicilioPersonaId");
 
                                     b2.ToTable("Domicilios");
 
                                     b2.WithOwner()
-                                        .HasForeignKey("Domiciliopersona_id");
+                                        .HasForeignKey("DomicilioPersonaId");
                                 });
 
                             b1.OwnsOne("Domain.Personas.Domicilios.Ubicacion", "Ubicacion", b2 =>
                                 {
-                                    b2.Property<int>("Domiciliopersona_id")
-                                        .HasColumnType("int");
-
-                                    b2.Property<string>("CodigoPostal")
-                                        .IsRequired()
-                                        .HasColumnType("char(4)")
-                                        .HasColumnName("codigo_postal");
+                                    b2.Property<Guid>("DomicilioPersonaId")
+                                        .HasColumnType("uniqueidentifier");
 
                                     b2.Property<string>("Localidad")
                                         .IsRequired()
@@ -159,12 +116,12 @@ namespace Infrastructure.Migrations
                                         .HasColumnType("varchar(50)")
                                         .HasColumnName("provincia");
 
-                                    b2.HasKey("Domiciliopersona_id");
+                                    b2.HasKey("DomicilioPersonaId");
 
                                     b2.ToTable("Domicilios");
 
                                     b2.WithOwner()
-                                        .HasForeignKey("Domiciliopersona_id");
+                                        .HasForeignKey("DomicilioPersonaId");
                                 });
 
                             b1.Navigation("Direccion")
@@ -176,8 +133,8 @@ namespace Infrastructure.Migrations
 
                     b.OwnsOne("Domain.Personas.InformacionPersonal", "InformacionPersonal", b1 =>
                         {
-                            b1.Property<int>("persona_id")
-                                .HasColumnType("int");
+                            b1.Property<Guid>("PersonaId")
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<string>("Apellido")
                                 .IsRequired()
@@ -207,9 +164,40 @@ namespace Infrastructure.Migrations
                                 .HasColumnType("varchar(15)")
                                 .HasColumnName("sexo");
 
-                            b1.HasKey("persona_id");
+                            b1.HasKey("PersonaId");
 
                             b1.ToTable("Personas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PersonaId");
+                        });
+
+                    b.OwnsMany("Domain.Personas.Contacto", "Contactos", b1 =>
+                        {
+                            b1.Property<int>("contacto_id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("contacto_id"));
+
+                            b1.Property<Guid>("persona_id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Descripcion")
+                                .IsRequired()
+                                .HasColumnType("varchar(30)")
+                                .HasColumnName("description");
+
+                            b1.Property<string>("TipoContacto")
+                                .IsRequired()
+                                .HasColumnType("varchar(10)")
+                                .HasColumnName("tipo_contacto");
+
+                            b1.HasKey("contacto_id", "persona_id");
+
+                            b1.HasIndex("persona_id");
+
+                            b1.ToTable("Contactos", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("persona_id");
@@ -228,7 +216,7 @@ namespace Infrastructure.Migrations
                 {
                     b.HasOne("Domain.Personas.Persona", null)
                         .WithOne()
-                        .HasForeignKey("Domain.Alumno.Alumno", "persona_id")
+                        .HasForeignKey("Domain.Alumno.Alumno", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

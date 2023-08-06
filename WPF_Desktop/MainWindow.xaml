@@ -3,14 +3,38 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:sys="clr-namespace:System;assembly=mscorlib"
     xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
     xmlns:viewModel="clr-namespace:WPF_Desktop.ViewModels.GestionAlumnos"
-    mc:Ignorable="d" Title="RegistrarAlumno" Height="760" Width="1280" ResizeMode="NoResize" HorizontalAlignment="Center" VerticalAlignment="Center" AllowsTransparency="True" Background="Transparent" WindowStyle="None" WindowStartupLocation="CenterScreen">
+    xmlns:domainPersonas="clr-namespace:Domain.Personas;assembly=Domain"
+    xmlns:domainDomicilios="clr-namespace:Domain.Personas.Domicilios;assembly=Domain"
+    mc:Ignorable="d" Title="RegistrarAlumno" Height="760" Width="1280" ResizeMode="NoResize"
+        HorizontalAlignment="Center" VerticalAlignment="Center" AllowsTransparency="True" Background="Transparent"
+        WindowStyle="None" WindowStartupLocation="CenterScreen">
     <!-- DATA VIEW MODEL -->
     <Window.DataContext>
         <viewModel:RegistrarAlumnoViewModel/>
     </Window.DataContext>
+
+    <Window.Resources>
+        <ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainPersonas:Sexo"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="contactos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainPersonas:TipoContacto"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="viviendas" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainDomicilios:Vivienda"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </Window.Resources>
 
     <Border Background="Transparent" BorderBrush="#40757575" BorderThickness="1" CornerRadius="8">
         <Grid x:Name="Container">
@@ -123,42 +147,59 @@
 
                             <!-- FORM TITLE -->
                             <!-- LEFT SIDE -->
+                            <!-- SUBTITLE -->
                             <TextBlock Grid.Column="0" Grid.Row="0" FontSize="18" Foreground="#a3a3a3" 
                                        Margin="15 10 15 5">Información Personal</TextBlock>
+                            <!-- APELLIDO -->
                             <StackPanel Grid.Column="0" Grid.Row="1" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Apellido</TextBlock>
-                                <TextBox TextWrapping="Wrap"
-                                         Text="{ Binding Apellido, UpdateSourceTrigger=PropertyChanged }"
+                                <TextBox Text="{ Binding Apellido, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                         MaxLength="50"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
+                            <!-- NOMBRE -->
                             <StackPanel Grid.Column="0" Grid.Row="2" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Nombre</TextBlock>
-                                <TextBox TextWrapping="Wrap"
-                                         Text="{ Binding Nombre, UpdateSourceTrigger=PropertyChanged }"
+                                <TextBox Text="{ Binding Nombre, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                         MaxLength="50"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
+                            <!-- DOCUMENTNO -->
                             <StackPanel Grid.Column="0" Grid.Row="3" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Documento</TextBlock>
-                                <TextBox TextWrapping="Wrap"
-                                         Text="{ Binding Documento, UpdateSourceTrigger=PropertyChanged }"
+                                <TextBox Text="{ Binding Documento, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                         MaxLength="9"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
+                            <!-- FECHA DE NACIMIENTO -->
                             <StackPanel Grid.Column="0" Grid.Row="4" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Fecha de Nacimiento</TextBlock>
-                                <DatePicker DisplayDate="{ Binding FechaNacimiento }" Margin="0"
-                                            HorizontalAlignment="Stretch"/>
+                                <DatePicker Style="{ StaticResource DatePickerStyle }"
+                                            DisplayDate="{ Binding FechaNacimiento, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                            Height="32"
+                                            Margin="0"
+                                            DisplayDateStart="01/01/2002" DisplayDateEnd="01/01/2023"
+                                            HorizontalAlignment="Stretch">
+                                </DatePicker>
                             </StackPanel>
+                            <!-- SEXO -->
                             <StackPanel Grid.Column="0" Grid.Row="5" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Sexo</TextBlock>
-                                <ComboBox Margin="0">
-                                    <ComboBoxItem IsSelected="True">Sexo</ComboBoxItem>
-                                    <ComboBoxItem>Femenino</ComboBoxItem>
-                                    <ComboBoxItem>Masculino</ComboBoxItem>
-                                </ComboBox>
+                                <ComboBox Margin="0" Height="32"
+                                          FontFamily="Segoe UI"
+                                          FontSize="14"
+                                          HorizontalContentAlignment="Center"
+                                          VerticalContentAlignment="Center"
+                                          ItemsSource="{ Binding Source={ StaticResource sexos } }"
+                                          SelectedIndex="{ Binding Sexo, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                          Style="{ StaticResource ComboBox }"/>
                             </StackPanel>
+                            <!-- NACIONALIDAD -->
                             <StackPanel Grid.Column="0" Grid.Row="6" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Nacionalidad</TextBlock>
-                                <TextBox TextWrapping="Wrap" Text="{ Binding Nacionalidad }"
+                                <TextBox TextWrapping="Wrap"
+                                         MaxLength="50"
+                                         Text="{ Binding Nacionalidad, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
                             <!-- CONTACTO -->
@@ -166,11 +207,22 @@
                                 <TextBlock Grid.Column="0" Grid.Row="0" FontSize="18" Foreground="#a3a3a3">
                                     Contacto
                                 </TextBlock>
-                                <StackPanel Orientation="Vertical" Margin="10 5 10 5">
+                                <StackPanel Orientation="Vertical" Margin="5 5 5 5">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBox HorizontalAlignment="Stretch" TextWrapping="Wrap"
-                                                 Text="ingresar contacto..." Style="{ StaticResource TextBox }"/>
-                                        <ComboBox Height="32" Width="150"/>
+                                                 Width="260"
+                                                 Margin="0 5 5 5"
+                                                 MaxLength="50"
+                                                 Text="{ Binding ContactoDescripcion, UpdateSourceTrigger=PropertyChanged }"
+                                                 Style="{ StaticResource TextBox }"/>
+                                        <ComboBox Height="32" Width="180"
+                                                  Margin="5 5 0 5"
+                                                  FontFamily="Segoe UI"
+                                                  FontSize="14"
+                                                  HorizontalContentAlignment="Center"
+                                                  VerticalContentAlignment="Center"
+                                                  ItemsSource="{ Binding Source={ StaticResource contactos } }"
+                                                  SelectedIndex="{ Binding TipoContacto, UpdateSourceTrigger=PropertyChanged }"/>
                                     </StackPanel>
                                 </StackPanel>
                             </StackPanel>
@@ -179,53 +231,69 @@
                             <TextBlock Grid.Column="1" Grid.Row="0" FontSize="18" Foreground="#a3a3a3" 
                                        Margin="15 10 15 5">Domicilio</TextBlock>
                             <StackPanel Grid.Column="1" Grid.Row="1" Margin="20 5 20 5" Orientation="Horizontal">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0 0 5 0">
-                                        <TextBlock FontSize="16" Margin="10 0 5 5">Calle</TextBlock>
-                                        <TextBox TextWrapping="Wrap" Text="ingresar la calle..."
-                                                 Style="{ StaticResource TextBox }"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Margin="5 0 5 0">
-                                        <TextBlock FontSize="16" Margin="10 0 5 5">Altura</TextBlock>
-                                        <TextBox TextWrapping="Wrap" Text="ingresar la altura..."
-                                                 Style="{ StaticResource TextBox }"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2" Margin="5 0 5 0">
-                                        <TextBlock FontSize="16" Margin="10 0 5 5">Vivienda</TextBlock>
-                                        <TextBox TextWrapping="Wrap" Text="vivienda..."
-                                                 Style="{ StaticResource TextBox }"/>
-                                    </StackPanel>
-                                </Grid>
+                                <!-- CALLE -->
+                                <StackPanel Grid.Column="0" Margin="0 0 5 0">
+                                    <TextBlock FontSize="16" Margin="10 0 5 5">Calle</TextBlock>
+                                    <TextBox TextWrapping="Wrap"
+                                             Width="230"
+                                             MaxLength="50"
+                                             Text="{ Binding Calle, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                             Style="{ StaticResource TextBox }"/>
+                                </StackPanel>
+                                <!-- ALTURA -->
+                                <StackPanel Grid.Column="1" Margin="5 0 5 0">
+                                    <TextBlock FontSize="16" Margin="10 0 5 5">Altura</TextBlock>
+                                    <TextBox TextWrapping="Wrap"
+                                             Width="100"
+                                             MaxLength="5"
+                                             Text="{ Binding Altura, UpdateSourceTrigger=PropertyChanged }"
+                                             Style="{ StaticResource TextBox }"/>
+                                </StackPanel>
+                                <!-- VIVIENDA -->
+                                <StackPanel Grid.Column="2" Margin="5 0 5 0">
+                                    <TextBlock FontSize="16" Margin="10 0 5 5">Vivienda</TextBlock>
+                                    <ComboBox Height="32" Width="100"
+                                              FontFamily="Segoe UI"
+                                              FontSize="14"
+                                              HorizontalContentAlignment="Center"
+                                              VerticalContentAlignment="Center"
+                                              ItemsSource="{ Binding Source={ StaticResource viviendas } }"
+                                              SelectedIndex="{ Binding Vivienda, UpdateSourceTrigger=PropertyChanged }"/>
+                                </StackPanel>
                             </StackPanel>
-
+                            <!-- BARRIO -->
                             <StackPanel Grid.Column="1" Grid.Row="2" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Barrio</TextBlock>
-                                <TextBox TextWrapping="Wrap" Text="barrio..."
+                                <TextBox MaxLength="50" 
+                                         Text="{ Binding Barrio, UpdateSourceTrigger=PropertyChanged }"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
+                            <!-- OBSERVACIONES -->
                             <StackPanel Grid.Column="1" Grid.Row="3" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Observación</TextBlock>
-                                <TextBox TextWrapping="Wrap" Text="observaciones..."
+                                <TextBox MaxLength="120"
+                                         Text="{ Binding Observaciones, UpdateSourceTrigger=PropertyChanged }"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
+                            <!-- LOCALIDAD -->
                             <StackPanel Grid.Column="1" Grid.Row="4" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Localidad</TextBlock>
-                                <TextBox TextWrapping="Wrap" Text="ingresar la localidad..."
+                                <TextBox MaxLength="50"
+                                         Text="{ Binding Localidad, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
+                            <!-- PROVINCIA -->
                             <StackPanel Grid.Column="1" Grid.Row="5" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">Provincia</TextBlock>
-                                <TextBox TextWrapping="Wrap" Text="ingresar la provincia..."
+                                <TextBox MaxLength="50"
+                                         Text="{ Binding Provincia, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
+                            <!-- PAIS -->
                             <StackPanel Grid.Column="1" Grid.Row="6" Margin="20 5 20 5">
                                 <TextBlock FontSize="16" Margin="10 0 0 5">País</TextBlock>
-                                <TextBox TextWrapping="Wrap" Text="ingresar el país..."
+                                <TextBox MaxLength="50"
+                                         Text="{ Binding Pais, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}"
                                          Style="{ StaticResource TextBox }"/>
                             </StackPanel>
                         </Grid>

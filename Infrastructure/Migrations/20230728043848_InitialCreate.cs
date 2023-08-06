@@ -15,15 +15,13 @@ namespace Infrastructure.Migrations
                 name: "Personas",
                 columns: table => new
                 {
-                    persona_id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    persona_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     apellido = table.Column<string>(type: "varchar(50)", nullable: false),
                     nombre = table.Column<string>(type: "varchar(50)", nullable: false),
                     documento = table.Column<int>(type: "int", nullable: false),
                     sexo = table.Column<string>(type: "varchar(15)", nullable: false),
                     fecha_nacimiento = table.Column<DateTime>(type: "datetime", nullable: false),
-                    nacionalidad = table.Column<string>(type: "varchar(20)", nullable: false),
-                    persona_guid = table.Column<string>(type: "varchar(50)", nullable: false)
+                    nacionalidad = table.Column<string>(type: "varchar(20)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,7 +32,7 @@ namespace Infrastructure.Migrations
                 name: "Alumnos",
                 columns: table => new
                 {
-                    persona_id = table.Column<int>(type: "int", nullable: false),
+                    persona_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     legajo = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -54,7 +52,7 @@ namespace Infrastructure.Migrations
                 {
                     contacto_id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    persona_id = table.Column<int>(type: "int", nullable: false),
+                    persona_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     tipo_contacto = table.Column<string>(type: "varchar(10)", nullable: false),
                     description = table.Column<string>(type: "varchar(30)", nullable: false)
                 },
@@ -73,22 +71,21 @@ namespace Infrastructure.Migrations
                 name: "Domicilios",
                 columns: table => new
                 {
-                    persona_id = table.Column<int>(type: "int", nullable: false),
+                    PersonaId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     calle = table.Column<string>(type: "varchar(50)", nullable: false),
                     altura = table.Column<int>(type: "int", nullable: false),
                     vivienda = table.Column<string>(type: "varchar(10)", nullable: false),
                     observaciones = table.Column<string>(type: "varchar(120)", nullable: false),
                     localidad = table.Column<string>(type: "varchar(50)", nullable: false),
                     provincia = table.Column<string>(type: "varchar(50)", nullable: false),
-                    codigo_postal = table.Column<string>(type: "char(4)", nullable: false),
                     pais = table.Column<string>(type: "varchar(50)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Domicilios", x => x.persona_id);
+                    table.PrimaryKey("PK_Domicilios", x => x.PersonaId);
                     table.ForeignKey(
-                        name: "FK_Domicilios_Personas_persona_id",
-                        column: x => x.persona_id,
+                        name: "FK_Domicilios_Personas_PersonaId",
+                        column: x => x.PersonaId,
                         principalTable: "Personas",
                         principalColumn: "persona_id",
                         onDelete: ReferentialAction.Cascade);
