@@ -37,19 +37,14 @@ public class InformacionPersonal
         {
             throw new FormatException($"El formato del DNI, { documento }, es inválido. Formatos habilitados: xxxxxxxx");
         }
-
-        if (Sexo.Equals(sexo))
-        {
-            throw new ArgumentNullException(nameof(sexo), mensajeError);
-        }
         /*
-			string patron = string.Concat(@"^(2[0347]|3[034])\-?", $"({ dni })", @"\-?(\d)$");
-			re = new Regex(patron);
-			if (!re.IsMatch(cuil))
-			{
-				throw new FormatException($"El formato del CUIL, { CUIL }, es inválido. Formatos habilitados: xx-xxxxxxxx-x");
-			}
-			*/
+		string patron = string.Concat(@"^(2[0347]|3[034])\-?", $"({ dni })", @"\-?(\d)$");
+		re = new Regex(patron);
+		if (!re.IsMatch(cuil))
+		{
+			throw new FormatException($"El formato del CUIL, { CUIL }, es inválido. Formatos habilitados: xx-xxxxxxxx-x");
+		}
+		*/
 
         Apellido = apellido;
         Nombre = nombre;
@@ -57,18 +52,6 @@ public class InformacionPersonal
         Sexo = sexo;
         EstablecerFechaNacimiento(fechaNacimiento);
         Nacionalidad = nacionalidad;
-    }
-
-    public static InformacionPersonal Crear(string apellido, string nombre, string dni, int sexo, DateTime fechaNacimiento, string nacionalidad)
-    {
-        var mensajeError = "La información personal posee datos incompletos.";
-
-        if (string.IsNullOrWhiteSpace(nacionalidad.Trim()))
-        {
-            throw new ArgumentNullException(nameof(nacionalidad), mensajeError);
-        }
-
-        return new(apellido, nombre, dni, (Sexo) sexo, fechaNacimiento, nacionalidad);
     }
 
     private void EstablecerFechaNacimiento(DateTime fechaNacimiento)
@@ -81,7 +64,37 @@ public class InformacionPersonal
         FechaNacimiento = fechaNacimiento.Date;
     }
 
-    public string NombreCompleto() => $"{Apellido}, {Nombre}";
+    public static InformacionPersonal Crear(string apellido, string nombre, string dni, int sexo, DateTime fechaNacimiento, string nacionalidad)
+    {
+        var mensajeError = "La información personal posee datos incompletos.";
 
+    ;   if (string.IsNullOrWhiteSpace(nacionalidad.Trim()))
+        {
+            throw new ArgumentNullException(nameof(nacionalidad), mensajeError);
+        }
+
+        return new(apellido, nombre, dni, (Sexo) sexo, fechaNacimiento, nacionalidad);
+    }
+
+    #region Internal
+    internal InformacionPersonal CambiarNombreCompleto(string apellido, string nombre)
+    {
+        return new(apellido, nombre, Documento, Sexo, FechaNacimiento, Nacionalidad);
+    }
+
+    internal InformacionPersonal CambiarSexo(string apellido, string nombre, int sexo)
+    {
+        var nuevoSexo = (Sexo) sexo;
+        if (Sexo == nuevoSexo)
+        {
+            throw new ArgumentException("Error al hacer el cambio de sexo: El sexo registrado y el nuevo son iguales.", nameof(nuevoSexo));
+        }
+
+        return new(apellido, nombre, Documento, nuevoSexo, FechaNacimiento, Nacionalidad);
+    }
+    #endregion
+
+    public string NombreCompleto() => $"{Apellido}, {Nombre}";
+    
     public int Edad() => DateTime.Today.Year - FechaNacimiento.Date.Year;
 }

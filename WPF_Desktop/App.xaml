@@ -1,16 +1,20 @@
 ﻿<Application x:Class="WPF_Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             StartupUri="MainWindow.xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Shared/DataTemplate.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_Brushes.xaml"/>
-                <ResourceDictionary Source="/Theme/EDUSIS_Icons.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_ButtonStyle.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_ButtonWithIcon.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_ComboBox.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_Forms.xaml"/>
-                <ResourceDictionary Source="/Theme/EDUSIS_ButtonStyle.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_Icons.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_Labels.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_TextBlock.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_TextBox.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_DatePicker.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

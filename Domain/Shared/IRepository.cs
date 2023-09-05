@@ -8,8 +8,7 @@ namespace Domain.Shared
         TEntity BuscarPorID(Guid id);
         IEnumerable<TEntity> BuscarTodos();
         IEnumerable<TEntity> Buscar(Expression<Func<TEntity, bool>> predicate);
-        //TODO: ELIMINAR METODO
-        TEntity ActualizarDatos(TEntity entity);
+        void ActualizarDatos(TEntity entity);
         void BorrarDatos(Guid id);
     }
 }

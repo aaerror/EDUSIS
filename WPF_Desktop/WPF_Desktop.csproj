@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="FontAwesome.Sharp" Version="6.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Application\Core.csproj" />

@@ -1,4 +1,4 @@
-﻿using Domain.Alumno;
+﻿using Domain.Alumnos;
 using Domain.Personas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -16,5 +16,13 @@ public class AlumnosConfiguration : IEntityTypeConfiguration<Alumno>
         builder.Property(a => a.Legajo)
             .HasColumnName("legajo")
             .IsRequired();
+
+        builder.Property(a => a.FechaAlta)
+            .HasColumnName("fecha_alta")
+            .IsRequired();
+
+        builder.Property(a => a.FechaBaja)
+            .HasColumnName("fecha_baja")
+            .IsRequired(false);
     }
 }

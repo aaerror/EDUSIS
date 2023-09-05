@@ -14,7 +14,7 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
         Context = context;
     }
 
-    public void Agregar(TEntity entity) => Context.Add(entity);
+    public void Agregar(TEntity entity) => Context.Add<TEntity>(entity);
 
     public TEntity BuscarPorID(Guid id) => Context.Set<TEntity>().Find(id);
 
@@ -22,10 +22,7 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
 
     public IEnumerable<TEntity> Buscar(Expression<Func<TEntity, bool>> predicate) => Context.Set<TEntity>().Where(predicate).ToList();
 
-    public TEntity ActualizarDatos(TEntity entity)
-    {
-        throw new NotImplementedException();
-    }
+    public void ActualizarDatos(TEntity entity) => Context.Update<TEntity>(entity);
 
     public void BorrarDatos(Guid id)
     {

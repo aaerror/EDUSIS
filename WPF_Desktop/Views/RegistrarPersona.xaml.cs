@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace WPF_Desktop.View
+namespace WPF_Desktop.Views
 {
     /// <summary>
-    /// Lógica de interacción para LabelTextBox.xaml
+    /// Lógica de interacción para RegistrarPersona.xaml
     /// </summary>
-    public partial class LabelTextBox : UserControl
+    public partial class RegistrarPersona : UserControl
     {
-        public LabelTextBox()
+        public RegistrarPersona()
         {
             InitializeComponent();
         }

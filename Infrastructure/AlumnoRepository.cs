@@ -1,11 +1,11 @@
-﻿using Domain.Alumno;
+﻿using Domain.Alumnos;
 using Infrastructure.Shared;
 
 namespace Infrastructure;
 
 public class AlumnoRepository : Repository<Alumno>, IAlumnoRepository
 {
-    private EdusisDBContext _context { get => Context as EdusisDBContext; }
+    private EdusisDBContext _context => Context as EdusisDBContext;
 
 
     public AlumnoRepository(EdusisDBContext context) : base(context) { }

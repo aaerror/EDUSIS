@@ -1,9 +1,9 @@
-﻿ <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- BUTTON MENU -->
     <Style x:Key="MenuButton" TargetType="{ x:Type Button }">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{ StaticResource AccentPrimaryBrush }"/>
+        <Setter Property="Foreground" Value="{ StaticResource PrimaryColor }"/>
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="FontSize" Value="16"/>
@@ -19,7 +19,9 @@
                                 BorderThickness="1"
                                 CornerRadius="8">
                             <!-- CONTENT -->
-                            <ContentPresenter Content="{ TemplateBinding Content }" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <ContentPresenter Content="{ TemplateBinding Content }"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
                     <!-- TRIGGER -->
@@ -54,36 +56,127 @@
         </Setter>
     </Style>
 
-     <!-- STANDAR BUTTON -->
-    <Style x:Key="StandardButton" TargetType="{ x:Type Button }">
+     <!-- PRIMARY BUTTON -->
+    <Style x:Key="Primary" TargetType="{ x:Type Button }">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontWeight" Value="Regular"/>
         <Setter Property="FontSize" Value="16"/>
-        <Setter Property="Height" Value="32"/>
-        <Setter Property="Width" Value="120"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="MaxHeight" Value="44"/>
+        <Setter Property="MinWidth" Value="64"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{ x:Type Button }">
                     <Grid>
                         <!-- BORDER -->
-                        <Border x:Name="ButtonBorder"
-                                Background="#119B15"
+                        <Border x:Name="Border"
+                                Background="{ StaticResource PrimaryColor }"
                                 BorderBrush="Transparent"
-                                BorderThickness="1"
-                                CornerRadius="4">
+                                BorderThickness="0"
+                                CornerRadius="4"
+                                Padding="16 0"
+                                SnapsToDevicePixels="True">
                             <!-- CONTENT -->
-                            <ContentPresenter Content="{ TemplateBinding Content }" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <ContentPresenter Content="{ TemplateBinding Content }"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
                     <!-- TRIGGER -->
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="ButtonBorder" Property="Background" Value="#14B219"/>
+                            <Setter TargetName="Border" Property="Background" Value="#14B219"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="ButtonBorder" Property="Background" Value="#109114"/>
+                            <Setter TargetName="Border" Property="Background" Value="#109114"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+     <!-- SECONDARY BUTTON -->
+    <Style x:Key="Secondary" TargetType="{ x:Type Button }">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontWeight" Value="Regular"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="MaxHeight" Value="44"/>
+        <Setter Property="MinWidth" Value="64"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{ x:Type Button }">
+                    <Grid>
+                        <!-- BORDER -->
+                        <Border x:Name="Border"
+                                Background="White"
+                                BorderBrush="{ StaticResource Gray500 }"
+                                BorderThickness="1.5"
+                                CornerRadius="4"
+                                Padding="16 0"
+                                SnapsToDevicePixels="True">
+                            <!-- CONTENT -->
+                            <ContentPresenter Content="{ TemplateBinding Content }"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                    <!-- TRIGGER -->
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Gray400 }"/>
+                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource Gray100 }"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Gray500 }"/>
+                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource Gray200 }"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- TERTIARY BUTTON -->
+    <Style x:Key="Tertiary" TargetType="{ x:Type Button }">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{ StaticResource Neutral600 }"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontWeight" Value="Regular"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="MaxHeight" Value="44"/>
+        <Setter Property="MinWidth" Value="64"/>
+        <Setter Property="Height" Value="Auto"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{ x:Type Button }">
+                    <Grid>
+                        <!-- BORDER -->
+                        <Border x:Name="Border"
+                                Background="White"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
+                                Padding="0 5"
+                                SnapsToDevicePixels="True">
+                            <!-- CONTENT -->
+                            <ContentPresenter Content="{ TemplateBinding Content }"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                    <!-- TRIGGER -->
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource Gray200 }"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

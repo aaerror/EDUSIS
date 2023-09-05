@@ -1,4 +1,4 @@
-﻿using Domain.Alumno;
+﻿using Domain.Alumnos;
 using Domain.Personas;
 using Infrastructure.EntityConfigurations;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +15,17 @@ public class EdusisDBContext : DbContext
     {
         builder.UseSqlServer(@"Data Source=localhost; Integrated Security=True; Encrypt=True; TrustServerCertificate=True; Initial Catalog=EdusisDB;");
     }
-
+ 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new PersonaConfiguration());
         modelBuilder.ApplyConfiguration(new AlumnosConfiguration());
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder
+            .Properties<string>()
+            .HaveMaxLength(50);
     }
 }

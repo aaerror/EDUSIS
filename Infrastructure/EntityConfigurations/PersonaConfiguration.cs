@@ -102,10 +102,10 @@ public class PersonaConfiguration : IEntityTypeConfiguration<Persona>
                             .HasColumnName("localidad")
                             .HasColumnType("varchar(50)")
                             .IsRequired();
-                        //u.Property("CodigoPostal")
-                        //    .HasColumnName("codigo_postal")
-                        //    .HasColumnType("char(4)")
-                        //    .IsRequired();
+                        /*u.Property("CodigoPostal")
+                            .HasColumnName("codigo_postal")
+                            .HasColumnType("char(4)")
+                            .IsRequired();*/
                         u.Property("Provincia")
                             .HasColumnName("provincia")
                             .HasColumnType("varchar(50)")
@@ -115,10 +115,19 @@ public class PersonaConfiguration : IEntityTypeConfiguration<Persona>
                             .HasColumnType("varchar(50)")
                             .IsRequired();
                         u.WithOwner();
-                    });
+                    }) ;
             });
 
         // CONTACTO
+        builder.Property(x => x.Telefono)
+            .HasColumnName("telefono")
+            .HasColumnType("varchar(15)");
+
+        builder.Property(x => x.Email)
+            .HasColumnName("email")
+            .HasColumnType("varchar(50)");
+
+        /*
         builder.OwnsMany(p => p.Contactos,
             c =>
             {
@@ -145,5 +154,6 @@ public class PersonaConfiguration : IEntityTypeConfiguration<Persona>
                     .HasColumnType("varchar(30)")
                     .IsRequired();
             });
+        */
     }
 }

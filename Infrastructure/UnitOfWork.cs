@@ -1,4 +1,4 @@
-﻿using Domain.Alumno;
+﻿using Domain.Alumnos;
 using Infrastructure.Shared;
 
 namespace Infrastructure;

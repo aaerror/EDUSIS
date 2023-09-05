@@ -1,6 +1,6 @@
-﻿namespace Core.ServicioAlumnos.DTO;
+﻿namespace Core.ServicioAlumnos.DTO.Request;
 
-public class InformacionPersonalRequest
+public record InformacionPersonalRequest
 {
     public string Apellido { get; set; }
     public string Nombre { get; set; }

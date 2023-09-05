@@ -1,11 +1,10 @@
-﻿using Core.ServicioAlumnos.DTO;
-using Core.Shared;
-using Domain.Alumno;
+﻿using Core.Shared;
+using Domain.Alumnos;
 using Domain.Personas.Domicilios;
 using Domain.Personas;
-using Infrastructure;
 using Infrastructure.Shared;
-using Azure.Core;
+using Core.ServicioAlumnos.DTO.Request;
+using Core.ServicioAlumnos.DTO.Response;
 
 namespace Core.ServicioAlumnos;
 
@@ -14,56 +13,40 @@ public class ServicioAlumno : IServicio, IServicioAlumno
     private readonly IUnitOfWork _unitOfWork;
 
 
-    public ServicioAlumno()
+    public ServicioAlumno(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = new UnitOfWork();
+        _unitOfWork = unitOfWork;
     }
 
-    private Alumno BuscarAlumno(Guid persona_id)
+    private Alumno BuscarAlumnoPorId(Guid persona_id)
     {
-        // TODO: Corroborar null
         var alumno = _unitOfWork.Alumnos.BuscarPorID(persona_id);
+
+        if (alumno == null)
+        {
+            throw new NullReferenceException($"No se encontró el alumno con el siguiente Id: { persona_id }");
+        }
+
         return alumno;
     }
 
-    public void RegistrarAlumno(InformacionPersonalRequest informacionPersonalRequest, DomicilioRequest domicilioRequest, ContactoRequest? contactoRequest)
+    public PersonaResponse BuscarPorDNI(string documento)
     {
-        var informacionPersonal = InformacionPersonal.Crear(informacionPersonalRequest.Apellido, informacionPersonalRequest.Nombre, informacionPersonalRequest.Documento, informacionPersonalRequest.Sexo, informacionPersonalRequest.FechaNacimiento.Date, informacionPersonalRequest.Nacionalidad);
-        var domicilio = Domicilio.Crear(domicilioRequest.Calle, domicilioRequest.Altura, domicilioRequest.Vivienda, domicilioRequest.Observacion, domicilioRequest.Localidad, domicilioRequest.Provincia, domicilioRequest.Pais);
-        
-        var alumno = new Alumno(Guid.NewGuid().ToString().GetHashCode().ToString("x"), informacionPersonal, domicilio);
-
-        if (contactoRequest != null )
+        var alumno = _unitOfWork.Alumnos.Buscar(x => x.InformacionPersonal.Documento == documento).FirstOrDefault();
+        if (alumno is null)
         {
-            var contacto = Contacto.Crear(contactoRequest.TipoContacto, contactoRequest.Descripcion);
-            alumno.AgregarContacto(contacto);
+            throw new NullReferenceException($"No se encontró el alumno con el DNI: { documento }");
         }
 
-        _unitOfWork.Alumnos.Agregar(alumno);
-        _unitOfWork.GuardarCambios();
-    }
-
-    public void AgregarContacto(ContactoRequest request)
-    {
-        var contacto = Contacto.Crear(request.TipoContacto, request.Descripcion);
-    }
-
-    public void CambiarDireccion(Guid personaId, DireccionRequest request)
-    {
-        var alumno = BuscarAlumno(personaId);
-        if (alumno != null)
+        return new PersonaResponse
         {
-            alumno.Domicilio.CambiarDireccion(request.Calle, request.Altura, request.Vivienda, request.Observacion);
-            _unitOfWork.GuardarCambios();
-        }
-    }
-
-    public void CambiarDomicilio(Guid personaId, DomicilioRequest request)
-    {
-        var alumno = BuscarAlumno(personaId);
-        var nuevoDomicilio = Domicilio.Crear(request.Calle, request.Altura, request.Vivienda, request.Observacion, request.Localidad, request.Provincia, request.Pais);
-        alumno.ActualizarDomicilio(nuevoDomicilio);
-        _unitOfWork.GuardarCambios();
+            PersonaId = alumno.Id,
+            NombreCompleto = alumno.InformacionPersonal.NombreCompleto(),
+            Documento = alumno.InformacionPersonal.Documento,
+            Sexo = alumno.InformacionPersonal.Sexo.ToString(),
+            FechaNacimiento = alumno.InformacionPersonal.FechaNacimiento.Date,
+            Nacionalidad = alumno.InformacionPersonal.Nacionalidad
+        };
     }
 
     public bool EsDocumentoValido(string documento)
@@ -75,5 +58,53 @@ public class ServicioAlumno : IServicio, IServicioAlumno
         }
 
         return esValido;
+    }
+
+    public void RegistrarAlumno(InformacionPersonalRequest informacionPersonalRequest, DomicilioRequest domicilioRequest, ContactoRequest contactoRequest)
+    {
+        var informacionPersonal = InformacionPersonal.Crear(informacionPersonalRequest.Apellido, informacionPersonalRequest.Nombre, informacionPersonalRequest.Documento, informacionPersonalRequest.Sexo, informacionPersonalRequest.FechaNacimiento.Date, informacionPersonalRequest.Nacionalidad);
+        var domicilio = Domicilio.Crear(domicilioRequest.Calle, domicilioRequest.Altura, domicilioRequest.Vivienda, domicilioRequest.Observacion, domicilioRequest.Localidad, domicilioRequest.Provincia, domicilioRequest.Pais);
+
+        var alumno = new Alumno(Guid.NewGuid().ToString().GetHashCode().ToString("x"), informacionPersonal, domicilio, contactoRequest.Email, contactoRequest.Telefono);
+
+        _unitOfWork.Alumnos.Agregar(alumno);
+        _unitOfWork.GuardarCambios();
+    }
+
+    public void ModificarNombreCompleto(Guid alumnoId, string nuevoApellido, string nuevoNombre)
+    {
+        var alumno = BuscarAlumnoPorId(alumnoId);
+
+        alumno.CambiarNombreCompleto(nuevoApellido, nuevoNombre);
+
+        _unitOfWork.Alumnos.ActualizarDatos(alumno);
+        _unitOfWork.GuardarCambios();
+    }
+
+    public void ModificarSexo(Guid alumnoId, CambiarSexoRequest cambiarSexoRequest)
+    {
+        var alumno = BuscarAlumnoPorId(alumnoId);
+
+        alumno.CambiarSexo(cambiarSexoRequest.Apellido, cambiarSexoRequest.Nombre, cambiarSexoRequest.Sexo);
+
+        _unitOfWork.Alumnos.ActualizarDatos(alumno);
+        _unitOfWork.GuardarCambios();
+    }
+
+    public void ActualizarDomicilio(Guid alumnoId, DomicilioRequest domicilioRequest)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void ActualizarDireccion(Guid personaId, DireccionRequest request)
+    {
+        var alumno = BuscarAlumnoPorId(personaId);
+
+        var nuevaDireccion = Direccion.Crear(request.Calle, request.Altura, request.Vivienda, request.Observacion);
+
+        alumno.CambiarDireccion(nuevaDireccion);
+
+        _unitOfWork.Alumnos.ActualizarDatos(alumno);
+        _unitOfWork.GuardarCambios();
     }
 }

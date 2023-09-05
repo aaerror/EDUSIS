@@ -35,15 +35,8 @@ public class Domicilio
         return new(calle, altura, vivienda, observacion, localidad, provincia, pais);
     }
 
-    public Domicilio CambiarDireccion(string calle, int altura, int tipoVivienda, string observacion)
+    internal Domicilio CambiarDireccion(Direccion nuevaDireccion)
     {
-        Direccion nuevaDireccion = Direccion.Crear(calle, altura, tipoVivienda, observacion);
-        return new(nuevaDireccion, Ubicacion);
-    }
-
-    public Domicilio ModificarObservacionDomicilio(string observacion)
-    {
-        Direccion nuevaDireccion = Direccion.Crear(Direccion.Calle, Direccion.Altura, (int) Direccion.Vivienda, observacion);
         return new(nuevaDireccion, Ubicacion);
     }
 }

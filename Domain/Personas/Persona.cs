@@ -1,84 +1,159 @@
 ﻿using Domain.Personas.Domicilios;
 using Domain.Personas.Exceptions;
 using Domain.Shared;
+using System.IO.IsolatedStorage;
+using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Domain.Personas;
 
 public abstract class Persona : Entity
 {
-    private List<Contacto> _contactos;
     public InformacionPersonal InformacionPersonal { get; private set; }
     public Domicilio Domicilio { get; private set; }
-    public IReadOnlyCollection<Contacto> Contactos => _contactos.AsReadOnly();
+    public string Email { get; private set; }
+    public string Telefono { get; private set; }
+
 
     protected Persona() : base() { }
 
-    protected Persona(Guid personaId) : base(personaId)
-    {
-        _contactos = new List<Contacto>();
-    }
+    protected Persona(Guid personaId) : base(personaId) {}
 
-    public Persona(Guid personaId, InformacionPersonal informacionPersonal, Domicilio domicilio) : this(personaId)
+    public Persona(Guid personaId, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono) : this(personaId)
     {
         Id = personaId;
         InformacionPersonal = informacionPersonal;
         Domicilio = domicilio;
+        CargarEmail(email);
+        CargarTelefono(telefono);
     }
 
-    // TODO: Chequear lista de contactos
-    public Persona(InformacionPersonal informacionPersonal, Domicilio domicilio) : this(Guid.NewGuid(), informacionPersonal, domicilio)
+    public Persona(InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono) : this(Guid.NewGuid(), informacionPersonal, domicilio, email, telefono)
     {
         if (informacionPersonal is null)
         {
-            throw new ArgumentNullException(nameof(informacionPersonal), "Información personal inexistente.");
+            throw new ArgumentNullException(nameof(informacionPersonal), "Datos personales inexistentes.");
         }
 
         if (domicilio is null)
         {
-            throw new ArgumentNullException(nameof(domicilio), "Domicilio inexistente.");
+            throw new ArgumentNullException(nameof(domicilio), "Domicilio inexistentes.");
+        }
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new ArgumentNullException(nameof(email), "Email inexistente.");
+        }
+
+
+        if (string.IsNullOrWhiteSpace(telefono))
+        {
+            throw new ArgumentNullException(nameof(telefono), "Telefono inexistente.");
         }
     }
 
+    #region InformacionPersonal
+    public void CambiarNombreCompleto(string apellido, string nombre)
+    {
+        InformacionPersonal = InformacionPersonal.CambiarNombreCompleto(apellido, nombre);
+    }
+
+    public void CambiarSexo(string apellido, string nombre, int sexo)
+    {
+        InformacionPersonal = InformacionPersonal.CambiarSexo(apellido, nombre, sexo);
+    }
+    #endregion
+
     #region Domicilio
-    public void ActualizarDomicilio(Domicilio nuevoDomicilio)
+    public void CambiarDomicilio(Domicilio nuevoDomicilio)
     {
         if (nuevoDomicilio == null)
         {
             throw new ArgumentNullException(nameof(nuevoDomicilio), "Datos del nuevo domicilio incompletos.");
         }
+
         Domicilio = nuevoDomicilio;
+    }
+
+    public void CambiarDireccion(Direccion nuevaDireccion)
+    {
+        Domicilio = Domicilio.CambiarDireccion(nuevaDireccion);
     }
     #endregion
 
-
     #region Contacto
-    private bool ExisteContacto(Contacto contactoBuscado)
+    private bool EsEmailValido(string unEmail)
     {
-        if (contactoBuscado == null)
+        bool esValido = false;
+
+        /**
+         * Usamos regular expression para validar el formato del email.
+         * https://mailtrap.io/blog/validate-email-address-c/
+         */
+        Regex re = new Regex(@"^[^@\s]+@[^@\s]+\.(com|net|org|gov)$");
+        if (re.IsMatch(unEmail))
         {
-            throw new ArgumentNullException(nameof(contactoBuscado), "Datos del contacto inexistentes.");
+            esValido = true;
         }
-        return _contactos.Contains(contactoBuscado); 
+
+        return esValido;
     }
 
-    public void AgregarContacto(Contacto nuevoContacto)
+    private void CargarEmail(string email)
     {
-        if (ExisteContacto(nuevoContacto))
+        if (EsEmailValido(email))
         {
-            throw new ContactoDuplicadoException(nameof(nuevoContacto));
+            throw new FormatoInvalidoException(email);
         }
 
-        _contactos.Add(nuevoContacto);
+        Email = email;
     }
 
-    public void EliminarContacto(Contacto unContacto)
+    public void CambiarEmail(string nuevoEmail)
     {
-        if (!ExisteContacto(unContacto))
+        CargarEmail(nuevoEmail);
+    }
+
+    private bool EsTelefonoValido(string unTelefono)
+    {
+        bool esValido = false;
+
+        /**
+         * Usamos regular expression para validar el formato del número de teléfono
+         * 
+         * https://es.stackoverflow.com/questions/136325/validar-tel%C3%A9fonos-de-argentina-con-una-expresi%C3%B3n-regular
+         * 
+         * Toma como opcionales:
+         *      el prefijo internacional (54)
+         *      el prefijo internacional para celulares (9)
+         *      el prefijo de acceso a interurbanas (0)
+         *      el prefijo local para celulares (15)
+         * Es obligatorio:
+         *       el código de área (11, 2xx, 2xxx, 3xx, 3xxx, 6xx y 8xx)
+         *       (no toma como válido un número local sin código de área como 4444-0000)
+         **/
+        Regex re = new Regex(@"^(?:(?:00)?549?)?0?(?:11|[2368]\d)(?:(?=\d{0,2}15)\d{2})??\d{8}$");
+        if (re.IsMatch(unTelefono))
         {
-            throw new ArgumentException("Contacto no registrado.", nameof(unContacto));
+            esValido = true;
         }
 
-        _contactos.Remove(unContacto);
+        return esValido;
+    }
+
+    private void CargarTelefono(string telefono)
+    {
+        if (EsTelefonoValido(telefono))
+        {
+            throw new FormatoInvalidoException(telefono);
+        }
+
+        Telefono = telefono;
+    }
+
+    private void CambiarTelefono(string nuevoTelefono)
+    {
+        CargarTelefono(nuevoTelefono);
     }
     #endregion
 }

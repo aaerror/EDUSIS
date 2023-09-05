@@ -21,7 +21,9 @@ namespace Infrastructure.Migrations
                     documento = table.Column<int>(type: "int", nullable: false),
                     sexo = table.Column<string>(type: "varchar(15)", nullable: false),
                     fecha_nacimiento = table.Column<DateTime>(type: "datetime", nullable: false),
-                    nacionalidad = table.Column<string>(type: "varchar(20)", nullable: false)
+                    nacionalidad = table.Column<string>(type: "varchar(20)", nullable: false),
+                    telefono = table.Column<string>(type: "varchar(15)", nullable: false),
+                    email = table.Column<string>(type: "varchar(50)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -33,34 +35,15 @@ namespace Infrastructure.Migrations
                 columns: table => new
                 {
                     persona_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    legajo = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    legajo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    fecha_alta = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    fecha_baja = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Alumnos", x => x.persona_id);
                     table.ForeignKey(
                         name: "FK_Alumnos_Personas_persona_id",
-                        column: x => x.persona_id,
-                        principalTable: "Personas",
-                        principalColumn: "persona_id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Contactos",
-                columns: table => new
-                {
-                    contacto_id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    persona_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    tipo_contacto = table.Column<string>(type: "varchar(10)", nullable: false),
-                    description = table.Column<string>(type: "varchar(30)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Contactos", x => new { x.contacto_id, x.persona_id });
-                    table.ForeignKey(
-                        name: "FK_Contactos_Personas_persona_id",
                         column: x => x.persona_id,
                         principalTable: "Personas",
                         principalColumn: "persona_id",
@@ -90,11 +73,6 @@ namespace Infrastructure.Migrations
                         principalColumn: "persona_id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Contactos_persona_id",
-                table: "Contactos",
-                column: "persona_id");
         }
 
         /// <inheritdoc />
@@ -102,9 +80,6 @@ namespace Infrastructure.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Alumnos");
-
-            migrationBuilder.DropTable(
-                name: "Contactos");
 
             migrationBuilder.DropTable(
                 name: "Domicilios");
