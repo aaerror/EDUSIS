@@ -6,16 +6,18 @@
         mc:Ignorable="d"
         xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
         xmlns:local="clr-namespace:WPF_Desktop"
+        xmlns:components="clr-namespace:WPF_Desktop.Components"
         Title="EDUSIS"
         AllowsTransparency="True"
         Background="Transparent"
+        Icon="bell-ring-icon.png"
         Height="760"
         Width="1280"
         HorizontalAlignment="Center"
         VerticalAlignment="Center"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
-        WindowStyle="None">
+        WindowStyle="None" UseLayoutRounding="False">
  
     <!-- MAIN -->
     <Border Background="Transparent"
@@ -121,10 +123,9 @@
                     CornerRadius="0 8 8 0"
                     Padding="5">
                 <Grid x:Name="MainContainer">
-                    <ContentControl Content="{ Binding NavigationService.VistaActual }"/>
+                    <ContentControl Content="{ Binding ViewModelActual }"/>
                 </Grid>
             </Border>
         </Grid>
     </Border>
-    
 </Window>

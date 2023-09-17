@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="WPF_Desktop.Views.RegistrarPersona"
+﻿<UserControl x:Class="WPF_Desktop.Views.RegistrarPersonaView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -7,8 +7,8 @@
              xmlns:local="clr-namespace:WPF_Desktop.Views"
              xmlns:domainPersonas="clr-namespace:Domain.Personas;assembly=Domain"
              xmlns:domainDomicilios="clr-namespace:Domain.Personas.Domicilios;assembly=Domain"
-             mc:Ignorable="d"
-             d:DesignHeight="*" d:DesignWidth="*">
+             xmlns:components="clr-namespace:WPF_Desktop.Components"
+             mc:Ignorable="d">
     <ContentControl.Resources>
         <ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
             <ObjectDataProvider.MethodParameters>
@@ -31,37 +31,15 @@
     <!-- MAIN -->
     <Grid x:Name="MainContainer">
         <Grid.RowDefinitions>
-            <RowDefinition Height="100"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- TITTLE AND SUBTITLE -->
-        <Border Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
-                BorderThickness="1"
-                CornerRadius="4"
-                Margin="20 10"
-                Padding="20 0">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="15"
-                                  Color="#373737"
-                                  ShadowDepth="5"
-                                  Opacity=".3"/>
-            </Border.Effect>
-            <StackPanel Grid.Row="0"
-                        VerticalAlignment="Center">
-                <Label Content="Gestión Alumnos"
-                       Margin="0 0 0 0"
-                       Style="{ StaticResource Title }"/>
-                <Separator Background="{ StaticResource Gray300 }"
-                        Height="2"
-                        Margin="0 2"/>
-                <Label Content="Registrar Alumnos"
-                    Margin="0 0 0 5"
-                    Style="{ StaticResource Subtitle }"/>
-            </StackPanel>
-        </Border>
+        <components:Header Grid.Row="0"
+                           Title="Gestión de Alumnos"
+                           Subtitle="Registrar un alumno"/>
 
         <!-- INPUTS -->
         <Border Grid.Row="1"
@@ -70,7 +48,7 @@
                 BorderThickness="1"
                 CornerRadius="4"
                 Margin="20 10"
-                Padding="10"
+                Padding="10 5 10 10"
                 VerticalAlignment="Center">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="15"

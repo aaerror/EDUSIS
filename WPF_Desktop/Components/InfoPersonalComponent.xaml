@@ -1,0 +1,121 @@
+﻿<UserControl x:Class="WPF_Desktop.Components.InfoPersonalComponent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="personaData"
+             xmlns:domainPersonas="clr-namespace:Domain.Personas;assembly=Domain"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:WPF_Desktop.Components">
+    <ContentControl.Resources>
+        <ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainPersonas:Sexo"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </ContentControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+
+        <Label Grid.Column="0"
+               Grid.Row="0"
+               Content="Apellido"
+               Margin="0 0 10 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <TextBox Grid.Column="0"
+                 Grid.Row="1"
+                 Text="{ Binding Apellido, ElementName=personaData }"
+                 IsEnabled="{ Binding EstaHabilitado, ElementName=personaData }"
+                 Margin="0 0 10 0"
+                 Style="{ StaticResource TextBox }"/>
+
+        <Label Grid.Column="1"
+               Grid.Row="0"
+               Content="Nombre"
+               Margin="10 0 0 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <TextBox Grid.Column="1"
+                 Grid.Row="1"
+                 Text="{ Binding Nombre, ElementName=personaData }"
+                 IsEnabled="{ Binding EstaHabilitado, ElementName=personaData }"
+                 Margin="10 0 0 0"
+                 Style="{ StaticResource TextBox }"/>
+
+        <Label Grid.Column="0"
+               Grid.Row="2"
+               Content="Documento"
+               Margin="0 0 10 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <TextBox Grid.Column="0"
+                 Grid.Row="3"
+                 Text="{ Binding Documento, ElementName=personaData }"
+                 IsEnabled="False"
+                 Margin="0 0 10 0"
+                 Style="{ StaticResource TextBox }"/>
+
+        <Label Grid.Column="1"
+               Grid.Row="2"
+               Content="Sexo"
+               Margin="10 0 0 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <ComboBox Grid.Column="1"
+                  Grid.Row="3"
+                  ItemsSource="{ Binding Source={ StaticResource sexos } }"
+                  SelectedIndex="{ Binding Sexo, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ElementName=personaData }"
+                  IsEnabled="{ Binding EstaHabilitado, ElementName=personaData }"
+                  Margin="10 0 0 0"
+                  Style="{ StaticResource ComboBoxStyle }"/>
+
+        <Label Grid.Column="0"
+               Grid.Row="4"
+               Content="Fecha de Nacimiento"
+               Margin="0 0 10 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <TextBox Grid.Column="0"
+                 Grid.Row="5"
+                 Text="{ Binding FechaNacimiento, ElementName=personaData }"
+                 IsEnabled="False"
+                 Margin="0 0 10 0"
+                 Style="{ StaticResource TextBox }"/>
+
+        <Label Grid.Column="1"
+               Grid.Row="4"
+               Content="Nacionalidad"
+               Margin="10 0 0 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+
+        <TextBox Grid.Column="1"
+                 Grid.Row="5"
+                 Text="{ Binding Nacionalidad, ElementName=personaData }"
+                 IsEnabled="False"
+                 Margin="10 0 0 0"
+                 Style="{ StaticResource TextBox }"/>
+    </Grid>
+</UserControl>

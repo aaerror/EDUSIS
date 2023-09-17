@@ -4,12 +4,12 @@ using System.Diagnostics;
 
 namespace WPF_Desktop.Shared;
 
-public abstract class ViewModel : INotifyPropertyChanged
+public abstract class ViewModel : INotifyPropertyChanged, IDisposable
 {
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public virtual event PropertyChangedEventHandler? PropertyChanged;
 
 
-    public void OnPropertyChanged(string propertyName)
+    protected virtual void OnPropertyChanged(string propertyName)
     {
         VerificarPropertyName(propertyName);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -24,4 +24,6 @@ public abstract class ViewModel : INotifyPropertyChanged
             throw new ArgumentNullException(GetType().Name + " does not contain property: " + propertyName);
         }
     }
+
+    public virtual void Dispose() { }
 }

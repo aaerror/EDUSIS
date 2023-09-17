@@ -1,7 +1,5 @@
-﻿namespace Core.ServicioAlumnos.DTO.Request;
+﻿using System.ComponentModel.DataAnnotations;
 
-public record ContactoRequest
-{
-    public string Email { get; set; }
-    public string Telefono { get; set; }
-}
+namespace Core.ServicioAlumnos.DTO.Request;
+
+public record ContactoRequest(string Email, string Telefono);

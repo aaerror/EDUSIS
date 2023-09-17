@@ -101,17 +101,12 @@ public abstract class Persona : Entity
 
     private void CargarEmail(string email)
     {
-        if (EsEmailValido(email))
+        if (!EsEmailValido(email))
         {
             throw new FormatoInvalidoException(email);
         }
 
         Email = email;
-    }
-
-    public void CambiarEmail(string nuevoEmail)
-    {
-        CargarEmail(nuevoEmail);
     }
 
     private bool EsTelefonoValido(string unTelefono)
@@ -143,7 +138,7 @@ public abstract class Persona : Entity
 
     private void CargarTelefono(string telefono)
     {
-        if (EsTelefonoValido(telefono))
+        if (!EsTelefonoValido(telefono))
         {
             throw new FormatoInvalidoException(telefono);
         }
@@ -151,9 +146,10 @@ public abstract class Persona : Entity
         Telefono = telefono;
     }
 
-    private void CambiarTelefono(string nuevoTelefono)
+    public void CambiarContacto(string unEmail, string unTelefono)
     {
-        CargarTelefono(nuevoTelefono);
+        CargarEmail(unEmail);
+        CargarTelefono(unTelefono);
     }
     #endregion
 }

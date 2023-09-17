@@ -2,16 +2,16 @@
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 
-namespace WPF_Desktop.Navigation;
+namespace WPF_Desktop.Navigation.NavigationServices;
 
-public class NavigationService<TViewModel> : INavigationService
+public class VerPerfilNavigationService<TViewModel> : INavigationService
     where TViewModel : ViewModel
 {
     private readonly Func<TViewModel> _viewModelFactory;
     private readonly NavigationStore _navigationStore;
 
 
-    public NavigationService(Func<TViewModel> viewModelFactory, NavigationStore navigationStore)
+    public VerPerfilNavigationService(Func<TViewModel> viewModelFactory, NavigationStore navigationStore)
     {
         _viewModelFactory = viewModelFactory;
         _navigationStore = navigationStore;

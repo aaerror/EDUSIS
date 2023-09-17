@@ -7,11 +7,21 @@
         <view:GestionAlumnosView/>
     </DataTemplate>
 
+    <DataTemplate DataType="{ x:Type viewModel:PerfilAlumnoViewModel }">
+        <view:PerfilAlumnoView/>
+    </DataTemplate>
+
     <DataTemplate DataType="{ x:Type viewModel:RegistrarAlumnoViewModel }">
-        <view:RegistrarPersona/>
+        <view:RegistrarPersonaView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type viewModel:EditarAlumnoViewModel }">
+        <view:EditarAlumnoView/>
     </DataTemplate>
 
     <DataTemplate DataType="{ x:Type viewModel:LoginViewModel }">
         <view:LoginView/>
     </DataTemplate>
+    
+    
 </ResourceDictionary>

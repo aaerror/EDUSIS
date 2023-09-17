@@ -1,40 +1,44 @@
 ﻿using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
+using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels;
 
 public class MainViewModel : ViewModel
 {
-    private INavigationService _navigationService;
+    private ModalNavigationStore _modalNavigationStore;
+    private NavigationStore _navigationStore;
 
+    public ViewModel ViewModelActual => _navigationStore.ViewModelActual;
+    public ViewModel ModalViewModelActual => _modalNavigationStore.ViewModelActual;
+    public bool ModalEstaAbierto => _modalNavigationStore.EstaAbierto;
+
+    #region Commands
     public ViewModelCommand GestionAlumnosCommand { get; }
+    #endregion
 
-
-    public MainViewModel(INavigationService navigationService)
+    public MainViewModel(ModalNavigationStore modalNavigationStore, NavigationStore navigationStore, INavigationService gestionAlumnoNavigationService)
     {
-        _navigationService = navigationService;
+        _modalNavigationStore = modalNavigationStore;
+        _navigationStore = navigationStore;
 
-
-        GestionAlumnosCommand = new ViewModelCommand(
-            command =>
+        GestionAlumnosCommand = new ViewModelCommand(command =>
             {
-                NavigationService.NavigateTo<GestionAlumnosViewModel>();
-            },
-            command  => true
-        );
+                gestionAlumnoNavigationService.Navigate();
+            });
+
+        _navigationStore.ViewModelActualChanged += OnViewModelChanged;
+        _modalNavigationStore.ViewModelActualChanged += OnModalViewModelChanged;
     }
 
-    public INavigationService NavigationService
+    private void OnViewModelChanged()
     {
-        get
-        {
-            return _navigationService;
-        }
+        OnPropertyChanged(nameof(ViewModelActual));
+    }
 
-        set
-        {
-            _navigationService = value;
-            OnPropertyChanged(nameof(NavigationService));
-        }
+    private void OnModalViewModelChanged()
+    {
+        OnPropertyChanged(nameof(ModalViewModelActual));
+        OnPropertyChanged(nameof(ModalEstaAbierto));
     }
 }

@@ -18,9 +18,9 @@ namespace WPF_Desktop.Views
     /// <summary>
     /// Lógica de interacción para RegistrarPersona.xaml
     /// </summary>
-    public partial class RegistrarPersona : UserControl
+    public partial class RegistrarPersonaView : UserControl
     {
-        public RegistrarPersona()
+        public RegistrarPersonaView()
         {
             InitializeComponent();
         }

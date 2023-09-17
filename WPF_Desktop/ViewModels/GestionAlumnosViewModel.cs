@@ -6,58 +6,58 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Windows;
 using System.Windows.Input;
 using WPF_Desktop.Navigation;
+using WPF_Desktop.Navigation.NavigationServices;
 using WPF_Desktop.Shared;
+using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels;
 
 public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private INavigationService _navigationService;
     private IServicioAlumno _servicioAlumno;
+    private INavigationService _registrarAlumnoNavigationService;
+    private INavigationService _verPerfilNavigationService;
     private Dictionary<string, List<string>> _errorsByProperty;
-    
+
+    private PerfilBuscadoStore _perfilBuscadoStore;
     private string _documentoAlumno = string.Empty;
     private PersonaResponse _personaResponse;
 
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
-    #region Command
+    #region Commands
     public ICommand RegistrarAlumnoCommand { get; }
 
     public ICommand BuscarAlumnoCommand { get; }
+
+    public ICommand VerPerfilCommand { get; }
     #endregion
 
-    public GestionAlumnosViewModel(INavigationService navigationService, IServicioAlumno servicioAlumno)
+    public GestionAlumnosViewModel(INavigationService registrarNavigationService,
+                                   INavigationService verPerfilNavigationService,
+                                   PerfilBuscadoStore perfilBuscadoStore,
+                                   IServicioAlumno servicioAlumno)
     {
         _errorsByProperty = new Dictionary<string, List<string>>();
-        _navigationService = navigationService;
         _servicioAlumno = servicioAlumno;
+        _registrarAlumnoNavigationService = registrarNavigationService;
+        _verPerfilNavigationService = verPerfilNavigationService;
 
-        RegistrarAlumnoCommand = new ViewModelCommand(
-            command =>
-            {
-                navigationService.NavigateTo<RegistrarAlumnoViewModel>();
-            });
+        _perfilBuscadoStore = perfilBuscadoStore;
+
         BuscarAlumnoCommand = new ViewModelCommand(ExecuteBuscarAlumnoCommand, CanExecuteBuscarAlumnoCommand);
+        RegistrarAlumnoCommand = new ViewModelCommand(command =>
+            {
+                _registrarAlumnoNavigationService.Navigate();
+            });
+
+        VerPerfilCommand = new ViewModelCommand(ExecuteVerPerfilCommand, CanExecuteVerPerfilCommand);
     }
 
     #region Properties
-    public INavigationService NavigationService
-    {
-        get
-        {
-            return _navigationService;
-        }
-
-        set
-        {
-            _navigationService = value;
-            OnPropertyChanged(nameof(NavigationService));
-        }
-    }
-
     public string DocumentoAlumno
     {
         get
@@ -120,6 +120,7 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
     public bool HasErrors => _errorsByProperty.Any();
     #endregion
 
+    #region BuscarAlumnoCommand
     private bool CanExecuteBuscarAlumnoCommand(object obj)
     {
         bool canExecute = false;
@@ -133,6 +134,41 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
 
     private void ExecuteBuscarAlumnoCommand(object obj)
     {
-        PersonaResponse = _servicioAlumno.BuscarPorDNI(DocumentoAlumno);
+        try
+        {
+            PersonaResponse = _servicioAlumno.BuscarPorDNI(DocumentoAlumno);
+            _perfilBuscadoStore.Documento = PersonaResponse.Documento;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Error al buscar el alumno", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        
     }
+    #endregion
+
+    #region VerPerfilAlumnoCommand
+    private bool CanExecuteVerPerfilCommand(object obj)
+    {
+        bool canExecute = false;
+        if (!string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))
+        {
+            canExecute = true;
+        }
+
+        return canExecute;
+    }
+
+    private void ExecuteVerPerfilCommand(object obj)
+    {
+        try
+        {
+            _verPerfilNavigationService.Navigate();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Error al ver el perfil", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    #endregion
 }

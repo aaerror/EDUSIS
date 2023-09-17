@@ -166,7 +166,7 @@
                                 SnapsToDevicePixels="True">
                             <!-- CONTENT -->
                             <ContentPresenter Content="{ TemplateBinding Content }"
-                                              HorizontalAlignment="Left"
+                                              HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
                         </Border>
                     </Grid>

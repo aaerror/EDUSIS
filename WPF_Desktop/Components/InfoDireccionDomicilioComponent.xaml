@@ -1,0 +1,92 @@
+﻿<UserControl x:Class="WPF_Desktop.Components.InfoDireccionDomicilioComponent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="direccionData"
+             xmlns:domainDomicilios="clr-namespace:Domain.Personas.Domicilios;assembly=Domain"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:WPF_Desktop.Components">
+    <ContentControl.Resources>
+        <ObjectDataProvider x:Key="vivienda" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainDomicilios:Vivienda"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </ContentControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Grid.Column="0"
+               Grid.Row="0"
+               Content="Calle"
+               Margin="0 0 10 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <TextBox Grid.Column="0"
+                 Grid.Row="1"
+                 Text="{ Binding Calle, ElementName=direccionData }"
+                 IsEnabled="{ Binding EstaHabilitado, ElementName=direccionData }"
+                 Margin="0 0 10 0"
+                 Style="{ StaticResource TextBox }"/>
+
+        <Label Grid.Column="1"
+               Grid.Row="0"
+               Content="Altura"
+               Margin="10 0 10 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <TextBox Grid.Column="1"
+                 Grid.Row="1"
+                 Text="{ Binding Altura, ElementName=direccionData }"
+                 IsEnabled="{ Binding EstaHabilitado, ElementName=direccionData }"
+                 Margin="10 0 10 0"
+                 Style="{ StaticResource TextBox }"/>
+
+        <Label Grid.Column="2"
+               Grid.Row="0"
+               Content="Vivienda"
+               Margin="10 0 0 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <ComboBox Grid.Column="2"
+                  Grid.Row="1"
+                  ItemsSource="{ Binding Source={ StaticResource vivienda } }"
+                  SelectedIndex="{ Binding Vivienda, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ElementName=direccionData }"
+                  IsEnabled="{ Binding EstaHabilitado, ElementName=direccionData }"
+                  Margin="10 0 0 0"
+                  Style="{ StaticResource ComboBoxStyle }"/>
+
+        <Label Grid.Column="0"
+               Grid.Row="2"
+               Content="Observaciones"
+               Margin="0 0 10 0"
+               HorizontalContentAlignment="Left"
+               VerticalContentAlignment="Center"
+               Style="{ StaticResource Form }"/>
+        <TextBox Grid.Column="0"
+                 Grid.ColumnSpan="3"
+                 Grid.Row="3"
+                 Text="{ Binding Observacion, ElementName=direccionData }"
+                 IsEnabled="{ Binding EstaHabilitado, ElementName=direccionData }"
+                 Margin="0 0 0 0"
+                 Style="{ StaticResource TextBox }"/>
+    </Grid>
+</UserControl>

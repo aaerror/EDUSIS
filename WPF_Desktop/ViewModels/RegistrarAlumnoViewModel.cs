@@ -491,36 +491,13 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
 
     private void ExecuteRegistrarAlumnoCommand(object obj)
     {
-        var informacionPersonal = new InformacionPersonalRequest
-        {
-            Apellido = Apellido,
-            Nombre = Nombre,
-            Documento = Documento,
-            Sexo = Sexo,
-            FechaNacimiento = FechaNacimiento.Date,
-            Nacionalidad = Nacionalidad
-        };
-
-        var domicilio = new DomicilioRequest
-        {
-            Calle = Calle,
-            Altura = int.Parse(Altura),
-            Vivienda = Vivienda,
-            Observacion = Observaciones,
-            Localidad = Localidad,
-            Provincia = Provincia,
-            Pais = Pais
-        };
-
-        var contacto = new ContactoRequest
-        {
-            Email = Email,
-            Telefono = Telefono,
-        };
+        var informacionPersonal = new InformacionPersonalRequest(Apellido, Nombre, Documento, Sexo, FechaNacimiento.Date, Nacionalidad);
+        var domicilio = new DomicilioRequest(Calle, int.Parse(Altura), Vivienda, Observaciones, Localidad, Provincia, Pais);
+        var contacto = new ContactoRequest(Email, Telefono);
 
         string messageBoxText = $"Datos correctos. ¿Quiere guardar los datos del alumno { Apellido }, { Nombre } ({ Documento })?";
         string caption = "Registrar Alumno";
-        var messageBox = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+        MessageBoxResult messageBox = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (messageBox == MessageBoxResult.Yes)
         {
             _servicioAlumno.RegistrarAlumno(informacionPersonal, domicilio, contacto);

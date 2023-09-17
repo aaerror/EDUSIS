@@ -3,12 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              d:DesignHeight="450" d:DesignWidth="800"
+             d:DataContext="{ d:DesignInstance Type=viewModel:GestionAlumnosViewModel }"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              xmlns:local="clr-namespace:WPF_Desktop.Views"
              xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
-             xmlns:viewmodels="clr-namespace:WPF_Desktop.ViewModels"
-             d:DataContext="{d:DesignInstance Type=viewmodels:GestionAlumnosViewModel}">
+             xmlns:viewModel="clr-namespace:WPF_Desktop.ViewModels"
+             xmlns:components="clr-namespace:WPF_Desktop.Components">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"/>
@@ -16,72 +21,55 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <!-- TITTLE AND SUBTITLE -->
-        <Border Grid.Row="0"
-                Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
-                BorderThickness="1"
-                CornerRadius="4"
-                Margin="20 10"
-                Padding="20 0">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="15"
-                                  Color="#373737"
-                                  ShadowDepth="5"
-                                  Opacity=".3"/>
-            </Border.Effect>
-            <Label Content="Gestión Alumnos"
-                   Style="{ StaticResource Title }"/>
-        </Border>
+        <components:Header Grid.Row="0"
+                           Title="Gestión de Alumnos"
+                           Subtitle="Altas, Bajas y Modificaciones"/>
 
         <!-- INPUTS -->
-        <Border Grid.Row="1"
-                Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
-                BorderThickness="1"
-                CornerRadius="4"
-                Margin="20 10"
-                Padding="10"
-                VerticalAlignment="Center">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="15"
-                                  Color="#373737"
-                                  ShadowDepth="5"
-                                  Opacity=".3"/>
-            </Border.Effect>
-            <WrapPanel Margin="6 0">
-                <Button Command="{ Binding RegistrarAlumnoCommand }"
-                        Content="Alta de Alumnos"
-                        Margin="0 0 5 0"
-                        Style="{ StaticResource Secondary }"/>
-                <Button Content="Asignar Curso"
-                        Margin="5 0 5 0"
-                        Style="{ StaticResource Secondary }"/>
-                <Button Content="Reportes Curso"
-                        Margin="5 0 0 0"
-                        Style="{ StaticResource Secondary }"/>
-            </WrapPanel>
-        </Border>
+        <WrapPanel Grid.Row="1"
+                   Margin="20 10 20 5">
+            <Button Command="{ Binding RegistrarAlumnoCommand }"
+                    Content="Alta de Alumnos"
+                    Margin="0 0 5 0"
+                    Style="{ StaticResource Secondary }"/>
+            <Button Content="Asignar Curso"
+                    Margin="5 0 5 0"
+                    Style="{ StaticResource Secondary }"/>
+            <Button Content="Reportes Curso"
+                    Margin="5 0 0 0"
+                    Style="{ StaticResource Secondary }"/>
+        </WrapPanel>
 
+        <!-- DETAILS -->
         <Border Grid.Row="2"
                 Background="#FFFFFF"
                 BorderBrush="{ StaticResource Gray200 }"
                 BorderThickness="1"
                 CornerRadius="4"
                 Margin="20 10"
-                Padding="20 10">
-            <!-- SEARCH BUTTON -->
+                Padding="50 10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15"
+                                  Color="#373737"
+                                  ShadowDepth="5"
+                                  Opacity=".3"/>
+            </Border.Effect>
+            <!-- SEARCH PANEL -->
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
+
+                <!-- SEARCH BUTTON -->
                 <Grid Grid.Row="0"
-                      HorizontalAlignment="Center">
+                      HorizontalAlignment="Center"
+                      Margin="0 0 0 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-
                     <WrapPanel Margin="0 5">
                         <TextBox Text="{ Binding DocumentoAlumno, UpdateSourceTrigger=PropertyChanged }"
                                  Margin="0 0 5 0"
@@ -90,18 +78,29 @@
                                  Style="{ StaticResource TextBox}"/>
                         <Button Command="{ Binding BuscarAlumnoCommand }"
                                 Content="Buscar"
-                                Margin="5 0 5 0"
+                                Margin="5 0 0 0"
                                 Style="{ StaticResource Primary }"/>
                     </WrapPanel>
                 </Grid>
-                <StackPanel Grid.Row="1">
-                    <Label Content="Persona"
-                           Style="{ StaticResource Form }"/>
-                    <TextBlock Text="{ Binding PersonaResponse.NombreCompleto, UpdateSourceTrigger=PropertyChanged }"
-                               IsEnabled="False"
-                               Style="{ StaticResource TextBlock }"/>
 
-                </StackPanel>
+                <!-- ALUMNO DATA -->
+                <components:InfoPersonalComponent Grid.Row="1"
+                                                  Apellido="{ Binding PersonaResponse.Apellido }"
+                                                  Nombre="{ Binding PersonaResponse.Nombre }"
+                                                  Documento="{ Binding PersonaResponse.Documento }"
+                                                  Sexo="{ Binding PersonaResponse.Sexo }"
+                                                  FechaNacimiento="{ Binding PersonaResponse.FechaNacimiento }"
+                                                  Nacionalidad="{ Binding PersonaResponse.Nacionalidad }"
+                                                  VerticalAlignment="Top"/>
+                <!-- BUTTONS -->
+                <WrapPanel Grid.Row="2"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Top">
+                    <Button Command="{ Binding VerPerfilCommand }"
+                            Content="Ver Perfil"
+                            Style="{ StaticResource Primary }"
+                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource BooleanToVisibilityConverter } }"/>
+                </WrapPanel>
             </Grid>
         </Border>
     </Grid>

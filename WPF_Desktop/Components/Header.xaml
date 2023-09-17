@@ -1,0 +1,37 @@
+﻿<UserControl x:Class="WPF_Desktop.Components.Header"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="aHeader"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:WPF_Desktop.Components">
+    <!-- TITTLE AND SUBTITLE -->
+    <Border Grid.Row="0"
+            Background="#FFFFFF"
+            BorderBrush="{ StaticResource Gray200 }"
+            BorderThickness="1"
+            CornerRadius="4"
+            Margin="20 10"
+            Padding="20 0">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="15"
+                              Color="#373737"
+                              ShadowDepth="5"
+                              Opacity=".3"/>
+        </Border.Effect>
+
+        <StackPanel Grid.Row="0"
+                    VerticalAlignment="Center">
+            <Label Content="{ Binding Title, ElementName=aHeader }"
+                   Margin="0 0 0 0"
+                   Style="{ StaticResource Title }"/>
+            <Separator Background="{ StaticResource Gray300 }"
+                       Height="2"
+                       Margin="0 2"/>
+            <Label Content="{ Binding Subtitle, ElementName=aHeader }"
+                   Margin="0 0 0 5"
+                   Style="{ StaticResource Subtitle }"/>
+        </StackPanel>
+    </Border>
+</UserControl>

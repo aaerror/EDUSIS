@@ -1,0 +1,92 @@
+﻿<UserControl x:Class="WPF_Desktop.Components.FormCambiarSexoComponent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:local="clr-namespace:WPF_Desktop.Components"
+             xmlns:domainPersonas="clr-namespace:Domain.Personas;assembly=Domain">
+
+    <ContentControl.Resources>
+        <ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainPersonas:Sexo"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </ContentControl.Resources>
+
+    <Border Background="#FFFFFF"
+            BorderBrush="{ StaticResource Gray200 }"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="10 5 10 10"
+            VerticalAlignment="Center">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+
+            <!-- FORM TITLE -->
+            <!-- SUBTITLE -->
+            <Label Grid.ColumnSpan="2"
+                   Grid.Row="0"
+                   Content="Cambio de Sexo"
+                   BorderBrush="{ StaticResource Gray200 }"
+                   BorderThickness="0 0 0 2"
+                   Foreground="{ StaticResource Neutral400 }"
+                   HorizontalAlignment="Center"
+                   Style="{ StaticResource Headline }"/>
+            <!-- FORM -->
+            <!--#region InformaciónPersonal -->
+            <!-- APELLIDO -->
+            <Label Grid.Column="0"
+                   Grid.Row="1"
+                   Content="Apellido"
+                   HorizontalContentAlignment="Right"
+                   Margin="5 5 2.5 2.5"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Grid.Column="1"
+                     Grid.Row="1"
+                     Tag="ingresar el apellido&#x2026;"
+                     Text="{ Binding Apellido, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Margin="2.5 5 5 2.5"
+                     Style="{StaticResource TextBox }"/>
+
+            <!-- NOMBRE -->
+            <Label Grid.Column="0"
+                   Grid.Row="2"
+                   Content="Nombre"
+                   HorizontalContentAlignment="Right"
+                   Margin="5 2.5 2.5 2.5"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Grid.Column="1"
+                     Grid.Row="2"
+                     Tag="ingresar el nombre&#x2026;"
+                     Text="{ Binding Nombre, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Margin="2.5 2.5 5 2.5"
+                     Style="{StaticResource TextBox }"/>
+
+            <!-- SEXO -->
+            <Label Grid.Column="0"
+                   Grid.Row="3"
+                   Content="Sexo"
+                   HorizontalContentAlignment="Right"
+                   Margin="5 2.5 2.5 5"
+                   Style="{ StaticResource Form }"/>
+            <ComboBox Grid.Column="1"
+                      Grid.Row="3"
+                      ItemsSource="{ Binding Source={ StaticResource sexos } }"
+                      SelectedIndex="{ Binding Sexo, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                      Margin="2.5 2.5 5 5"
+                      Style="{ StaticResource ComboBoxStyle }"/>
+        </Grid>
+    </Border>
+</UserControl>
