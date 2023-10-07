@@ -1,6 +1,6 @@
 ﻿using Core.ServicioAlumnos;
-using Core.ServicioAlumnos.DTO.Request;
-using Core.ServicioAlumnos.DTO.Response;
+using Core.ServicioAlumnos.DTOs.Requests;
+using Core.ServicioAlumnos.DTOs.Responses;
 using System;
 using System.Drawing;
 using System.Windows;
@@ -12,7 +12,7 @@ namespace WPF_Desktop.ViewModels;
 
 public class PerfilAlumnoViewModel : ViewModel
 {
-    private IServicioAlumno _servicioAlumno;
+    private IServicioAlumnos _servicioAlumno;
 
     private PersonaConDetallesResponse _personaConDetalles;
     private DomicilioRequest _datosDomicilioTemporal;
@@ -32,7 +32,7 @@ public class PerfilAlumnoViewModel : ViewModel
     #endregion
 
 
-    public PerfilAlumnoViewModel(IServicioAlumno servicioAlumno, PerfilBuscadoStore perfilBuscadoStore)
+    public PerfilAlumnoViewModel(IServicioAlumnos servicioAlumno, PerfilBuscadoStore perfilBuscadoStore)
     {
         _servicioAlumno = servicioAlumno;
 

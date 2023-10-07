@@ -38,7 +38,7 @@ public partial class App : Application
         /**
          * CORE
          */
-        services.AddSingleton<IServicioAlumno, ServicioAlumno>();
+        services.AddSingleton<IServicioAlumnos, ServicioAlumnos>();
 
         /**
          * UI
@@ -65,10 +65,10 @@ public partial class App : Application
             CreateRegistrarAlumnoNavigationService(provider),
             CreateVerPerfilNavigationService(provider),
             provider.GetRequiredService<PerfilBuscadoStore>(),
-            provider.GetRequiredService<IServicioAlumno>()));
+            provider.GetRequiredService<IServicioAlumnos>()));
         
         services.AddTransient<PerfilAlumnoViewModel>(provider => new PerfilAlumnoViewModel(
-            provider.GetRequiredService<IServicioAlumno>(),
+            provider.GetRequiredService<IServicioAlumnos>(),
             provider.GetRequiredService<PerfilBuscadoStore>()));
         
         services.AddTransient<RegistrarAlumnoViewModel>();

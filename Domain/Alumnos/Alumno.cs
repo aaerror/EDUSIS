@@ -1,5 +1,6 @@
 ﻿using Domain.Personas;
 using Domain.Personas.Domicilios;
+using System.Text.RegularExpressions;
 
 namespace Domain.Alumnos;
 
@@ -10,9 +11,11 @@ public class Alumno : Persona
     public DateTime? FechaBaja { get; private set; }
 
 
-    private Alumno() : base() { }
+    private Alumno()
+        : base() { }
 
-    public Alumno(string legajo, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono) : base(informacionPersonal, domicilio, email, telefono)
+    public Alumno(string legajo, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono)
+        : base(informacionPersonal, domicilio, email, telefono)
     {
         Legajo = legajo;
         FechaAlta = DateTime.Now.Date;

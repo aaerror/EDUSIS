@@ -11,7 +11,7 @@ public class AlumnosConfiguration : IEntityTypeConfiguration<Alumno>
     {
         builder.HasBaseType<Persona>();
 
-        builder.ToTable("Alumnos");
+        builder.ToTable("alumnos");
 
         builder.Property(a => a.Legajo)
             .HasColumnName("legajo")

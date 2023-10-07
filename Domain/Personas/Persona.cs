@@ -1,9 +1,7 @@
 ﻿using Domain.Personas.Domicilios;
 using Domain.Personas.Exceptions;
 using Domain.Shared;
-using System.IO.IsolatedStorage;
 using System.Text.RegularExpressions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Domain.Personas;
 
@@ -15,11 +13,14 @@ public abstract class Persona : Entity
     public string Telefono { get; private set; }
 
 
-    protected Persona() : base() { }
+    protected Persona()
+        : base() { }
 
-    protected Persona(Guid personaId) : base(personaId) {}
+    protected Persona(Guid personaId)
+        : base(personaId) {}
 
-    public Persona(Guid personaId, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono) : this(personaId)
+    public Persona(Guid personaId, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono)
+        : this(personaId)
     {
         Id = personaId;
         InformacionPersonal = informacionPersonal;
@@ -28,7 +29,8 @@ public abstract class Persona : Entity
         CargarTelefono(telefono);
     }
 
-    public Persona(InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono) : this(Guid.NewGuid(), informacionPersonal, domicilio, email, telefono)
+    public Persona(InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono)
+        : this(Guid.NewGuid(), informacionPersonal, domicilio, email, telefono)
     {
         if (informacionPersonal is null)
         {

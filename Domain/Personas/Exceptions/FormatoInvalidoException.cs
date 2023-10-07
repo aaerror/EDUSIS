@@ -2,7 +2,7 @@
 
 public class FormatoInvalidoException : Exception
 {
-    private const string ERROR = "El formato inválido o no reconocido.";
+    private const string ERROR = "El formato es inválido o no reconocido.";
 
 
     public FormatoInvalidoException() : base() { }

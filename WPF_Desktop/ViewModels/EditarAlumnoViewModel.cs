@@ -6,9 +6,9 @@ namespace WPF_Desktop.ViewModels;
 
 public class EditarAlumnoViewModel : ViewModel
 {
-    private readonly IServicioAlumno _servicioAlumno;
+    private readonly IServicioAlumnos _servicioAlumno;
 
-    public EditarAlumnoViewModel(IServicioAlumno servicioAlumno)
+    public EditarAlumnoViewModel(IServicioAlumnos servicioAlumno)
     {
         _servicioAlumno = servicioAlumno;
     }

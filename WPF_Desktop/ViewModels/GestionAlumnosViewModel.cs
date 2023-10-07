@@ -1,5 +1,5 @@
 ﻿using Core.ServicioAlumnos;
-using Core.ServicioAlumnos.DTO.Response;
+using Core.ServicioAlumnos.DTOs.Responses;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace WPF_Desktop.ViewModels;
 
 public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private IServicioAlumno _servicioAlumno;
+    private IServicioAlumnos _servicioAlumno;
     private INavigationService _registrarAlumnoNavigationService;
     private INavigationService _verPerfilNavigationService;
     private Dictionary<string, List<string>> _errorsByProperty;
@@ -39,7 +39,7 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
     public GestionAlumnosViewModel(INavigationService registrarNavigationService,
                                    INavigationService verPerfilNavigationService,
                                    PerfilBuscadoStore perfilBuscadoStore,
-                                   IServicioAlumno servicioAlumno)
+                                   IServicioAlumnos servicioAlumno)
     {
         _errorsByProperty = new Dictionary<string, List<string>>();
         _servicioAlumno = servicioAlumno;

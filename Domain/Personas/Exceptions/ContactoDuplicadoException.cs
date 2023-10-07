@@ -6,6 +6,8 @@ public class ContactoDuplicadoException : Exception
 
 
     public ContactoDuplicadoException() : base() { }
-    public ContactoDuplicadoException(string mensaje) : base(string.Format($"{ERROR}\n{mensaje}")) { }
-    public ContactoDuplicadoException(string mensaje, Exception exception) : base(string.Format($"{ERROR}\n{mensaje}"), exception) { }
+    public ContactoDuplicadoException(string parametro)
+        : base(string.Format($"{ ERROR }. Parámetro: { parametro }")) { }
+    public ContactoDuplicadoException(string parametro, Exception exception)
+        : base(string.Format($"{ ERROR }. Parámetro: { parametro }"), exception) { }
 }

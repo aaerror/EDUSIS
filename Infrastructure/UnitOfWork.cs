@@ -1,4 +1,5 @@
 ﻿using Domain.Alumnos;
+using Domain.Cursos;
 using Infrastructure.Shared;
 
 namespace Infrastructure;
@@ -7,11 +8,12 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly EdusisDBContext _context = new EdusisDBContext();
     public IAlumnoRepository Alumnos { get; private set; }
-
+    public ICursoRepository Cursos { get; private set; }
 
     public UnitOfWork()
     {
         Alumnos = new AlumnoRepository(_context);
+        Cursos = new CursoRepository(_context);
     }
 
     public void Dispose()

@@ -1,6 +1,6 @@
 ﻿using Core.ServicioAlumnos;
-using Core.ServicioAlumnos.DTO;
-using Core.ServicioAlumnos.DTO.Request;
+using Core.ServicioAlumnos.DTOs;
+using Core.ServicioAlumnos.DTOs.Requests;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections;
@@ -17,7 +17,7 @@ namespace WPF_Desktop.ViewModels;
 
 public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private readonly IServicioAlumno _servicioAlumno;
+    private readonly IServicioAlumnos _servicioAlumno;
 
     private Dictionary<string, List<string>> _errorsByProperty;
     private string _apellido = string.Empty;
@@ -42,7 +42,7 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
 
-    public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumno)
+    public RegistrarAlumnoViewModel(IServicioAlumnos servicioAlumno)
     {
         _servicioAlumno = servicioAlumno;
         _errorsByProperty = new Dictionary<string, List<string>>();
