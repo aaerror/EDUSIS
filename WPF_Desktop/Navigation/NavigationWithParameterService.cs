@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 

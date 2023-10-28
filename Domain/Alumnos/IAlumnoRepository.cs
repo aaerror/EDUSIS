@@ -1,5 +1,4 @@
 ﻿using Domain.Personas;
-using Domain.Shared;
 
 namespace Domain.Alumnos;
 

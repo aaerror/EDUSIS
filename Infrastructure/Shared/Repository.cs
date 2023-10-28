@@ -16,13 +16,13 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
 
     public void Agregar(TEntity entity) => Context.Add<TEntity>(entity);
 
-    public TEntity BuscarPorID(Guid id) => Context.Set<TEntity>().Find(id);
+    public virtual TEntity BuscarPorID(Guid id) => Context.Set<TEntity>().Find(id);
 
     public IEnumerable<TEntity> BuscarTodos() => Context.Set<TEntity>().ToList();
 
     public IEnumerable<TEntity> Buscar(Expression<Func<TEntity, bool>> predicate) => Context.Set<TEntity>().Where(predicate).ToList();
 
-    public void ActualizarDatos(TEntity entity) => Context.Update<TEntity>(entity);
+    public virtual void ActualizarDatos(TEntity entity) => Context.Update<TEntity>(entity);
 
     public void BorrarDatos(Guid id)
     {

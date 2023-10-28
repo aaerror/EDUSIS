@@ -117,7 +117,8 @@
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="FontWeight" Value="Regular"/>
         <Setter Property="IsEditable" Value="False"/>
-        <Setter Property="Height" Value="32"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="MaxHeight" Value="44"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
@@ -183,7 +184,7 @@
                                         </ScrollViewer>
                                     </Border>
                                 </Grid>
-                                
+
                             </Popup>
                             <!-- TOGGLE_BUTTON -->
                             <ToggleButton x:Name="ToggleButton"

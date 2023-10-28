@@ -27,26 +27,21 @@ public class CursosConfigurations : IEntityTypeConfiguration<Curso>
                .HasName("PK_CURSOS");
 
         builder.Property(x => x.Id)
-               .ValueGeneratedNever()
-               .HasColumnName("curso_id");
+               .HasColumnName("curso_id")
+               .ValueGeneratedNever();
 
         builder.Property(x => x.Descripcion)
                .HasColumnName("descripcion")
-               .HasColumnType("char(1)")
-               .IsRequired();
+               .HasColumnType("varchar(15)");
 
-        builder.Property(x => x.Formacion)
-               .HasColumnName("formacion")
+        builder.Property(x => x.NivelEducativo)
+               .HasColumnName("nivel_educativo")
                .HasColumnType("varchar(15)")
-               .HasConversion(formacion => formacion.ToString(), value => (Formacion) Enum.Parse(typeof(Formacion), value));
+               .HasConversion(nivelEducativo => nivelEducativo.ToString(), value => (NivelEducativo) Enum.Parse(typeof(NivelEducativo), value));
 
-        // FK_CURSOS_DIVISIONES
-        /*
-        builder.HasMany(x => x.Divisiones)
-               .WithOne()
-               .HasForeignKey("curso_id")
-               .HasConstraintName("FK_CURSOS_DIVISIONES");
-        */
+        builder.Ignore(x => x.CantidadDivisiones);
+        builder.Ignore(x => x.CantidadMaterias);
+        builder.Ignore(x => x.CantidadAlumnos);
 
         builder.Metadata.FindNavigation(nameof(Curso.Materias))
                         .SetPropertyAccessMode(PropertyAccessMode.Field);
@@ -67,7 +62,8 @@ public class CursosConfigurations : IEntityTypeConfiguration<Curso>
                            .HasConstraintName("FK_CURSOS_MATERIAS");
 
             materiasBuilder.Property(x => x.Id)
-                           .HasColumnName("materia_id");
+                           .HasColumnName("materia_id")
+                           .ValueGeneratedNever();
 
             // PK_MATERIAS
             materiasBuilder.HasKey("curso_id", "Id")
@@ -117,6 +113,13 @@ public class CursosConfigurations : IEntityTypeConfiguration<Curso>
                                        .HasColumnName("cargo")
                                        .HasColumnType("varchar(10)")
                                        .HasConversion(cargo => cargo.ToString(), value => (Cargo) Enum.Parse(typeof(Cargo), value));
+
+                situacionRevistaBuilder.Property(x => x.FechaAlta)
+                                       .HasColumnName("fecha_alta");
+
+                situacionRevistaBuilder.Property(x => x.FechaBaja)
+                                       .HasColumnName("fecha_baja")
+                                       .IsRequired(false);
             });
 
             // HORARIOS

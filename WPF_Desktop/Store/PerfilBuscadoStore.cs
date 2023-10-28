@@ -6,6 +6,9 @@ public class PerfilBuscadoStore
 {
     private string _documento;
 
+    public event Action PerfilStoreChanged;
+
+
     public string Documento
     {
         get
@@ -19,7 +22,4 @@ public class PerfilBuscadoStore
             PerfilStoreChanged?.Invoke();
         }
     }
-
-
-    public event Action PerfilStoreChanged;
 }

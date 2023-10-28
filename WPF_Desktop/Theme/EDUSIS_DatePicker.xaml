@@ -32,7 +32,8 @@
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="FontWeight" Value="Regular"/>
-        <Setter Property="Height" Value="32"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="MaxHeight" Value="44"/>
         <Setter Property="IsTodayHighlighted" Value="True"/>
         <Setter Property="SelectedDateFormat" Value="Long"/>
         <Setter Property="Template">
@@ -45,7 +46,7 @@
                             BorderThickness="1.5"
                             CornerRadius="4"
                             HorizontalAlignment="Stretch"
-                            VerticalAlignment="Center"
+                            VerticalAlignment="Stretch"
                             Padding="5">
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">

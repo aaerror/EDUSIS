@@ -1,7 +1,4 @@
-﻿using WPF_Desktop.Shared;
-
-namespace WPF_Desktop.Navigation;
-
+﻿namespace WPF_Desktop.Navigation;
 
 public interface INavigationService
 {

@@ -1,0 +1,78 @@
+﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.HorarioView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos"
+             xmlns:domainCursos="clr-namespace:Domain.Cursos.Materias;assembly=Domain"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <UserControl.Resources>
+        <!-- CONVERTER -->
+        <BooleanToVisibilityConverter x:Key="Converter"/>
+        <!-- DÍAS DE LA SEMANA -->
+        <ObjectDataProvider x:Key="dias" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainCursos:Dia"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <!-- TURNOS -->
+        <ObjectDataProvider x:Key="turnos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainCursos:Turno"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+    <Border Background="Transparent">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Column="0"
+                        Grid.Row="0"
+                        Margin="0 0 5 0">
+                <Label Content="Dia de Semana"
+                       Style="{ StaticResource Form }"/>
+                <ComboBox ItemsSource="{ Binding Source={ StaticResource dias } }"
+                          SelectedItem="{ Binding Path=DiaSemana, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                          IsEnabled="{ Binding Path=EditarHorario, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                          Style="{ StaticResource ComboBoxStyle }">
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Grid.Column="1"
+                        Grid.Row="0"
+                        Margin="5 0 0 0">
+                <Label Content="Turno"
+                       Style="{ StaticResource Form }"/>
+                <ComboBox ItemsSource="{ Binding Source={ StaticResource turnos } }"
+                          SelectedItem="{ Binding Path=Turno, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                          IsEnabled="{ Binding Path=EditarHorario, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                          Style="{ StaticResource ComboBoxStyle }">
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Grid.Column="0"
+                        Grid.Row="1"
+                        Margin="0 0 5 0">
+                <Label Content="Hora Inicio"
+                       Style="{ StaticResource Form }"/>
+                <TextBox Text="{ Binding Path=HoraInicio, FallbackValue='Hora de inicio sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                         IsEnabled="{ Binding Path=EditarHorario, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                         Style="{ StaticResource TextBox }"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1"
+                        Grid.Row="1"
+                        Margin="5 0 0 0">
+                <Label Content="Hora Fin"
+                       Style="{ StaticResource Form }"/>
+                <TextBox Text="{ Binding Path=HoraFin, Mode=TwoWay, FallbackValue='Hora de finalización sin especificar', UpdateSourceTrigger=PropertyChanged }"
+                         IsEnabled="{ Binding Path=EditarHorario, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                         Style="{ StaticResource TextBox}"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

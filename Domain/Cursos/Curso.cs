@@ -1,47 +1,172 @@
 ﻿using Domain.Cursos.Divisiones;
 using Domain.Cursos.Materias;
-using Domain.Docentes;
 using Domain.Shared;
+using System.Text.RegularExpressions;
 
 namespace Domain.Cursos;
 
 public class Curso : Entity
 {
-    private List<Materia> _materias;
-    private List<Division> _divisiones;
+    private List<Materia> _materias = new();
+    private List<Division> _divisiones = new();
 
     // Educación Primaria - Educación Secundaria
-    public Formacion Formacion { get; }
-    public char Descripcion { get; private set; }
+    public NivelEducativo NivelEducativo { get; }
+    public string Descripcion { get; private set; } = string.Empty;
+    public int CantidadDivisiones => _divisiones.Count;
+    public int CantidadMaterias => _materias.Count;
+    public int CantidadAlumnos => _divisiones.Sum(x => x.TotalAlumnos);
     public IReadOnlyCollection<Materia> Materias => _materias.AsReadOnly();
     public IReadOnlyCollection<Division> Divisiones => _divisiones.AsReadOnly();
 
 
     protected Curso()
-        : base() {}
+        : base() { }
 
     protected Curso(Guid cursoId)
-        : base(cursoId) {}
+        : base(cursoId) { }
 
-    public Curso(Guid cursoId, char descripcion, Formacion formacion)
+    public Curso(Guid cursoId, string descripcion, NivelEducativo nivelEducativo)
         : this(cursoId)
     {
-        if (!char.IsNumber(descripcion))
+        if (string.IsNullOrWhiteSpace(descripcion))
+        {
+            throw new ArgumentNullException("Datos incompletos del nombre del curso.", nameof(descripcion));
+        }
+
+        if (!Regex.IsMatch(descripcion.Trim(), @"^(\d){1}$", RegexOptions.None))
         {
             throw new ArgumentException("El año/grado debe ser un número.", nameof(descripcion));
         }
 
-        if (int.Parse(descripcion.ToString()) > 7)
+        if (int.Parse(descripcion) > 7)
         {
             throw new ArgumentException("El curso máximo en educación es septimo ya sea en educación primaria o secundaria.", nameof(descripcion));
         }
 
-        Formacion = formacion;
+        Descripcion = descripcion;
+        NivelEducativo = nivelEducativo;
         _materias = new List<Materia>();
     }
 
-    public Curso(char descripcion, Formacion formacion)
-        : this(new Guid(), descripcion, formacion) { }
+    public Curso(string descripcion, NivelEducativo nivelEducativo)
+        : this(Guid.NewGuid(), descripcion, nivelEducativo) { }
+
+    #region Materias
+    private Materia BuscarMateria(Guid unaMateria)
+    {
+        if (Guid.Empty.Equals(unaMateria))
+        {
+            throw new ArgumentNullException(nameof(unaMateria), "Debe proporcionar datos de la materia para realizar la búsqueda.");
+        }
+
+        var materia = _materias.Find(x => x.Id.Equals(unaMateria));
+        if (materia is null)
+        {
+            throw new ArgumentException("La materia que esta buscando no se encuentra en este curso.", nameof(unaMateria));
+        }
+
+        return materia;
+    }
+
+    private bool MateriasConHorasCatedrasSinAsignar() => _materias.Any(x => x.ExistenHorasCatedraSinAsignar());
+
+    public void AgregarMateria(string descripcion, int horasCatedra)
+    {
+        var materia = _materias.Find(x => x.Descripcion == descripcion);
+        if (materia is not null)
+        {
+            throw new ArgumentException($"La materia { materia.Descripcion } ya se encuentra registrada con { materia.HorasCatedra } horas cátedra.", nameof(descripcion));
+        }
+
+        _materias.Add(new Materia(descripcion, horasCatedra));
+    }
+
+    public void ActualizarMateria(Guid unaMateria, string descripcion, int horasCatedra)
+    {
+        var materia = BuscarMateria(unaMateria);
+
+        materia.ActualizarNombre(descripcion);
+        materia.ActualizarCargaHoraria(horasCatedra);
+    }
+
+    public void QuitarMateria(Guid aEliminar)
+    {
+        if (Guid.Empty.Equals(aEliminar))
+        {
+            throw new ArgumentNullException(nameof(aEliminar), "Se debe especificar que materia desea eliminar.");
+        }
+
+        var materia = _materias.Find(x => x.Id.Equals(aEliminar));
+        if (materia is null)
+        {
+            throw new ArgumentException($"La materia no se encuentra registrada en el curso { Descripcion } año ({ NivelEducativo })", nameof(aEliminar));
+        }
+
+        _materias.Remove(materia);
+    }
+
+    public void AgregarHorarioAMateria(Guid materiaId, Horario unHorario)
+    {
+        var horarioDisponible = !_materias.Any(x => x.HorarioOcupado(unHorario));
+
+        if (!horarioDisponible)
+        {
+            throw new ArgumentException("El horario que desea asignar a la materia se encuentra ocupado.", nameof(unHorario));
+        }
+
+        Materia materiaBuscada = BuscarMateria(materiaId);
+        materiaBuscada.AgregarHorario(unHorario);
+    }
+
+    public void ModificarHorarioDeMateria(Guid materiaId, Horario antiguo, Horario nuevo)
+    {
+        Materia materia = BuscarMateria(materiaId);
+        materia.CambiarHorario(antiguo, nuevo);
+    }
+
+    public IReadOnlyCollection<Materia> ListaMateriasConHorasCatedrasSinAsignar()
+    {
+        if (!MateriasConHorasCatedrasSinAsignar())
+        {
+            throw new ArgumentException("No existen materias con horas cátedras sin asignar.");
+        }
+
+        return _materias.FindAll(x => x.ExistenHorasCatedraSinAsignar())
+                        .ToList()
+                        .AsReadOnly();
+    }
+
+    public IReadOnlyCollection<Materia> MateriasConCargoVacante()
+    {
+        return _materias.FindAll(x => !x.ExisteProfesorEnFunciones())
+                        .AsReadOnly();
+    }
+
+    public void AgregarProfesorEnMateria(Guid unaMateria, Guid unProfesor, Cargo unCargo, DateTime fechaAlta)
+    {
+        Materia materia = BuscarMateria(unaMateria);
+        materia.AsignarCargoDelProfesor(unProfesor, unCargo, fechaAlta);
+    }
+
+    public void CambiarSituacionDeRevista(Guid unaMateria, Guid unProfesor, Cargo unCargo, DateTime fechaAlta, DateTime fechaBaja)
+    {
+        Materia materia = BuscarMateria(unaMateria);
+        materia.CambiarCargoDelProfesor(unProfesor, unCargo, fechaAlta, fechaBaja);
+    }
+
+    public void EliminarProfesorDelCargo(Guid unaMateria, Guid unProfesor, DateTime fechaBaja)
+    {
+        Materia materia = BuscarMateria(unaMateria);
+        materia.QuitarProfesorDelCargo(unProfesor, fechaBaja);
+    }
+
+    public void EstablecerEnFuncionesAlProfesor(Guid unaMateria, Guid unProfesor)
+    {
+        Materia materia = BuscarMateria(unaMateria);
+        materia.EstablecerProfesorEnFunciones(unProfesor);
+    }
+    #endregion
 
     #region Division
     private bool ExisteDivision(Guid unaDivision)
@@ -54,11 +179,49 @@ public class Curso : Entity
         return _divisiones.Any(x => x.Equals(unaDivision));
     }
 
+    private Division BuscarDivision(Guid unaDivision)
+    {
+        if (!ExisteDivision(unaDivision))
+        {
+            throw new ArgumentException("La división a la que desea agregar el preceptor no pertenece a este curso.", nameof(unaDivision));
+        }
+
+        return _divisiones.Find(x => x.Id.Equals(unaDivision));
+    }
+
+    public void AgregarDivision()
+    {
+        string divisionSiguiente = string.Empty;
+        var division = _divisiones.Select(x => x.Descripcion).OrderDescending().FirstOrDefault();
+        if (division is null)
+        {
+            divisionSiguiente = "A";
+        }
+        else
+        {
+            divisionSiguiente = char.ConvertFromUtf32(char.Parse(division) + 1);
+        }
+
+        _divisiones.Add(new Division(divisionSiguiente));
+    }
+
+    public void QuitarDivision(Guid aEliminar)
+    {
+        var division = _divisiones.Find(x => x.Id.Equals(aEliminar));
+
+        if (division is null)
+        {
+            throw new ArgumentException("La división que desea eliminar no pertenece a este curso.", nameof(aEliminar));
+        }
+
+        _divisiones.Remove(division);
+    }
+
     public IReadOnlyCollection<Guid> ListadoDefinitivoDeAlumnos(Guid unaDivision)
     {
         if (!ExisteDivision(unaDivision))
         {
-            throw new ArgumentException($"No se encuentra la división en el curso { Descripcion }", nameof(unaDivision));
+            throw new ArgumentException($"No se encuentra la división en el curso {Descripcion}", nameof(unaDivision));
         }
 
         return _divisiones.Find(x => x.Equals(unaDivision)).ListadoAlumnoCicloLectivoEnCurso();
@@ -73,148 +236,53 @@ public class Curso : Entity
 
         return _divisiones.Find(x => x.Equals(unaDivision)).ListadoAlumnoSegunCicloLectivo(periodo);
     }
+    #endregion
 
-    public void AgregarDivisionAlCurso(char descripcion)
+    #region Preceptor
+    public void AsignarPreceptor(Guid unaDivision, Guid unPreceptor)
     {
-        _divisiones.Add(new Division(descripcion));
+        Division division = BuscarDivision(unaDivision);
+        division.OcuparCargoPreceptor(unPreceptor);
     }
 
-    public void QuitarDivisionDelCurso(Guid aEliminar)
+    public void QuitarPreceptor(Guid unaDivision)
     {
-        var division = _divisiones.Find(x => x.Id.Equals(aEliminar));
-
-        if (division is null)
-        {
-            throw new ArgumentException("La división que desea eliminar no pertenece a este curso.", nameof(aEliminar));
-        }
-
-        _divisiones.Remove(division);
+        Division division = BuscarDivision(unaDivision);
+        division.DesocuparCargoPreceptor();
     }
     #endregion
 
-    #region Materias
-    private Materia BuscarMateria(Guid materiaId)
-    {
-        if (Guid.Empty.Equals(materiaId))
-        {
-            throw new ArgumentNullException(nameof(materiaId), "Debe proporcionar datos de la materia para realizar la búsqueda.");
-        }
-
-        var materia = _materias.Find(x => x.Id.Equals(materiaId));
-        if (materia is null)
-        {
-            throw new ArgumentException("La materia que esta buscando no se encuentra en este curso.", nameof(materiaId));
-        }
-
-        return materia;
-    }
-
-    public void AgregarMateria(string descripcion, int horasCatedra)
-    {
-        _materias.Add(new Materia(descripcion, horasCatedra));
-    }
-
-    public void AsignarHorarioAMateria(Guid materiaId, Horario unHorario)
-    {
-        var horarioDisponible = !_materias.Any(x => x.HorarioOcupado(unHorario));
-
-        if (!horarioDisponible)
-        {
-            throw new ArgumentException("El horario que desea asignar a la materia se encuentra ocupado.", nameof(unHorario));
-        }
-
-        Materia materiaBuscada = BuscarMateria(materiaId);
-        materiaBuscada.AsignarHorario(unHorario);
-    }
-
-    public void ModificarHorarioDeMateria(Guid materiaId, Horario antiguo, Horario nuevo)
-    {
-        Materia materia = BuscarMateria(materiaId);
-        materia.CambiarHorario(antiguo, nuevo);
-    }
-
-    public bool ExistenMateriasConHorasCatedrasSinAsignar() => _materias.Any(x => x.ExistenHorasCatedrasSinAsignar());
-
-    public IReadOnlyCollection<Guid> MateriasConHorasCatedrasSinAsignar()
-    {
-        if (!ExistenMateriasConHorasCatedrasSinAsignar())
-        {
-            throw new ArgumentException("No existen materias con horas cátedras sin asignar.");
-        }
-
-        return _materias.FindAll(x => x.ExistenHorasCatedrasSinAsignar())
-                        .Select(x => x.Id)
-                        .ToList()
-                        .AsReadOnly();
-    }
-
-    public IReadOnlyCollection<Guid> MateriasConCargoVacante()
-    {
-        return _materias.FindAll(x => !x.ExisteProfesorEnFunciones())
-                        .Select(x => x.Id)
-                        .ToList()
-                        .AsReadOnly();
-    }
-
-    public void AsignarProfesorAMateria(Guid materiaId, Guid profesor, Cargo unCargo)
-    {
-        Materia materia = BuscarMateria(materiaId);
-        materia.AgregarProfesorEnCargo(profesor, unCargo);
-    }
-
-    public void CambiarSituacionRevista(Guid materiaId, Guid profesor, Cargo unCargo)
-    {
-        Materia materia = BuscarMateria(materiaId);
-        materia.CambiarSituacionRevista(profesor, unCargo);
-    }
-
-    public void EliminarProfesorDelCargo(Guid materiaId, Guid profesor)
-    {
-        Materia materia = BuscarMateria(materiaId);
-        materia.EliminarProfesorDelCargo(profesor);
-    }
-
-    public void EstablecerEnFuncionesAlProfesor(Guid materiaId, Guid profesor)
-    {
-        Materia materia = BuscarMateria(materiaId);
-        materia.EstablecerEnFunciones(profesor);
-    }
-    #endregion
-
-    /*
     #region Alumnos
-    public void AgregarAlumnoADivision(Guid divisionId, Guid alumnoId)
+    public bool ExisteAlumno(Guid unaDivision)
     {
-        var alumnoInscripto = _divisiones.Exists(x => x.ExisteAlumno(alumnoId));
-        if (alumnoInscripto)
+        if (Guid.Empty.Equals(unaDivision))
         {
-            throw new ArgumentException("El alumno ya se encuentra inscripto en otra división.", nameof(alumnoId));
+            throw new NullReferenceException($"Datos de la división incompletos o inexistentes. División: { unaDivision }");
         }
 
-        var division = _divisiones.Find(x => x.Id == curosId);
-        division.AgregarAlumno(alumnoId);
+        return _divisiones.Exists(x => x.Id.Equals(unaDivision));
     }
-    
-    public void CambiarAlumnoDeDivision(Guid division, Guid alumnoId)
+
+    public void AgregarAlumnoAlListadoDefinitivo(Guid unaDivision, Guid unAlumno, string unPeriodo)
     {
-        var divisionAntigua = _divisiones.Find(x => x.ExisteAlumno(alumnoId));
-        if (divisionAntigua is null)
+        if (ExisteDivision(unaDivision))
         {
-            throw new ArgumentNullException(nameof(alumnoId), $"No se encontró el alumno en el curso { Descripcion }.");
+            throw new ArgumentException("La división del curso a la que desea agregar este alumno no existe.", nameof(unaDivision));
         }
 
-        divisionAntigua.QuitarAlumno(alumnoId);
-
-        var nuevaDivision = _divisiones.Find(x => x.Id == division);
-        nuevaDivision.AgregarAlumno(alumnoId);
+        var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
+        division.AgregarCursante(unAlumno, unPeriodo);
     }
-    */
 
-    /* public void QuitarAlumnoDeDivision(Guid curosId, Guid alumnoId)
-     {
-         var division = _divisiones.Find(x => x.Id == curosId);
-         division.QuitarAlumno(alumnoId);
-     }
+    public void QuitarAlumnoDelListadoDefinitivoActual(Guid unaDivision, Guid unAlumno)
+    {
+        if (ExisteDivision(unaDivision))
+        {
+            throw new ArgumentException("La división del curso a la que desea agregar este alumno no existe.", nameof(unaDivision));
+        }
 
-         #endregion*/
+        var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
+        division.QuitarCursanteEnCurso(unAlumno);
+    }
+    #endregion
 }

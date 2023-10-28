@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ServicioCursos\DTOs\Responses\" />
+    <Folder Include="ServicioProfesores\DTOs\Requests\" />
+    <Folder Include="ServicioProfesores\Exceptions\" />
   </ItemGroup>
 </Project>

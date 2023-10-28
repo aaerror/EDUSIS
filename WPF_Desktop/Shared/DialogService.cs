@@ -7,8 +7,8 @@ public class DialogService : IDialogService
 
     public void OpenDialogService()
     {
-        var windows = new EditarAlumnoView();
+        /*var windows = new EditarAlumnoView();
         windows.Owner = App.Current.MainWindow;
-        windows.ShowDialog();
+        windows.ShowDialog();*/
     }
 }

@@ -20,7 +20,7 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
 
         builder.Property(x => x.Descripcion)
                .HasColumnName("descripicion")
-               .HasColumnType("char(1)")
+               .HasColumnType("varchar(15)")
                .IsRequired();
 
         // PK_DIVISIONES
@@ -35,7 +35,8 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
         builder.HasOne<Preceptor>()
                .WithOne()
                .HasForeignKey<Division>(x => x.Preceptor)
-               .HasConstraintName("FK_PRECEPTORES_DIVISIONES");
+               .HasConstraintName("FK_PRECEPTORES_DIVISIONES")
+               .IsRequired(false);
 
         builder.Property(x => x.Preceptor)
                .HasColumnName("preceptor_id");

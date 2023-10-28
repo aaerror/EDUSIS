@@ -34,7 +34,7 @@ public class ServicioAlumnos : IServicio, IServicioAlumnos
         Alumno alumno = _unitOfWork.Alumnos.Buscar(x => x.InformacionPersonal.Documento == documento).FirstOrDefault();
         if (alumno is null)
         {
-            throw new NullReferenceException($"No se encontró el alumno con el DNI { documento }");
+            throw new NullReferenceException($"No se encontró el alumno con el D.N.I. { documento }");
         }
 
         return new PersonaResponse(alumno.Id,

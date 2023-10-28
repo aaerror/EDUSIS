@@ -22,6 +22,7 @@ public class Horario : ValueObject
             throw new FinDeSemanaException(nameof(diaSemana));
         }
 
+        DiaSemana = diaSemana;
         Turno = turno;
         EstablecerLimitesHorario();
         if (horaInicio < _limiteHorarioInicio || horaInicio > _limiteHorarioFin)
@@ -39,6 +40,7 @@ public class Horario : ValueObject
             throw new ArgumentException($"La duración de la hora cátedra no puede ser menor a 30 minutos.", nameof(duracionHoraCatedra));
         }
 
+        HoraInicio = horaInicio;
         HoraFin = HoraInicio.AddMinutes(40);
     }
 

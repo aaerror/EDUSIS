@@ -30,13 +30,14 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasColumnType("char(1)")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(15)")
                         .HasColumnName("descripcion");
 
-                    b.Property<string>("Formacion")
+                    b.Property<string>("NivelEducativo")
                         .IsRequired()
                         .HasColumnType("varchar(15)")
-                        .HasColumnName("formacion");
+                        .HasColumnName("nivel_educativo");
 
                     b.HasKey("Id")
                         .HasName("PK_CURSOS");
@@ -109,10 +110,11 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasColumnType("char(1)")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(15)")
                         .HasColumnName("descripicion");
 
-                    b.Property<Guid>("Preceptor")
+                    b.Property<Guid?>("Preceptor")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("preceptor_id");
 
@@ -120,7 +122,8 @@ namespace Infrastructure.Migrations
                         .HasName("PK_DIVISIONES");
 
                     b.HasIndex("Preceptor")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[preceptor_id] IS NOT NULL");
 
                     b.ToTable("divisiones", (string)null);
                 });
@@ -226,7 +229,6 @@ namespace Infrastructure.Migrations
                                 .HasColumnType("uniqueidentifier");
 
                             b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("uniqueidentifier")
                                 .HasColumnName("materia_id");
 
@@ -310,6 +312,14 @@ namespace Infrastructure.Migrations
                                         .HasColumnType("varchar(10)")
                                         .HasColumnName("cargo");
 
+                                    b2.Property<DateTime>("FechaAlta")
+                                        .HasColumnType("datetime2")
+                                        .HasColumnName("fecha_alta");
+
+                                    b2.Property<DateTime?>("FechaBaja")
+                                        .HasColumnType("datetime2")
+                                        .HasColumnName("fecha_baja");
+
                                     b2.Property<Guid>("ProfesorId")
                                         .HasColumnType("uniqueidentifier")
                                         .HasColumnName("profesor_id");
@@ -371,8 +381,6 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Docentes.Preceptor", null)
                         .WithOne()
                         .HasForeignKey("Domain.Cursos.Divisiones.Division", "Preceptor")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
                         .HasConstraintName("FK_PRECEPTORES_DIVISIONES");
 
                     b.HasOne("Domain.Cursos.Curso", null)

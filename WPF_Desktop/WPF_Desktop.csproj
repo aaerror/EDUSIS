@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
+
   <ItemGroup>
     <None Remove="bell-ring-icon.png" />
   </ItemGroup>
@@ -13,11 +14,13 @@
     <PackageReference Include="FontAwesome.Sharp" Version="6.3.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
   </ItemGroup>
+	
   <ItemGroup>
     <ProjectReference Include="..\Application\Core.csproj" />
     <ProjectReference Include="..\Domain\Domain.csproj" />
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
+	
   <ItemGroup>
     <Resource Include="bell-ring-icon.png" />
   </ItemGroup>
