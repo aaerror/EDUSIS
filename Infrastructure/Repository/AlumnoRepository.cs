@@ -11,5 +11,5 @@ public class AlumnoRepository : Repository<Alumno>, IAlumnoRepository
     public AlumnoRepository(EdusisDBContext context)
         : base(context) { }
 
-    public bool EsDocumentoValido(string documento) => !_context.Alumnos.Any(x => x.InformacionPersonal.Documento == documento);
+    public bool EsDocumentoInvalido(string documento) => !_context.Alumnos.Any(x => x.InformacionPersonal.Documento == documento);
 }

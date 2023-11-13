@@ -17,7 +17,7 @@ public class ServicioCursos : IServicioCursos
         _unityOfWork = unitOfWork;
     }
 
-    private Curso BuscarCurso(Guid unCurso)
+    private Curso BuscarCursoPorID(Guid unCurso)
     {
         if (Guid.Empty.Equals(unCurso))
         {
@@ -78,7 +78,7 @@ public class ServicioCursos : IServicioCursos
         }
         catch (Exception ex)
         {
-            throw ex;
+            throw ex.InnerException;
         }
     }
 
@@ -87,7 +87,7 @@ public class ServicioCursos : IServicioCursos
     {
         try
         {
-            Curso curso = BuscarCurso(unCurso);
+            Curso curso = BuscarCursoPorID(unCurso);
             curso.AgregarDivision();
 
             _unityOfWork.Cursos.ActualizarDatos(curso);
@@ -105,7 +105,7 @@ public class ServicioCursos : IServicioCursos
     {
         try
         {
-            Curso curso = BuscarCurso(unCurso);
+            Curso curso = BuscarCursoPorID(unCurso);
 
             curso.QuitarDivision(unaDivision);
 
@@ -119,14 +119,14 @@ public class ServicioCursos : IServicioCursos
     }
     #endregion
 
-    #region Materia
+    #region Materias
     public IReadOnlyCollection<MateriaResponse> BuscarMaterias(Guid unCurso)
     {
         List<MateriaResponse> materias = new List<MateriaResponse>();
 
         try
         {
-            Curso curso = BuscarCurso(unCurso);
+            Curso curso = BuscarCursoPorID(unCurso);
 
             return curso.Materias.Select(x =>
                 new MateriaResponse(unCurso,
@@ -134,18 +134,19 @@ public class ServicioCursos : IServicioCursos
                                     x.Descripcion,
                                     x.HorasCatedra,
                                     x.Profesor,
-                                    x.Profesores.Select(st =>
-                                        new SituacionRevistaProfesorResponse(st.ProfesorId,
-                                                                             _unityOfWork.Profesores.BuscarPorID(st.ProfesorId).InformacionPersonal.NombreCompleto(),
-                                                                             st.Cargo.ToString()))
-                                                .ToList(),
-                                    x.Horarios.Select(h =>
-                                        new HorarioResponse(h.Turno.ToString(),
-                                                            h.DiaSemana.ToString(),
-                                                            h.HoraInicio.ToString(),
-                                                            h.HoraFin.ToString()))
-                                              .ToList()))
-                                 .ToList();
+                                    x.Profesores.Where(x => x.EnFunciones)
+                                                .Select(p => _unityOfWork.Docentes.BuscarPorID(p.ProfesorId).InformacionPersonal.NombreCompleto()).FirstOrDefault(),
+                                    x.Profesores.Select(st => new SituacionRevistaResponse(st.ProfesorId,
+                                                                                                   _unityOfWork.Docentes.BuscarPorID(st.ProfesorId).InformacionPersonal.NombreCompleto(),
+                                                                                                   (int) st.Cargo,
+                                                                                                   st.Cargo.ToString(),
+                                                                                                   st.FechaAlta,
+                                                                                                   st.FechaBaja,
+                                                                                                   st.EnFunciones)).ToList(),
+                                    x.Horarios.Select(h => new HorarioResponse(h.Turno.ToString(),
+                                                                               h.DiaSemana.ToString(),
+                                                                               h.HoraInicio.ToString(),
+                                                                               h.HoraFin.ToString())).ToList())).ToList();
         }
         catch (Exception ex)
         {
@@ -157,7 +158,7 @@ public class ServicioCursos : IServicioCursos
     {
         try
         {
-            Curso curso = BuscarCurso(unCurso);
+            Curso curso = BuscarCursoPorID(unCurso);
 
             curso.AgregarMateria(request.Descripcion, request.HorasCatedra);
 
@@ -174,7 +175,7 @@ public class ServicioCursos : IServicioCursos
     {
         try
         {
-            Curso curso = BuscarCurso(request.Curso);
+            Curso curso = BuscarCursoPorID(request.Curso);
 
             curso.ActualizarMateria(request.Materia, request.Descripcion, request.HorasCatedra);
 
@@ -187,11 +188,30 @@ public class ServicioCursos : IServicioCursos
         }
     }
 
+    public void QuitarMateriaDelCurso(EliminarMateriaRequest request)
+    {
+        try
+        {
+            Curso curso = BuscarCursoPorID(request.Curso);
+
+            curso.QuitarMateria(request.Materia);
+
+            _unityOfWork.Cursos.ActualizarDatos(curso);
+            _unityOfWork.GuardarCambios();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+    #endregion
+
+    #region Horarios
     public void AsignarHorarioAMateriaDelCurso(CrearHorarioRequest request)
     {
         try
         {
-            Curso curso = BuscarCurso(request.Curso);
+            Curso curso = BuscarCursoPorID(request.Curso);
             var turno = (Turno) request.Turno;
             var dia = (Dia) request.DiaSemana;
 
@@ -208,14 +228,43 @@ public class ServicioCursos : IServicioCursos
         }
 
     }
+    #endregion
 
-    public void QuitarMateriaDelCurso(EliminarMateriaRequest request)
+    #region Situacion de Revista
+    public SituacionRevistaResponse InscribirDocenteEnMateria(CrearSituacionRevistaRequest request)
     {
         try
         {
-            Curso curso = BuscarCurso(request.Curso);
+            Curso curso = BuscarCursoPorID(request.CursoId);
 
-            curso.QuitarMateria(request.Materia);
+            curso.AgregarProfesorEnMateria(request.MateriaId, request.ProfesorId, (Cargo) request.Cargo, request.FechaAlta, true);
+
+            _unityOfWork.Cursos.ActualizarDatos(curso);
+            _unityOfWork.GuardarCambios();
+
+            SituacionRevista nuevoCargo = curso.BuscarSituacionRevista(request.MateriaId, request.ProfesorId);
+            var response = new SituacionRevistaResponse(nuevoCargo.ProfesorId, 
+                                                                _unityOfWork.Docentes.BuscarPorID(nuevoCargo.ProfesorId).InformacionPersonal.NombreCompleto(),
+                                                                (int) nuevoCargo.Cargo,
+                                                                nuevoCargo.Cargo.ToString(),
+                                                                nuevoCargo.FechaAlta,
+                                                                nuevoCargo.FechaBaja,
+                                                                nuevoCargo.EnFunciones);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public void QuitarDocenteDeMateria(EliminarSituacionRevistaRequest request)
+    {
+        try
+        {
+            Curso curso = BuscarCursoPorID(request.CursoID);
+
+            curso.EliminarProfesorDelCargo(request.MateriaID, request.DocenteID, request.FechaBaja);
 
             _unityOfWork.Cursos.ActualizarDatos(curso);
             _unityOfWork.GuardarCambios();
@@ -226,13 +275,13 @@ public class ServicioCursos : IServicioCursos
         }
     }
 
-    public void InscribirProfesorEnMateria(CrearSituacionRevistaProfesorRequest request)
+    public void EstablecerDocenteEnFunciones(CrearDocenteEnFuncionesRequest request)
     {
         try
         {
-            Curso curso = BuscarCurso(request.CursoId);
+            Curso curso = _unityOfWork.Cursos.BuscarPorID(request.CursoID);
 
-            curso.AgregarProfesorEnMateria(request.MateriaId, request.ProfesorId, (Cargo) request.Cargo, request.FechaAlta);
+            curso.EstablecerEnFuncionesAlProfesor(request.MateriaID, request.DocenteID);
 
             _unityOfWork.Cursos.ActualizarDatos(curso);
             _unityOfWork.GuardarCambios();

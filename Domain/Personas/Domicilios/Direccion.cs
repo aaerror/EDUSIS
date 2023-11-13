@@ -5,13 +5,13 @@ namespace Domain.Personas.Domicilios;
 public class Direccion
 {
     public string Calle { get; private set; }
-    public int Altura { get; private set; }
+    public string Altura { get; private set; }
     public Vivienda Vivienda { get; private set; }
     public string Observacion { get; private set; } = string.Empty;
 
 
 
-    private Direccion(string calle, int altura, Vivienda vivienda, string observacion)
+    private Direccion(string calle, string altura, Vivienda vivienda, string observacion)
     {
         if (string.IsNullOrWhiteSpace(calle))
         {
@@ -34,7 +34,7 @@ public class Direccion
         Observacion = observacion.Trim();
     }
 
-    public static Direccion Crear(string calle, int altura, int vivienda, string observacion)
+    public static Direccion Crear(string calle, string altura, int vivienda, string observacion)
     {
         return new(calle, altura, (Vivienda) vivienda, observacion);
     }

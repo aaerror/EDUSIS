@@ -1,4 +1,4 @@
-﻿using Core.ServicioCursos.DTOs.Responses;
+﻿/*using Core.ServicioCursos.DTOs.Responses;
 using System;
 using WPF_Desktop.Shared;
 
@@ -8,9 +8,9 @@ public class ProfesorViewModel : ViewModel
 {
     private readonly SituacionRevistaProfesorResponse _situacionRevista = null;
 
-    private Guid _profesor = Guid.Empty;
+    private Guid _docente = Guid.Empty;
     private string _nombreCompleto = string.Empty;
-    private string _cargo = string.Empty;
+    private SituacionRevistaViewModel _situacionRevistaViewModel;
 
 
     public ProfesorViewModel(SituacionRevistaProfesorResponse situacionRevista)
@@ -18,24 +18,24 @@ public class ProfesorViewModel : ViewModel
         if (situacionRevista != null)
         {
             _situacionRevista = situacionRevista;
-            Profesor = _situacionRevista.Profesor;
+            Docente = _situacionRevista.DocenteID;
             NombreCompleto = _situacionRevista.NombreCompleto;
             Cargo = _situacionRevista.Cargo;
         }
     }
 
     #region Properties
-    public Guid Profesor
+    public Guid Docente
     {
         get
         {
-            return _profesor;
+            return _docente;
         }
 
         set
         {
-            _profesor = value;
-            OnPropertyChanged(nameof(Profesor));
+            _docente = value;
+            OnPropertyChanged(nameof(Docente));
         }
     }
 
@@ -53,7 +53,7 @@ public class ProfesorViewModel : ViewModel
         }
     }
 
-    public string Cargo
+    public int Cargo
     {
         get
         {
@@ -68,3 +68,4 @@ public class ProfesorViewModel : ViewModel
     }
     #endregion
 }
+*/

@@ -1,7 +1,8 @@
 ﻿using Core.ServicioCursos;
 using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos.DTOs.Responses;
-using Core.ServicioProfesores;
+using Core.ServicioDocentes;
+using Core.ServicioDocentes.DTOs.Responses;
 using Domain.Cursos.Materias;
 using System;
 using System.Collections;
@@ -11,22 +12,30 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Media.Imaging;
-using System.Xml;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
+using WPF_Desktop.ViewModels.Docentes;
 
 namespace WPF_Desktop.ViewModels.Cursos;
 
 public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
 {
     private readonly IServicioCursos _servicioCursos;
-    private readonly IServicioProfesores _servicioProfesores;
-    private MateriaDetalleViewModel _materiaDetalleViewModel = null;
+    private readonly IServicioDocentes _servicioDocentes;
     private CursoStore _cursoStore = null;
+
+    private DocenteInstitucionalViewModel _docenteInstitucionalViewModel = null;
+    private MateriaDetalleViewModel _materiaDetalleViewModel = null;
+    private SituacionRevistaViewModel _situacionRevistaViewModel = null;
 
     #region Request
     private CrearMateriaRequest _crearMateriaRequest = null;
+    private CrearSituacionRevistaRequest _crearSituacionRevistaRequest = null;
+    #endregion
+
+    #region Response
+    private DocenteInfoResponse _docenteInfoResponse = null;
+    private SituacionRevistaResponse _situacionRevistaResponse = null;
     #endregion
 
     public ObservableCollection<MateriaDetalleViewModel> _materias = new ObservableCollection<MateriaDetalleViewModel>();
@@ -45,19 +54,16 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
     #region Profesor
     private string _buscarProfesor = string.Empty;
     private Guid _profesorID = Guid.Empty;
-    private string _profesorDNI = string.Empty;
-    private string _profesorNombreCompleto = string.Empty;
-    private string _profesorLegajo = string.Empty;
-    private int _profesorCargo = 0;
-    private DateTime _profesorFechaAlta = DateTime.Now;
-    public DateTime FechaHoy { get; } = DateTime.Now;
     #endregion
 
     private bool _habilitarEditarMateria = false;
     private bool _habilitarRegistrarMateria = false;
     private bool _habilitarRegistrarHorario = false;
     private bool _habilitarRegistrarProfesor = false;
-    
+
+
+    public DateTime FechaHoy { get; } = DateTime.Now;
+
 
     private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
 
@@ -75,10 +81,10 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
     #endregion
 
 
-    public GestionDisenoCurriculaViewModel(IServicioCursos servicioCursos, IServicioProfesores servicioProfesores, CursoStore cursoStore)
+    public GestionDisenoCurriculaViewModel(IServicioCursos servicioCursos, IServicioDocentes servicioDocentes, CursoStore cursoStore)
     {
         _servicioCursos = servicioCursos;
-        _servicioProfesores = servicioProfesores;
+        _servicioDocentes = servicioDocentes;
         _cursoStore = cursoStore;
 
         HeaderTitle = $"{ _cursoStore.Curso.Descripcion } { "año".ToUpper() } ({ _cursoStore.Curso.NivelEducativo })";
@@ -440,75 +446,31 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public string ProfesorNombreCompleto
+    public DocenteInstitucionalViewModel DocenteInstitucionalViewModel
     {
         get
         {
-            return _profesorNombreCompleto;
+            return _docenteInstitucionalViewModel;
         }
 
         set
         {
-            _profesorNombreCompleto = value;
-            OnPropertyChanged(nameof(ProfesorNombreCompleto));
+            _docenteInstitucionalViewModel = value;
+            OnPropertyChanged(nameof(DocenteInstitucionalViewModel));
         }
     }
 
-    public string ProfesorLegajo
+    public SituacionRevistaViewModel SituacionRevistaViewModel
     {
         get
         {
-            return _profesorLegajo;
+            return _situacionRevistaViewModel;
         }
 
         set
         {
-            _profesorLegajo = value;
-            OnPropertyChanged(nameof(ProfesorLegajo));
-        }
-    }
-
-    public string ProfesorDNI
-    {
-        get
-        {
-            return _profesorDNI;
-        }
-
-        set
-        {
-            _profesorDNI = value;
-            OnPropertyChanged(nameof(ProfesorDNI));
-        }
-    }
-
-    public int ProfesorCargo
-    {
-        get
-        {
-            return _profesorCargo;
-        }
-
-        set
-        {
-            _errorsByProperty.Remove(nameof(ProfesorCargo));
-            _profesorCargo = value;
-            OnPropertyChanged(nameof(ProfesorCargo));
-        }
-    }
-
-    public DateTime ProfesorFechaAlta
-    {
-        get
-        {
-            return _profesorFechaAlta;
-        }
-
-        set
-        {
-            _errorsByProperty.Remove(nameof(ProfesorFechaAlta));
-            _profesorFechaAlta = value;
-            OnPropertyChanged(nameof(ProfesorFechaAlta));
+            _situacionRevistaViewModel = value;
+            OnPropertyChanged(nameof(SituacionRevistaViewModel));
         }
     }
     #endregion
@@ -535,23 +497,23 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
             caption = "Error";
             MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
-            ProfesorDNI = string.Empty;
-        }
-        else
-        {
-            try
-            {
-                var response = _servicioProfesores.BuscarProfesorPorDNI(BuscarProfesor);
+            BuscarProfesor = string.Empty;
 
-                ProfesorNombreCompleto = response.NombreCompleto;
-                ProfesorLegajo = response.Legajo;
-                ProfesorDNI = response.Documento;
-                _profesorID = response.ProfesorId;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            return;
+        }
+
+        try
+        {
+            _docenteInfoResponse = _servicioDocentes.BuscarDocentePorDNI(BuscarProfesor);
+
+            DocenteInstitucionalViewModel = new(_docenteInfoResponse.Institucional);
+            SituacionRevistaViewModel = new(null);
+            SituacionRevistaViewModel.NombreCompleto = _docenteInfoResponse.NombreCompleto;
+            _profesorID = _docenteInfoResponse.DocenteID;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
     #endregion
@@ -715,7 +677,7 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
                 }
                 break;
             case "Profesor":
-                if (Guid.Empty.Equals(_profesorID))
+                if (_docenteInfoResponse is null)
                 {
                     messageBoxText = "Se debe buscar previamente que profesor desea inscribir en la materia.";
                     caption = "Error al Cambiar Situación de Revista";
@@ -723,42 +685,50 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
                     MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
                     BuscarProfesor = string.Empty;
-                    ProfesorNombreCompleto = string.Empty;
-                    ProfesorLegajo = string.Empty;
-                    ProfesorDNI = string.Empty;
+                    _docenteInstitucionalViewModel = new DocenteInstitucionalViewModel(null);
+
+                    return;
                 }
-                else
+
+                messageBoxText = $"¿Está seguro que desea guardar los cambios en la materia?\n" +
+                                 $"Se va a cambiar la situación de revista del profesor { _docenteInfoResponse.NombreCompleto }\n\n" +
+                                 $"Materia: { MateriaDetalleViewModel.Descripcion }\n" +
+                                 $"Cargo nuevo: { (Cargo) SituacionRevistaViewModel.Cargo }\n" +
+                                 $"Fecha Alta: { SituacionRevistaViewModel.FechaAlta.Date.ToString("D") }";
+                caption = "Nueva Situación de Revista";
+                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result is MessageBoxResult.Yes)
                 {
-                    messageBoxText = $"¿Está seguro que desea guardar los cambios en la materia? Se va a cambiar la situación de revista del profesor { ProfesorNombreCompleto } (Cargo nuevo: {(Cargo)ProfesorCargo})";
-                    caption = "Cambio de Situación de Revista";
-
-                    result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-                    if (result == MessageBoxResult.Yes)
+                    try
                     {
-                        try
-                        {
-                            var request = new CrearSituacionRevistaProfesorRequest(_cursoStore.Curso.CursoId,
-                                                                                   MateriaDetalleViewModel.Materia,
-                                                                                   _profesorID,
-                                                                                   ProfesorCargo,
-                                                                                   ProfesorFechaAlta);
-                            _servicioCursos.InscribirProfesorEnMateria(request);
+                        _crearSituacionRevistaRequest = new CrearSituacionRevistaRequest(_cursoStore.Curso.CursoId,
+                                                                                         MateriaDetalleViewModel.Materia,
+                                                                                         _profesorID,
+                                                                                         SituacionRevistaViewModel.Cargo,
+                                                                                         SituacionRevistaViewModel.FechaAlta,
+                                                                                         SituacionRevistaViewModel.EnFunciones);
+                        _situacionRevistaResponse = _servicioCursos.InscribirDocenteEnMateria(_crearSituacionRevistaRequest);
 
-                            messageBoxText = $"Cambios guardados exitósamente.";
-                            caption = "Operación Exitosa";
+                        messageBoxText = $"¡Cambios guardados exitósamente!";
+                        caption = "Operación Exitosa";
+                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
 
-                            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-                            LoadMaterias();
+                        var situacionRevistaOld = MateriaDetalleViewModel.Profesores.Where(x => x.EnFunciones && x.FechaBaja is null)
+                                                                                    .FirstOrDefault();
 
-                            HabilitarEditarMateria = false;
-                            HabilitarRegistrarProfesor = false;
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
+                        MateriaDetalleViewModel.Profesores.Add(new SituacionRevistaViewModel(_situacionRevistaResponse));
+                        MateriaDetalleViewModel.QuitarDocenteEnFunciones(situacionRevistaOld);
+                        MateriaDetalleViewModel.AgregarDocenteEnFunciones(_situacionRevistaResponse.DocenteID);
+
+                        HabilitarEditarMateria = false;
+                        HabilitarRegistrarProfesor = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
+
                 break;
         }
     }
@@ -851,25 +821,46 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
         string caption = string.Empty;
         MessageBoxResult result;
 
-        messageBoxText = $"Está seguro que desea eliminar la materia de { MateriaDetalleViewModel.Descripcion } (Curso: { _cursoStore.Curso.Descripcion } año | Nivel Educativo: { _cursoStore.Curso.NivelEducativo })?";
-        caption = "Eliminar Materia";
-        result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-        if (result == MessageBoxResult.Yes)
+        switch (obj)
         {
-            try
-            {
-                var request = new EliminarMateriaRequest(_cursoStore.Curso.CursoId, MateriaDetalleViewModel.Materia);
-                _servicioCursos.QuitarMateriaDelCurso(request);
-                messageBoxText = $"La materia se eliminó correctamente de la currícula del curso.";
-                caption = "Operación Exitosa";
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-                _materias.Remove(MateriaDetalleViewModel);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            case "Docente":
+                messageBoxText = $"¿Está seguro que desea dar de baja del cargo al docente { _docenteInfoResponse.NombreCompleto }" +
+                    $"{ MateriaDetalleViewModel.Descripcion } (Curso: { _cursoStore.Curso.Descripcion } año | Nivel Educativo: { _cursoStore.Curso.NivelEducativo })?";
+                caption = "Eliminar Materia";
+                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (result == MessageBoxResult.Yes)
+                {
+                }
+
+                break;
+
+            case "Materia":
+                messageBoxText = $"Está seguro que desea eliminar la materia de {MateriaDetalleViewModel.Descripcion} (Curso: {_cursoStore.Curso.Descripcion} año | Nivel Educativo: {_cursoStore.Curso.NivelEducativo})?";
+                caption = "Eliminar Materia";
+                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        var request = new EliminarMateriaRequest(_cursoStore.Curso.CursoId, MateriaDetalleViewModel.Materia);
+                        _servicioCursos.QuitarMateriaDelCurso(request);
+
+                        messageBoxText = $"La materia se eliminó correctamente de la currícula del curso.";
+                        caption = "Operación Exitosa";
+                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+                        
+                        _materias.Remove(MateriaDetalleViewModel);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+
+                break;
         }
+
+       
     }
     #endregion
 }

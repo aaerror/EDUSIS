@@ -1,11 +1,27 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vmShared="clr-namespace:WPF_Desktop.ViewModels.Shared"
+                    xmlns:vShared="clr-namespace:WPF_Desktop.Views.Shared"
                     xmlns:vmDocentes="clr-namespace:WPF_Desktop.ViewModels.Docentes"
                     xmlns:vDocentes="clr-namespace:WPF_Desktop.Views.Docentes"
                     xmlns:vmAlumnos="clr-namespace:WPF_Desktop.ViewModels.Alumnos"
                     xmlns:vAlumnos="clr-namespace:WPF_Desktop.Views.Alumnos"
                     xmlns:vmCursos="clr-namespace:WPF_Desktop.ViewModels.Cursos"
                     xmlns:vCursos="clr-namespace:WPF_Desktop.Views.Cursos">
+    <!-- -SHARED -->
+    <DataTemplate DataType="{ x:Type vmShared:InformacionPersonalViewModel }">
+        <vShared:InformacionPersonalView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmShared:DomicilioViewModel }">
+        <vShared:DomicilioView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmShared:ContactoViewModel }">
+        <vShared:ContactoView/>
+    </DataTemplate>
+
+
     <!-- DOCENTES -->
     <DataTemplate DataType="{ x:Type vmDocentes:GestionDocentesViewModel }">
         <vDocentes:GestionDocentesView/>
@@ -15,7 +31,36 @@
         <vDocentes:RegistrarDocenteView/>
     </DataTemplate>
 
-    <!-- ALUMNOS -->
+    <DataTemplate DataType="{ x:Type vmDocentes:DocenteViewModel }">
+        <vDocentes:DocenteView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmDocentes:DocenteInstitucionalViewModel }">
+        <vDocentes:DocenteInstitucionalView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmDocentes:DocenteInfoViewModel }">
+        <vDocentes:DocenteInfoView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmDocentes:GestionLicenciasViewModel }">
+        <vDocentes:GestionLicenciasView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmDocentes:GestionPuestosViewModel }">
+        <vDocentes:GestionPuestosView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmDocentes:PuestoDocenteViewModel}">
+        <vDocentes:PuestoDocenteView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmDocentes:PerfilDocenteViewModel }">
+        <vDocentes:PerfilDocenteView/>
+    </DataTemplate>
+
+
+    <!-- ALUMNO -->
     <DataTemplate DataType="{ x:Type vmAlumnos:GestionAlumnosViewModel }">
         <vAlumnos:GestionAlumnosView/>
     </DataTemplate>
@@ -47,5 +92,9 @@
 
     <DataTemplate DataType="{ x:Type vmCursos:HorarioViewModel }">
         <vCursos:HorarioView/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{ x:Type vmCursos:SituacionRevistaViewModel }">
+        <vCursos:SituacionRevistaView/>
     </DataTemplate>
 </ResourceDictionary>

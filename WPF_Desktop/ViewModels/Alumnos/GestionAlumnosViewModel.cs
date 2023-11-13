@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Input;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
@@ -34,6 +33,8 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
 
     public ViewModelCommand BuscarAlumnoCommand { get; }
 
+    public ViewModelCommand QuitarCommand { get;  }
+
     public ViewModelCommand VerPerfilCommand { get; }
     #endregion
 
@@ -50,9 +51,10 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
 
         BuscarAlumnoCommand = new ViewModelCommand(ExecuteBuscarAlumnoCommand, CanExecuteBuscarAlumnoCommand);
         RegistrarAlumnoCommand = new ViewModelCommand(command =>
-            {
-                _registrarAlumnoNavigationService.Navigate();
-            });
+        {
+            _registrarAlumnoNavigationService.Navigate();
+        });
+        QuitarCommand = new ViewModelCommand(ExecuteQuitarCommand, CanExecuteQuitarCommand);
         VerPerfilCommand = new ViewModelCommand(ExecuteVerPerfilCommand, CanExecuteVerPerfilCommand);
     }
 
@@ -84,7 +86,7 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
                 /**
                  * A través de una regular expression verificamos que el dato ingresado sea un número
                  */
-                if (Regex.IsMatch(DocumentoAlumno, @"^\d{8}$", RegexOptions.None, TimeSpan.FromMilliseconds(2000)))
+                if (!Regex.IsMatch(DocumentoAlumno, @"^\d{8}$", RegexOptions.None, TimeSpan.FromMilliseconds(2000)))
                 {
                     errors.Add("El documento debe ser un número.");
 
@@ -141,6 +143,54 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
             MessageBox.Show(ex.Message, "Error al buscar el alumno", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
+    }
+    #endregion
+
+
+    #region QuitarCommand
+    private bool CanExecuteQuitarCommand(object obj)
+    {
+        bool canExecute = false;
+        if (!string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))
+        {
+            canExecute = true;
+        }
+
+        return canExecute;
+    }
+
+    private void ExecuteQuitarCommand(object obj)
+    {
+        string messageBoxText = string.Empty;
+        string caption = string.Empty;
+        MessageBoxResult result;
+
+        if (PersonaResponse is null)
+        {
+            messageBoxText = "Se debe buscar previamente el alumno para poder realizar los cambios que necesite.";
+            caption = "Quitar Alumno";
+            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        else
+        {
+            messageBoxText = $"¿Está seguro que desea quitar el alumno {PersonaResponse.Apellido}, {PersonaResponse.Nombre}?";
+            caption = "Quitar Alumno";
+            result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    _servicioAlumnos.QuitarAlumno(PersonaResponse.PersonaId);
+                    messageBoxText = $"El alumno, {PersonaResponse.Apellido}, {PersonaResponse.Nombre}, se quitó correctamente.";
+                    caption = "Operación Exitosa";
+                    MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
     }
     #endregion
 

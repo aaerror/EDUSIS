@@ -105,6 +105,7 @@ public class Curso : Entity
 
         _materias.Remove(materia);
     }
+    #endregion
 
     public void AgregarHorarioAMateria(Guid materiaId, Horario unHorario)
     {
@@ -139,32 +140,34 @@ public class Curso : Entity
 
     public IReadOnlyCollection<Materia> MateriasConCargoVacante()
     {
-        return _materias.FindAll(x => !x.ExisteProfesorEnFunciones())
+        return _materias.FindAll(x => !x.ExisteDocenteEnFunciones())
                         .AsReadOnly();
     }
 
-    public void AgregarProfesorEnMateria(Guid unaMateria, Guid unProfesor, Cargo unCargo, DateTime fechaAlta)
+
+    #region Situacion de Revista
+    public SituacionRevista BuscarSituacionRevista(Guid unaMateria, Guid unProfesor)
     {
         Materia materia = BuscarMateria(unaMateria);
-        materia.AsignarCargoDelProfesor(unProfesor, unCargo, fechaAlta);
+        return materia.BuscarCargoDelDocente(unProfesor);
     }
 
-    public void CambiarSituacionDeRevista(Guid unaMateria, Guid unProfesor, Cargo unCargo, DateTime fechaAlta, DateTime fechaBaja)
+    public void AgregarProfesorEnMateria(Guid unaMateria, Guid unProfesor, Cargo unCargo, DateTime fechaAlta, bool enFunciones)
     {
         Materia materia = BuscarMateria(unaMateria);
-        materia.CambiarCargoDelProfesor(unProfesor, unCargo, fechaAlta, fechaBaja);
+        materia.RegistrarNuevaSituacionRevista(unProfesor, unCargo, fechaAlta, enFunciones);
     }
 
     public void EliminarProfesorDelCargo(Guid unaMateria, Guid unProfesor, DateTime fechaBaja)
     {
         Materia materia = BuscarMateria(unaMateria);
-        materia.QuitarProfesorDelCargo(unProfesor, fechaBaja);
+        materia.QuitarDocenteDelCargo(unProfesor, fechaBaja);
     }
 
     public void EstablecerEnFuncionesAlProfesor(Guid unaMateria, Guid unProfesor)
     {
         Materia materia = BuscarMateria(unaMateria);
-        materia.EstablecerProfesorEnFunciones(unProfesor);
+        materia.EstablecerDocenteEnFunciones(unProfesor);
     }
     #endregion
 

@@ -5,6 +5,7 @@ using Domain.Personas;
 using Infrastructure.Shared;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos.DTOs.Responses;
+using Core.ServicioAlumnos.DTOs;
 
 namespace Core.ServicioAlumnos;
 
@@ -80,7 +81,7 @@ public class ServicioAlumnos : IServicio, IServicioAlumnos
         bool esValido = false;
         if (!string.IsNullOrWhiteSpace(documento))
         {
-            esValido = _unitOfWork.Alumnos.EsDocumentoValido(documento);
+            esValido = _unitOfWork.Alumnos.EsDocumentoInvalido(documento);
         }
 
         return esValido;
@@ -205,5 +206,18 @@ public class ServicioAlumnos : IServicio, IServicioAlumnos
 
         _unitOfWork.Alumnos.ActualizarDatos(alumno);
         _unitOfWork.GuardarCambios();
+    }
+
+    public void QuitarAlumno(Guid personaId)
+    {
+        try
+        {
+            _unitOfWork.Alumnos.BorrarDatos(personaId);
+            _unitOfWork.GuardarCambios();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 }

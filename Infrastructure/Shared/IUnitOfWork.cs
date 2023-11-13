@@ -10,8 +10,6 @@ public interface IUnitOfWork : IDisposable
 
     IDocenteRepository Docentes { get; }
 
-    IProfesorRepository Profesores {  get; }
-
     ICursoRepository Cursos { get; } 
 
 

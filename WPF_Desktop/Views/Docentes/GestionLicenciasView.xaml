@@ -1,0 +1,159 @@
+﻿<UserControl x:Class="WPF_Desktop.Views.Docentes.GestionLicenciasView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
+             xmlns:components="clr-namespace:WPF_Desktop.Components"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:ext="clr-namespace:WPF_Desktop.Shared.Extensions"
+             xmlns:domainLicencias="clr-namespace:Domain.Docentes.Licencias;assembly=Domain"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="Converter"/>
+
+        <ObjectDataProvider x:Key="articulos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainLicencias:Articulo"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="estados" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainLicencias:Estado"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="100"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- TITTLE AND SUBTITLE -->
+        <components:Header Grid.Row="0"
+                           Title="Gestión de Docentes"
+                           Subtitle="Licencias"/>
+        <!-- DETAILS -->
+        <Border Grid.Row="2"
+                Background="#FFFFFF"
+                BorderBrush="{ StaticResource Gray200 }"
+                BorderThickness="1"
+                CornerRadius="4"
+                Margin="20 10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15"
+                                  Color="#373737"
+                                  ShadowDepth="5"
+                                  Opacity=".3"/>
+            </Border.Effect>
+            <ScrollViewer VerticalScrollBarVisibility="Visible"
+                          Padding="20 10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0"
+                                Margin="0 5">
+                        <DataGrid x:Name="DataGrid_Licencias"
+                                  Grid.Row="0"
+                                  ItemsSource="{ Binding Path=Licencias, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                  SelectedItem="{ Binding Path=LicenciaViewModel, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+                                  AutoGenerateColumns="False"
+                                  HorizontalContentAlignment="Center"
+                                  IsSynchronizedWithCurrentItem="True"
+                                  CanUserAddRows="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{ Binding Path=EstadoDescripcion, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
+                                                    Header="Estado"/>
+                                <DataGridTextColumn Binding="{ Binding Path=ArticuloDescripcion, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
+                                                    Header="Artículo"/>
+                                <DataGridTextColumn Binding="{ Binding Path=Dias, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
+                                                    Header="Cantidad de Días"/>
+                                <DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneTime, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:D}, ConverterCulture='es-Es' }"
+                                                    Header="Fecha de Inicio"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1"
+                                Margin="0 10"
+                                IsEnabled="{ Binding Path=HabilitarLicenciaViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }">
+                        <local:LicenciaView DataContext="{ Binding Path=LicenciaViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+                    </StackPanel>
+
+                    <Grid Grid.Column="1"
+                          Grid.Row="2"
+                          Margin="0 5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+
+                        <WrapPanel Grid.Column="0">
+                            <Button Command="{ Binding Path=GuardarCommand }"
+                                    CommandParameter="Cancelar"
+                                    Content="Rechazar Licencia"
+                                    Margin="0 0 5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
+                            <Button Command="{ Binding Path=GuardarCommand }"
+                                    CommandParameter="Aprobar"
+                                    Content="Aprobar Licencia"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
+                        </WrapPanel>
+                        <WrapPanel Grid.Column="1"
+                                    HorizontalAlignment="Right">
+                            <Button Command="{ Binding Path=CancelarCommand }"
+                                    CommandParameter="Editar"
+                                    Content="Cancelar"
+                                    Margin="0 0 5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource ResourceKey=Tertiary }"/>
+                            <Button Command="{ Binding Path=GuardarCommand }"
+                                    CommandParameter="Editar"
+                                    Content="Guardar"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
+                            <Button Command="{ Binding Path=EditarCommand }"
+                                    CommandParameter="Editar"
+                                    Content="Editar"
+                                    Margin="0 0 5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+
+                            <Button Command="{ Binding Path=CancelarCommand }"
+                                    CommandParameter="Nueva"
+                                    Content="Cancelar"
+                                    Margin="0 0 5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource ResourceKey=Tertiary }"/>
+                            <Button Command="{ Binding Path=GuardarCommand }"
+                                    CommandParameter="Nueva"
+                                    Content="Guardar"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
+                            <Button Command="{ Binding Path=RegistrarCommand }"
+                                    CommandParameter="Nueva"
+                                    Content="Registrar"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+                        </WrapPanel>
+                    </Grid>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

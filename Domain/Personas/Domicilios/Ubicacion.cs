@@ -34,22 +34,22 @@ public class Ubicacion
         }
 
         // Validamos que se ingresen letras y no números
-        string regularExpression = @"^([A-Z]{1}[a-zñáéíóúü]+[\s]?)+$";
+/*        string regularExpression = @"^([A-Z]{1}[a-zñáéíóúü]+[\s]?)+$";
         Regex re = new(regularExpression);
         if (!re.IsMatch(localidad.Trim()))
         {
-            throw new FormatException($"La ciudad {localidad} debe ingresarse como un nombre propio.");
+            throw new FormatException($"La ciudad, { localidad }, debe ingresarse como un nombre propio.");
         }
 
         if (!re.IsMatch(provincia.Trim()))
         {
-            throw new FormatException($"La provincia {provincia} debe ingresarse como un nombre propio.");
+            throw new FormatException($"La provincia, { provincia }, debe ingresarse como un nombre propio.");
         }
 
         if (!re.IsMatch(pais.Trim()))
         {
-            throw new FormatException($"El país {pais} debe ingresarse como un nombre propio.");
-        }
+            throw new FormatException($"El país, { pais }, debe ingresarse como un nombre propio.");
+        }*/
 
         /*regularExpression = @"^(\d{4})$";
         re = new Regex(regularExpression);
@@ -59,8 +59,8 @@ public class Ubicacion
         }*/
 
         Localidad = localidad.Trim();
-        Provincia = provincia.Trim();
         //CodigoPostal = codigoPostal.Trim();
+        Provincia = provincia.Trim();
         Pais = pais.Trim();
     }
 

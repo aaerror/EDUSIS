@@ -17,6 +17,9 @@ namespace Core.ServicioCursos
         void ActualizarMateria(EditarMateriaRequest request);
         void QuitarMateriaDelCurso(EliminarMateriaRequest request);
         void AsignarHorarioAMateriaDelCurso(CrearHorarioRequest request);
-        void InscribirProfesorEnMateria(CrearSituacionRevistaProfesorRequest request);
+
+        SituacionRevistaResponse InscribirDocenteEnMateria(CrearSituacionRevistaRequest request);
+        void QuitarDocenteDeMateria(EliminarSituacionRevistaRequest request);
+        void EstablecerDocenteEnFunciones(CrearDocenteEnFuncionesRequest request);
     }
 }

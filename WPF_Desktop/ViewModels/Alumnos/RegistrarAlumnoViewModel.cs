@@ -1,4 +1,5 @@
 ﻿using Core.ServicioAlumnos;
+using Core.ServicioAlumnos.DTOs;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -17,7 +18,8 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
 {
     private readonly IServicioAlumnos _servicioAlumno;
 
-    private Dictionary<string, List<string>> _errorsByProperty;
+    private int _tab = 0;
+
     private string _apellido = string.Empty;
     private string _nombre = string.Empty;
     private string _documento = string.Empty;
@@ -29,13 +31,20 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
     private string _calle = string.Empty;
     private string _altura = string.Empty;
     private int _vivienda;
-    private string _barrio = string.Empty;
     private string _observaciones = string.Empty;
     private string _localidad = string.Empty;
     private string _provincia = string.Empty;
     private string _pais = "Argentina";
 
-    public ICommand RegistrarAlumnoCommand { get; }
+
+    #region Command
+    public ViewModelCommand AtrasCommand { get; }
+    public ViewModelCommand ContinuarCommand { get; }
+    public ViewModelCommand GuardarCommand { get; }
+    #endregion
+
+
+    private Dictionary<string, List<string>> _errorsByProperty;
 
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
@@ -45,7 +54,23 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
         _servicioAlumno = servicioAlumno;
         _errorsByProperty = new Dictionary<string, List<string>>();
 
-        RegistrarAlumnoCommand = new ViewModelCommand(ExecuteRegistrarAlumnoCommand, CanExecuteRegistrarAlumnoCommand);
+        AtrasCommand = new ViewModelCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
+        ContinuarCommand = new ViewModelCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
+        GuardarCommand = new ViewModelCommand(ExecuteGuardarCommand, CanExecuteGuardarCommand);
+    }
+
+    public int Tab
+    {
+        get
+        {
+            return _tab;
+        }
+
+        set
+        {
+            _tab = value;
+            OnPropertyChanged(nameof(Tab));
+        }
     }
 
     #region Información Personal
@@ -361,20 +386,6 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public string Barrio
-    {
-        get
-        {
-            return _barrio;
-        }
-
-        set
-        {
-            _barrio = value;
-            OnPropertyChanged(nameof(Barrio));
-        }
-    }
-
     public string Observaciones
     {
         get
@@ -473,8 +484,33 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
     public bool HasErrors => _errorsByProperty.Any();
     #endregion
 
-    #region RegistrarAlumnoCommand
-    private bool CanExecuteRegistrarAlumnoCommand(object obj)
+
+    #region AtrasCommand
+    private bool CanExecuteAtrasCommand(object obj)
+    {
+        return true;
+    }
+
+    private void ExecuteAtrasCommand(object obj)
+    {
+        Tab = 0;
+    }
+    #endregion
+
+    #region ContinuarCommand
+    private bool CanExecuteContinuarCommand(object obj)
+    {
+        return true;
+    }
+
+    private void ExecuteContinuarCommand(object obj)
+    {
+        Tab = 1;
+    }
+    #endregion
+
+    #region GuardarCommand
+    private bool CanExecuteGuardarCommand(object obj)
     {
         if (HasErrors)
         {
@@ -484,7 +520,7 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
         return true;
     }
 
-    private void ExecuteRegistrarAlumnoCommand(object obj)
+    private void ExecuteGuardarCommand(object obj)
     {
         string messageBoxText = string.Empty;
         string caption = string.Empty;
@@ -508,7 +544,7 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
         else
         {
             var informacionPersonal = new InformacionPersonalRequest(Apellido, Nombre, Documento, Sexo, FechaNacimiento.Date, Nacionalidad);
-            var domicilio = new DomicilioRequest(Calle, int.Parse(Altura), Vivienda, Observaciones, Localidad, Provincia, Pais);
+            var domicilio = new DomicilioRequest(Calle, Altura, Vivienda, Observaciones, Localidad, Provincia, Pais);
             var contacto = new ContactoRequest(Email, Telefono);
 
             messageBoxText = $"Datos correctos. ¿Quiere guardar los datos del alumno {Apellido}, {Nombre} ({Documento})?";

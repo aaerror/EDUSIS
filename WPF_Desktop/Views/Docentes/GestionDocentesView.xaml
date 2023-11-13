@@ -6,11 +6,14 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="Converter"/>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <!-- TITTLE AND SUBTITLE -->
         <components:Header Grid.Row="0"
@@ -23,12 +26,6 @@
             <Button Command="{ Binding RegistrarDocenteCommand }"
                     Content="Registrar Docente"
                     Margin="0 0 5 0"
-                    Style="{ StaticResource Secondary }"/>
-            <Button Content="Otra cosa"
-                    Margin="5 0 5 0"
-                    Style="{ StaticResource Secondary }"/>
-            <Button Content="Otra cosa"
-                    Margin="5 0 0 0"
                     Style="{ StaticResource Secondary }"/>
         </WrapPanel>
 
@@ -47,33 +44,70 @@
                                   Opacity=".3"/>
             </Border.Effect>
             <!-- SEARCH PANEL -->
-            <Grid>
+            <Grid Margin="0 10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <!-- SEARCH BUTTON -->
                 <Grid Grid.Row="0"
                       HorizontalAlignment="Center"
-                      Margin="0 0 0 10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <WrapPanel Margin="0 5">
-                        <TextBox Text="{ Binding DocumentoAlumno, UpdateSourceTrigger=PropertyChanged }"
+                      Margin="0 10">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <WrapPanel Grid.Row="0">
+                        <TextBox Text="{ Binding Path=Documento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                                  Margin="0 0 5 0"
-                                 Tag="ingresar dni del docente..."
+                                 Tag="ingresar DNI del docente..."
                                  Width="200"
                                  Style="{ StaticResource TextBox}"/>
-                        <Button Command="{ Binding BuscarAlumnoCommand }"
+                        <Button Command="{ Binding BuscarCommand }"
                                 Content="Buscar"
                                 Margin="5 0 0 0"
                                 Style="{ StaticResource Primary }"/>
                     </WrapPanel>
                 </Grid>
+
+                <!-- INFO DEL DOCENTE -->
+                <local:DocenteInfoView Grid.Row="1"
+                                       DataContext="{ Binding Path=DocenteInfoViewModel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                       Margin="0 10"
+                                       Visibility="{ Binding Path=MostrarVista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"/>
+
+                <StackPanel Grid.Row="2"
+                            Margin="0 10">
+                    <WrapPanel HorizontalAlignment="Right">
+                        <Button Command="{ Binding QuitarCommand }"
+                                Content="Quitar"
+                                Margin="0 0 5 0"
+                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
+                                Style="{ StaticResource Tertiary }"/>
+                        <Button Command="{ Binding NavigationCommand }"
+                                CommandParameter="Puesto"
+                                Content="Puestos"
+                                Margin="5 0"
+                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
+                                Style="{ StaticResource Primary }"/>
+                        <Button Command="{ Binding NavigationCommand }"
+                                CommandParameter="Licencia"
+                                Content="Licencias"
+                                Margin="5 0"
+                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
+                                Style="{ StaticResource Primary }"/>
+                        <Button Command="{ Binding NavigationCommand }"
+                                CommandParameter="Perfil"
+                                Content="Perfil"
+                                Margin="5 0 0 0"
+                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
+                                Style="{ StaticResource Primary }"/>
+                    </WrapPanel>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

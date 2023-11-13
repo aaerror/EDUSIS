@@ -96,10 +96,16 @@
                 <WrapPanel Grid.Row="2"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Top">
+                    <Button Command="{ Binding QuitarCommand }"
+                            Content="Quitar"
+                            Margin="0 0 5 0"
+                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource BooleanToVisibilityConverter } }"
+                            Style="{ StaticResource Tertiary }"/>
                     <Button Command="{ Binding VerPerfilCommand }"
                             Content="Ver Perfil"
-                            Style="{ StaticResource Primary }"
-                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource BooleanToVisibilityConverter } }"/>
+                            Margin="5 0 0 0"
+                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource BooleanToVisibilityConverter } }"
+                            Style="{ StaticResource Primary }"/>
                 </WrapPanel>
             </Grid>
         </Border>

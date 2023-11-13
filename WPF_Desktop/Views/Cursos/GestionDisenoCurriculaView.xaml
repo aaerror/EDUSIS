@@ -1,7 +1,8 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.GestionDisenoCurriculaView"
              xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos"
+             xmlns:vDocentes="clr-namespace:WPF_Desktop.Views.Docentes"
              xmlns:components="clr-namespace:WPF_Desktop.Components"
-             xmlns:Alumnos="clr-namespace:WPF_Desktop.Views.Alumnos"
+             xmlns:vAlumnos="clr-namespace:WPF_Desktop.Views.Alumnos"
              xmlns:domainMaterias="clr-namespace:Domain.Cursos.Materias;assembly=Domain"
              xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -60,7 +61,7 @@
                 CornerRadius="4"
                 Margin="20 10"
                 Padding="10 5 10 10"
-                VerticalAlignment="Center">
+                VerticalAlignment="Top">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="15"
                                   Color="#373737"
@@ -82,7 +83,7 @@
                                       SelectedItem="{ Binding Path=MateriaDetalleViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                       AutoGenerateColumns="False"
                                       HorizontalContentAlignment="Center"
-                                      IsSynchronizedWithCurrentItem="False"
+                                      IsSynchronizedWithCurrentItem="True"
                                       Margin="0 10"
                                       Style="{ StaticResource DataGrid }">
                                 <DataGrid.Columns>
@@ -96,7 +97,7 @@
                                     <DataGridTextColumn Binding="{ Binding HorasCatedra }"
                                                         Header="Horas Cátedra"
                                                         Width="Auto"/>
-                                    <DataGridTextColumn Binding="{ Binding Profesor, TargetNullValue='No hay profesores asignados' }"
+                                    <DataGridTextColumn Binding="{ Binding NombreCompletoProfesor, TargetNullValue='No hay profesor asignado' }"
                                                         Header="Profesor a Cargo"
                                                         Width="Auto"/>
                                 </DataGrid.Columns>
@@ -117,10 +118,9 @@
                                                       Opacity=".3"/>
                                 </Border.Effect>
 
-                                <StackPanel>
+                                <StackPanel Margin="20 10">
                                     <!-- MATERIA VIEW -->
-                                    <local:MateriaDetalleView DataContext="{ Binding Path=SelectedItem, ElementName=DataGridMaterias }"
-                                                              Margin="0 0 0 5"/>
+                                    <local:MateriaDetalleView DataContext="{ Binding Path=SelectedItem, ElementName=DataGridMaterias }"/>
                                 </StackPanel>
                             </Border>
 
@@ -140,15 +140,15 @@
                                                       Opacity=".3"/>
                                 </Border.Effect>
                                 <StackPanel>
-                                    <Label Content="Registrar Profesor a la Materia"
+                                    <Label Content="Cambio de Situación de Revista"
                                            Style="{ StaticResource Headline }"/>
                                     <Separator Background="{ StaticResource Gray400 }"
                                                Height=".8"
                                                Width="Auto"/>
 
                                     <!-- PROFESOR -->
-                                    <GroupBox Header="Datos del Profesor"
-                                              Padding="0 5"
+                                    <GroupBox Header="Docente"
+                                              Padding="20 10"
                                               Margin="0 5 0 5">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -178,73 +178,22 @@
                                                         Style="{ StaticResource Primary }"/>
                                             </WrapPanel>
 
-                                            <!-- NOMBRE COMPLETO -->
-                                            <StackPanel Grid.Column="0"
-                                                        Grid.Row="1"
-                                                        Margin="5 0 5 0">
-                                                <Label Content="Profesor"
-                                                       Style="{ StaticResource Form }"/>
-                                                <TextBox Text="{ Binding Path=ProfesorNombreCompleto, FallbackValue='Profesor sin especificar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                                         IsEnabled="False"
-                                                         Style="{ StaticResource TextBox}"/>
-                                            </StackPanel>
-
-                                            <!-- LEGAJO -->
-                                            <StackPanel Grid.Column="1"
-                                                        Grid.Row="1"
-                                                        Margin="5 0 5 0">
-                                                <Label Content="Legajo"
-                                                       Style="{ StaticResource Form }"/>
-                                                <TextBox Text="{ Binding Path=ProfesorLegajo, FallbackValue='Legajo sin especificar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                                         IsEnabled="False"
-                                                         Style="{ StaticResource TextBox }"/>
-                                            </StackPanel>
-
-                                            <!-- DOCUMENTO -->
-                                            <StackPanel Grid.Column="2"
-                                                        Grid.Row="1"
-                                                        Margin="5 0 5 0">
-                                                <Label Content="Documento"
-                                                       Style="{ StaticResource Form }"/>
-                                                <TextBox Text="{ Binding Path=ProfesorDNI, FallbackValue='Documento sin especificar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                                         IsEnabled="False"
-                                                         Style="{ StaticResource TextBox }"/>
-                                            </StackPanel>
+                                            <Expander Grid.ColumnSpan="3"
+                                                      Grid.Row="1"
+                                                      Header="Información Institucional"
+                                                      ExpandDirection="Down"
+                                                      Padding="5">
+                                                <vDocentes:DocenteInstitucionalView DataContext="{ Binding Path=DocenteInstitucionalViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                                                                                    IsEnabled="False"/>
+                                            </Expander>
                                         </Grid>
                                     </GroupBox>
                                     
                                     <!-- SITUACIÓN REVISTA -->
-                                    <GroupBox Header="Situación de Revista"
+                                    <GroupBox Header="Nueva Situación de Revista"
                                               Margin="0 5"
-                                              Padding="0 5">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition/>
-                                                <ColumnDefinition/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <!-- CARGO -->
-                                            <StackPanel Grid.Column="0"
-                                                        Margin="5 0 5 0">
-                                                <Label Content="Cargo en la Materia"
-                                                       Style="{ StaticResource Form }"/>
-                                                <ComboBox ItemsSource="{ Binding Source={ StaticResource cargos } }"
-                                                          SelectedItem="{ Binding Path=ProfesorCargo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                          Style="{ StaticResource ComboBoxStyle }"/>
-                                            </StackPanel>
-
-                                            <!-- FECHA ALTA -->
-                                            <StackPanel Grid.Column="1"
-                                                        Margin="5 0 5 0">
-                                                <Label Content="Fecha Alta"
-                                                       Style="{ StaticResource Form }"/>
-                                                <DatePicker DisplayDate="{ Binding Path=ProfesorFechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                                                            DisplayDateStart="01/01/2000"
-                                                            DisplayDateEnd="{ Binding Path=FechaHoy, Mode=OneWay }"
-                                                            CalendarStyle="{ StaticResource Calendar }"
-                                                            Style="{ StaticResource DatePicker }"/>
-                                            </StackPanel>
-                                        </Grid>
+                                              Padding="20 10">
+                                        <local:SituacionRevistaView DataContext="{ Binding Path=SituacionRevistaViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
                                     </GroupBox>
 
                                     <!-- COMMANDS -->
@@ -289,10 +238,12 @@
                                         Style="{ StaticResource Primary }"/>
                                 <!-- MATERIA ELIMINAR -->
                                 <Button Command="{ Binding EliminarCommand }"
-                                        Content="Quitar"
+                                        CommandParameter="Materia"
+                                        Content="Quitar Materia"
                                         Margin="0 0 5 0"
                                         Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
                                         Style="{ StaticResource Tertiary }"/>
+                                
                                 <!-- MATERIA EDITAR -->
                                 <Button Command="{ Binding EditarCommand }"
                                         CommandParameter="Materia"
@@ -300,7 +251,7 @@
                                         Margin="5 0 5 0"
                                         Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
                                         Style="{ StaticResource Secondary }"/>
-
+                                
                                 <!-- HORARIO CANCELAR-->
                                 <Button Command="{ Binding CancelarCommand }"
                                         CommandParameter="Horario"
@@ -326,7 +277,7 @@
                                 <!-- PROFESOR REGISTRAR -->
                                 <Button Command="{ Binding RegistrarCommand }"
                                         CommandParameter="Profesor"
-                                        Content="Asignar Profesor"
+                                        Content="Agregar Profesor"
                                         Margin="5 0 0 0"
                                         Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
                                         Style="{ StaticResource Secondary }"/>

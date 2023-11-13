@@ -15,6 +15,10 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
 {
     private readonly IServicioCursos _servicioCursos;
 
+    #region Request
+    private CrearCursoRequest _crearCursoRequest;
+    #endregion
+
     private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
     public bool HasErrors => _errorsByProperty.Count > 0;
 
@@ -35,6 +39,9 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
         _servicioCursos = servicioCursos;
 
         RegistrarCursoCommand = new ViewModelCommand(ExecuteRegistrarCursoCommand, CanExecuteRegistrarCursoCommand);
+
+        NivelEducativo = 0;
+        Curso = 0;
     }
 
     #region Properties
@@ -145,8 +152,6 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
 
     private void ExecuteRegistrarCursoCommand(object obj)
     {
-        var request = new CrearCursoRequest((Curso + 1).ToString(), NivelEducativo);
-
         string messageBoxText = string.Empty;
         string caption = string.Empty;
         MessageBoxResult result;
@@ -158,11 +163,12 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
         caption = "Registrar Curso";
         result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-        if (result == MessageBoxResult.Yes)
+        if (result is MessageBoxResult.Yes)
         {
             try
             {
-                _servicioCursos.RegistrarCurso(request);
+                _crearCursoRequest = new CrearCursoRequest((Curso + 1).ToString(), NivelEducativo);
+                _servicioCursos.RegistrarCurso(_crearCursoRequest);
                 MessageBox.Show("Datos guardados correctamente", "Operación exitosa",
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Information);

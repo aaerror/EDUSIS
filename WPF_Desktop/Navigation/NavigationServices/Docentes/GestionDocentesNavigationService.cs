@@ -17,7 +17,6 @@ public class GestionDocentesNavigationService<TViewModel> : INavigationService
         _navigationStore = navigationStore;
     }
 
-
     public void Navigate()
     {
         _navigationStore.ViewModelActual = _viewModelFactory();

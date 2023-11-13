@@ -1,0 +1,195 @@
+﻿<UserControl x:Class="WPF_Desktop.Views.Docentes.GestionPuestosView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
+             xmlns:domainDocentes="clr-namespace:Domain.Docentes;assembly=Domain"
+             xmlns:components="clr-namespace:WPF_Desktop.Components"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" >
+    <UserControl.Resources>
+        <ObjectDataProvider x:Key="posiciones" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="domainDocentes:Posicion"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <!-- CONVERTER -->
+        <BooleanToVisibilityConverter x:Key="Converter"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="100"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- TITTLE AND SUBTITLE -->
+        <components:Header Grid.Row="0"
+                           Title="Gestión de Docentes"
+                           Subtitle="Puestos"/>
+        <!-- DETAILS -->
+        <Border Grid.Row="2"
+                Background="#FFFFFF"
+                BorderBrush="{ StaticResource Gray200 }"
+                BorderThickness="1"
+                CornerRadius="4"
+                Margin="20 10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15"
+                                  Color="#373737"
+                                  ShadowDepth="5"
+                                  Opacity=".3"/>
+            </Border.Effect>
+
+            <ScrollViewer VerticalScrollBarVisibility="Visible"
+                          Padding="20 10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0"
+                          Margin="20 20 20 10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="1*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- NOMBRE COMPLETO -->
+                        <TextBlock Grid.Column="0"
+                                   Grid.Row="0"
+                                   FontFamily="Segoe UI"
+                                   FontSize="18"
+                                   FontWeight="Medium"
+                                   HorizontalAlignment="Left">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}DOCENTE: {0} (D.N.I.: {1})">
+                                    <Binding Path="NombreCompleto"/>
+                                    <Binding Path="Documento"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+
+                        <!-- LEGAJO -->
+                        <TextBlock Grid.Column="1"
+                                   Grid.Row="0"
+                                   FontFamily="Segoe UI"
+                                   FontSize="16"
+                                   FontStyle="Italic"
+                                   FontWeight="Regular"
+                                   HorizontalAlignment="Right">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}Legajo: {0}">
+                                    <Binding Path="Legajo"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+
+                        <Separator Grid.ColumnSpan="2"
+                                   Grid.Row="1"
+                                   Background="{ StaticResource ResourceKey=Gray600 }"
+                                   Height=".8"/>
+                    </Grid>
+
+                    <StackPanel Grid.Row="1"
+                                Margin="20 10">
+                        <DataGrid x:Name="DataGrid_Puestos"
+                                  ItemsSource="{ Binding Path=Puestos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                  SelectedItem="{ Binding Path=PuestoDocenteViewModel, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+                                  AutoGenerateColumns="False"
+                                  HorizontalContentAlignment="Center"
+                                  IsSynchronizedWithCurrentItem="True"
+                                  Style="{ StaticResource DataGrid }">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{ Binding Path=PosicionDescripcion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                                    Header="Posicion"
+                                                    Width="Auto"/>
+                                <DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:D}, ConverterCulture='es-ES', TargetNullValue='Fecha sin especificar' }"
+                                                    Header="Fecha de Inicio"
+                                                    Width="Auto"/>
+                                <DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:D}, ConverterCulture='es-ES', TargetNullValue='Fecha sin especificar' }"
+                                                    Header="Fecha de Finalización"
+                                                    Width="Auto"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+
+                    <!-- ALTAS, BAJAS Y MODIFICACIONES -->
+                    <StackPanel Grid.Row="2"
+                                Margin="20 10">
+                        <GroupBox Header="Altas, Bajas Y Modificaciones"
+                                  FontSize="18"
+                                  FontWeight="Normal"
+                                  Padding="30 20"
+                                  IsEnabled="{ Binding Path=HabilitarPuestoInfo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                  Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }">
+                            <local:PuestoDocenteView DataContext="{ Binding Path=PuestoDocenteViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+                        </GroupBox>
+                    </StackPanel>
+
+                    <!-- COMMANDS -->
+                    <StackPanel Grid.Row="3"
+                                Margin="20 10 20 20">
+                        <WrapPanel HorizontalAlignment="Right">
+                            <Button Command="{ Binding EliminarCommand }"
+                                    CommandParameter="PuestoDocente"
+                                    Content="Quitar"
+                                    Margin="0 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource Tertiary }"/>
+
+                            <!--#region EDITAR -->
+                            <Button Command="{ Binding EditarCommand }"
+                                    Content="Cambiar Puesto"
+                                    Margin="5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource Secondary }"/>
+                            <Button Command="{ Binding CancelarCommand }"
+                                    CommandParameter="Editar"
+                                    Content="Cancelar"
+                                    Margin="0 0 5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource Secondary }"/>
+                            <Button Command="{ Binding GuardarCommand }"
+                                    CommandParameter="Editar"
+                                    Content="Guardar"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource Primary }"/>
+                            <!--#endregion -->
+
+                            <!--#region NUEVO -->
+                            <Button Command="{ Binding RegistrarCommand }"
+                                    Content="Registrar Puesto"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource Secondary }"/>
+                            <Button Command="{ Binding CancelarCommand }"
+                                    CommandParameter="Nuevo"
+                                    Content="Cancelar"
+                                    Margin="0 0 5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource Secondary }"/>
+                            <Button Command="{ Binding GuardarCommand }"
+                                    CommandParameter="Nuevo"
+                                    Content="Guardar"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                    Style="{ StaticResource Primary }"/>
+                            <!--#endregion -->
+                        </WrapPanel>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

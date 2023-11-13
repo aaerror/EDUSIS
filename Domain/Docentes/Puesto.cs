@@ -1,47 +1,65 @@
-﻿using System;
+﻿using Domain.Shared;
+
 namespace Domain.Docentes;
 
-public class Puesto
+public class Puesto : ValueObject
 {
-    public Posicicion Posicion { get; private set; }
-    public DateTime FechaAlta { get; private set; }
-    public DateTime FechaBaja { get; private set; }
+    public Posicion Posicion { get; private set; }
+    public DateTime FechaInicio { get; private set; }
+    public DateTime? FechaFin { get; private set; }
 
 
-    private Puesto(Posicicion Posicion, DateTime fechaAlta, DateTime fechaBaja)
+    private Puesto(Posicion posicion, DateTime fechaInicio)
     {
-        if (fechaAlta >= DateTime.Now || fechaBaja >= DateTime.Now)
+        if (fechaInicio >= DateTime.Today.Date)
         {
-            throw new ArgumentException("Error al cargar el puesto del docente.");
+            throw new ArgumentException("Error al registrar la fecha de alta del puesto del docente.", nameof(fechaInicio));
         }
 
-        this.Posicion = Posicion;
-        FechaAlta = fechaAlta;
-        FechaBaja = fechaBaja;
+        Posicion = posicion;
+        FechaInicio = fechaInicio.Date;
     }
 
-    public static Puesto Create(Posicicion posicion, DateTime fechaAlta, DateTime fechaBaja)
+    private Puesto(Posicion posicion, DateTime fechaInicio, DateTime? fechaFin)
+        : this (posicion, fechaInicio)
     {
-        return new(posicion, fechaAlta, fechaBaja);
+        if (fechaFin is not null)
+        {
+            if (fechaFin > DateTime.Today.Date)
+            {
+                throw new ArgumentException("Error al cargar la fecha de baja del puesto del docente.", nameof(fechaInicio));
+            }
+
+            FechaFin = fechaFin.Value.Date;
+        }
+    }
+
+    public static Puesto Create(Posicion posicion, DateTime fechaInicio)
+    {
+        return new(posicion, fechaInicio);
     }
 
     public int AntiguedadEnPuesto()
     {
         int antiguedad = 0;
-        if (FechaBaja == null)
+        if (FechaFin == null)
         {
-            antiguedad = (DateTime.Now - FechaAlta).Days;
+            antiguedad = (DateTime.Today.Date - FechaInicio.Date).Days;
         }
         else
         {
-            antiguedad = (FechaBaja - FechaAlta).Days;
+            antiguedad = FechaFin.Value.Subtract(FechaInicio).Days;
         }
 
         return antiguedad/365;
     }
 
-    public Puesto DesactivarPuesto()
+    public Puesto QuitarPuesto() => new(Posicion, FechaInicio, DateTime.Today.Date);
+
+    public override IEnumerable<object> GetEqualityCommponents()
     {
-        return new(Posicion, FechaAlta, DateTime.Now);
+        yield return Posicion;
+        yield return FechaInicio;
+        yield return FechaFin;
     }
 }

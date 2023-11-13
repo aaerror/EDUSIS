@@ -12,7 +12,7 @@ public record PersonaConDetallesResponse
     public string Email { get; set; }
     public string Telefono { get; set; }
     public string Calle { get; set; }
-    public int Altura { get; set; }
+    public string Altura { get; set; }
     public int Vivienda { get; set; }
     public string Observacion { get; set; }
     public string Localidad { get; set; }

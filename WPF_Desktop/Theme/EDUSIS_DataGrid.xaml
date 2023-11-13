@@ -33,7 +33,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
     <Style x:Key="DataGrid" TargetType="{ x:Type DataGrid }">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
@@ -44,7 +44,6 @@
         <Setter Property="AutoGenerateColumns" Value="False"/>
         <Setter Property="GridLinesVisibility" Value="All"/>
         <Setter Property="HeadersVisibility" Value="All"/>
-
         <Setter Property="RowDetailsVisibilityMode" Value="VisibleWhenSelected"/>
         <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
         <Setter Property="ScrollViewer.PanningMode" Value="Both"/>

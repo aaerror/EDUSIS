@@ -1,0 +1,118 @@
+﻿<UserControl x:Class="WPF_Desktop.Views.Shared.DomicilioView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Shared"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:domainDomicilios="clr-namespace:Domain.Personas.Domicilios;assembly=Domain"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+    <UserControl.Resources>
+        <ObjectDataProvider x:Key="viviendas" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainDomicilios:Vivienda"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <Label Content="Domicilio"
+               Style="{ StaticResource Headline }"/>
+        <Separator Background="{ StaticResource Gray400 }"
+                   Height=".8"
+                   Width="Auto"/>
+
+        <!--#region Dirección -->
+        <!-- CALLE -->
+        <Grid HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0"
+                        Margin="0 0 5 0"
+                        VerticalAlignment="Center">
+                <Label Content="Calle"
+                       Margin="4 0 0 0"
+                       Style="{ StaticResource Form }"/>
+
+                <TextBox Tag="ingresar la calle&#x2026;"
+                         Text="{ Binding Calle, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                         Style="{StaticResource TextBox }"/>
+            </StackPanel>
+
+            <!-- ALTURA -->
+            <StackPanel Grid.Column="1"
+                        Margin="5 0"
+                        VerticalAlignment="Center">
+                <Label Content="Altura"
+                       Margin="4 0 0 0"
+                       Style="{ StaticResource Form }"/>
+                <TextBox Tag="9999"
+                         Text="{ Binding Altura, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                         Style="{StaticResource TextBox }"/>
+            </StackPanel>
+
+            <!-- VIVIENDA -->
+            <StackPanel Grid.Column="2"
+                        Margin="5 0 0 0">
+                <Label Content="Vivienda"
+                       Margin="4 0 0 0"
+                       Style="{ StaticResource Form }"/>
+                <ComboBox ItemsSource="{ Binding Source={ StaticResource viviendas } }"
+                          SelectedIndex="{ Binding Vivienda, UpdateSourceTrigger=PropertyChanged }"
+                          Style="{ StaticResource ComboBoxStyle }"/>
+            </StackPanel>
+        </Grid>
+        <!--#endregion Dirección -->
+
+        <!-- #region Ubicación -->
+        <!-- LOCALIDAD -->
+        <StackPanel VerticalAlignment="Center">
+            <Label Content="Localidad"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Tag="ingresar la localidad&#x2026;"
+                     Text="{ Binding Localidad, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource TextBox }"/>
+        </StackPanel>
+
+        <!-- PROVINCIA -->
+        <StackPanel VerticalAlignment="Center">
+            <Label Content="Provincia"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Tag="ingresar la provincia&#x2026;"
+                     Text="{ Binding Provincia, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource TextBox }"/>
+        </StackPanel>
+
+        <!-- PAIS -->
+        <StackPanel VerticalAlignment="Center">
+            <Label Content="País"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Tag="ingresar la país&#x2026;"
+                     Text="{ Binding Pais, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource TextBox }"/>
+        </StackPanel>
+        <!--#endregion Ubicación -->
+
+        <!-- OBSERVACIONES -->
+        <StackPanel>
+            <Label Content="Observación"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <TextBox AcceptsReturn="True"
+                     MaxLength="120"
+                     Height="94"
+                     Tag="observaciones&#x2026;"
+                     Text="{ Binding Observaciones, UpdateSourceTrigger=PropertyChanged }"
+                     TextWrapping="Wrap"
+                     VerticalContentAlignment="Top"
+                     Style="{ StaticResource TextBox }"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

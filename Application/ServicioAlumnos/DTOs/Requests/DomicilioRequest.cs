@@ -1,7 +1,7 @@
 ﻿namespace Core.ServicioAlumnos.DTOs.Requests;
 
 public record DomicilioRequest(string Calle,
-                               int Altura,
+                               string Altura,
                                int Vivienda,
                                string Observacion,
                                string Localidad,

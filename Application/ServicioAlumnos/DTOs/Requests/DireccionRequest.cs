@@ -1,6 +1,6 @@
 ﻿namespace Core.ServicioAlumnos.DTOs.Requests;
 
 public record DireccionRequest(string Calle,
-                               int Altura,
+                               string Altura,
                                int Vivienda,
                                string Observacion);

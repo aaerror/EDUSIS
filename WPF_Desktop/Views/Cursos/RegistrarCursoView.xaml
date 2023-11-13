@@ -74,7 +74,7 @@
                                Grid.Row="0"
                                Content="Curso"
                                HorizontalAlignment="Right"
-                               Style="{ StaticResource Form }"/>
+                               Style="{ StaticResource ResourceKey=Form }"/>
 <!--
                         <TextBox Grid.Column="1"
                                  Grid.Row="0"
@@ -117,8 +117,8 @@
                                   Margin="10 5"
                                   HorizontalAlignment="Left"
                                   ItemsSource="{ Binding Source={ StaticResource nivelEducativo } }"
-                                  SelectedIndex="{ Binding Path=NivelEducativo, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, ValidatesOnDataErrors=True }"
-                                  SelectedItem="{ Binding Path=NivelEducativoSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay }"
+                                  SelectedIndex="{ Binding Path=NivelEducativo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                  SelectedItem="{ Binding Path=NivelEducativoSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                   Width="200"
                                   Style="{ StaticResource ComboBoxStyle }"/>
                     </Grid>

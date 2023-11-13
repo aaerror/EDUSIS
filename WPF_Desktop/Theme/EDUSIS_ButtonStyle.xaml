@@ -72,7 +72,7 @@
                     <Grid>
                         <!-- BORDER -->
                         <Border x:Name="Border"
-                                Background="{ StaticResource PrimaryColor }"
+                                Background="{ StaticResource ResourceKey=PrimaryColor }"
                                 BorderBrush="Transparent"
                                 BorderThickness="0"
                                 CornerRadius="4"
@@ -86,6 +86,11 @@
                     </Grid>
                     <!-- TRIGGER -->
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Neutral100 }"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Neutral200 }"/>
+                            <Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral400 }"/>
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Border" Property="Background" Value="#14B219"/>
                         </Trigger>
@@ -101,7 +106,7 @@
      <!-- SECONDARY BUTTON -->
     <Style x:Key="Secondary" TargetType="{ x:Type Button }">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
+        <Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontWeight" Value="Regular"/>
         <Setter Property="FontSize" Value="16"/>
@@ -115,8 +120,8 @@
                         <!-- BORDER -->
                         <Border x:Name="Border"
                                 Background="White"
-                                BorderBrush="{ StaticResource Gray500 }"
-                                BorderThickness="1.5"
+                                BorderBrush="{ StaticResource ResourceKey=Gray500 }"
+                                BorderThickness="1"
                                 CornerRadius="4"
                                 Padding="16 0"
                                 SnapsToDevicePixels="True">
@@ -128,13 +133,18 @@
                     </Grid>
                     <!-- TRIGGER -->
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Neutral100 }"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Neutral200 }"/>
+                            <Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral400 }"/>
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Gray400 }"/>
-                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource Gray100 }"/>
+                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Gray100 }"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Gray400 }"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Gray500 }"/>
-                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource Gray200 }"/>
+                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Gray200 }"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Gray500 }"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -145,14 +155,14 @@
     <!-- TERTIARY BUTTON -->
     <Style x:Key="Tertiary" TargetType="{ x:Type Button }">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{ StaticResource Neutral600 }"/>
+        <Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontWeight" Value="Regular"/>
         <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Height" Value="36"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="MaxHeight" Value="44"/>
         <Setter Property="MinWidth" Value="64"/>
-        <Setter Property="Height" Value="Auto"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{ x:Type Button }">
@@ -161,8 +171,9 @@
                         <Border x:Name="Border"
                                 Background="White"
                                 BorderBrush="Transparent"
-                                BorderThickness="1"
-                                Padding="0 5"
+                                BorderThickness="0"
+                                CornerRadius="4"
+                                Padding="16 0"
                                 SnapsToDevicePixels="True">
                             <!-- CONTENT -->
                             <ContentPresenter Content="{ TemplateBinding Content }"
@@ -172,11 +183,14 @@
                     </Grid>
                     <!-- TRIGGER -->
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral200 }"/>
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
+                            <Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Border" Property="Background" Value="{ StaticResource Gray200 }"/>
+                            <Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimaryColor }"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

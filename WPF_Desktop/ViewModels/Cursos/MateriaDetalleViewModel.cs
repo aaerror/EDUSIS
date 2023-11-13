@@ -1,6 +1,9 @@
 ﻿using Core.ServicioCursos;
 using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos.DTOs.Responses;
+using Core.ServicioDocentes.DTOs.Responses;
+using Domain.Cursos.Materias;
+using Domain.Docentes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,17 +18,29 @@ namespace WPF_Desktop.ViewModels.Cursos;
 public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
 {
     private readonly IServicioCursos _servicioCursos;
+
+    #region Request
+    private EliminarSituacionRevistaRequest _eliminarSituacionRevista = null;
+    private CrearDocenteEnFuncionesRequest _crearDocenteEnFunciones = null;
+    #endregion
+
+    #region Response
     private readonly MateriaResponse _materiaResponse = null;
-    private Dictionary<string, List<string>> _errorsByProperty = new();
+    #endregion
 
     private bool _editarMateria = false;
+
     private Guid _materia = Guid.Empty;
     private string _descripcion = string.Empty;
     private int _horasCatedra;
-    private Guid? _profesor = Guid.Empty;
-    private ObservableCollection<ProfesorViewModel> _profesores = new();
+    private Guid? _docenteID = Guid.Empty;
+    private string _nombreCompletoProfesor = string.Empty;
+    private SituacionRevistaViewModel _situacionRevistaProfesor;
+    private ObservableCollection<SituacionRevistaViewModel> _profesores = new();
     private ObservableCollection<HorarioViewModel> _horarios = new();
 
+    private Dictionary<string, List<string>> _errorsByProperty = new();
+    
     public bool HasErrors => _errorsByProperty.Any();
 
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
@@ -33,6 +48,7 @@ public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
     #region Commands
     public ViewModelCommand CancelarCommand { get; }
     public ViewModelCommand EditarCommand { get; }
+    public ViewModelCommand EliminarCommand { get; }
     public ViewModelCommand GuardarCommand { get; }
     public ViewModelCommand HorarioCommand { get; }
     #endregion
@@ -51,13 +67,14 @@ public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
             Materia = _materiaResponse.Materia;
             Descripcion = _materiaResponse.Descripcion;
             HorasCatedra = _materiaResponse.HorasCatedra;
-            Profesor = _materiaResponse.Profesor;
+            DocenteID = _materiaResponse.Profesor;
+            NombreCompletoProfesor = _materiaResponse.NombreCompletoProfesor;
 
             if (_materiaResponse.Profesores.Count > 0)
             {
-                foreach (SituacionRevistaProfesorResponse response in _materiaResponse.Profesores)
+                foreach (SituacionRevistaResponse response in _materiaResponse.Profesores)
                 {
-                    Profesores.Add(new ProfesorViewModel(response));
+                    Profesores.Add(new SituacionRevistaViewModel(response));
                 }
             }
 
@@ -74,8 +91,29 @@ public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
 
         CancelarCommand = new ViewModelCommand(ExecuteCancelarCommand, CanExecuteCancelarCommand);
         EditarCommand = new ViewModelCommand(ExecuteEditarCommand, CanExecuteEditarCommand);
+        EliminarCommand = new ViewModelCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
         GuardarCommand = new ViewModelCommand(ExecuteGuardarCommand, CanExecuteGuardarCommand);
         HorarioCommand = new ViewModelCommand(ExecuteHorarioCommand, CanExecuteHorarioCommand);
+    }
+
+    public void AgregarDocenteEnFunciones(Guid docenteID)
+    {
+        var situacionRevista = _profesores.Where(x => x.DocenteID.Equals(docenteID) && x.FechaBaja is null)
+                                          .FirstOrDefault();
+        situacionRevista.EnFunciones = true;
+        DocenteID = situacionRevista.DocenteID;
+        NombreCompletoProfesor = situacionRevista.NombreCompleto;
+    }
+
+    public void QuitarDocenteEnFunciones(SituacionRevistaViewModel situacionRevista)
+    {
+        if (situacionRevista is not null)
+        {
+            situacionRevista.EnFunciones = false;
+
+            DocenteID = Guid.Empty;
+            NombreCompletoProfesor = string.Empty;
+        }
     }
 
     #region Properties
@@ -159,16 +197,30 @@ public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public Guid? Profesor
+    public Guid? DocenteID
     {
         get
         {
-            return _profesor;
+            return _docenteID;
         }
         set
         {
-            _profesor = value;
-            OnPropertyChanged(nameof(Profesor));
+            _docenteID = value;
+            OnPropertyChanged(nameof(DocenteID));
+        }
+    }
+
+    public string NombreCompletoProfesor
+    {
+        get
+        {
+            return _nombreCompletoProfesor;
+        }
+
+        set
+        {
+            _nombreCompletoProfesor = value;
+            OnPropertyChanged(nameof(NombreCompletoProfesor));
         }
     }
 
@@ -180,7 +232,21 @@ public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public ObservableCollection<ProfesorViewModel> Profesores
+    public SituacionRevistaViewModel SituacionRevistaProfesor
+    {
+        get
+        {
+            return _situacionRevistaProfesor;
+        }
+
+        set
+        {
+            _situacionRevistaProfesor = value;
+            OnPropertyChanged(nameof(SituacionRevistaProfesor));
+        }
+    }
+
+    public ObservableCollection<SituacionRevistaViewModel> Profesores
     {
         get
         {
@@ -224,7 +290,7 @@ public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
         Materia = _materiaResponse.Materia;
         Descripcion = _materiaResponse.Descripcion;
         HorasCatedra = _materiaResponse.HorasCatedra;
-        Profesor = _materiaResponse.Profesor;
+        DocenteID = _materiaResponse.Profesor;
         //Profesores.Concat(_materiaResponse.Profesores);
         //Horarios.Concat(_materiaResponse.Horarios);
 
@@ -240,8 +306,76 @@ public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
     }
     #endregion
 
+    #region EliminarCommand
+    private bool CanExecuteEliminarCommand(object obj)
+    {
+        switch (obj)
+        {
+            case "Docente":
+                return SituacionRevistaProfesor is not null && SituacionRevistaProfesor.FechaBaja is null;
+            default:
+                return false;
+        }
+    }
+
+    private void ExecuteEliminarCommand(object obj)
+    {
+        string messageBoxText = string.Empty;
+        string caption = string.Empty;
+        MessageBoxResult result;
+
+        switch (obj)
+        {
+            case "Docente":
+                messageBoxText = $"¿Está seguro que desea cambiar de situación de revista al docente { SituacionRevistaProfesor.NombreCompleto } " +
+                                 $"de la materia { Descripcion }? Se va a eliminar al docente del cargo { SituacionRevistaProfesor.CargoDescripcion } " +
+                                 $"(Fecha Alta: { SituacionRevistaProfesor.FechaAlta.ToString("D") })";
+                caption = "Cambio de Situación de Revista";
+                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (result is MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        _eliminarSituacionRevista = new EliminarSituacionRevistaRequest(_materiaResponse.Curso,
+                                                                                        _materiaResponse.Materia,
+                                                                                        SituacionRevistaProfesor.DocenteID,
+                                                                                        DateTime.Now);
+                        _servicioCursos.QuitarDocenteDeMateria(_eliminarSituacionRevista);
+
+                        messageBoxText = $"Se quitó del cargo al docente correctamente.";
+                        caption = "Operación Exitosa";
+                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        SituacionRevistaProfesor.FechaBaja = DateTime.Now;
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+
+                SituacionRevistaProfesor = null;
+                break;
+
+            case "Horario":
+
+                break;
+        }
+    }
+    #endregion
+
     #region GuardarCommand
-    private bool CanExecuteGuardarCommand(object obj) => EditarMateria;
+    private bool CanExecuteGuardarCommand(object obj)
+    {
+        switch (obj)
+        {
+            case "DocenteEnFunciones":
+                return SituacionRevistaProfesor is not null && SituacionRevistaProfesor.FechaBaja is null && !SituacionRevistaProfesor.EnFunciones;
+            default:
+                return EditarMateria;
+        }
+    }
 
     private void ExecuteGuardarCommand(object obj)
     {
@@ -249,24 +383,35 @@ public class MateriaDetalleViewModel : ViewModel, INotifyDataErrorInfo
         string caption = string.Empty;
         MessageBoxResult result;
 
-        messageBoxText = $"¿Está seguro que desea guardar los cambios en la materia?";
-        caption = "Guardar Materia";
-        result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-        if (result == MessageBoxResult.Yes)
+        switch (obj)
         {
-            try
-            {
-                var request = new EditarMateriaRequest(_materiaResponse.Curso, _materiaResponse.Materia, Descripcion, HorasCatedra);
-                _servicioCursos.ActualizarMateria(request);
+            case "DocenteEnFunciones":
+                messageBoxText = $"¿Está seguro que desea establecer el docente { SituacionRevistaProfesor.NombreCompleto } a cargo de la materia { Descripcion }?";
+                caption = "Docente a Cargo de la Materia";
+                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        var situacionRevistaEnFunciones = _profesores.Where(x => x.EnFunciones && x.FechaBaja is null)
+                                                                     .FirstOrDefault();
+                        QuitarDocenteEnFunciones(situacionRevistaEnFunciones);
 
-                messageBoxText = $"Cambios guardados exitósamente.";
-                caption = "Operación Exitosa";
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+                        _crearDocenteEnFunciones = new CrearDocenteEnFuncionesRequest(_materiaResponse.Curso, _materiaResponse.Materia, SituacionRevistaProfesor.DocenteID );
+                        _servicioCursos.EstablecerDocenteEnFunciones(_crearDocenteEnFunciones);
+
+                        messageBoxText = $"Cambios guardados exitósamente.";
+                        caption = "Operación Exitosa";
+                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        AgregarDocenteEnFunciones(SituacionRevistaProfesor.DocenteID);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                break;
         }
     }
     #endregion

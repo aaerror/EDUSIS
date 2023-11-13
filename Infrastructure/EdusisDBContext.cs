@@ -12,8 +12,9 @@ public class EdusisDBContext : DbContext
 {
     public DbSet<Persona> Personas { get; set; }
     public DbSet<Alumno> Alumnos { get; set; }
-    public DbSet<Profesor> Profesores { get; set; }
-    public DbSet<Preceptor> Preceptores { get; set; }
+    public DbSet<Docente> Docentes { get; set; }
+    /*public DbSet<Profesor> Profesores { get; set; }
+    public DbSet<Preceptor> Preceptores { get; set; }*/
     public DbSet<Curso> Cursos { get; set; }
 
 
@@ -44,8 +45,8 @@ public class EdusisDBContext : DbContext
         modelBuilder.ApplyConfiguration(new PersonasConfiguration());
         modelBuilder.ApplyConfiguration(new AlumnosConfiguration());
         modelBuilder.ApplyConfiguration(new DocentesConfigurations());
-        modelBuilder.ApplyConfiguration(new ProfesoresConfigurations());
-        modelBuilder.ApplyConfiguration(new PreceptoresConfigurations());
+/*        modelBuilder.ApplyConfiguration(new ProfesoresConfigurations());
+        modelBuilder.ApplyConfiguration(new PreceptoresConfigurations());*/
         modelBuilder.ApplyConfiguration(new CursosConfigurations());
         modelBuilder.ApplyConfiguration(new DivisionesConfigurations());
         modelBuilder.ApplyConfiguration(new CursantesConfigurations());
@@ -53,8 +54,7 @@ public class EdusisDBContext : DbContext
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
-        configurationBuilder
-            .Properties<string>()
-            .HaveMaxLength(50);
+        configurationBuilder.Properties<string>()
+                            .HaveMaxLength(50);
     }
 }

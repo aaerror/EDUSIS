@@ -8,7 +8,7 @@ public class Domicilio
 
     private Domicilio() { }
 
-    private Domicilio(string calle, int altura, int vivienda, string observacion, string localidad, string provincia, string pais)
+    private Domicilio(string calle, string altura, int vivienda, string observacion, string localidad, string provincia, string pais)
     {
         Direccion = Direccion.Crear(calle, altura, vivienda, observacion);
         Ubicacion = Ubicacion.Crear(localidad, provincia, pais);
@@ -30,7 +30,7 @@ public class Domicilio
         Ubicacion = ubicacion;
     }
 
-    public static Domicilio Crear(string calle, int altura, int vivienda, string observacion, string localidad, string provincia, string pais)
+    public static Domicilio Crear(string calle, string altura, int vivienda, string observacion, string localidad, string provincia, string pais)
     {
         return new(calle, altura, vivienda, observacion, localidad, provincia, pais);
     }

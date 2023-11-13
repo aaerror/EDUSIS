@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Windows.Data;
 
 namespace WPF_Desktop.Shared.Converters;

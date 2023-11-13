@@ -34,7 +34,6 @@ public class PerfilAlumnoViewModel : ViewModel
     public PerfilAlumnoViewModel(IServicioAlumnos servicioAlumno, PerfilBuscadoStore perfilBuscadoStore)
     {
         _servicioAlumno = servicioAlumno;
-
         _perfilBuscadoStore = perfilBuscadoStore;
 
         if (string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))
@@ -44,7 +43,6 @@ public class PerfilAlumnoViewModel : ViewModel
 
         EditarCommand = new ViewModelCommand(EditarCommandExecute, EditarCommandCanExecute);
         CancelarEditarCommand = new ViewModelCommand(CancelarEditarCommandExecute, CancelarEditarCommandCanExecute);
-
         GuardarCambiosCommand = new ViewModelCommand(GuardarCambiosCommandExecute, GuardarCambiosCommandCanExecute);
 
         _personaConDetalles = _servicioAlumno.BuscarPorDNIConDetalles(_perfilBuscadoStore.Documento);

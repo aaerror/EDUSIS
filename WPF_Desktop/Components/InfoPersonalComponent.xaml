@@ -1,13 +1,13 @@
 ﻿<UserControl x:Class="WPF_Desktop.Components.InfoPersonalComponent"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Name="personaData"
+             xmlns:local="clr-namespace:WPF_Desktop.Components"
              xmlns:domainPersonas="clr-namespace:Domain.Personas;assembly=Domain"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             x:Name="personaData"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:local="clr-namespace:WPF_Desktop.Components">
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
     <ContentControl.Resources>
         <ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
             <ObjectDataProvider.MethodParameters>
@@ -98,7 +98,7 @@
                Style="{ StaticResource Form }"/>
         <TextBox Grid.Column="0"
                  Grid.Row="5"
-                 Text="{ Binding FechaNacimiento, ElementName=personaData }"
+                 Text="{ Binding Path=FechaNacimiento, ElementName=personaData, StringFormat=D }"
                  IsEnabled="False"
                  Margin="0 0 10 0"
                  Style="{ StaticResource TextBox }"/>

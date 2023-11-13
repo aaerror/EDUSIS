@@ -2,7 +2,6 @@
 using Domain.Personas.Domicilios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Infrastructure.EntityConfigurations;
 
@@ -50,7 +49,7 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 
             informacionPersonalBuilder.Property(x => x.FechaNacimiento)
                                       .HasColumnName("fecha_nacimiento")
-                                      .HasColumnType("datetime")
+                                      .HasColumnType("date")
                                       .HasConversion(fecha => fecha.Date, value => value.Date)
                                       .IsRequired();
 
@@ -87,12 +86,12 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 
                 direccionBuilder.Property("Altura")
                                 .HasColumnName("altura")
-                                .HasColumnType("int")
-                                .IsRequired();
+                                .HasColumnType("varchar(6)")
+                                .IsRequired(false);
 
                 direccionBuilder.Property<Vivienda>("Vivienda")
                                 .HasColumnName("vivienda")
-                                .HasColumnType("varchar(10)")
+                                .HasColumnType("varchar(20)")
                                 .HasConversion(vivienda => vivienda.ToString(), value => (Vivienda)Enum.Parse(typeof(Vivienda), value))
                                 .IsRequired();
 
@@ -132,12 +131,12 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 
         // CONTACTO
         builder.Property(x => x.Telefono)
-            .HasColumnName("telefono")
-            .HasColumnType("varchar(15)");
+               .HasColumnName("telefono")
+               .HasColumnType("varchar(15)");
 
         builder.Property(x => x.Email)
-            .HasColumnName("email")
-            .HasColumnType("varchar(50)");
+               .HasColumnName("email")
+               .HasColumnType("varchar(50)");
 
         builder.HasIndex(x => x.Email)
                .IsUnique();

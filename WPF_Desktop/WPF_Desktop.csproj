@@ -24,4 +24,8 @@
   <ItemGroup>
     <Resource Include="bell-ring-icon.png" />
   </ItemGroup>
+	
+  <ItemGroup>
+    <Folder Include="Navigation\NavigationServices\Alumnos\" />
+  </ItemGroup>
 </Project>

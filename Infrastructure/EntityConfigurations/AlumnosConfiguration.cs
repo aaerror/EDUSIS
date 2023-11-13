@@ -19,10 +19,12 @@ public class AlumnosConfiguration : IEntityTypeConfiguration<Alumno>
 
         builder.Property(a => a.FechaAlta)
             .HasColumnName("fecha_alta")
+            .HasColumnType("date")
             .IsRequired();
 
         builder.Property(a => a.FechaBaja)
             .HasColumnName("fecha_baja")
+            .HasColumnType("date")
             .IsRequired(false);
     }
 }

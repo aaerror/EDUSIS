@@ -9,9 +9,4 @@
     <ProjectReference Include="..\Domain\Domain.csproj" />
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="ServicioProfesores\DTOs\Requests\" />
-    <Folder Include="ServicioProfesores\Exceptions\" />
-  </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
-﻿using Core.ServicioAlumnos.DTOs.Requests;
+﻿using Core.ServicioAlumnos.DTOs;
+using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos.DTOs.Responses;
 
 namespace Core.ServicioAlumnos;
@@ -24,4 +25,6 @@ public interface IServicioAlumnos
     void ModificarDomicilio(Guid personaId, DomicilioRequest domicilioRequest);
 
     void ActualizarDireccion(Guid personaId, DireccionRequest domicilioRequest);
+
+    void QuitarAlumno(Guid alumnoId);
 }

@@ -3,7 +3,7 @@ using Infrastructure.Shared;
 
 namespace Infrastructure.Repository;
 
-public class ProfesorRepository : Repository<Profesor>, IProfesorRepository
+/*public class ProfesorRepository : Repository<Profesor>, IProfesorRepository
 {
     private EdusisDBContext _context => Context as EdusisDBContext;
 
@@ -15,4 +15,4 @@ public class ProfesorRepository : Repository<Profesor>, IProfesorRepository
     {
         throw new NotImplementedException();
     }
-}
+}*/

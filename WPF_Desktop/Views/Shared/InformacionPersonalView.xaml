@@ -1,0 +1,95 @@
+﻿<UserControl x:Class="WPF_Desktop.Views.Shared.InformacionPersonalView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Shared"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:domainPersonas="clr-namespace:Domain.Personas;assembly=Domain"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+    <UserControl.Resources>
+        <ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="domainPersonas:Sexo"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <Label Content="Información Personal"
+               Style="{ StaticResource Headline }"/>
+        <Separator Background="{ StaticResource Gray400 }"
+                   Height=".8"
+                   Width="Auto"/>
+
+        <!-- FORM -->
+        <!--#region InformaciónPersonal -->
+        <!-- APELLIDO -->
+        <StackPanel VerticalAlignment="Center">
+            <Label Content="Apellido"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Tag="ingresar el apellido&#x2026;"
+                     Text="{ Binding Path=Apellido, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource TextBox }"/>
+        </StackPanel>
+
+        <!-- NOMBRE -->
+        <StackPanel Grid.Column="0"
+                    VerticalAlignment="Center">
+            <Label Content="Nombre"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Tag="ingresar el nombre&#x2026;"
+                     Text="{ Binding Path=Nombre, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource TextBox }"/>
+        </StackPanel>
+
+        <!-- DOCUMENTNO -->
+        <StackPanel Grid.Column="0"
+                    VerticalAlignment="Center">
+            <Label Content="Documento"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Tag="ingresar el documento&#x2026;"
+                     Text="{ Binding Path=Documento, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource TextBox }"/>
+        </StackPanel>
+
+        <!-- FECHA DE NACIMIENTO -->
+        <StackPanel Grid.Column="0"
+                    VerticalAlignment="Center">
+            <Label Content="Fecha de Nacimiento"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <DatePicker CalendarStyle="{ StaticResource Calendar }"
+                        DisplayDate="{ Binding Path=FechaNacimiento, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                        DisplayDateStart="01/01/1900"
+                        DisplayDateEnd="{ Binding Path=FechaNacimiento, Mode=OneTime }"
+                        Tag="fecha de nacimiento"
+                        Style="{ StaticResource DatePicker }"/>
+        </StackPanel>
+
+        <!-- SEXO -->
+        <StackPanel Grid.Column="0"
+                    VerticalAlignment="Center">
+            <Label Content="Sexo"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <ComboBox ItemsSource="{ Binding Source={ StaticResource sexos } }"
+                      SelectedIndex="{ Binding Path=Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                      Style="{ StaticResource ComboBoxStyle }"/>
+        </StackPanel>
+
+        <!-- NACIONALIDAD -->
+        <StackPanel Grid.Column="0"
+                    VerticalAlignment="Center">
+            <Label Content="Nacionalidad"
+                   Margin="4 0 0 0"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Tag="ingresar la nacionalidad&#x2026;"
+                     Text="{ Binding Path=Nacionalidad, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource TextBox }"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

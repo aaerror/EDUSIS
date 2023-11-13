@@ -1,4 +1,5 @@
 ﻿using Domain.Cursos;
+using Domain.Cursos.Materias;
 using Infrastructure.Shared;
 using Microsoft.EntityFrameworkCore;
 

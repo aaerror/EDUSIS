@@ -63,93 +63,113 @@ public class Materia : Entity
     }
 
     #region Docente
-    private SituacionRevista BuscarCargoDelProfesor(Guid unProfesor)
-    {
-        if (ExisteProfesorConCargoAsignado(unProfesor))
-        {
-            throw new ArgumentException($"No existe el profesor con un cargo en la materia {Descripcion}.", nameof(unProfesor));
-        }
+    private SituacionRevista BuscarDocenteEnFunciones() => _profesores.Where(x => x.EnFunciones && x.FechaBaja is null).FirstOrDefault();
 
-        return _profesores.Where(x => x.ProfesorId.Equals(unProfesor))
-                          .FirstOrDefault();
-    }
-
-    private bool CargoDisponible(Cargo unCargo) => !_profesores.Any(x => x.Cargo.Equals(unCargo));
-
-    private bool ExisteProfesorConCargoAsignado(Guid unProfesor)
+    public SituacionRevista BuscarCargoDelDocente(Guid unProfesor)
     {
         if (Guid.Empty.Equals(unProfesor))
         {
             throw new ArgumentNullException(nameof(unProfesor), "Se deben especificar los datos del profesor que desea buscar.");
         }
 
-        return _profesores.Any(x => x.ProfesorId.Equals(unProfesor));
+        return _profesores.Where(x => x.ProfesorId.Equals(unProfesor) && x.FechaBaja is null)
+                          .FirstOrDefault();
     }
 
+    private bool CargoDisponible(Cargo unCargo) => !_profesores.Any(x => x.Cargo.Equals(unCargo) && x.FechaBaja is null);
 
-    public bool ExisteProfesorEnFunciones() => !Guid.Empty.Equals(Profesor);
+    public bool ExisteDocenteEnFunciones() => _profesores.Any(x => x.EnFunciones && x.FechaBaja is null);
 
-    public void EstablecerProfesorEnFunciones(Guid unProfesor)
+    public void EstablecerDocenteEnFunciones(Guid unProfesor)
     {
-        if (!ExisteProfesorConCargoAsignado(unProfesor))
+        var situacionRevista = BuscarCargoDelDocente(unProfesor);
+        if (situacionRevista is null)
         {
             throw new ArgumentException($"El profesor no tiene un cargo en la materia de { Descripcion }.", nameof(unProfesor));
         }
 
+        QuitarDocenteDeFunciones();
+
+        var index = _profesores.IndexOf(situacionRevista);
+        _profesores[index] = situacionRevista.EstablecerEnFunciones();
         Profesor = unProfesor;
     }
 
-    public void AsignarCargoDelProfesor(Guid unProfesor, Cargo enCargo, DateTime fechaAlta)
+    public void RegistrarNuevaSituacionRevista(Guid unProfesor, Cargo enCargo, DateTime fechaAlta, bool enFunciones)
     {
         if (Guid.Empty.Equals(unProfesor))
         {
             throw new ArgumentNullException(nameof(unProfesor), $"Se debe especificar el profesor que desea asignar a la materia {Descripcion}.");
         }
 
-        if (CargoDisponible(enCargo))
+        if (!CargoDisponible(enCargo))
         {
             throw new ArgumentException($"Este cargo docente no se encuentra disponible en la materia { Descripcion }.", nameof(enCargo));
         }
 
-        var situacionRevista = BuscarCargoDelProfesor(unProfesor);
-        if (situacionRevista is not null || situacionRevista.FechaBaja is null)
+        var situacionRevista = BuscarCargoDelDocente(unProfesor);
+        if (situacionRevista is not null && situacionRevista.FechaBaja is null)
         {
             throw new ArgumentException($"El profesor ya se encuentra con un cargo en la materia. Cargo: { situacionRevista.Cargo } desde el { situacionRevista.FechaAlta.ToString("d") }", nameof(unProfesor));
         }
 
-        _profesores.Add(SituacionRevista.Crear(unProfesor, enCargo, fechaAlta));
-    }
-
-    public void CambiarCargoDelProfesor(Guid unProfesor, Cargo nuevoCargo, DateTime fechaAltaCargoNuevo, DateTime fechaBajaCargoAnterior)
-    {
-        if (!ExisteProfesorConCargoAsignado(unProfesor))
+        var nuevaSituacionRevista = SituacionRevista.Crear(unProfesor, enCargo, fechaAlta, enFunciones);
+        if (enFunciones)
         {
-            throw new ArgumentException($"No existe el profesor con un cargo en la materia { Descripcion }.", nameof(unProfesor));
+            QuitarDocenteDeFunciones();
+
+            _profesores.Add(nuevaSituacionRevista);
+            Profesor = nuevaSituacionRevista.ProfesorId;
+
+            return;
         }
 
+        _profesores.Add(nuevaSituacionRevista);
+    }
+
+    public void CambiarCargoDelProfesor(Guid unProfesor, Cargo nuevoCargo, DateTime fechaAltaCargoNuevo, DateTime fechaBajaCargoAnterior, bool enFunciones)
+    {
         if (!CargoDisponible(nuevoCargo))
         {
             throw new ArgumentException($"El cargo { nuevoCargo } ya se encuentra ocupado en la materia { Descripcion }.");
         }
 
-        QuitarProfesorDelCargo(unProfesor, fechaBajaCargoAnterior);
-        var situacionRevista = BuscarCargoDelProfesor(unProfesor);
+        var situacionRevista = BuscarCargoDelDocente(unProfesor);
+        if (situacionRevista is null)
+        {
+            throw new ArgumentException($"El profesor no tiene un cargo en la materia de { Descripcion }.", nameof(unProfesor));
+        }
 
-        SituacionRevista nuevaSituacionRevista = situacionRevista.CambiarSituacionRevista(nuevoCargo, fechaAltaCargoNuevo);
+        if (enFunciones && ExisteDocenteEnFunciones())
+        {
+            throw new ArgumentException($"Error al hacer un cambio de revista. Ya existe un profesor en funciones.", nameof(unProfesor));
+        }
+
+        QuitarDocenteDelCargo(unProfesor, fechaBajaCargoAnterior);
+        SituacionRevista nuevaSituacionRevista = situacionRevista.CambiarSituacionRevista(nuevoCargo, fechaAltaCargoNuevo, enFunciones);
         _profesores.Add(nuevaSituacionRevista);
     }
 
-    public void QuitarProfesorDelCargo(Guid unProfesor, DateTime fechaBaja)
+    public void QuitarDocenteDelCargo(Guid unProfesor, DateTime fechaBaja)
     {
-        if (!ExisteProfesorConCargoAsignado(unProfesor))
+        var situacionRevista = BuscarCargoDelDocente(unProfesor);
+        if (situacionRevista is null)
         {
-            throw new ArgumentException($"El profesor no se encuentra inscripto en la materia de {Descripcion}.", nameof(unProfesor));
+            throw new ArgumentException($"El profesor no tiene un cargo en la materia de {Descripcion}.", nameof(unProfesor));
         }
-
-        var situacionRevista = BuscarCargoDelProfesor(unProfesor);
 
         var index = _profesores.IndexOf(situacionRevista);
         _profesores[index] = situacionRevista.QuitarCargo(fechaBaja);
+    }
+
+    public void QuitarDocenteDeFunciones()
+    {
+        var aEliminar = BuscarDocenteEnFunciones();
+        if (aEliminar is not null)
+        {
+            int index = _profesores.IndexOf(aEliminar);
+            _profesores[index] = aEliminar.QuitarDeFunciones();
+        }
     }
     #endregion
 

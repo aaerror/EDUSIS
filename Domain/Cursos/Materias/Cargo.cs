@@ -1,8 +1,13 @@
-﻿namespace Domain.Cursos.Materias;
+﻿using System.ComponentModel;
+
+namespace Domain.Cursos.Materias;
 
 public enum Cargo
 {
-    Tiular,
+    [Description("Titular")]
+    Titular,
+    [Description("Suplente")]
     Suplente,
+    [Description("Interino")]
     Interino
 }

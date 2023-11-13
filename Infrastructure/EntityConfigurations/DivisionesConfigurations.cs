@@ -32,10 +32,10 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
                .ValueGeneratedNever();
 
         // FK_PRECEPTORES_DIVISIONES
-        builder.HasOne<Preceptor>()
+        builder.HasOne<Docente>()
                .WithOne()
                .HasForeignKey<Division>(x => x.Preceptor)
-               .HasConstraintName("FK_PRECEPTORES_DIVISIONES")
+               .HasConstraintName("FK_DOCENTES_DIVISIONES")
                .IsRequired(false);
 
         builder.Property(x => x.Preceptor)

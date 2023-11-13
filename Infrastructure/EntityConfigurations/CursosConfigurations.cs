@@ -1,10 +1,7 @@
-﻿using Domain.Alumnos;
-using Domain.Cursos;
-using Domain.Cursos.Divisiones;
+﻿using Domain.Cursos;
 using Domain.Cursos.Materias;
 using Domain.Docentes;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.EntityConfigurations;
@@ -104,10 +101,13 @@ public class CursosConfigurations : IEntityTypeConfiguration<Curso>
                                        .HasColumnName("profesor_id");
 
                 // FK_PROFESORES_SITUACION-REVISTA
-                situacionRevistaBuilder.HasOne<Profesor>()
-                                       .WithOne()
+                situacionRevistaBuilder.HasOne<Docente>()
+                                       .WithMany()
+                                       .HasForeignKey(x => x.ProfesorId)
+                                       .HasConstraintName("FK_DOCENTES_SITUACION-REVISTA");
+                                       /*.WithOne()
                                        .HasForeignKey<SituacionRevista>(x => x.ProfesorId)
-                                       .HasConstraintName("FK_PROFESORES_SITUACION-REVISTA");
+                                       .HasConstraintName("FK_DOCENTES_SITUACION-REVISTA");*/
 
                 situacionRevistaBuilder.Property(x => x.Cargo)
                                        .HasColumnName("cargo")
@@ -115,11 +115,17 @@ public class CursosConfigurations : IEntityTypeConfiguration<Curso>
                                        .HasConversion(cargo => cargo.ToString(), value => (Cargo) Enum.Parse(typeof(Cargo), value));
 
                 situacionRevistaBuilder.Property(x => x.FechaAlta)
-                                       .HasColumnName("fecha_alta");
+                                       .HasColumnName("fecha_alta")
+                                       .HasColumnType("date");
 
                 situacionRevistaBuilder.Property(x => x.FechaBaja)
                                        .HasColumnName("fecha_baja")
+                                       .HasColumnType("date")
                                        .IsRequired(false);
+
+                situacionRevistaBuilder.Property(x => x.EnFunciones)
+                                       .HasColumnName("en_funciones")
+                                       .HasDefaultValue(false);
             });
 
             // HORARIOS
