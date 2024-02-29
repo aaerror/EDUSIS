@@ -17,8 +17,8 @@
 
     <StackPanel>
         <Label Content="Información Personal"
-               Style="{ StaticResource Headline }"/>
-        <Separator Background="{ StaticResource Gray400 }"
+               Style="{ StaticResource ResourceKey=Headline }"/>
+        <Separator Background="{ StaticResource ResourceKey=Gray400 }"
                    Height=".8"
                    Width="Auto"/>
 
@@ -28,10 +28,10 @@
         <StackPanel VerticalAlignment="Center">
             <Label Content="Apellido"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar el apellido&#x2026;"
                      Text="{ Binding Path=Apellido, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource TextBox }"/>
+                     Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
         <!-- NOMBRE -->
@@ -39,10 +39,10 @@
                     VerticalAlignment="Center">
             <Label Content="Nombre"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar el nombre&#x2026;"
                      Text="{ Binding Path=Nombre, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource TextBox }"/>
+                     Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
         <!-- DOCUMENTNO -->
@@ -50,10 +50,10 @@
                     VerticalAlignment="Center">
             <Label Content="Documento"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar el documento&#x2026;"
                      Text="{ Binding Path=Documento, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource TextBox }"/>
+                     Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
         <!-- FECHA DE NACIMIENTO -->
@@ -61,13 +61,13 @@
                     VerticalAlignment="Center">
             <Label Content="Fecha de Nacimiento"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
-            <DatePicker CalendarStyle="{ StaticResource Calendar }"
+                   Style="{ StaticResource ResourceKey=Form }"/>
+            <DatePicker CalendarStyle="{ StaticResource ResourceKey=Calendar }"
                         DisplayDate="{ Binding Path=FechaNacimiento, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                         DisplayDateStart="01/01/1900"
                         DisplayDateEnd="{ Binding Path=FechaNacimiento, Mode=OneTime }"
                         Tag="fecha de nacimiento"
-                        Style="{ StaticResource DatePicker }"/>
+                        Style="{ StaticResource ResourceKey=DatePicker }"/>
         </StackPanel>
 
         <!-- SEXO -->
@@ -75,10 +75,10 @@
                     VerticalAlignment="Center">
             <Label Content="Sexo"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
-            <ComboBox ItemsSource="{ Binding Source={ StaticResource sexos } }"
+                   Style="{ StaticResource ResourceKey=Form }"/>
+            <ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos } }"
                       SelectedIndex="{ Binding Path=Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                      Style="{ StaticResource ComboBoxStyle }"/>
+                      Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
         </StackPanel>
 
         <!-- NACIONALIDAD -->
@@ -86,10 +86,10 @@
                     VerticalAlignment="Center">
             <Label Content="Nacionalidad"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar la nacionalidad&#x2026;"
                      Text="{ Binding Path=Nacionalidad, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource TextBox }"/>
+                     Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
     </StackPanel>
 </UserControl>

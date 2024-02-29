@@ -72,8 +72,7 @@
             <TabControl Grid.Row="1">
                 <!-- CURRICULA DEL CURSO -->
                 <TabItem Header="DISEÑO CURRICULAR"
-                         FontSize="16"
-                         FontWeight="SemiBold"
+                         FontSize="14"
                          Padding="10 5">
                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                   Padding="5 0">
@@ -85,7 +84,7 @@
                                       HorizontalContentAlignment="Center"
                                       IsSynchronizedWithCurrentItem="True"
                                       Margin="0 10"
-                                      Style="{ StaticResource DataGrid }">
+                                      Style="{ StaticResource ResourceKey=DataGrid }">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Binding="{ Binding Materia }"
                                                         Header="MateriaID"
@@ -257,21 +256,21 @@
                                         CommandParameter="Horario"
                                         Content="Cancelar"
                                         Margin="0 0 5 0"
-                                        Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                        Visibility="Hidden"
                                         Style="{ StaticResource Tertiary }"/>
                                 <!-- HORARIO GUARDAR -->
                                 <Button Command="{ Binding GuardarCommand }"
                                         CommandParameter="Horario"
                                         Content="Guardar"
                                         Margin="5 0 0 0"
-                                        Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                        Visibility="Hidden"
                                         Style="{ StaticResource Primary }"/>
                                 <!-- HORARIO REGISTRAR -->
                                 <Button Command="{ Binding RegistrarCommand }"
                                         CommandParameter="Horario"
                                         Content="Agregar Horario"
                                         Margin="5 0 5 0"
-                                        Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                                        Visibility="Hidden"
                                         Style="{ StaticResource Secondary }"/>
 
                                 <!-- PROFESOR REGISTRAR -->
@@ -288,8 +287,7 @@
 
                     <!-- REGISTRA UNA MATERIA -->
                 <TabItem Header="REGISTRAR MATERIA"
-                         FontSize="16"
-                         FontWeight="SemiBold"
+                         FontSize="14"
                          Padding="10 5">
                     <StackPanel Margin="10 5">
                         <Grid Margin="20 5">

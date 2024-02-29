@@ -1,5 +1,5 @@
 ﻿using Domain.Cursos;
-using Domain.Cursos.Materias;
+using Domain.Cursos.Divisiones;
 using Infrastructure.Shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,10 +32,19 @@ public class CursoRepository : Repository<Curso>, ICursoRepository
         Context.Update(entity);
     }
 
+    public IEnumerable<Division> BuscarDivisiones(Guid unCurso)
+    {
+        return _context.Cursos.Include(x => x.Divisiones)
+                              .Where(x => x.Id.Equals(unCurso))
+                              .Select(x => x.Divisiones)
+                              .FirstOrDefault();
+    }
+
     public IEnumerable<Curso> CursosConDivisionesMaterias()
     {
         return _context.Cursos.Include(x => x.Divisiones)
                               .Include(x => x.Materias)
-                              .OrderByDescending(x => x.Descripcion);
+                              .OrderByDescending(x => x.Descripcion)
+                              .ThenBy(x => x.NivelEducativo);
     }
 }

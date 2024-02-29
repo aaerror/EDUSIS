@@ -35,7 +35,7 @@ public class Docente : Persona
 
         Legajo = legajo;
         CUIL = cuil;
-        FechaAlta = DateTime.Today.Date;
+        FechaAlta = DateTime.Today;
     }
 
     private void ValidarLegajo(string legajoDocente)

@@ -90,11 +90,11 @@
                                   Grid.Row="0"
                                   HorizontalAlignment="Left"
                                   Margin="10 5"
-                                  SelectedIndex="{ Binding Path=Curso, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay }"
-                                  SelectedValue="{ Binding Path=CursoSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay }"
+                                  SelectedIndex="{ Binding Path=Curso, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged }"
+                                  SelectedValue="{ Binding Path=CursoSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                   Width="200"
-                                  Style="{ StaticResource ComboBoxStyle }">
-                            <ComboBoxItem Content="Primer Año"/>
+                                  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
+                            <ComboBoxItem Content="Primer Año" IsSelected="True"/>
                             <ComboBoxItem Content="Segundo Año"/>
                             <ComboBoxItem Content="Tercer Año"/>
                             <ComboBoxItem Content="Cuarto Año"/>
@@ -116,17 +116,17 @@
                                   Grid.Row="1"
                                   Margin="10 5"
                                   HorizontalAlignment="Left"
-                                  ItemsSource="{ Binding Source={ StaticResource nivelEducativo } }"
+                                  ItemsSource="{ Binding Source={ StaticResource ResourceKey=nivelEducativo } }"
                                   SelectedIndex="{ Binding Path=NivelEducativo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                                   SelectedItem="{ Binding Path=NivelEducativoSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                   Width="200"
-                                  Style="{ StaticResource ComboBoxStyle }"/>
+                                  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
                     </Grid>
 
-                    <Button Command="{ Binding RegistrarCursoCommand }"
+                    <Button Command="{ Binding Path=RegistrarCursoCommand }"
                             Content="Registrar Curso"
                             HorizontalAlignment="Right"
-                            Style="{ StaticResource Primary }"/>
+                            Style="{ StaticResource ResourceKey=Primary }"/>
                 </StackPanel>
             </Grid>
         </Border>

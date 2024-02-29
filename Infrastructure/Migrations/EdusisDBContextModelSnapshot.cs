@@ -45,68 +45,16 @@ namespace Infrastructure.Migrations
                     b.ToTable("cursos", (string)null);
                 });
 
-            modelBuilder.Entity("Domain.Cursos.Divisiones.CicloLectivo", b =>
-                {
-                    b.Property<int>("ciclo_lectivo_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ciclo_lectivo_id"));
-
-                    b.Property<string>("Periodo")
-                        .IsRequired()
-                        .HasMaxLength(4)
-                        .HasColumnType("varchar")
-                        .HasColumnName("periodo");
-
-                    b.HasKey("ciclo_lectivo_id")
-                        .HasName("PK_CICLO-LECTIVO");
-
-                    b.ToTable("ciclo_lectivo", (string)null);
-                });
-
-            modelBuilder.Entity("Domain.Cursos.Divisiones.Cursante", b =>
-                {
-                    b.Property<int>("cursante_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("cursante_id"));
-
-                    b.Property<Guid>("Alumno")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("alumno_id");
-
-                    b.Property<int>("ciclo_lectivo_id")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("curso_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("division_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("cursante_id")
-                        .HasName("PK_CURSANTES");
-
-                    b.HasIndex("Alumno")
-                        .IsUnique();
-
-                    b.HasIndex("ciclo_lectivo_id");
-
-                    b.HasIndex("curso_id", "division_id");
-
-                    b.ToTable("cursantes", (string)null);
-                });
-
             modelBuilder.Entity("Domain.Cursos.Divisiones.Division", b =>
                 {
-                    b.Property<Guid>("curso_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("division_id");
+
+                    b.Property<Guid>("CursoID")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("curso_id")
+                        .HasColumnOrder(0);
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
@@ -118,14 +66,45 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("preceptor_id");
 
-                    b.HasKey("curso_id", "Id")
+                    b.HasKey("Id")
                         .HasName("PK_DIVISIONES");
+
+                    b.HasIndex("CursoID");
 
                     b.HasIndex("Preceptor")
                         .IsUnique()
                         .HasFilter("[preceptor_id] IS NOT NULL");
 
                     b.ToTable("divisiones", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Cursos.Materias.Materia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("materia_id");
+
+                    b.Property<Guid>("CursoID")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("curso_id")
+                        .HasColumnOrder(0);
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<byte>("HorasCatedra")
+                        .HasColumnType("tinyint")
+                        .HasColumnName("horas_catedra");
+
+                    b.HasKey("Id")
+                        .HasName("PK_MATERIAS");
+
+                    b.HasIndex("CursoID");
+
+                    b.ToTable("materias", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Personas.Persona", b =>
@@ -208,179 +187,239 @@ namespace Infrastructure.Migrations
                     b.ToTable("docentes", (string)null);
                 });
 
-            modelBuilder.Entity("Domain.Cursos.Curso", b =>
-                {
-                    b.OwnsMany("Domain.Cursos.Materias.Materia", "Materias", b1 =>
-                        {
-                            b1.Property<Guid>("curso_id")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<Guid>("Id")
-                                .HasColumnType("uniqueidentifier")
-                                .HasColumnName("materia_id");
-
-                            b1.Property<string>("Descripcion")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("varchar(30)")
-                                .HasColumnName("descripcion");
-
-                            b1.Property<byte>("HorasCatedra")
-                                .HasColumnType("tinyint")
-                                .HasColumnName("horas_catedra");
-
-                            b1.HasKey("curso_id", "Id")
-                                .HasName("PK_MATERIAS");
-
-                            b1.ToTable("materias", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("curso_id")
-                                .HasConstraintName("FK_CURSOS_MATERIAS");
-
-                            b1.OwnsMany("Domain.Cursos.Materias.Horario", "Horarios", b2 =>
-                                {
-                                    b2.Property<Guid>("curso_id")
-                                        .HasColumnType("uniqueidentifier");
-
-                                    b2.Property<Guid>("materia_id")
-                                        .HasColumnType("uniqueidentifier");
-
-                                    b2.Property<int>("horario_id")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("int");
-
-                                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b2.Property<int>("horario_id"));
-
-                                    b2.Property<string>("DiaSemana")
-                                        .IsRequired()
-                                        .HasColumnType("varchar(10)")
-                                        .HasColumnName("dia");
-
-                                    b2.Property<TimeSpan>("HoraFin")
-                                        .HasColumnType("time(0)")
-                                        .HasColumnName("hora_fin");
-
-                                    b2.Property<TimeSpan>("HoraInicio")
-                                        .HasColumnType("time(0)")
-                                        .HasColumnName("hora_inicio");
-
-                                    b2.Property<string>("Turno")
-                                        .IsRequired()
-                                        .HasColumnType("varchar(10)")
-                                        .HasColumnName("turno");
-
-                                    b2.HasKey("curso_id", "materia_id", "horario_id")
-                                        .HasName("PK_HORARIOS");
-
-                                    b2.ToTable("horarios", (string)null);
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("curso_id", "materia_id")
-                                        .HasConstraintName("FK_MATERIAS_HORARIOS");
-                                });
-
-                            b1.OwnsMany("Domain.Cursos.Materias.SituacionRevista", "Profesores", b2 =>
-                                {
-                                    b2.Property<Guid>("curso_id")
-                                        .HasColumnType("uniqueidentifier");
-
-                                    b2.Property<Guid>("materia_id")
-                                        .HasColumnType("uniqueidentifier");
-
-                                    b2.Property<int>("situacion_revista_id")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("int");
-
-                                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b2.Property<int>("situacion_revista_id"));
-
-                                    b2.Property<string>("Cargo")
-                                        .IsRequired()
-                                        .HasColumnType("varchar(10)")
-                                        .HasColumnName("cargo");
-
-                                    b2.Property<bool>("EnFunciones")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("bit")
-                                        .HasDefaultValue(false)
-                                        .HasColumnName("en_funciones");
-
-                                    b2.Property<DateTime>("FechaAlta")
-                                        .HasColumnType("date")
-                                        .HasColumnName("fecha_alta");
-
-                                    b2.Property<DateTime?>("FechaBaja")
-                                        .HasColumnType("date")
-                                        .HasColumnName("fecha_baja");
-
-                                    b2.Property<Guid>("ProfesorId")
-                                        .HasColumnType("uniqueidentifier")
-                                        .HasColumnName("profesor_id");
-
-                                    b2.HasKey("curso_id", "materia_id", "situacion_revista_id")
-                                        .HasName("PK_SITUACION-REVISTA");
-
-                                    b2.HasIndex("ProfesorId");
-
-                                    b2.ToTable("situacion_revista", (string)null);
-
-                                    b2.HasOne("Domain.Docentes.Docente", null)
-                                        .WithMany()
-                                        .HasForeignKey("ProfesorId")
-                                        .OnDelete(DeleteBehavior.Cascade)
-                                        .IsRequired()
-                                        .HasConstraintName("FK_DOCENTES_SITUACION-REVISTA");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("curso_id", "materia_id")
-                                        .HasConstraintName("FK_MATERIAS_SITUACION-REVISTA");
-                                });
-
-                            b1.Navigation("Horarios");
-
-                            b1.Navigation("Profesores");
-                        });
-
-                    b.Navigation("Materias");
-                });
-
-            modelBuilder.Entity("Domain.Cursos.Divisiones.Cursante", b =>
-                {
-                    b.HasOne("Domain.Alumnos.Alumno", null)
-                        .WithOne()
-                        .HasForeignKey("Domain.Cursos.Divisiones.Cursante", "Alumno")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_ALUMNOS_CURSANTES");
-
-                    b.HasOne("Domain.Cursos.Divisiones.CicloLectivo", "CicloLectivo")
-                        .WithMany()
-                        .HasForeignKey("ciclo_lectivo_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_CICLO-LECTIVO_CURSANTES");
-
-                    b.HasOne("Domain.Cursos.Divisiones.Division", null)
-                        .WithMany("_listadosDefinitivos")
-                        .HasForeignKey("curso_id", "division_id")
-                        .HasConstraintName("FK_DIVISIONES_CURSANTES");
-
-                    b.Navigation("CicloLectivo");
-                });
-
             modelBuilder.Entity("Domain.Cursos.Divisiones.Division", b =>
                 {
+                    b.HasOne("Domain.Cursos.Curso", null)
+                        .WithMany("Divisiones")
+                        .HasForeignKey("CursoID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_CURSOS_DIVISIONES");
+
                     b.HasOne("Domain.Docentes.Docente", null)
                         .WithOne()
                         .HasForeignKey("Domain.Cursos.Divisiones.Division", "Preceptor")
                         .HasConstraintName("FK_DOCENTES_DIVISIONES");
 
+                    b.OwnsMany("Domain.Cursos.Divisiones.Cursantes.Cursante", "ListadosDefinitivos", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier")
+                                .HasColumnName("cursante_id");
+
+                            b1.Property<Guid>("AlumnoID")
+                                .HasColumnType("uniqueidentifier")
+                                .HasColumnName("alumno_id");
+
+                            b1.Property<Guid>("DivisionID")
+                                .HasColumnType("uniqueidentifier")
+                                .HasColumnName("division_id")
+                                .HasColumnOrder(0);
+
+                            b1.HasKey("Id")
+                                .HasName("PK_CURSANTES");
+
+                            b1.HasIndex("AlumnoID");
+
+                            b1.HasIndex("DivisionID");
+
+                            b1.ToTable("cursantes", (string)null);
+
+                            b1.HasOne("Domain.Alumnos.Alumno", null)
+                                .WithMany()
+                                .HasForeignKey("AlumnoID")
+                                .OnDelete(DeleteBehavior.Cascade)
+                                .IsRequired()
+                                .HasConstraintName("FK_ALUMNOS_CURSANTES");
+
+                            b1.WithOwner()
+                                .HasForeignKey("DivisionID")
+                                .HasConstraintName("FK_DIVISIONES_CURSANTES");
+
+                            b1.OwnsOne("Domain.Cursos.Divisiones.Cursantes.CicloLectivo", "CicloLectivo", b2 =>
+                                {
+                                    b2.Property<Guid>("CursanteId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("Periodo")
+                                        .IsRequired()
+                                        .HasMaxLength(4)
+                                        .HasColumnType("nvarchar(4)")
+                                        .HasColumnName("periodo");
+
+                                    b2.HasKey("CursanteId");
+
+                                    b2.ToTable("cursantes");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("CursanteId");
+                                });
+
+                            b1.OwnsMany("Domain.Cursos.Divisiones.Cursantes.Calificacion", "Calificaciones", b2 =>
+                                {
+                                    b2.Property<int>("calificacion_id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("int");
+
+                                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b2.Property<int>("calificacion_id"));
+
+                                    b2.Property<DateTime?>("Fecha")
+                                        .HasColumnType("date")
+                                        .HasColumnName("fecha");
+
+                                    b2.Property<string>("Instancia")
+                                        .IsRequired()
+                                        .HasColumnType("varchar(15)")
+                                        .HasColumnName("instancia");
+
+                                    b2.Property<Guid>("MateriaID")
+                                        .HasColumnType("uniqueidentifier")
+                                        .HasColumnName("materia_id");
+
+                                    b2.Property<decimal?>("Nota")
+                                        .HasColumnType("decimal(5,2)")
+                                        .HasColumnName("nota");
+
+                                    b2.Property<bool>("_asistencia")
+                                        .HasColumnType("bit")
+                                        .HasColumnName("asistencia");
+
+                                    b2.Property<Guid>("cursante_id")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.HasKey("calificacion_id");
+
+                                    b2.HasIndex("MateriaID");
+
+                                    b2.HasIndex("cursante_id");
+
+                                    b2.ToTable("calificaciones", (string)null);
+
+                                    b2.HasOne("Domain.Cursos.Materias.Materia", null)
+                                        .WithMany()
+                                        .HasForeignKey("MateriaID")
+                                        .OnDelete(DeleteBehavior.NoAction)
+                                        .IsRequired()
+                                        .HasConstraintName("FK_MATERIAS_CALIFICACIONES");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("cursante_id")
+                                        .HasConstraintName("FK_CURSANTES_CALIFICACIONES");
+                                });
+
+                            b1.Navigation("Calificaciones");
+
+                            b1.Navigation("CicloLectivo")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("ListadosDefinitivos");
+                });
+
+            modelBuilder.Entity("Domain.Cursos.Materias.Materia", b =>
+                {
                     b.HasOne("Domain.Cursos.Curso", null)
-                        .WithMany("Divisiones")
-                        .HasForeignKey("curso_id")
+                        .WithMany("Materias")
+                        .HasForeignKey("CursoID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("FK_CURSOS_DIVISIONES");
+                        .HasConstraintName("FK_CURSOS_MATERIAS");
+
+                    b.OwnsMany("Domain.Cursos.Materias.Horario", "Horarios", b1 =>
+                        {
+                            b1.Property<Guid>("materia_id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("horario_id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("horario_id"));
+
+                            b1.Property<string>("DiaSemana")
+                                .IsRequired()
+                                .HasColumnType("varchar(10)")
+                                .HasColumnName("dia");
+
+                            b1.Property<TimeSpan>("HoraFin")
+                                .HasColumnType("time(0)")
+                                .HasColumnName("hora_fin");
+
+                            b1.Property<TimeSpan>("HoraInicio")
+                                .HasColumnType("time(0)")
+                                .HasColumnName("hora_inicio");
+
+                            b1.Property<string>("Turno")
+                                .IsRequired()
+                                .HasColumnType("varchar(10)")
+                                .HasColumnName("turno");
+
+                            b1.HasKey("materia_id", "horario_id")
+                                .HasName("PK_HORARIOS");
+
+                            b1.ToTable("horarios", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("materia_id")
+                                .HasConstraintName("FK_MATERIAS_HORARIOS");
+                        });
+
+                    b.OwnsMany("Domain.Cursos.Materias.SituacionRevista", "Profesores", b1 =>
+                        {
+                            b1.Property<Guid>("materia_id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("situacion_revista_id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("situacion_revista_id"));
+
+                            b1.Property<string>("Cargo")
+                                .IsRequired()
+                                .HasColumnType("varchar(10)")
+                                .HasColumnName("cargo");
+
+                            b1.Property<bool>("EnFunciones")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("bit")
+                                .HasDefaultValue(false)
+                                .HasColumnName("en_funciones");
+
+                            b1.Property<DateTime>("FechaAlta")
+                                .HasColumnType("date")
+                                .HasColumnName("fecha_alta");
+
+                            b1.Property<DateTime?>("FechaBaja")
+                                .HasColumnType("date")
+                                .HasColumnName("fecha_baja");
+
+                            b1.Property<Guid>("ProfesorId")
+                                .HasColumnType("uniqueidentifier")
+                                .HasColumnName("profesor_id");
+
+                            b1.HasKey("materia_id", "situacion_revista_id")
+                                .HasName("PK_SITUACION-REVISTA");
+
+                            b1.HasIndex("ProfesorId");
+
+                            b1.ToTable("situacion_revista", (string)null);
+
+                            b1.HasOne("Domain.Docentes.Docente", null)
+                                .WithMany()
+                                .HasForeignKey("ProfesorId")
+                                .OnDelete(DeleteBehavior.Cascade)
+                                .IsRequired()
+                                .HasConstraintName("FK_DOCENTES_SITUACION-REVISTA");
+
+                            b1.WithOwner()
+                                .HasForeignKey("materia_id")
+                                .HasConstraintName("FK_MATERIAS_SITUACION-REVISTA");
+                        });
+
+                    b.Navigation("Horarios");
+
+                    b.Navigation("Profesores");
                 });
 
             modelBuilder.Entity("Domain.Personas.Persona", b =>
@@ -635,11 +674,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Cursos.Curso", b =>
                 {
                     b.Navigation("Divisiones");
-                });
 
-            modelBuilder.Entity("Domain.Cursos.Divisiones.Division", b =>
-                {
-                    b.Navigation("_listadosDefinitivos");
+                    b.Navigation("Materias");
                 });
 #pragma warning restore 612, 618
         }

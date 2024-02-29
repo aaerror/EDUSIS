@@ -19,13 +19,13 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
     private CrearCursoRequest _crearCursoRequest;
     #endregion
 
-    private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
-    public bool HasErrors => _errorsByProperty.Count > 0;
-
-    private int _curso = 0;
+    private int _curso;
     private ComboBoxItem _cursoSelected;
     private int _nivelEducativo = 0;
     private string _nivelEducativoSelected;
+
+    private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
+    public bool HasErrors => _errorsByProperty.Count > 0;
 
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
@@ -40,8 +40,8 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
 
         RegistrarCursoCommand = new ViewModelCommand(ExecuteRegistrarCursoCommand, CanExecuteRegistrarCursoCommand);
 
-        NivelEducativo = 0;
         Curso = 0;
+        NivelEducativo = 0;
     }
 
     #region Properties
@@ -64,6 +64,8 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
                 {
                     "Se debe seleccionar el curso que desea seleccionar."
                 });
+
+                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Curso)));
             }
 
             /*if (string.IsNullOrWhiteSpace(Descripcion))
@@ -157,9 +159,9 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
         MessageBoxResult result;
 
         messageBoxText = $"Se van a registrar los siguientes datos del nuevo curso:\n" +
-                                $"Nombre: { CursoSelected.Content }\n" +
-                                $"Nivel Educativo: { NivelEducativoSelected }\n\n" +
-                                $"¿Desea continuar?";
+                         $"Nombre: { CursoSelected.Content }\n" +
+                         $"Nivel Educativo: { NivelEducativoSelected }\n\n" +
+                         $"¿Desea continuar?";
         caption = "Registrar Curso";
         result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
 

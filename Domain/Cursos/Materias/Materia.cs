@@ -8,9 +8,10 @@ public class Materia : Entity
     private readonly List<Horario> _horarios = new();
     private readonly List<SituacionRevista> _profesores = new();
 
+    public Guid CursoID { get; private set; }
     public string Descripcion { get; private set; }
     public int HorasCatedra { get; private set; }
-    public Guid Profesor { get; private set; } = Guid.Empty;
+    public Guid ProfesorID { get; private set; } = Guid.Empty;
     public IReadOnlyCollection<Horario> Horarios => _horarios.AsReadOnly();
     public IReadOnlyCollection<SituacionRevista> Profesores => _profesores.AsReadOnly();
 
@@ -18,11 +19,11 @@ public class Materia : Entity
     protected Materia()
         : base() { }
 
-    protected Materia(Guid materiaId)
-        : base(materiaId) { }
+    protected Materia(Guid materiaID)
+        : base(materiaID) { }
 
-    public Materia(Guid materiaId, string descripcion, int horasCatedra)
-        : this(materiaId)
+    public Materia(Guid cursoID, Guid materiaID, string descripcion, int horasCatedra)
+        : this(materiaID)
     {
         if (string.IsNullOrWhiteSpace(descripcion))
         {
@@ -34,13 +35,13 @@ public class Materia : Entity
             throw new ArgumentException("La cantidad de horas cátedras debe ser mayor a cero.", nameof(horasCatedra));
         }
 
+        CursoID = cursoID;
         Descripcion = descripcion;
         HorasCatedra = horasCatedra;
     }
 
-    public Materia(string descripcion, int horasCatedra)
-        : this(Guid.NewGuid(), descripcion, horasCatedra)
-    { }
+    public Materia(Guid cursoID, string descripcion, int horasCatedra)
+        : this(cursoID, Guid.NewGuid(), descripcion, horasCatedra) { }
 
     public void ActualizarNombre(string descripcion)
     {
@@ -92,7 +93,7 @@ public class Materia : Entity
 
         var index = _profesores.IndexOf(situacionRevista);
         _profesores[index] = situacionRevista.EstablecerEnFunciones();
-        Profesor = unProfesor;
+        ProfesorID = unProfesor;
     }
 
     public void RegistrarNuevaSituacionRevista(Guid unProfesor, Cargo enCargo, DateTime fechaAlta, bool enFunciones)
@@ -119,7 +120,7 @@ public class Materia : Entity
             QuitarDocenteDeFunciones();
 
             _profesores.Add(nuevaSituacionRevista);
-            Profesor = nuevaSituacionRevista.ProfesorId;
+            ProfesorID = nuevaSituacionRevista.ProfesorId;
 
             return;
         }

@@ -13,12 +13,11 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </UserControl.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <!-- TITTLE AND SUBTITLE -->
         <components:Header Grid.Row="0"
@@ -29,7 +28,7 @@
         <WrapPanel Grid.Row="1"
                    Margin="20 10 20 5">
             <Button Command="{ Binding RegistrarAlumnoCommand }"
-                    Content="Alta de Alumnos"
+                    Content="Registrar Alumnos"
                     Margin="0 0 5 0"
                     Style="{ StaticResource Secondary }"/>
             <Button Content="Asignar Curso"
@@ -55,10 +54,10 @@
                                   Opacity=".3"/>
             </Border.Effect>
             <!-- SEARCH PANEL -->
-            <Grid>
+            <Grid Margin="0 10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
@@ -91,22 +90,24 @@
                                                   Sexo="{ Binding PersonaResponse.Sexo }"
                                                   FechaNacimiento="{ Binding PersonaResponse.FechaNacimiento }"
                                                   Nacionalidad="{ Binding PersonaResponse.Nacionalidad }"
-                                                  VerticalAlignment="Top"/>
+                                                  Margin="0 10"/>
+
                 <!-- BUTTONS -->
-                <WrapPanel Grid.Row="2"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Top">
-                    <Button Command="{ Binding QuitarCommand }"
-                            Content="Quitar"
-                            Margin="0 0 5 0"
-                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource BooleanToVisibilityConverter } }"
-                            Style="{ StaticResource Tertiary }"/>
-                    <Button Command="{ Binding VerPerfilCommand }"
-                            Content="Ver Perfil"
-                            Margin="5 0 0 0"
-                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource BooleanToVisibilityConverter } }"
-                            Style="{ StaticResource Primary }"/>
-                </WrapPanel>
+                <StackPanel Grid.Row="2"
+                            Margin="0 10">
+                    <WrapPanel HorizontalAlignment="Right">
+                        <Button Command="{ Binding QuitarCommand }"
+                                Content="Quitar"
+                                Margin="0 0 5 0"
+                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource BooleanToVisibilityConverter } }"
+                                Style="{ StaticResource Tertiary }"/>
+                        <Button Command="{ Binding VerPerfilCommand }"
+                                Content="Ver Perfil"
+                                Margin="5 0 0 0"
+                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource BooleanToVisibilityConverter } }"
+                                Style="{ StaticResource Primary }"/>
+                    </WrapPanel>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

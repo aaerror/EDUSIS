@@ -1,6 +1,7 @@
 ﻿using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos.DTOs.Responses;
 using Core.ServicioCursos.Exceptions;
+using Core.ServicioCusos.DTOs.Responses;
 using Domain.Cursos;
 using Domain.Cursos.Materias;
 using Infrastructure.Shared;
@@ -25,7 +26,7 @@ public class ServicioCursos : IServicioCursos
         }
 
         var cursoBuscado = _unityOfWork.Cursos.BuscarPorID(unCurso);
-        if (cursoBuscado == null)
+        if (cursoBuscado is null)
         {
             throw new NullReferenceException($"No se encontró el curso buscado: {cursoBuscado}");
         }
@@ -33,31 +34,28 @@ public class ServicioCursos : IServicioCursos
         return cursoBuscado;
     }
 
-    public List<CursoResponse> BuscarCursos()
+    public IReadOnlyCollection<CursoResponse> BuscarCursos()
     {
-        List<CursoResponse> cursos = new List<CursoResponse>();
-
         try
         {
-            foreach (Curso curso in _unityOfWork.Cursos.CursosConDivisionesMaterias())
-            {
-                cursos.Add(new CursoResponse
-                {
-                    CursoId = curso.Id,
-                    Descripcion = curso.Descripcion.ToString(),
-                    NivelEducativo = curso.NivelEducativo.ToString(),
-                    Divisiones = curso.Divisiones.Count(),
-                    Materias = curso.Materias.Count(),
-                    Alumnos = curso.Divisiones.Select(d => d.TotalAlumnos).FirstOrDefault()
-                });
-            }
+            var cursos = _unityOfWork.Cursos.CursosConDivisionesMaterias();
+            return cursos.Select(x => new CursoResponse
+                                {
+                                    CursoID = x.Id,
+                                    Descripcion = x.Descripcion.ToString(),
+                                    NivelEducativo = x.NivelEducativo.ToString(),
+                                    Divisiones = x.Divisiones.Count(),
+                                    Materias = x.Materias.Count(),
+                                    Alumnos = x.Divisiones.Select(d => d.TotalAlumnos).FirstOrDefault()
+                                })
+                         .OrderBy(x => x.NivelEducativo)
+                         .ThenBy(x => x.Descripcion)
+                         .ToList();
         }
         catch (Exception ex)
         {
             throw;
         }
-
-        return cursos;
     }
 
     public void RegistrarCurso(CrearCursoRequest request)
@@ -82,7 +80,83 @@ public class ServicioCursos : IServicioCursos
         }
     }
 
+    #region Calificacion
+    public void RegistrarCalificacion(CrearCalificationRequest request)
+    {
+        try
+        {
+            Curso curso = BuscarCursoPorID(request.Curso);
+
+
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+    #endregion
+
     #region Divisiones
+    public IReadOnlyCollection<DivisionResponse> BuscarDivisiones(Guid unCurso)
+    {
+        try
+        {
+            Curso curso = BuscarCursoPorID(unCurso);
+
+            var div = _unityOfWork.Cursos.BuscarDivisiones(unCurso);
+            return div.Select(x => new DivisionResponse(curso.Id,
+                                                        curso.Descripcion,
+                                                        curso.NivelEducativo.ToString(),
+                                                        x.Id,
+                                                        x.Descripcion,
+                                                        x.TotalAlumnos))
+                             .OrderBy(x => x.DivisionDescripcion)
+                             .ToList()
+                             .AsReadOnly();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public IReadOnlyCollection<CursanteResponse> BuscarListado(BuscarListadoRequest request)
+    {
+        try
+        {
+            Curso curso = BuscarCursoPorID(request.CursoID);
+            var alumnos = curso.CursantesPorPeriodo(request.DivisionID, request.Periodo);
+
+            return alumnos.Select(x => new CursanteResponse(x,
+                                                            _unityOfWork.Alumnos.BuscarPorID(x).InformacionPersonal.NombreCompleto(),
+                                                            _unityOfWork.Alumnos.BuscarPorID(x).InformacionPersonal.Documento,
+                                                            _unityOfWork.Alumnos.BuscarPorID(x).InformacionPersonal.Edad().ToString()))
+                          .ToList()
+                          .AsReadOnly();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public void InscribirAlumnoEnDivision(CrearCursanteRequest request)
+    {
+        try
+        {
+            Curso curso = BuscarCursoPorID(request.CursoID);
+
+            curso.AgregarAlumnoAlListadoDefinitivo(request.DivisionID, request.AlumnoID, request.Periodo);
+
+            _unityOfWork.Cursos.ActualizarDatos(curso);
+            _unityOfWork.GuardarCambios();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     public void AgregarDivisionAlCurso(Guid unCurso)
     {
         try
@@ -101,13 +175,13 @@ public class ServicioCursos : IServicioCursos
 
     }
 
-    public void QuitarDivisiosDelCurso(Guid unCurso, Guid unaDivision)
+    public void QuitarDivisiosDelCurso(EliminarDivisionRequest request)
     {
         try
         {
-            Curso curso = BuscarCursoPorID(unCurso);
+            Curso curso = BuscarCursoPorID(request.CursoID);
 
-            curso.QuitarDivision(unaDivision);
+            curso.QuitarDivision(request.DivisionID);
 
             _unityOfWork.Cursos.ActualizarDatos(curso);
             _unityOfWork.GuardarCambios();
@@ -133,7 +207,7 @@ public class ServicioCursos : IServicioCursos
                                     x.Id,
                                     x.Descripcion,
                                     x.HorasCatedra,
-                                    x.Profesor,
+                                    x.ProfesorID,
                                     x.Profesores.Where(x => x.EnFunciones)
                                                 .Select(p => _unityOfWork.Docentes.BuscarPorID(p.ProfesorId).InformacionPersonal.NombreCompleto()).FirstOrDefault(),
                                     x.Profesores.Select(st => new SituacionRevistaResponse(st.ProfesorId,

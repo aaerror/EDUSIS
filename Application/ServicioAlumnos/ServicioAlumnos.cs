@@ -5,7 +5,6 @@ using Domain.Personas;
 using Infrastructure.Shared;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos.DTOs.Responses;
-using Core.ServicioAlumnos.DTOs;
 
 namespace Core.ServicioAlumnos;
 
@@ -76,7 +75,7 @@ public class ServicioAlumnos : IServicio, IServicioAlumnos
         };
     }
 
-    public bool EsDocumentoValido(string documento)
+    public bool EsDocumentoInvalido(string documento)
     {
         bool esValido = false;
         if (!string.IsNullOrWhiteSpace(documento))
@@ -87,33 +86,39 @@ public class ServicioAlumnos : IServicio, IServicioAlumnos
         return esValido;
     }
 
-    public void RegistrarAlumno(InformacionPersonalRequest informacionPersonalRequest, DomicilioRequest domicilioRequest, ContactoRequest contactoRequest)
+    public Guid RegistrarAlumno(RegistrarAlumnoRequest request)
     {
         try
         {
-            InformacionPersonal informacionPersonal = InformacionPersonal.Crear(informacionPersonalRequest.Apellido,
-                                                                                informacionPersonalRequest.Nombre,
-                                                                                informacionPersonalRequest.Documento,
-                                                                                informacionPersonalRequest.Sexo,
-                                                                                informacionPersonalRequest.FechaNacimiento.Date,
-                                                                                informacionPersonalRequest.Nacionalidad);
+            if (request is null)
+            {
+                throw new ArgumentNullException("Datos incompletos para registrar un alumno.");
+            }
 
-            Domicilio domicilio = Domicilio.Crear(domicilioRequest.Calle,
-                                                  domicilioRequest.Altura,
-                                                  domicilioRequest.Vivienda,
-                                                  domicilioRequest.Observacion,
-                                                  domicilioRequest.Localidad,
-                                                  domicilioRequest.Provincia,
-                                                  domicilioRequest.Pais);
-
+            var informacionPersonal = InformacionPersonal.Crear(request.InformacionPersonalDTO.Apellido,
+                                                                request.InformacionPersonalDTO.Nombre,
+                                                                request.InformacionPersonalDTO.Documento,
+                                                                request.InformacionPersonalDTO.Sexo,
+                                                                request.InformacionPersonalDTO.FechaNacimiento,
+                                                                request.InformacionPersonalDTO.Nacionalidad);
+            var domicilio = Domicilio.Crear(request.DomicilioDTO.Calle,
+                                request.DomicilioDTO.Altura,
+                                request.DomicilioDTO.Vivienda,
+                                request.DomicilioDTO.Observacion,
+                                request.DomicilioDTO.Localidad,
+                                request.DomicilioDTO.Provincia,
+                                request.DomicilioDTO.Pais);
+            
             Alumno alumno = new Alumno(Guid.NewGuid().ToString().GetHashCode().ToString("x"),
                                        informacionPersonal,
                                        domicilio,
-                                       contactoRequest.Email,
-                                       contactoRequest.Telefono);
+                                       request.ContactoDTO.Email,
+                                       request.ContactoDTO.Telefono);
 
             _unitOfWork.Alumnos.Agregar(alumno);
             _unitOfWork.GuardarCambios();
+
+            return alumno.Id;
         }
         catch (Exception ex)
         {

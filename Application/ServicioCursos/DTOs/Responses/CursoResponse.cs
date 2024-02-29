@@ -2,7 +2,7 @@
 
 public record CursoResponse
 {
-    public Guid CursoId { get; set; }
+    public Guid CursoID { get; set; }
     public string Descripcion { get; set; }
     public string NivelEducativo { get; set; }
     public int Divisiones {  get; set; }

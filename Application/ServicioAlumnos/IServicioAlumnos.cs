@@ -6,15 +6,13 @@ namespace Core.ServicioAlumnos;
 
 public interface IServicioAlumnos
 {
-    void RegistrarAlumno(InformacionPersonalRequest informacionPersonalRequest,
-                         DomicilioRequest domicilioRequest,
-                         ContactoRequest contactoRequest);
+    Guid RegistrarAlumno(RegistrarAlumnoRequest request);
 
     PersonaResponse BuscarPorDNI(string documento);
 
     PersonaConDetallesResponse BuscarPorDNIConDetalles(string documento);
 
-    bool EsDocumentoValido(string documento);
+    bool EsDocumentoInvalido(string documento);
 
     void ModificarContacto(Guid personaId, ContactoRequest cambioContactoRequest);
 

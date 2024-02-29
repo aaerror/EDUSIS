@@ -1,0 +1,123 @@
+﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Divisiones.GestionDivisionesView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
+             xmlns:components="clr-namespace:WPF_Desktop.Components"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="100"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- TITTLE AND SUBTITLE -->
+        <components:Header Grid.Row="0"
+                           Title="Gestión de Divisiones"
+                           Subtitle="Divisiones"/>
+
+        <!-- INPUTs -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <WrapPanel HorizontalAlignment="Left"
+                           Margin="25 10">
+                    <Button Command="{ Binding Path=ABMCommand }"
+                            CommandParameter="Nueva"
+                            Content="Registrar División"
+                            Margin="0 0 5 0"
+                            Style="{ StaticResource ResourceKey=Secondary }"/>
+                    <Button Command="{ Binding Path=ABMCommand }"
+                            CommandParameter="Eliminar"
+                            Content="Quitar División"
+                            Margin="5 0 0 0"
+                            Style="{ StaticResource ResourceKey=Secondary }"/>
+                </WrapPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="1">
+                <WrapPanel HorizontalAlignment="Right"
+                           Margin="25 10">
+                    <Button Command="{ Binding Path=NavigationCommand }"
+                            CommandParameter="Cursantes"
+                            Content="Alumnos"
+                            Margin="5 0 0 0"
+                            Style="{ StaticResource ResourceKey=Secondary }"/>
+                </WrapPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- MAIN -->
+        <Border Grid.Row="2"
+                Background="#FFFFFF"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+                BorderThickness="1"
+                CornerRadius="4"
+                Margin="20 10"
+                Padding="10 10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15"
+                                  Color="#373737"
+                                  ShadowDepth="5"
+                                  Opacity=".3"/>
+            </Border.Effect>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          Padding="5 0">
+                <Grid Margin="20 10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0"
+                                Margin="0 10">
+                        <Label Content="DIVISIONES"
+                               Style="{ StaticResource ResourceKey=Headline }"/>
+                        <Separator Background="{ StaticResource Gray400 }"
+                                   Height=".8"
+                                   Width="Auto"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1">
+                        <DataGrid x:Name="DataGrid_Divisiones"
+                                  ItemsSource="{ Binding Path=Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                  SelectedItem="{ Binding Path=Division, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+                                  AutoGenerateColumns="False"
+                                  HorizontalContentAlignment="Center"
+                                  IsSynchronizedWithCurrentItem="True"
+                                  Margin="0 0 0 10"
+                                  Style="{ StaticResource ResourceKey=DataGrid }">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="CursoID"
+                                                    Binding="{ Binding Path=CursoID, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
+                                                    Visibility="Hidden"
+                                                    Width="Auto"/>
+                                <DataGridTextColumn Header="Curso"
+                                                    Binding="{ Binding Path=CursoDescripcion, Mode=OneTime, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0}° Año}"
+                                                    Width="Auto"/>
+                                <DataGridTextColumn Header="División"
+                                                    Binding="{ Binding Path=DivisionDescripcion, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
+                                                    Width="Auto"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <local:DivisionView DataContext="{ Binding Path=SelectedItem, ElementName=DataGrid_Divisiones }"
+                                            IsEnabled="False"
+                                            Margin="0 10 0 0"/>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

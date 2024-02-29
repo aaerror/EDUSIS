@@ -19,7 +19,7 @@ public abstract class Persona : Entity
     protected Persona(Guid personaId)
         : base(personaId) {}
 
-    public Persona(Guid personaId, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono)
+    protected Persona(Guid personaId, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono)
         : this(personaId)
     {
         Id = personaId;

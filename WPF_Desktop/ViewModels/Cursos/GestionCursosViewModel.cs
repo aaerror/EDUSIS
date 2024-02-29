@@ -13,6 +13,7 @@ public class GestionCursosViewModel : ViewModel
 {
     private readonly IServicioCursos _servicioCursos;
     private readonly INavigationService _registrarCursoNavigationService;
+    private readonly INavigationService _gestionDivisionesNavigationService;
     private readonly INavigationService _registrarMateriaNavigationService;
     private CursoStore _cursoStore;
 
@@ -20,30 +21,26 @@ public class GestionCursosViewModel : ViewModel
     private ObservableCollection<CursoViewModel> _cursos = new ObservableCollection<CursoViewModel>();
 
     #region Commands
-    public ViewModelCommand NuevoCursoCommand { get; }
-    public ViewModelCommand NuevaDivisionCommand { get; }
-    public ViewModelCommand NuevaMateriaCommand { get; }
-    public ViewModelCommand MostrarCursosCommand { get; }
+    public ViewModelCommand NavigateCommand { get; }
+    public ViewModelCommand VerCursosCommand { get; }
     #endregion
 
 
     public GestionCursosViewModel(IServicioCursos servicioCursos,
                                   INavigationService registrarCursoNavigationService,
+                                  INavigationService gestionDivisionesNavigationService,
                                   INavigationService registrarMateriaNavigationService,
                                   CursoStore cursoStore)
     {
         _servicioCursos = servicioCursos;
         _registrarCursoNavigationService = registrarCursoNavigationService;
+        _gestionDivisionesNavigationService = gestionDivisionesNavigationService;
         _registrarMateriaNavigationService = registrarMateriaNavigationService;
         _cursoStore = cursoStore;
 
-        NuevoCursoCommand = new ViewModelCommand(command =>
-        {
-            _registrarCursoNavigationService.Navigate();
-        });
-        NuevaDivisionCommand = new ViewModelCommand(ExecuteNuevaDivisionCommand, CanExecuteNuevaDivisionCommand);
-        NuevaMateriaCommand = new ViewModelCommand(ExecuteNuevaMateriaCommand, CanExecuteNuevaMateriaCommand);
-        MostrarCursosCommand = new ViewModelCommand(ExecuteMostrarCursosCommand);
+        NavigateCommand = new ViewModelCommand(ExecuteNavigateCommand, CanExecuteNavigateCommand);
+        //NuevaDivisionCommand = new ViewModelCommand(ExecuteNuevaDivisionCommand, CanExecuteNuevaDivisionCommand);
+        VerCursosCommand = new ViewModelCommand(ExecuteVerCursosCommand);
     }
 
     #region Properties
@@ -103,13 +100,48 @@ public class GestionCursosViewModel : ViewModel
         }
     }
 
-    #region MostrarCursosCommand
-    private void ExecuteMostrarCursosCommand(object obj)
+    #region NavigateCommand
+    private bool CanExecuteNavigateCommand(object obj)
+    {
+        switch (obj)
+        {
+            case "Curso":
+                return true;
+            case "Division":
+                return Curso is not null;
+            case "Materia":
+                return Curso is not null;
+            default: return false;
+        }
+    }
+
+    private void ExecuteNavigateCommand(object obj)
+    {
+        switch (obj)
+        {
+            case "Curso":
+                _registrarCursoNavigationService.Navigate();
+                break;
+            case "Division":
+                _cursoStore.Curso = Curso;
+                _gestionDivisionesNavigationService.Navigate();
+                break;
+            case "Materia":
+                _cursoStore.Curso = Curso;
+                _registrarMateriaNavigationService.Navigate();
+                break;
+        }
+    }
+    #endregion
+
+    #region VerCursosCommand
+    private void ExecuteVerCursosCommand(object obj)
     {
         LoadCursos();
     }
     #endregion
 
+/*
     #region NuevaDivisionCommand
     private bool CanExecuteNuevaDivisionCommand(object obj) => Curso is not null;
 
@@ -130,7 +162,7 @@ public class GestionCursosViewModel : ViewModel
         {
             try
             {
-                _servicioCursos.AgregarDivisionAlCurso(Curso.CursoId);
+                _servicioCursos.AgregarDivisionAlCurso(Curso.CursoID);
                 MessageBox.Show("Datos guardados correctamente",
                                 "Operación exitosa",
                                 MessageBoxButton.OK,
@@ -146,14 +178,5 @@ public class GestionCursosViewModel : ViewModel
         }
     }
     #endregion
-
-    #region NuevaMateriaCommand
-    private bool CanExecuteNuevaMateriaCommand(object obj) => Curso is not null;
-
-    private void ExecuteNuevaMateriaCommand(object obj)
-    {
-        _cursoStore.Curso = Curso;
-        _registrarMateriaNavigationService.Navigate();
-    }
-    #endregion
+*/
 }

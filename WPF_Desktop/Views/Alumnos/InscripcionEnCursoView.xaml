@@ -1,0 +1,34 @@
+﻿<UserControl x:Class="WPF_Desktop.Views.Alumnos.InscripcionEnCursoView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Alumnos"
+             xmlns:divisionesView="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <DataGrid Grid.Row="1"
+                  x:Name="DataGrid_Diviones"
+                  ItemsSource="{ Binding Path=Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                  SelectedItem="{ Binding Path=Division, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+                  AutoGenerateColumns="False"
+                  HorizontalContentAlignment="Center"
+                  IsSynchronizedWithCurrentItem="True"
+                  CanUserAddRows="False"/>
+
+        <divisionesView:DivisionView Grid.Row="2"
+                                     DataContext="{ Binding Path=SelectedItem, ElementName=DataGrid_Diviones }"/>
+
+    </Grid>
+</UserControl>

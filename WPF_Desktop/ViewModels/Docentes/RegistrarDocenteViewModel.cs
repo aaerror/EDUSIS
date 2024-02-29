@@ -92,20 +92,6 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public ContactoViewModel ContactoViewModel
-    {
-        get
-        {
-            return _contactoViewModel;
-        }
-
-        set
-        {
-            _contactoViewModel = value;
-            OnPropertyChanged(nameof(ContactoViewModel));
-        }
-    }
-
     public DomicilioViewModel DomicilioViewModel
     {
         get
@@ -117,6 +103,20 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
         {
             _domicilioViewModel = value;
             OnPropertyChanged(nameof(DomicilioViewModel));
+        }
+    }
+
+    public ContactoViewModel ContactoViewModel
+    {
+        get
+        {
+            return _contactoViewModel;
+        }
+
+        set
+        {
+            _contactoViewModel = value;
+            OnPropertyChanged(nameof(ContactoViewModel));
         }
     }
 
@@ -296,7 +296,6 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
 
                     messageBoxText = $"Se han registrado los datos de un nuevo docente.";
                     caption = "Operación Exitosa";
-
                     MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
 
                     InformacionPersonalViewModel = new InformacionPersonalViewModel(null);

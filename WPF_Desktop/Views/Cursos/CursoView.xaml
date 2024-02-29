@@ -1,0 +1,89 @@
+﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.CursoView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <!-- TITLE -->
+        <StackPanel Grid.ColumnSpan="2"
+                    Grid.Row="0"
+                    Margin="0 0 0 5">
+            <Label Content="Detalle del Curso"
+                   Style="{ StaticResource Headline }"/>
+            <Separator Background="{ StaticResource Gray400 }"
+                       Height=".8"
+                       Width="Auto"/>
+        </StackPanel>
+
+        <!-- DESCRIPCIÓN -->
+        <StackPanel Grid.Column="0"
+                    Grid.Row="1"
+                    Margin="0 5 10 10">
+            <Label Content="Curso"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Text="{ Binding Path=Descripcion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0}° Año}"
+                     Style="{ StaticResource ResourceKey=TextBox }"/>
+        </StackPanel>
+
+        <!-- NIVEL EDUCATIVO -->
+        <StackPanel Grid.Column="1"
+                    Grid.Row="1"
+                    Margin="10 5 0 10">
+            <Label Content="Nivel Educativo"
+                   Style="{ StaticResource Form }"/>
+            <TextBox Text="{ Binding Path=NivelEducativo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                     Style="{ StaticResource ResourceKey=TextBox }"/>
+        </StackPanel>
+
+        <!-- ESTADÍSTICA -->
+        <Grid Grid.ColumnSpan="2"
+              Grid.Row="2"
+              Margin="0 10 0 0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- CANTIDAD DE DIVISIONES -->
+            <StackPanel Grid.Column="0"
+                        Margin="0 0 10 0">
+                <Label Content="Divisiones"
+                       Style="{ StaticResource Form }"/>
+                <TextBox Text="{ Binding Path=Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                         Style="{ StaticResource ResourceKey=TextBox }"/>
+            </StackPanel>
+
+            <!-- CANTIDAD DE MATERIAS -->
+            <StackPanel Grid.Column="1"
+                        Margin="10 0">
+                <Label Content="Materias"
+                       Style="{ StaticResource Form }"/>
+                <TextBox Text="{ Binding Path=Materias, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                         Style="{ StaticResource ResourceKey=TextBox }"/>
+            </StackPanel>
+
+            <!-- CANTIDAD DE ALUMNOS -->
+            <StackPanel Grid.Column="2"
+                        Margin="10 0 0 0">
+                <Label Content="Alumnos"
+                       Style="{ StaticResource Form }"/>
+                <TextBox Text="{ Binding Path=Alumnos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                         Style="{ StaticResource ResourceKey=TextBox }"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

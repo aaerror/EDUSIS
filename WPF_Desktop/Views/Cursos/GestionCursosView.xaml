@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
 
-    <Grid Background="White">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"/>
             <RowDefinition Height="Auto"/>
@@ -22,24 +22,27 @@
         <!-- INPUTS -->
         <WrapPanel Grid.Row="1"
                    Margin="26 10">
-            <Button Command="{ Binding NuevoCursoCommand }"
-                    Content="Nuevo Curso"
+            <Button Command="{ Binding Path=NavigateCommand }"
+                    CommandParameter="Curso"
+                    Content="Registrar Curso"
                     Margin="0 0 5 0"
-                    Style="{ StaticResource Secondary }"/>
-            <Button Command="{ Binding NuevaDivisionCommand }"
-                    Content="Nueva Division"
+                    Style="{ StaticResource ResourceKey=Secondary }"/>
+            <Button Command="{ Binding Path=NavigateCommand }"
+                    CommandParameter="Division"
+                    Content="Divisiones"
                     Margin="5 0 5 0"
-                    Style="{ StaticResource Secondary }"/>
-            <Button Command="{ Binding NuevaMateriaCommand }"
+                    Style="{ StaticResource ResourceKey=Secondary }"/>
+            <Button Command="{ Binding Path=NavigateCommand }"
+                    CommandParameter="Materia"
                     Content="Diseño Curricular"
                     Margin="5 0 0 0"
-                    Style="{ StaticResource Secondary }"/>
+                    Style="{ StaticResource ResourceKey=Secondary }"/>
         </WrapPanel>
 
         <!-- DETAILS -->
         <Border Grid.Row="2"
                 Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
                 BorderThickness="1"
                 CornerRadius="4"
                 Margin="20 10"
@@ -60,35 +63,35 @@
                 <WrapPanel Grid.Row="0"
                            HorizontalAlignment="Left"
                            Margin="0 10">
-                    <Button Command="{ Binding MostrarCursosCommand }"
+                    <Button Command="{ Binding Path=VerCursosCommand }"
                             Content="Mostrar Cursos"
                             Margin="0"
-                            Style="{ StaticResource Primary }"/>
+                            Style="{ StaticResource ResourceKey=Tertiary }"/>
                 </WrapPanel>
 
                 <DataGrid Grid.Row="1"
                           AutoGenerateColumns="False"
-                          ItemsSource="{ Binding Path=Cursos, UpdateSourceTrigger=PropertyChanged }"
-                          SelectedItem="{ Binding Path=Curso, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay }"
+                          ItemsSource="{ Binding Path=Cursos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                          SelectedItem="{ Binding Path=Curso, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                           SelectionMode="Extended"
                           SelectionUnit="FullRow"
-                          Style="{ DynamicResource DataGrid }">
+                          Style="{ StaticResource ResourceKey=DataGrid }">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="CursoID"
-                                            Binding="{ Binding CursoId }"
+                                            Binding="{ Binding Path=CursoId }"
                                             Visibility="Hidden"
                                             Width="Auto"/>
                         <DataGridTextColumn Header="Curso"
-                                            Binding="{ Binding Descripcion }"
+                                            Binding="{ Binding Path=Descripcion }"
                                             Width="Auto"/>
                         <DataGridTextColumn Header="Nivel Educativo"
-                                            Binding="{ Binding NivelEducativo }"
+                                            Binding="{ Binding Path=NivelEducativo }"
                                             Width="Auto"/>
                         <DataGridTextColumn Header="Cant. Divisiones"
-                                            Binding="{ Binding Divisiones }"
+                                            Binding="{ Binding Path=Divisiones }"
                                             Width="Auto"/>
                         <DataGridTextColumn Header="Cant. Materias"
-                                            Binding="{ Binding Materias }"
+                                            Binding="{ Binding Path=Materias }"
                                             Width="Auto"/>
                         <DataGridTextColumn Header="Cant. Alumnos"
                                             Binding="{ Binding Alumnos }"

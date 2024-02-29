@@ -1,4 +1,5 @@
-﻿using Domain.Shared;
+﻿using Domain.Cursos.Divisiones.Cursantes;
+using Domain.Shared;
 using System.Text.RegularExpressions;
 
 namespace Domain.Cursos.Divisiones;
@@ -6,25 +7,25 @@ namespace Domain.Cursos.Divisiones;
 public class Division : Entity
 {
     // TODO: VERIFICAR CONSTRAINTS
-    private const int MAX_ALUMNOS = 30;
-    private const int MIN_ALUMNOS = 10;
+    private const int MAX_ALUMNOS = 35;
+    private const int MIN_ALUMNOS = 15;
 
     private List<Cursante> _listadosDefinitivos = new();
 
+    public Guid CursoID { get; private set; }
     public string Descripcion { get; private set; } = string.Empty;
     public Guid? Preceptor { get; private set; }
     public int TotalAlumnos => _listadosDefinitivos.Count;
-
-    //public IReadOnlyCollection<Cursante> ListadosDefinitivos => _listadosDefinitivos.AsReadOnly();
+    public IReadOnlyCollection<Cursante> ListadosDefinitivos => _listadosDefinitivos.AsReadOnly();
 
 
     protected Division()
         : base() {}
 
-    protected Division(Guid id)
-        : base(id) { }
+    protected Division(Guid divisionID)
+        : base(divisionID) { }
 
-    public Division(string descripcion)
+    public Division(Guid cursoID, string descripcion)
         : this(Guid.NewGuid())
     {
         if (string.IsNullOrWhiteSpace(descripcion))
@@ -37,6 +38,7 @@ public class Division : Entity
             throw new ArgumentException("La división del curso debe ser una letra.", nameof(descripcion));
         }
 
+        CursoID = cursoID;
         Descripcion = descripcion.ToUpper();
     }
 
@@ -75,48 +77,92 @@ public class Division : Entity
     #endregion
 
     #region Alumnos
-    private bool ExisteCursanteInscripto(Guid alumnoId, CicloLectivo periodo)
+    private Cursante BuscarCursante(Guid unCursante)
     {
-        if (Guid.Empty.Equals(alumnoId))
+        var cursante = _listadosDefinitivos.Where(x => x.Id.Equals(unCursante))
+                                           .FirstOrDefault();
+        if (cursante is null)
         {
-            throw new NullReferenceException($"Datos del alumno incompletos o inexistentes. Alumno: { alumnoId }");
+            throw new ArgumentNullException("No se encontró el cursante de la división.");
         }
 
-        return _listadosDefinitivos.Exists(x => x.Alumno.Equals(alumnoId) && x.CicloLectivo.Periodo.Equals(periodo));
+        return cursante;
     }
 
-    public void AgregarCursante(Guid alumnoId, string periodo)
+    private bool ExisteCursanteInscripto(Guid unAlumno, CicloLectivo cicloLectivo)
     {
-        var nuevoCursante = Cursante.Crear(alumnoId, periodo);
-        if (ExisteCursanteInscripto(nuevoCursante.Alumno, nuevoCursante.CicloLectivo))
+        if (Guid.Empty.Equals(unAlumno) || cicloLectivo is null)
         {
-            throw new ArgumentException($"El alumno ya se encuentra registrado en el ciclo lectivo { periodo } para esta división.", nameof(alumnoId));
+            throw new NullReferenceException($"Datos incompletos o inexistentes para comprobar si el alumno se encuentra registrado en la división.");
         }
 
+        return _listadosDefinitivos.Exists(x => x.AlumnoID.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo));
+    }
+
+    public void AgregarCursante(Guid unAlumno, string periodo)
+    {
+        var cicloLectivo = CicloLectivo.Crear(periodo);
+        if (ExisteCursanteInscripto(unAlumno, cicloLectivo))
+        {
+            throw new ArgumentException($"El alumno ya se encuentra registrado en el ciclo lectivo { periodo } para esta división.", nameof(unAlumno));
+        }
+
+        var nuevoCursante = new Cursante(Id, unAlumno, cicloLectivo);
         _listadosDefinitivos.Add(nuevoCursante);
     }
 
-    public void QuitarCursanteEnCurso(Guid alumnoId)
+    public void QuitarCursante(Guid unAlumno, string periodo)
     {
-        var cicloLectivo = CicloLectivo.Crear(DateTime.Now.Year.ToString());
-        if (!ExisteCursanteInscripto(alumnoId, cicloLectivo))
+        var cicloLectivo = CicloLectivo.Crear(periodo);
+        var cursante = _listadosDefinitivos.Find(x => x.Id.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo));
+        if (cursante is null)
         {
-            throw new ArgumentException("El alumno no se encuentra registrado en esta división en el ciclo lectivo en curso.", nameof(alumnoId));
+            throw new ArgumentException("El alumno no se encuentra registrado en esta división o en el ciclo lectivo seleccionado.", nameof(unAlumno));
         }
 
-        _listadosDefinitivos.Remove(Cursante.Crear(alumnoId, cicloLectivo));
+        _listadosDefinitivos.Remove(cursante);
     }
 
     public IReadOnlyCollection<Guid> ListadoAlumnoCicloLectivoEnCurso()
     {
         return _listadosDefinitivos.Where(x => x.CicloLectivo.AñoEnCurso())
-                                   .Select(x => x.Alumno).ToList().AsReadOnly();
+                                   .Select(x => x.AlumnoID).ToList().AsReadOnly();
     }
 
-    public IReadOnlyCollection<Guid> ListadoAlumnoSegunCicloLectivo(string periodo)
+    public IReadOnlyCollection<Guid> ListadoPorPeriodo(string periodo)
     {
         return _listadosDefinitivos.Where(x => x.CicloLectivo.Equals(CicloLectivo.Crear(periodo)))
-                                   .Select(x => x.Alumno).ToList().AsReadOnly();
+                                   .Select(x => x.AlumnoID)
+                                   .ToList()
+                                   .AsReadOnly();
+    }
+    #endregion
+
+    #region Calificaciones
+    public IReadOnlyCollection<Calificacion> NotasDelAlumno(Guid unAlumno, string periodo)
+    {
+        var cicloLectivo = CicloLectivo.Crear(periodo);
+        var cursante = _listadosDefinitivos.Where(x => x.AlumnoID.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo))
+                                           .FirstOrDefault();
+        if (cursante is null)
+        {
+            throw new ArgumentNullException("No se encuentra el alumno registrado en la división ni el ciclo lectivo seleccionado.");
+        }
+
+        return cursante.Calificaciones;
+    }
+
+    public void AgregarCalificacion(Guid unCursante, Guid unaMateria, bool asistencia, DateTime fecha, Instancia instancia, double? nota)
+    {
+        var cursante = BuscarCursante(unCursante);
+        var nuevaCalificacion = Calificacion.Crear(unaMateria, asistencia, fecha, instancia, nota);
+        cursante.AgregarCalificacion(nuevaCalificacion);
+    }
+
+    public void QuitarCalificacion(Guid unCursante, Calificacion aEliminar)
+    {
+        var cursante = BuscarCursante(unCursante);
+        cursante.QuitarCalificacion(aEliminar);
     }
     #endregion
 }

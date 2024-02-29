@@ -13,8 +13,6 @@ public class EdusisDBContext : DbContext
     public DbSet<Persona> Personas { get; set; }
     public DbSet<Alumno> Alumnos { get; set; }
     public DbSet<Docente> Docentes { get; set; }
-    /*public DbSet<Profesor> Profesores { get; set; }
-    public DbSet<Preceptor> Preceptores { get; set; }*/
     public DbSet<Curso> Cursos { get; set; }
 
 
@@ -25,7 +23,7 @@ public class EdusisDBContext : DbContext
  
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<CicloLectivo>(builder =>
+        /*modelBuilder.Entity<CicloLectivo>(builder =>
         {
             builder.ToTable("ciclo_lectivo");
 
@@ -40,16 +38,14 @@ public class EdusisDBContext : DbContext
                    .HasColumnType("varchar")
                    .HasMaxLength(4)
                    .IsRequired();
-        });
+        });*/
 
         modelBuilder.ApplyConfiguration(new PersonasConfiguration());
         modelBuilder.ApplyConfiguration(new AlumnosConfiguration());
         modelBuilder.ApplyConfiguration(new DocentesConfigurations());
-/*        modelBuilder.ApplyConfiguration(new ProfesoresConfigurations());
-        modelBuilder.ApplyConfiguration(new PreceptoresConfigurations());*/
         modelBuilder.ApplyConfiguration(new CursosConfigurations());
+        modelBuilder.ApplyConfiguration(new MateriasConfiguration());
         modelBuilder.ApplyConfiguration(new DivisionesConfigurations());
-        modelBuilder.ApplyConfiguration(new CursantesConfigurations());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

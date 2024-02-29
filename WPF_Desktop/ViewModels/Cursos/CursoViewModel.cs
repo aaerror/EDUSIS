@@ -6,26 +6,49 @@ namespace WPF_Desktop.ViewModels.Cursos;
 
 public class CursoViewModel : ViewModel
 {
-    private CursoResponse _curso;
+    private CursoResponse _cursoResponse;
+
+    private Guid _cursoID;
+    private string _descripcion;
+    private string _nivelEducativo;
+    private string _divisiones;
+    private string _materias;
+    private string _alumnos;
 
 
     public CursoViewModel(CursoResponse cursoResponses)
     {
-        _curso = cursoResponses;
+        CursoID = Guid.Empty;
+        Descripcion = string.Empty;
+        NivelEducativo = string.Empty;
+        Divisiones = string.Empty;
+        Materias = string.Empty;
+        Alumnos = string.Empty;
+
+        if (cursoResponses is not null)
+        {
+            _cursoResponse = cursoResponses;
+            CursoID = _cursoResponse.CursoID;
+            Descripcion = _cursoResponse.Descripcion;
+            NivelEducativo = _cursoResponse.NivelEducativo;
+            Divisiones = _cursoResponse.Divisiones.ToString();
+            Materias = _cursoResponse.Materias.ToString();
+            Alumnos = _cursoResponse.Alumnos.ToString();
+        }
     }
 
     #region Properties
-    public Guid CursoId
+    public Guid CursoID
     {
         get
         {
-            return _curso.CursoId;
+            return _cursoID;
         }
 
         set
         {
-            _curso.CursoId = value;
-            OnPropertyChanged(nameof(CursoId));
+            _cursoID = value;
+            OnPropertyChanged(nameof(CursoID));
         }
     }
 
@@ -33,12 +56,12 @@ public class CursoViewModel : ViewModel
     {
         get
         {
-            return _curso.Descripcion;
+            return _descripcion;
         }
 
         set
         {
-            _curso.Descripcion = value;
+            _descripcion = value;
             OnPropertyChanged(nameof(Descripcion));
         }
     }
@@ -47,54 +70,54 @@ public class CursoViewModel : ViewModel
     {
         get
         {
-            return _curso.NivelEducativo;
+            return _nivelEducativo;
         }
 
         set
         {
-            _curso.NivelEducativo = value;
+            _nivelEducativo = value;
             OnPropertyChanged(nameof(NivelEducativo));
         }
     }
 
-    public int Divisiones
+    public string Divisiones
     {
         get
         {
-            return _curso.Divisiones;
+            return _divisiones;
         }
 
         set
         {
-            _curso.Divisiones = value;
+            _divisiones = value;
             OnPropertyChanged(nameof(Divisiones));
         }
     }
 
-    public int Materias
+    public string Materias
     {
         get
         {
-            return _curso.Materias;
+            return _materias;
         }
 
         set
         {
-            _curso.Materias = value;
+            _materias = value;
             OnPropertyChanged(nameof(Materias));
         }
     }
 
-    public int Alumnos
+    public string Alumnos
     {
         get
         {
-            return _curso.Alumnos;
+            return _alumnos;
         }
 
         set
         {
-            _curso.Alumnos = value;
+            _alumnos = value;
             OnPropertyChanged(nameof(Alumnos));
         }
     }

@@ -108,7 +108,7 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
     {
         try
         {
-            var lista = _servicioCursos.BuscarMaterias(_cursoStore.Curso.CursoId);
+            var lista = _servicioCursos.BuscarMaterias(_cursoStore.Curso.CursoID);
             if (lista.Count == 0)
             {
                 string messageBoxText = "No existen materias adicionadas para este curso.";
@@ -616,7 +616,7 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
                 {
                     try
                     {
-                        var request = new EditarMateriaRequest(_cursoStore.Curso.CursoId,
+                        var request = new EditarMateriaRequest(_cursoStore.Curso.CursoID,
                                                                MateriaDetalleViewModel.Materia,
                                                                MateriaDetalleViewModel.Descripcion,
                                                                MateriaDetalleViewModel.HorasCatedra);
@@ -655,7 +655,7 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
                 {
                     try
                     {
-                        var request = new CrearHorarioRequest(_cursoStore.Curso.CursoId,
+                        var request = new CrearHorarioRequest(_cursoStore.Curso.CursoID,
                                                               MateriaDetalleViewModel.Materia,
                                                               Turno,
                                                               DiaSemana,
@@ -701,7 +701,7 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
                 {
                     try
                     {
-                        _crearSituacionRevistaRequest = new CrearSituacionRevistaRequest(_cursoStore.Curso.CursoId,
+                        _crearSituacionRevistaRequest = new CrearSituacionRevistaRequest(_cursoStore.Curso.CursoID,
                                                                                          MateriaDetalleViewModel.Materia,
                                                                                          _profesorID,
                                                                                          SituacionRevistaViewModel.Cargo,
@@ -776,16 +776,16 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
                     break;
                 }
 
-                messageBoxText = $"Está seguro que desea adicionar la materia { DescripcionRegistrar } (Curso: { _cursoStore.Curso.Descripcion }° año | Nivel Educativo: { _cursoStore.Curso.NivelEducativo })?";
+                messageBoxText = $"Está seguro que desea adicionar la materia { DescripcionRegistrar } (Curso: { _cursoStore.Curso.Descripcion }° Año | Nivel Educativo: { _cursoStore.Curso.NivelEducativo })?";
                 caption = "Registrar Materia";
                 result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
 
-                if (result == MessageBoxResult.Yes)
+                if (result is MessageBoxResult.Yes)
                 {
                     try
                     {
-                        _crearMateriaRequest = new CrearMateriaRequest(DescripcionRegistrar, HorasCatedraRegistrar);
-                        _servicioCursos.RegistrarMateriaEnCurso(_cursoStore.Curso.CursoId, _crearMateriaRequest);
+                        _crearMateriaRequest = new CrearMateriaRequest(DescripcionRegistrar, HorasCatedraRegistrar + 1);
+                        _servicioCursos.RegistrarMateriaEnCurso(_cursoStore.Curso.CursoID, _crearMateriaRequest);
 
                         messageBoxText = $"Nueva materia agregada a la curricula del curso.";
                         caption = "Operación Exitosa";
@@ -842,7 +842,7 @@ public class GestionDisenoCurriculaViewModel : ViewModel, INotifyDataErrorInfo
                 {
                     try
                     {
-                        var request = new EliminarMateriaRequest(_cursoStore.Curso.CursoId, MateriaDetalleViewModel.Materia);
+                        var request = new EliminarMateriaRequest(_cursoStore.Curso.CursoID, MateriaDetalleViewModel.Materia);
                         _servicioCursos.QuitarMateriaDelCurso(request);
 
                         messageBoxText = $"La materia se eliminó correctamente de la currícula del curso.";

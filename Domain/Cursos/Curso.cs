@@ -1,4 +1,5 @@
 ﻿using Domain.Cursos.Divisiones;
+using Domain.Cursos.Divisiones.Cursantes;
 using Domain.Cursos.Materias;
 using Domain.Shared;
 using System.Text.RegularExpressions;
@@ -52,7 +53,35 @@ public class Curso : Entity
     public Curso(string descripcion, NivelEducativo nivelEducativo)
         : this(Guid.NewGuid(), descripcion, nivelEducativo) { }
 
+    #region Calificacion
+    public void AgregarCalificacion(Guid unaDivision, Guid unCursante, Guid unaMateria, bool asistencia, DateTime fecha, Instancia instancia, double? nota)
+    {
+        var division = BuscarDivision(unaDivision);
+        if (division is null)
+        {
+            throw new ArgumentException("No se encontró la división en este curso.", nameof(unaDivision));
+        }
+
+        if (!ExisteMateria(unaMateria))
+        {
+            throw new ArgumentException("No se encontró la materia en este curso.", nameof(unaDivision));
+        }
+
+        division.AgregarCalificacion(unCursante, unaMateria, asistencia, fecha, instancia, nota);
+    }
+    #endregion
+
     #region Materias
+    private bool ExisteMateria(Guid unaMateria)
+    {
+        if (Guid.Empty.Equals(unaMateria))
+        {
+            throw new ArgumentNullException(nameof(unaMateria), "Debe proporcionar datos de la materia para realizar la búsqueda.");
+        }
+
+        return _materias.Exists(x => x.Id.Equals(unaMateria));
+    }
+
     private Materia BuscarMateria(Guid unaMateria)
     {
         if (Guid.Empty.Equals(unaMateria))
@@ -79,7 +108,7 @@ public class Curso : Entity
             throw new ArgumentException($"La materia { materia.Descripcion } ya se encuentra registrada con { materia.HorasCatedra } horas cátedra.", nameof(descripcion));
         }
 
-        _materias.Add(new Materia(descripcion, horasCatedra));
+        _materias.Add(new Materia(Id, descripcion, horasCatedra));
     }
 
     public void ActualizarMateria(Guid unaMateria, string descripcion, int horasCatedra)
@@ -105,7 +134,6 @@ public class Curso : Entity
 
         _materias.Remove(materia);
     }
-    #endregion
 
     public void AgregarHorarioAMateria(Guid materiaId, Horario unHorario)
     {
@@ -143,7 +171,7 @@ public class Curso : Entity
         return _materias.FindAll(x => !x.ExisteDocenteEnFunciones())
                         .AsReadOnly();
     }
-
+    #endregion
 
     #region Situacion de Revista
     public SituacionRevista BuscarSituacionRevista(Guid unaMateria, Guid unProfesor)
@@ -194,24 +222,25 @@ public class Curso : Entity
 
     public void AgregarDivision()
     {
-        string divisionSiguiente = string.Empty;
-        var division = _divisiones.Select(x => x.Descripcion).OrderDescending().FirstOrDefault();
+        string siguiente = string.Empty;
+        var division = _divisiones.Select(x => x.Descripcion)
+                                  .OrderDescending()
+                                  .FirstOrDefault();
         if (division is null)
         {
-            divisionSiguiente = "A";
+            siguiente = "A";
         }
         else
         {
-            divisionSiguiente = char.ConvertFromUtf32(char.Parse(division) + 1);
+            siguiente = char.ConvertFromUtf32(char.Parse(division) + 1);
         }
 
-        _divisiones.Add(new Division(divisionSiguiente));
+        _divisiones.Add(new Division(Id, siguiente));
     }
 
     public void QuitarDivision(Guid aEliminar)
     {
         var division = _divisiones.Find(x => x.Id.Equals(aEliminar));
-
         if (division is null)
         {
             throw new ArgumentException("La división que desea eliminar no pertenece a este curso.", nameof(aEliminar));
@@ -230,14 +259,15 @@ public class Curso : Entity
         return _divisiones.Find(x => x.Equals(unaDivision)).ListadoAlumnoCicloLectivoEnCurso();
     }
 
-    public IReadOnlyCollection<Guid> ListadoDefinitivoDeAlumnosSegunCicloLectivo(Guid unaDivision, string periodo)
+    public IReadOnlyCollection<Guid> CursantesPorPeriodo(Guid unaDivision, string periodo)
     {
-        if (!ExisteDivision(unaDivision))
+        var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
+        if (division is null)
         {
-            throw new ArgumentException($"No se encuentra la división en el curso {Descripcion}", nameof(unaDivision));
+            throw new ArgumentException($"No se encuentra la división en el curso { Descripcion }° Año.", nameof(unaDivision));
         }
 
-        return _divisiones.Find(x => x.Equals(unaDivision)).ListadoAlumnoSegunCicloLectivo(periodo);
+        return division.ListadoPorPeriodo(periodo);
     }
     #endregion
 
@@ -268,16 +298,16 @@ public class Curso : Entity
 
     public void AgregarAlumnoAlListadoDefinitivo(Guid unaDivision, Guid unAlumno, string unPeriodo)
     {
-        if (ExisteDivision(unaDivision))
+        var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
+        if (division is null)
         {
             throw new ArgumentException("La división del curso a la que desea agregar este alumno no existe.", nameof(unaDivision));
         }
 
-        var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
         division.AgregarCursante(unAlumno, unPeriodo);
     }
 
-    public void QuitarAlumnoDelListadoDefinitivoActual(Guid unaDivision, Guid unAlumno)
+    public void QuitarAlumnoDelListadoDefinitivoActual(Guid unaDivision, Guid unAlumno, string unPeriodo)
     {
         if (ExisteDivision(unaDivision))
         {
@@ -285,7 +315,7 @@ public class Curso : Entity
         }
 
         var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
-        division.QuitarCursanteEnCurso(unAlumno);
+        division.QuitarCursante(unAlumno, unPeriodo);
     }
     #endregion
 }
