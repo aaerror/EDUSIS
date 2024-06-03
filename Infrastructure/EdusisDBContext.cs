@@ -1,10 +1,11 @@
 ﻿using Domain.Alumnos;
 using Domain.Cursos;
-using Domain.Cursos.Divisiones;
 using Domain.Docentes;
+using Domain.Materias;
 using Domain.Personas;
-using Infrastructure.EntityConfigurations;
+using Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 namespace Infrastructure;
 
@@ -14,13 +15,13 @@ public class EdusisDBContext : DbContext
     public DbSet<Alumno> Alumnos { get; set; }
     public DbSet<Docente> Docentes { get; set; }
     public DbSet<Curso> Cursos { get; set; }
+    public DbSet<Materia> Materias { get; set; }
+    public DbSet<Usuario> Usuarios { get; set; }
 
 
-    protected override void OnConfiguring(DbContextOptionsBuilder builder)
-    {
-        builder.UseSqlServer(@"Data Source=localhost; Integrated Security=True; Encrypt=True; TrustServerCertificate=True; Initial Catalog=EdusisDB;");
-    }
- 
+    public EdusisDBContext(DbContextOptions options)
+        : base(options) { }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         /*modelBuilder.Entity<CicloLectivo>(builder =>
@@ -40,12 +41,17 @@ public class EdusisDBContext : DbContext
                    .IsRequired();
         });*/
 
-        modelBuilder.ApplyConfiguration(new PersonasConfiguration());
+        //modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        /*modelBuilder.ApplyConfiguration(new PersonasConfiguration());
         modelBuilder.ApplyConfiguration(new AlumnosConfiguration());
         modelBuilder.ApplyConfiguration(new DocentesConfigurations());
         modelBuilder.ApplyConfiguration(new CursosConfigurations());
         modelBuilder.ApplyConfiguration(new MateriasConfiguration());
         modelBuilder.ApplyConfiguration(new DivisionesConfigurations());
+        modelBuilder.ApplyConfiguration(new UsuariosConfiguration());*/
+
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

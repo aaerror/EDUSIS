@@ -1,10 +1,12 @@
 ﻿using Core.ServicioAlumnos;
 using Core.ServicioCursos;
 using Core.ServicioDocentes;
+using Core.ServicioMaterias;
+using Core.Shared;
 using Infrastructure;
-using Infrastructure.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Windows;
 using WPF_Desktop.Navigation;
@@ -18,37 +20,46 @@ using WPF_Desktop.ViewModels.Alumnos;
 using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Docentes;
+using WPF_Desktop.ViewModels.Materias;
 
 namespace WPF_Desktop;
 
 public partial class App : Application
 {
     private IServiceProvider _serviceProvider;
-    public static IHost? AppHost { get; private set; }
-
+    public static IHost? AppHost { get; private set; }    
 
     public App()
     {
         AppHost = Host.CreateDefaultBuilder()
-            .ConfigureServices((hostContext, services) =>
+            .ConfigureLogging(configuration =>
             {
-                ConfigureServices(services);
-            }).Build();
+                configuration.SetMinimumLevel(LogLevel.Debug);
+                configuration.AddDebug();
+            })
+            .ConfigureServices((hostContext, services) =>
+                {
+                    ConfigureServices(services);
+                })
+            .Build();
     }
 
     private void ConfigureServices(IServiceCollection services)
     {
-        /**
-         * INFRASTRUCTURE
-         */
-        services.AddSingleton<IUnitOfWork, UnitOfWork>();
+        #region Infrastructure
+        /*services.AddScoped<IMediator, Mediator>();
+        services.AddScoped<IUnitOfWork>(provider => new UnitOfWork(provider.GetRequiredService<IMediator>()));*/
+        InfrastructureDI.AddInfrastructure(services);
+        #endregion
 
-        /**
-         * CORE
-         */
-        services.AddSingleton<IServicioAlumnos, ServicioAlumnos>();
-        services.AddSingleton<IServicioDocentes, ServicioDocentes>();
-        services.AddSingleton<IServicioCursos, ServicioCursos>();
+        #region Core
+        CoreDI.AddServices(services);
+        /*services.AddTransient<IServicioAlumnos, ServicioAlumnos>();
+        services.AddTransient<IServicioDocentes, ServicioDocentes>();
+        services.AddTransient<IServicioCursos, ServicioCursos>();
+        services.AddTransient<IServicioMaterias, ServicioMaterias>();
+        services.AddTransient<IServicioAutenticacion, ServicioAutenticacion>();*/
+        #endregion
 
         /**
          * UI
@@ -59,6 +70,7 @@ public partial class App : Application
         services.AddSingleton<PerfilBuscadoStore>();
         services.AddSingleton<CursoStore>();
         services.AddSingleton<DivisionStore>();
+
         // Navigation
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<INavigationService>(provider => CreateMainNavigationService(provider));
@@ -71,49 +83,53 @@ public partial class App : Application
                                                                            CreateGestionDocentesNavigationService(provider),
                                                                            CreateGestionAlumnosNavigationService(provider),
                                                                            CreateGestionCursosNavigationService(provider)));
-        
+
         services.AddTransient<LoginViewModel>();
 
         // DOCENTES
-        services.AddTransient<GestionDocentesViewModel>(provider => new GestionDocentesViewModel(provider.GetRequiredService<IServicioDocentes>(),
+        services.AddTransient<GestionDocentesViewModel>(provider => new GestionDocentesViewModel(provider.GetRequiredService<IServicioDocente>(),
                                                                                                  CreateRegistrarDocenteNavigationService(provider),
                                                                                                  CreatePerfilDocenteNavigationService(provider),
                                                                                                  CreateGestionPuestosNavigationService(provider),
                                                                                                  CreateGestionLicenciasNavigationService(provider),
                                                                                                  provider.GetRequiredService<PerfilBuscadoStore>()));
-        services.AddTransient<RegistrarDocenteViewModel>(provider => new RegistrarDocenteViewModel(provider.GetRequiredService<IServicioDocentes>()));
-        services.AddTransient<PerfilDocenteViewModel>(provider => new PerfilDocenteViewModel(provider.GetRequiredService<IServicioDocentes>(),
+        services.AddTransient<RegistrarDocenteViewModel>(provider => new RegistrarDocenteViewModel(provider.GetRequiredService<IServicioDocente>()));
+        services.AddTransient<PerfilDocenteViewModel>(provider => new PerfilDocenteViewModel(provider.GetRequiredService<IServicioDocente>(),
                                                                                              provider.GetRequiredService<PerfilBuscadoStore>()));
         services.AddTransient<GestionPuestosViewModel>();
         services.AddTransient<GestionLicenciasViewModel>();
 
         // ALUMNOS
-        services.AddTransient<GestionAlumnosViewModel>(provider => new GestionAlumnosViewModel(provider.GetRequiredService<IServicioAlumnos>(),
+        services.AddTransient<GestionAlumnosViewModel>(provider => new GestionAlumnosViewModel(provider.GetRequiredService<IServicioAlumno>(),
                                                                                                CreateRegistrarAlumnoNavigationService(provider),
                                                                                                CreateVerPerfilNavigationService(provider),
                                                                                                provider.GetRequiredService<PerfilBuscadoStore>()));
 
-        services.AddTransient<PerfilAlumnoViewModel>(provider => new PerfilAlumnoViewModel(provider.GetRequiredService<IServicioAlumnos>(),
+        services.AddTransient<PerfilAlumnoViewModel>(provider => new PerfilAlumnoViewModel(provider.GetRequiredService<IServicioAlumno>(),
                                                                                            provider.GetRequiredService<PerfilBuscadoStore>()));
         services.AddTransient<RegistrarAlumnoViewModel>();
 
-        // CURSOS
+        #region Cursos
         services.AddTransient<RegistrarCursosViewModel>();
         services.AddTransient<GestionCursantesViewModel>();
-        services.AddTransient<GestionCursosViewModel>(provider => new GestionCursosViewModel(provider.GetRequiredService<IServicioCursos>(),
+        services.AddTransient<GestionCursosViewModel>(provider => new GestionCursosViewModel(provider.GetRequiredService<IServicioCurso>(),
                                                                                              CreateRegistrarCursoNavigationService(provider),
                                                                                              CreateGestionDivisionesNavigationService(provider),
                                                                                              CreateGestionDisenoCurricularNavigationService(provider),
                                                                                              provider.GetRequiredService<CursoStore>()));
-        services.AddTransient<GestionDivisionesViewModel>(provider => new GestionDivisionesViewModel(provider.GetRequiredService<IServicioCursos>(),
-                                                                                                     provider.GetRequiredService<IServicioDocentes>(),
+        services.AddTransient<GestionDivisionesViewModel>(provider => new GestionDivisionesViewModel(provider.GetRequiredService<IServicioCurso>(),
+                                                                                                     provider.GetRequiredService<IServicioDocente>(),
                                                                                                      CreateGestionCursantesNavigationService(provider),
                                                                                                      provider.GetRequiredService<CursoStore>(),
                                                                                                      provider.GetRequiredService<DivisionStore>()));
-        services.AddTransient<GestionDisenoCurriculaViewModel>(provider => new GestionDisenoCurriculaViewModel(provider.GetRequiredService<IServicioCursos>(),
-                                                                                                               provider.GetRequiredService<IServicioDocentes>(),
-                                                                                                               provider.GetRequiredService<CursoStore>()));
-        services.AddTransient<MateriaDetalleViewModel>();
+        #endregion
+
+        #region Materias
+        services.AddTransient<GestionMateriasViewModel>(provider => new GestionMateriasViewModel(provider.GetRequiredService<IServicioMateria>(),
+                                                                                                 provider.GetRequiredService<IServicioDocente>(),
+                                                                                                 provider.GetRequiredService<CursoStore>()));
+        services.AddTransient<MateriaViewModel>();
+        #endregion
 
         services.AddScoped(provider => new MainWindow
         {
@@ -216,12 +232,14 @@ public partial class App : Application
         return new GestionCursantesNavigationService<GestionCursantesViewModel>(() => serviceProvider.GetRequiredService<GestionCursantesViewModel>(),
                                                                                 serviceProvider.GetRequiredService<NavigationStore>());
     }
+    #endregion
 
+    #region Materias
     // GESTIÓN DISENO CURRICULAR
     private INavigationService CreateGestionDisenoCurricularNavigationService(IServiceProvider serviceProvider)
     {
-        return new GestionDisenoCurricularNavigationService<GestionDisenoCurriculaViewModel>(() => serviceProvider.GetRequiredService<GestionDisenoCurriculaViewModel>(),
-                                                                                             serviceProvider.GetRequiredService<NavigationStore>());
+        return new GestionDisenoCurricularNavigationService<GestionMateriasViewModel>(() => serviceProvider.GetRequiredService<GestionMateriasViewModel>(),
+                                                                                            serviceProvider.GetRequiredService<NavigationStore>());
     }
     #endregion
     #endregion
@@ -244,5 +262,13 @@ public partial class App : Application
         await AppHost.StopAsync();
 
         base.OnExit(e);
+    }
+
+    private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        string caption = "Ha ocurrido un error inesperado";
+        string message = e.Exception.Message;
+        MessageBox.Show($"Error: { message }", caption, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.None);
+        e.Handled = true;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Core.ServicioCursos;
 using Core.ServicioCursos.DTOs.Responses;
+using Core.ServicioMaterias.DTOs.Responses;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 public class CalificacionViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private readonly IServicioCursos _servicioCursos;
+    private readonly IServicioCurso _servicioCursos;
     private CalificacionResponse _calificacionResponse;
 
     private Guid _materiaID;
@@ -33,7 +34,7 @@ public class CalificacionViewModel : ViewModel, INotifyDataErrorInfo
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
 
-    public CalificacionViewModel(IServicioCursos servicioCursos, CalificacionResponse calificacionResponse)
+    public CalificacionViewModel(IServicioCurso servicioCursos, CalificacionResponse calificacionResponse)
     {
         _servicioCursos = servicioCursos;
         Materia = string.Empty;

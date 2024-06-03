@@ -14,7 +14,7 @@ namespace WPF_Desktop.ViewModels.Docentes;
 
 public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private readonly IServicioDocentes _servicioDocentes;
+    private readonly IServicioDocente _servicioDocentes;
 
     private InformacionPersonalDTO _informacionPersonalDTO;
     private ContactoDTO _contactoDTO;
@@ -40,7 +40,7 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
     #endregion
 
 
-    public RegistrarDocenteViewModel(IServicioDocentes servicioDocentes)
+    public RegistrarDocenteViewModel(IServicioDocente servicioDocentes)
     {
         _servicioDocentes = servicioDocentes;
 

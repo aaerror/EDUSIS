@@ -40,9 +40,9 @@ namespace Infrastructure.Migrations
                         .HasColumnName("nivel_educativo");
 
                     b.HasKey("Id")
-                        .HasName("PK_CURSOS");
+                        .HasName("PK_CURSO");
 
-                    b.ToTable("cursos", (string)null);
+                    b.ToTable("curso", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Cursos.Divisiones.Division", b =>
@@ -67,7 +67,7 @@ namespace Infrastructure.Migrations
                         .HasColumnName("preceptor_id");
 
                     b.HasKey("Id")
-                        .HasName("PK_DIVISIONES");
+                        .HasName("PK_DIVISION");
 
                     b.HasIndex("CursoID");
 
@@ -75,7 +75,7 @@ namespace Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[preceptor_id] IS NOT NULL");
 
-                    b.ToTable("divisiones", (string)null);
+                    b.ToTable("division", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Cursos.Materias.Materia", b =>
@@ -100,11 +100,11 @@ namespace Infrastructure.Migrations
                         .HasColumnName("horas_catedra");
 
                     b.HasKey("Id")
-                        .HasName("PK_MATERIAS");
+                        .HasName("PK_MATERIA");
 
                     b.HasIndex("CursoID");
 
-                    b.ToTable("materias", (string)null);
+                    b.ToTable("materia", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Personas.Persona", b =>
@@ -130,9 +130,49 @@ namespace Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("personas", (string)null);
+                    b.ToTable("persona", (string)null);
 
                     b.UseTptMappingStrategy();
+                });
+
+            modelBuilder.Entity("Domain.Usuarios.Usuario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<Guid>("DocenteID")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("docente_id");
+
+                    b.Property<byte[]>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("varbinary(256)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<byte[]>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("varbinary(256)")
+                        .HasColumnName("password_salt");
+
+                    b.Property<string>("Rol")
+                        .IsRequired()
+                        .HasColumnType("varchar(15)")
+                        .HasColumnName("rol");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(18)")
+                        .HasColumnName("usuario");
+
+                    b.HasKey("Id")
+                        .HasName("PK_USUARIO");
+
+                    b.HasIndex("DocenteID")
+                        .IsUnique();
+
+                    b.ToTable("usuario", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Alumnos.Alumno", b =>
@@ -153,7 +193,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("legajo");
 
-                    b.ToTable("alumnos", (string)null);
+                    b.ToTable("alumno", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Docentes.Docente", b =>
@@ -184,7 +224,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("varchar(6)")
                         .HasColumnName("legajo");
 
-                    b.ToTable("docentes", (string)null);
+                    b.ToTable("docente", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Cursos.Divisiones.Division", b =>
@@ -194,12 +234,12 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("CursoID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("FK_CURSOS_DIVISIONES");
+                        .HasConstraintName("FK_CURSO_DIVISION");
 
                     b.HasOne("Domain.Docentes.Docente", null)
                         .WithOne()
                         .HasForeignKey("Domain.Cursos.Divisiones.Division", "Preceptor")
-                        .HasConstraintName("FK_DOCENTES_DIVISIONES");
+                        .HasConstraintName("FK_DOCENTE_DIVISION");
 
                     b.OwnsMany("Domain.Cursos.Divisiones.Cursantes.Cursante", "ListadosDefinitivos", b1 =>
                         {
@@ -217,24 +257,24 @@ namespace Infrastructure.Migrations
                                 .HasColumnOrder(0);
 
                             b1.HasKey("Id")
-                                .HasName("PK_CURSANTES");
+                                .HasName("PK_CURSANTE");
 
                             b1.HasIndex("AlumnoID");
 
                             b1.HasIndex("DivisionID");
 
-                            b1.ToTable("cursantes", (string)null);
+                            b1.ToTable("cursante", (string)null);
 
                             b1.HasOne("Domain.Alumnos.Alumno", null)
                                 .WithMany()
                                 .HasForeignKey("AlumnoID")
                                 .OnDelete(DeleteBehavior.Cascade)
                                 .IsRequired()
-                                .HasConstraintName("FK_ALUMNOS_CURSANTES");
+                                .HasConstraintName("FK_ALUMNO_CURSANTE");
 
                             b1.WithOwner()
                                 .HasForeignKey("DivisionID")
-                                .HasConstraintName("FK_DIVISIONES_CURSANTES");
+                                .HasConstraintName("FK_DIVISION_CURSANTE");
 
                             b1.OwnsOne("Domain.Cursos.Divisiones.Cursantes.CicloLectivo", "CicloLectivo", b2 =>
                                 {
@@ -249,7 +289,7 @@ namespace Infrastructure.Migrations
 
                                     b2.HasKey("CursanteId");
 
-                                    b2.ToTable("cursantes");
+                                    b2.ToTable("cursante");
 
                                     b2.WithOwner()
                                         .HasForeignKey("CursanteId");
@@ -293,18 +333,18 @@ namespace Infrastructure.Migrations
 
                                     b2.HasIndex("cursante_id");
 
-                                    b2.ToTable("calificaciones", (string)null);
+                                    b2.ToTable("calificacion", (string)null);
 
                                     b2.HasOne("Domain.Cursos.Materias.Materia", null)
                                         .WithMany()
                                         .HasForeignKey("MateriaID")
                                         .OnDelete(DeleteBehavior.NoAction)
                                         .IsRequired()
-                                        .HasConstraintName("FK_MATERIAS_CALIFICACIONES");
+                                        .HasConstraintName("FK_MATERIA_CALIFICACION");
 
                                     b2.WithOwner()
                                         .HasForeignKey("cursante_id")
-                                        .HasConstraintName("FK_CURSANTES_CALIFICACIONES");
+                                        .HasConstraintName("FK_CURSANTE_CALIFICACION");
                                 });
 
                             b1.Navigation("Calificaciones");
@@ -323,7 +363,7 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("CursoID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("FK_CURSOS_MATERIAS");
+                        .HasConstraintName("FK_CURSO_MATERIA");
 
                     b.OwnsMany("Domain.Cursos.Materias.Horario", "Horarios", b1 =>
                         {
@@ -355,13 +395,13 @@ namespace Infrastructure.Migrations
                                 .HasColumnName("turno");
 
                             b1.HasKey("materia_id", "horario_id")
-                                .HasName("PK_HORARIOS");
+                                .HasName("PK_HORARIO");
 
-                            b1.ToTable("horarios", (string)null);
+                            b1.ToTable("horario", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("materia_id")
-                                .HasConstraintName("FK_MATERIAS_HORARIOS");
+                                .HasConstraintName("FK_MATERIA_HORARIO");
                         });
 
                     b.OwnsMany("Domain.Cursos.Materias.SituacionRevista", "Profesores", b1 =>
@@ -410,11 +450,11 @@ namespace Infrastructure.Migrations
                                 .HasForeignKey("ProfesorId")
                                 .OnDelete(DeleteBehavior.Cascade)
                                 .IsRequired()
-                                .HasConstraintName("FK_DOCENTES_SITUACION-REVISTA");
+                                .HasConstraintName("FK_DOCENTE_SITUACION-REVISTA");
 
                             b1.WithOwner()
                                 .HasForeignKey("materia_id")
-                                .HasConstraintName("FK_MATERIAS_SITUACION-REVISTA");
+                                .HasConstraintName("FK_MATERIA_SITUACION-REVISTA");
                         });
 
                     b.Navigation("Horarios");
@@ -466,7 +506,7 @@ namespace Infrastructure.Migrations
                             b1.HasIndex("Documento")
                                 .IsUnique();
 
-                            b1.ToTable("personas");
+                            b1.ToTable("persona");
 
                             b1.WithOwner()
                                 .HasForeignKey("PersonaId");
@@ -478,13 +518,13 @@ namespace Infrastructure.Migrations
                                 .HasColumnType("uniqueidentifier");
 
                             b1.HasKey("persona_id")
-                                .HasName("PK_DOMICILIOS");
+                                .HasName("PK_DOMICILIO");
 
-                            b1.ToTable("domicilios", (string)null);
+                            b1.ToTable("domicilio", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("persona_id")
-                                .HasConstraintName("FK_PERSONAS_DOMICILIOS");
+                                .HasConstraintName("FK_PERSONA_DOMICILIO");
 
                             b1.OwnsOne("Domain.Personas.Domicilios.Direccion", "Direccion", b2 =>
                                 {
@@ -515,7 +555,7 @@ namespace Infrastructure.Migrations
 
                                     b2.HasKey("Domiciliopersona_id");
 
-                                    b2.ToTable("domicilios");
+                                    b2.ToTable("domicilio");
 
                                     b2.WithOwner()
                                         .HasForeignKey("Domiciliopersona_id");
@@ -546,7 +586,7 @@ namespace Infrastructure.Migrations
 
                                     b2.HasKey("Domiciliopersona_id");
 
-                                    b2.ToTable("domicilios");
+                                    b2.ToTable("domicilio");
 
                                     b2.WithOwner()
                                         .HasForeignKey("Domiciliopersona_id");
@@ -564,6 +604,52 @@ namespace Infrastructure.Migrations
 
                     b.Navigation("InformacionPersonal")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Usuarios.Usuario", b =>
+                {
+                    b.HasOne("Domain.Docentes.Docente", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Usuarios.Usuario", "DocenteID")
+                        .HasConstraintName("FK_DOCENTE_USUARIO");
+
+                    b.OwnsMany("Domain.Usuarios.Acceso", "Accesos", b1 =>
+                        {
+                            b1.Property<int>("acceso_id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("acceso_id"));
+
+                            b1.Property<Guid>("usuario_id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateTime>("FechaAlta")
+                                .HasColumnType("date")
+                                .HasColumnName("fecha_alta");
+
+                            b1.Property<DateTime?>("FechaBaja")
+                                .HasColumnType("date")
+                                .HasColumnName("fecha_baja");
+
+                            b1.Property<string>("Permiso")
+                                .IsRequired()
+                                .HasColumnType("varchar(15)")
+                                .HasColumnName("permiso");
+
+                            b1.HasKey("acceso_id", "usuario_id")
+                                .HasName("PK_ACCESO");
+
+                            b1.HasIndex("usuario_id");
+
+                            b1.ToTable("acceso", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("usuario_id")
+                                .HasConstraintName("FK_USUARIO_PERMISO");
+                        });
+
+                    b.Navigation("Accesos");
                 });
 
             modelBuilder.Entity("Domain.Alumnos.Alumno", b =>
@@ -619,15 +705,15 @@ namespace Infrastructure.Migrations
                                 .HasColumnName("observacion");
 
                             b1.HasKey("licencia_id", "docente_id")
-                                .HasName("PK_LICENCIAS");
+                                .HasName("PK_LICENCIA");
 
                             b1.HasIndex("docente_id");
 
-                            b1.ToTable("licencias", (string)null);
+                            b1.ToTable("licencia", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("docente_id")
-                                .HasConstraintName("FK_DOCENTES_LICENCIAS");
+                                .HasConstraintName("FK_DOCENTE_LICENCIA");
                         });
 
                     b.OwnsMany("Domain.Docentes.Puesto", "Puestos", b1 =>
@@ -655,15 +741,15 @@ namespace Infrastructure.Migrations
                                 .HasColumnName("posicion");
 
                             b1.HasKey("puesto_id", "docente_id")
-                                .HasName("PK_PUESTOS");
+                                .HasName("PK_PUESTO");
 
                             b1.HasIndex("docente_id");
 
-                            b1.ToTable("puestos", (string)null);
+                            b1.ToTable("puesto", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("docente_id")
-                                .HasConstraintName("FK_DOCENTES_PUESTOS");
+                                .HasConstraintName("FK_DOCENTE_PUESTO");
                         });
 
                     b.Navigation("Licencias");

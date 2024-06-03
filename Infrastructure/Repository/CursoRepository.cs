@@ -1,6 +1,5 @@
 ﻿using Domain.Cursos;
 using Domain.Cursos.Divisiones;
-using Infrastructure.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
@@ -20,16 +19,15 @@ public class CursoRepository : Repository<Curso>, ICursoRepository
 
     public override Curso BuscarPorID(Guid id)
     {
-        return Context.Set<Curso>()
-                      .Include(x => x.Materias)
-                      .Include(x => x.Divisiones)
-                      .Where(x => x.Id.Equals(id))
-                      .FirstOrDefault();
+        return _context.Set<Curso>().Include(x => x.Materias)
+                                    .Include(x => x.Divisiones)
+                                    .Where(x => x.Id.Equals(id))
+                                    .FirstOrDefault();
     }
 
-    public override void ActualizarDatos(Curso entity)
+    public override void Modificar(Curso entity)
     {
-        Context.Update(entity);
+        _context.Update(entity);
     }
 
     public IEnumerable<Division> BuscarDivisiones(Guid unCurso)
@@ -47,4 +45,16 @@ public class CursoRepository : Repository<Curso>, ICursoRepository
                               .OrderByDescending(x => x.Descripcion)
                               .ThenBy(x => x.NivelEducativo);
     }
+
+    #region Materia
+    public void RegistrarMateria(Guid materiaId)
+    {
+        //_context.Cursos
+    }
+
+    public void QuitarMateria(Guid materiaId)
+    {
+        //_context.Materias
+    }
+    #endregion
 }

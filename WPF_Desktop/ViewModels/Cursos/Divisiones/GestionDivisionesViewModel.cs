@@ -13,8 +13,8 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 public class GestionDivisionesViewModel : ViewModel
 {
-    private readonly IServicioCursos _servicioCursos;
-    private readonly IServicioDocentes _servicioDocentes;
+    private readonly IServicioCurso _servicioCursos;
+    private readonly IServicioDocente _servicioDocentes;
     private readonly CursoStore _cursoStore;
     private readonly DivisionStore _divisionStore;
 
@@ -34,8 +34,8 @@ public class GestionDivisionesViewModel : ViewModel
     #endregion
 
 
-    public GestionDivisionesViewModel(IServicioCursos servicioCursos,
-                                      IServicioDocentes servicioDocentes,
+    public GestionDivisionesViewModel(IServicioCurso servicioCursos,
+                                      IServicioDocente servicioDocentes,
                                       INavigationService gestionCursantesNavigationService,
                                       CursoStore cursoStore,
                                       DivisionStore divisionStore)

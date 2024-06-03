@@ -1,4 +1,5 @@
-﻿using Domain.Personas;
+﻿using Domain.Alumnos.DomainEvents;
+using Domain.Personas;
 using Domain.Personas.Domicilios;
 
 namespace Domain.Alumnos;
@@ -18,5 +19,7 @@ public class Alumno : Persona
     {
         Legajo = legajo;
         FechaAlta = DateTime.Today;
+
+        AgregarEvento(new AlumnoRegistradoDomainEvent(Id));
     }
 }

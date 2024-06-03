@@ -2,15 +2,26 @@
 
 public abstract class Entity : IEquatable<Entity>
 {
-    public Guid Id { get; protected set; }
+    private List<IDomainEvent> _eventos;
 
+    public Guid Id { get; protected set; }
+    public IReadOnlyCollection<IDomainEvent> Eventos { get => _eventos?.ToList().AsReadOnly(); }
 
     protected Entity() { }
 
-    protected Entity(Guid id)
+    protected Entity(Guid id) : base() => Id = id;
+
+    #region Events
+    protected void AgregarEvento(IDomainEvent nuevoEvento)
     {
-        Id = id;
+        _eventos = _eventos ?? new List<IDomainEvent>();
+        _eventos.Add(nuevoEvento);
     }
+
+    protected void QuitarEvento(IDomainEvent unEvento) => _eventos?.Remove(unEvento);
+
+    public void LiberarEventos() => _eventos?.Clear();
+    #endregion
 
     public bool Equals(Entity? other)
     {

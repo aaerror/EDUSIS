@@ -1,6 +1,8 @@
 ﻿using Domain.Cursos;
-using Domain.Cursos.Materias;
 using Domain.Docentes;
+using Domain.Materias;
+using Domain.Materias.Horarios;
+using Domain.Materias.SituacionRevistaDocente;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,11 +12,11 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 {
     public void Configure(EntityTypeBuilder<Materia> builder)
     {
-        builder.ToTable("materias");
+        builder.ToTable("materia");
 
         // PK_MATERIAS
         builder.HasKey(x => x.Id)
-               .HasName("PK_MATERIAS");
+               .HasName("PK_MATERIA");
 
         builder.Property(x => x.Id)
                .HasColumnName("materia_id")
@@ -25,7 +27,7 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
                .WithMany(x => x.Materias)
                .HasPrincipalKey(x => x.Id)
                .HasForeignKey(x => x.CursoID)
-               .HasConstraintName("FK_CURSOS_MATERIAS");
+               .HasConstraintName("FK_CURSO_MATERIA");
 
         builder.Property(x => x.CursoID)
                .HasColumnName("curso_id")
@@ -56,21 +58,21 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
             // FK_MATERIAS_SITUACION-REVISTA
             situacionRevistaBuilder.WithOwner()
                                    .HasForeignKey("materia_id")
-                                   .HasConstraintName("FK_MATERIAS_SITUACION-REVISTA");
+                                   .HasConstraintName("FK_MATERIA_SITUACION-REVISTA");
 
             // PK_SITUACION-REVISTA
             situacionRevistaBuilder.HasKey("materia_id", "situacion_revista_id")
                                    .HasName("PK_SITUACION-REVISTA");
 
 
-            situacionRevistaBuilder.Property(x => x.ProfesorId)
+            situacionRevistaBuilder.Property(x => x.ProfesorID)
                                    .HasColumnName("profesor_id");
 
             // FK_PROFESORES_SITUACION-REVISTA
             situacionRevistaBuilder.HasOne<Docente>()
                                    .WithMany()
-                                   .HasForeignKey(x => x.ProfesorId)
-                                   .HasConstraintName("FK_DOCENTES_SITUACION-REVISTA");
+                                   .HasForeignKey(x => x.ProfesorID)
+                                   .HasConstraintName("FK_DOCENTE_SITUACION-REVISTA");
             /*.WithOne()
             .HasForeignKey<SituacionRevista>(x => x.ProfesorId)
             .HasConstraintName("FK_DOCENTES_SITUACION-REVISTA");*/
@@ -78,7 +80,8 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
             situacionRevistaBuilder.Property(x => x.Cargo)
                                    .HasColumnName("cargo")
                                    .HasColumnType("varchar(10)")
-                                   .HasConversion(cargo => cargo.ToString(), value => (Cargo)Enum.Parse(typeof(Cargo), value));
+                                   .HasConversion(toProvider => toProvider.ToString(),
+                                                  fromProvider => (Cargo)Enum.Parse(typeof(Cargo), fromProvider));
 
             situacionRevistaBuilder.Property(x => x.FechaAlta)
                                    .HasColumnName("fecha_alta")
@@ -97,7 +100,7 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
         // HORARIOS
         builder.OwnsMany(m => m.Horarios, horarioBuilder =>
         {
-            horarioBuilder.ToTable("horarios");
+            horarioBuilder.ToTable("horario");
 
             // SHADOW PROPERTY
             horarioBuilder.Property<int>("horario_id")
@@ -106,31 +109,35 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
             // FK_MATERIAS_HORARIOS
             horarioBuilder.WithOwner()
                           .HasForeignKey("materia_id")
-                          .HasConstraintName("FK_MATERIAS_HORARIOS");
+                          .HasConstraintName("FK_MATERIA_HORARIO");
 
             // PK_HORARIOS
             horarioBuilder.HasKey("materia_id", "horario_id")
-                          .HasName("PK_HORARIOS");
+                          .HasName("PK_HORARIO");
 
             horarioBuilder.Property(x => x.DiaSemana)
                           .HasColumnName("dia")
                           .HasColumnType("varchar(10)")
-                          .HasConversion(dia => dia.ToString(), value => (Dia)Enum.Parse(typeof(Dia), value));
+                          .HasConversion(toProvider => toProvider.ToString(),
+                                         fromProvider => (Dia) Enum.Parse(typeof(Dia), fromProvider));
 
             horarioBuilder.Property(x => x.HoraInicio)
                           .HasColumnName("hora_inicio")
                           .HasColumnType("time(0)")
-                          .HasConversion(hora => TimeSpan.Parse(hora.ToString()), value => TimeOnly.FromTimeSpan(value));
+                          .HasConversion(toProvider => TimeSpan.Parse(toProvider.ToString()),
+                                         fromProvider => TimeOnly.FromTimeSpan(fromProvider));
 
             horarioBuilder.Property(x => x.HoraFin)
                           .HasColumnName("hora_fin")
                           .HasColumnType("time(0)")
-                          .HasConversion(hora => TimeSpan.Parse(hora.ToString()), value => TimeOnly.FromTimeSpan(value));
+                          .HasConversion(toProvider => TimeSpan.Parse(toProvider.ToString()),
+                                         fromProvider => TimeOnly.FromTimeSpan(fromProvider));
 
             horarioBuilder.Property(x => x.Turno)
                           .HasColumnName("turno")
                           .HasColumnType("varchar(10)")
-                          .HasConversion(turno => turno.ToString(), value => (Turno)Enum.Parse(typeof(Turno), value));
+                          .HasConversion(toProvider => toProvider.ToString(),
+                                         fromProvider => (Turno) Enum.Parse(typeof(Turno), fromProvider));
         });
     }
 }

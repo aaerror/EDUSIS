@@ -1,10 +1,12 @@
-﻿using Core.ServicioAccesos;
+﻿using Core.ServicioAutenticaciones;
+using Core.ServicioAutenticaciones.DTOs.Request;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Windows;
 using System.Windows.Input;
 using WPF_Desktop.Shared;
 
@@ -12,10 +14,12 @@ namespace WPF_Desktop.ViewModels;
 
 public class LoginViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private IServicioAcceso _servicioAcceso;
+    private readonly IServicioAutenticacion _servicioAutenticacion;
+    private LoginRequest _loginRequest;
+
     private Dictionary<string, List<string>> _errorsByProperty;
-    private string _email = string.Empty;
-    private string _password = string.Empty;
+    private string _usuario = string.Empty;
+    private String _clave;
     private string  _year = DateTime.Now.Year.ToString();
     private string _mensajeError;
 
@@ -25,57 +29,57 @@ public class LoginViewModel : ViewModel, INotifyDataErrorInfo
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
 
-    public LoginViewModel(IServicioAcceso acceso)
+    public LoginViewModel(IServicioAutenticacion servicioAutenticacion)
     {
-        _servicioAcceso = acceso;
+        _servicioAutenticacion = servicioAutenticacion;
         _errorsByProperty = new Dictionary<string, List<string>>();
         LoginCommand = new ViewModelCommand(ExecuteLoginCommand, CanExecuteLoginCommand);
     }
 
-    public string Email
+    public string Usuario
     {
         get
         {
-            return _email;
+            return _usuario;
         }
 
         set
         {
-            _errorsByProperty.Remove(nameof(Email));
-            _email = value;
-            OnPropertyChanged(nameof(Email));
+            _errorsByProperty.Remove(nameof(Usuario));
+            _usuario = value;
+            OnPropertyChanged(nameof(Usuario));
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                _errorsByProperty.Add(nameof(Email),
+                _errorsByProperty.Add(nameof(Usuario),
                     new List<string>
                     {
                         "Se debe ingresar un correo electrónico."
                     });
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Email)));
+                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Usuario)));
             }
             else
             {
-                if (!Regex.IsMatch(Email, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(2500)))
+                if (!Regex.IsMatch(Usuario, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(2500)))
                 {
-                    _errorsByProperty.Add(nameof(Email),
+                    _errorsByProperty.Add(nameof(Usuario),
                         new List<string>
                         {
                             "Correo electrónico inválido."
                         });
-                    ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Email)));
+                    ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Usuario)));
                 }
             }
         }
     }
 
-    public string Password
+    public String Clave
     {
-        get { return _password; }
+        get { return _clave; }
         set
         {
-            _password = value;
-            OnPropertyChanged(nameof(Password));
+            _clave = value;
+            OnPropertyChanged(nameof(Clave));
         }
     }
 
@@ -101,13 +105,34 @@ public class LoginViewModel : ViewModel, INotifyDataErrorInfo
     public bool HasErrors => _errorsByProperty.Any();
     #endregion
 
-    private bool CanExecuteLoginCommand(object obj)
-    {
-        return false;
-    }
+    private bool CanExecuteLoginCommand(object obj) => !HasErrors;
 
     private void ExecuteLoginCommand(object obj)
     {
-        throw new NotImplementedException();
+        string messageBoxText = string.Empty;
+        string caption = string.Empty;
+        MessageBoxResult result;
+
+        if (string.IsNullOrWhiteSpace(Usuario) || string.IsNullOrWhiteSpace(Clave))
+        {
+            messageBoxText = "Se deben completar todos los campos necesarios para poder ingresar.";
+            caption = "Error";
+            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+
+            Usuario = string.Empty;
+            Clave = string.Empty;
+
+            return;
+        }
+
+        try
+        {
+            _loginRequest = new LoginRequest(Usuario, Clave);
+            _servicioAutenticacion.Login(_loginRequest);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Error al Ingresar", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }

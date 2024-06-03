@@ -13,7 +13,7 @@ namespace WPF_Desktop.ViewModels.Docentes;
 
 public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private readonly IServicioDocentes _servicioDocentes;
+    private readonly IServicioDocente _servicioDocentes;
     private readonly INavigationService _registrarDocenteNavigationService;
     private readonly INavigationService _perfilDocenteNavigationService;
     private readonly INavigationService _gestionPuestosNavigationService;
@@ -39,7 +39,7 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
     #endregion
 
 
-    public GestionDocentesViewModel(IServicioDocentes servicioDocentes,
+    public GestionDocentesViewModel(IServicioDocente servicioDocentes,
                                     INavigationService registrarDocenteNavigationService,
                                     INavigationService perfilDocenteNavigationService,
                                     INavigationService gestionPuestoNavigationService,

@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.EntityConfigurations;
 
-public class AlumnosConfiguration : IEntityTypeConfiguration<Alumno>
+internal class AlumnosConfiguration : IEntityTypeConfiguration<Alumno>
 {
     public void Configure(EntityTypeBuilder<Alumno> builder)
     {
         builder.HasBaseType<Persona>();
 
-        builder.ToTable("alumnos");
+        builder.ToTable("alumno");
 
         builder.Property(a => a.Legajo)
             .HasColumnName("legajo")

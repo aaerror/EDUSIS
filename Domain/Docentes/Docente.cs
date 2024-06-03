@@ -1,4 +1,5 @@
-﻿using Domain.Docentes.Licencias;
+﻿using Domain.Docentes.DomainEvents;
+using Domain.Docentes.Licencias;
 using Domain.Personas;
 using Domain.Personas.Domicilios;
 using System.Text.RegularExpressions;
@@ -12,6 +13,7 @@ public class Docente : Persona
      
     public string Legajo { get; private set; }
     public string CUIL { get; private set; }
+    public Guid UsuarioID { get; } = Guid.Empty;
     public DateTime FechaAlta { get; private set; }
     public DateTime? FechaBaja { get; private set; } = null;
     public bool EstaActivo { get; private set; } = true;
@@ -111,6 +113,8 @@ public class Docente : Persona
 
         var nuevaLicencia = Licencia.Crear((Articulo) articulo, dias, fechaInicio, observacion);
         _licencias.Add(nuevaLicencia);
+
+        AgregarEvento(new LicenciaSolicitadaEvent(Id));
 
         return nuevaLicencia;
     }

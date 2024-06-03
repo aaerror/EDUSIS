@@ -9,7 +9,7 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 {
     public void Configure(EntityTypeBuilder<Persona> builder)
     {
-        builder.ToTable("personas");
+        builder.ToTable("persona");
 
         builder.HasKey(x => x.Id);
 
@@ -38,19 +38,22 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
             informacionPersonalBuilder.Property(x => x.Documento)
                                       .HasColumnName("documento")
                                       .HasColumnType("int")
-                                      .HasConversion(dni => Int32.Parse(dni), value => value.ToString())
+                                      .HasConversion(toProvider => Int32.Parse(toProvider),
+                                                     fromProvider => fromProvider.ToString())
                                       .IsRequired();
 
             informacionPersonalBuilder.Property(x => x.Sexo)
                                       .HasColumnName("sexo")
                                       .HasColumnType("varchar(15)")
-                                      .HasConversion(sex => sex.ToString(), value => (Sexo)Enum.Parse(typeof(Sexo), value))
+                                      .HasConversion(toProvider => toProvider.ToString(),
+                                                     fromProvider => (Sexo) Enum.Parse(typeof(Sexo), fromProvider))
                                       .IsRequired();
 
             informacionPersonalBuilder.Property(x => x.FechaNacimiento)
                                       .HasColumnName("fecha_nacimiento")
                                       .HasColumnType("date")
-                                      .HasConversion(fecha => fecha.Date, value => value.Date)
+                                      .HasConversion(toProvider => toProvider.Date,
+                                                     fromProvider => fromProvider.Date)
                                       .IsRequired();
 
             informacionPersonalBuilder.Property(x => x.Nacionalidad)
@@ -65,14 +68,14 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
         // DOMICILIO
         builder.OwnsOne(x => x.Domicilio, domiciliosBuilder =>
         {
-            domiciliosBuilder.ToTable("domicilios");
+            domiciliosBuilder.ToTable("domicilio");
 
             domiciliosBuilder.WithOwner()
                              .HasForeignKey("persona_id")
-                             .HasConstraintName("FK_PERSONAS_DOMICILIOS");
+                             .HasConstraintName("FK_PERSONA_DOMICILIO");
 
             domiciliosBuilder.HasKey("persona_id")
-                             .HasName("PK_DOMICILIOS");
+                             .HasName("PK_DOMICILIO");
 
             // DIRECCIÓN
             domiciliosBuilder.OwnsOne(x => x.Direccion, direccionBuilder =>
@@ -92,7 +95,8 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
                 direccionBuilder.Property<Vivienda>("Vivienda")
                                 .HasColumnName("vivienda")
                                 .HasColumnType("varchar(20)")
-                                .HasConversion(vivienda => vivienda.ToString(), value => (Vivienda)Enum.Parse(typeof(Vivienda), value))
+                                .HasConversion(toProvider => toProvider.ToString(),
+                                               fromProvider => (Vivienda) Enum.Parse(typeof(Vivienda), fromProvider))
                                 .IsRequired();
 
                 direccionBuilder.Property("Observacion")

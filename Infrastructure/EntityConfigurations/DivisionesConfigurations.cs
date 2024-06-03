@@ -2,8 +2,8 @@
 using Domain.Cursos;
 using Domain.Cursos.Divisiones;
 using Domain.Cursos.Divisiones.Cursantes;
-using Domain.Cursos.Materias;
 using Domain.Docentes;
+using Domain.Materias;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,11 +13,11 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
 {
     public void Configure(EntityTypeBuilder<Division> builder)
     {
-        builder.ToTable("divisiones");
+        builder.ToTable("division");
 
         // PK_DIVISIONES
         builder.HasKey(x => x.Id)
-               .HasName("PK_DIVISIONES");
+               .HasName("PK_DIVISION");
 
         builder.Property(x => x.Id)
                .HasColumnName("division_id")
@@ -27,7 +27,7 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
         builder.HasOne<Curso>()
                .WithMany(x => x.Divisiones)
                .HasForeignKey(x => x.CursoID)
-               .HasConstraintName("FK_CURSOS_DIVISIONES");
+               .HasConstraintName("FK_CURSO_DIVISION");
 
         builder.Property(x => x.CursoID)
                .HasColumnName("curso_id")
@@ -42,7 +42,7 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
         builder.HasOne<Docente>()
                .WithOne()
                .HasForeignKey<Division>(x => x.Preceptor)
-               .HasConstraintName("FK_DOCENTES_DIVISIONES")
+               .HasConstraintName("FK_DOCENTE_DIVISION")
                .IsRequired(false);
 
         builder.Property(x => x.Preceptor)
@@ -51,11 +51,11 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
         // CURSANTES
         builder.OwnsMany(x => x.ListadosDefinitivos, cursantesBuilder =>
         {
-            cursantesBuilder.ToTable("cursantes");
+            cursantesBuilder.ToTable("cursante");
 
             // PK_CURSANTES
             cursantesBuilder.HasKey(x => x.Id)
-                            .HasName("PK_CURSANTES");
+                            .HasName("PK_CURSANTE");
 
             cursantesBuilder.Property(x => x.Id)
                             .HasColumnName("cursante_id")
@@ -64,7 +64,7 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
             // FK_DIVISIONES_CURSANTES
             cursantesBuilder.WithOwner()
                             .HasForeignKey(x => x.DivisionID)
-                            .HasConstraintName("FK_DIVISIONES_CURSANTES");
+                            .HasConstraintName("FK_DIVISION_CURSANTE");
 
             cursantesBuilder.Property(x => x.DivisionID)
                             .HasColumnName("division_id")
@@ -74,7 +74,7 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
             cursantesBuilder.HasOne<Alumno>()
                             .WithMany()
                             .HasForeignKey(x => x.AlumnoID)
-                            .HasConstraintName("FK_ALUMNOS_CURSANTES");
+                            .HasConstraintName("FK_ALUMNO_CURSANTE");
 
             cursantesBuilder.Property(x => x.AlumnoID)
                             .HasColumnName("alumno_id");
@@ -97,7 +97,7 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
 
             cursantesBuilder.OwnsMany(x => x.Calificaciones, calificacionBuilder =>
             {
-                calificacionBuilder.ToTable("calificaciones");
+                calificacionBuilder.ToTable("calificacion");
 
                 // SHADOW PROPERTY
                 calificacionBuilder.Property<int>("calificacion_id")
@@ -109,14 +109,14 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
                 // FK_CURSANTES_CALIFICACIONES
                 calificacionBuilder.WithOwner()
                                    .HasForeignKey("cursante_id")
-                                   .HasConstraintName("FK_CURSANTES_CALIFICACIONES");
+                                   .HasConstraintName("FK_CURSANTE_CALIFICACION");
 
 
                 // FK_MATERIAS_CALIFICACIONES
                 calificacionBuilder.HasOne<Materia>()
                                    .WithMany()
                                    .HasForeignKey(x => x.MateriaID)
-                                   .HasConstraintName("FK_MATERIAS_CALIFICACIONES")
+                                   .HasConstraintName("FK_MATERIA_CALIFICACION")
                                    .OnDelete(DeleteBehavior.NoAction);
 
                 calificacionBuilder.Property(x => x.MateriaID)

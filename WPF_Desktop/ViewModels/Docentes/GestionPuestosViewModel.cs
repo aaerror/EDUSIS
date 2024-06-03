@@ -16,7 +16,7 @@ namespace WPF_Desktop.ViewModels.Docentes;
 
 public class GestionPuestosViewModel : ViewModel
 {
-    private readonly IServicioDocentes _servicioDocentes;
+    private readonly IServicioDocente _servicioDocentes;
     private PerfilBuscadoStore _perfilBuscadoStore;
 
     private bool _habilitarEditarPuesto = false;
@@ -50,7 +50,7 @@ public class GestionPuestosViewModel : ViewModel
     #endregion
 
 
-    public GestionPuestosViewModel(IServicioDocentes servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
+    public GestionPuestosViewModel(IServicioDocente servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
     {
         _servicioDocentes = servicioDocentes;
         _perfilBuscadoStore = perfilBuscadoStore;

@@ -13,10 +13,10 @@ namespace WPF_Desktop.ViewModels.Cursos;
 
 public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private readonly IServicioCursos _servicioCursos;
+    private readonly IServicioCurso _servicioCursos;
 
     #region Request
-    private CrearCursoRequest _crearCursoRequest;
+    private RegistrarCursoRequest _crearCursoRequest;
     #endregion
 
     private int _curso;
@@ -34,7 +34,7 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
     #endregion
 
 
-    public RegistrarCursosViewModel(IServicioCursos servicioCursos)
+    public RegistrarCursosViewModel(IServicioCurso servicioCursos)
     {
         _servicioCursos = servicioCursos;
 
@@ -169,7 +169,7 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
         {
             try
             {
-                _crearCursoRequest = new CrearCursoRequest((Curso + 1).ToString(), NivelEducativo);
+                _crearCursoRequest = new RegistrarCursoRequest((Curso + 1).ToString(), NivelEducativo);
                 _servicioCursos.RegistrarCurso(_crearCursoRequest);
                 MessageBox.Show("Datos guardados correctamente", "Operación exitosa",
                                 MessageBoxButton.OK,

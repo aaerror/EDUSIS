@@ -1,6 +1,7 @@
 ﻿using Domain.Docentes;
 using Domain.Docentes.Licencias;
 using Domain.Personas;
+using Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +13,7 @@ public class DocentesConfigurations : IEntityTypeConfiguration<Docente>
     {
         builder.HasBaseType(typeof(Persona));
 
-        builder.ToTable("docentes");
+        builder.ToTable("docente");
 
         builder.Property(x => x.Legajo)
                .HasColumnName("legajo")
@@ -38,29 +39,37 @@ public class DocentesConfigurations : IEntityTypeConfiguration<Docente>
                .HasColumnName("esta_activo")
                .HasColumnType("bit");
 
+        builder.HasOne<Usuario>()
+               .WithOne()
+               .HasForeignKey<Usuario>(x => x.DocenteID)
+               .HasConstraintName("FK_DOCENTE_USUARIO")
+               .IsRequired(false);
+        
         builder.OwnsMany(x => x.Licencias, licenciasBuilder =>
         {
-            licenciasBuilder.ToTable("licencias");
+            licenciasBuilder.ToTable("licencia");
 
             licenciasBuilder.Property<int>("licencia_id")
                             .UseIdentityColumn();
 
             licenciasBuilder.WithOwner()
                             .HasForeignKey("docente_id")
-                            .HasConstraintName("FK_DOCENTES_LICENCIAS");
+                            .HasConstraintName("FK_DOCENTE_LICENCIA");
 
             licenciasBuilder.HasKey("licencia_id", "docente_id")
-                            .HasName("PK_LICENCIAS");
+                            .HasName("PK_LICENCIA");
 
             licenciasBuilder.Property(x => x.Articulo)
                             .HasColumnName("articulo")
                             .HasColumnType("varchar(15)")
-                            .HasConversion(articulo => articulo.ToString(), value => (Articulo) Enum.Parse(typeof(Articulo), value));
+                            .HasConversion(toProvider => toProvider.ToString(),
+                                           fromProvider => (Articulo)Enum.Parse(typeof(Articulo), fromProvider));
 
             licenciasBuilder.Property(x => x.Estado)
                             .HasColumnName("estado")
                             .HasColumnType("varchar(15)")
-                            .HasConversion(estado => estado.ToString(), value => (Estado) Enum.Parse(typeof(Estado), value));
+                            .HasConversion(toProvider => toProvider.ToString(),
+                                           fromProvider => (Estado)Enum.Parse(typeof(Estado), fromProvider));
 
             licenciasBuilder.Property(x => x.FechaInicio)
                             .HasColumnName("fecha_inicio")
@@ -79,22 +88,23 @@ public class DocentesConfigurations : IEntityTypeConfiguration<Docente>
 
         builder.OwnsMany(x => x.Puestos, puestosBuilder =>
         {
-            puestosBuilder.ToTable("puestos");
+            puestosBuilder.ToTable("puesto");
 
             puestosBuilder.Property<int>("puesto_id")
                           .UseIdentityColumn();
 
             puestosBuilder.WithOwner()
                           .HasForeignKey("docente_id")
-                          .HasConstraintName("FK_DOCENTES_PUESTOS");
+                          .HasConstraintName("FK_DOCENTE_PUESTO");
 
             puestosBuilder.HasKey("puesto_id", "docente_id")
-                          .HasName("PK_PUESTOS");
+                          .HasName("PK_PUESTO");
 
             puestosBuilder.Property(x => x.Posicion)
                           .HasColumnName("posicion")
                           .HasColumnType("varchar(15)")
-                          .HasConversion(cargo => cargo.ToString(), value => (Posicion) Enum.Parse(typeof(Posicion), value));
+                          .HasConversion(toProvider => toProvider.ToString(),
+                                         fromProvider => (Posicion) Enum.Parse(typeof(Posicion), fromProvider));
 
             puestosBuilder.Property(x => x.FechaInicio)
                           .HasColumnName("fecha_inicio")

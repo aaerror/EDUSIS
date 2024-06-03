@@ -15,7 +15,7 @@ namespace WPF_Desktop.ViewModels.Docentes;
 
 public class GestionLicenciasViewModel : ViewModel
 {
-    private IServicioDocentes _servicioDocentes;
+    private IServicioDocente _servicioDocentes;
     private PerfilBuscadoStore _perfilBuscadoStore;
 
     private bool _habilitarLicenciaViewModel = false;
@@ -44,7 +44,7 @@ public class GestionLicenciasViewModel : ViewModel
     #endregion
 
 
-    public GestionLicenciasViewModel(IServicioDocentes servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
+    public GestionLicenciasViewModel(IServicioDocente servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
     {
         _servicioDocentes = servicioDocentes;
         _perfilBuscadoStore = perfilBuscadoStore;

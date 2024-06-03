@@ -4,11 +4,13 @@ namespace Domain.Shared
 {
     public interface IRepository<TEntity> where TEntity : Entity
     {
-        void Agregar(TEntity entity);
-        TEntity BuscarPorID(Guid id);
+        Task AgregarAsync(TEntity entity);
+        Task AgregarRango(IEnumerable<TEntity> entities);
+        TEntity? BuscarPorID(Guid id);
         IEnumerable<TEntity> BuscarTodos();
         IEnumerable<TEntity> Buscar(Expression<Func<TEntity, bool>> predicate);
-        void ActualizarDatos(TEntity entity);
-        void BorrarDatos(Guid id);
+        void Modificar(TEntity entity);
+        void Eliminar(Guid id);
+        void EliminarRango(IEnumerable<TEntity> entities);
     }
 }

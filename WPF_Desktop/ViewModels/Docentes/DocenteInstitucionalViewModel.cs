@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using WPF_Desktop.Shared;
-using WPF_Desktop.ViewModels.Shared;
 
 namespace WPF_Desktop.ViewModels.Docentes;
 

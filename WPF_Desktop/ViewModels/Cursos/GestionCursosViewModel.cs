@@ -11,7 +11,7 @@ namespace WPF_Desktop.ViewModels.Cursos;
 
 public class GestionCursosViewModel : ViewModel
 {
-    private readonly IServicioCursos _servicioCursos;
+    private readonly IServicioCurso _servicioCursos;
     private readonly INavigationService _registrarCursoNavigationService;
     private readonly INavigationService _gestionDivisionesNavigationService;
     private readonly INavigationService _registrarMateriaNavigationService;
@@ -26,7 +26,7 @@ public class GestionCursosViewModel : ViewModel
     #endregion
 
 
-    public GestionCursosViewModel(IServicioCursos servicioCursos,
+    public GestionCursosViewModel(IServicioCurso servicioCursos,
                                   INavigationService registrarCursoNavigationService,
                                   INavigationService gestionDivisionesNavigationService,
                                   INavigationService registrarMateriaNavigationService,

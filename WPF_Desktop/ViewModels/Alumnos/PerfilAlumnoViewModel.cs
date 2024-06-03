@@ -11,7 +11,7 @@ namespace WPF_Desktop.ViewModels.Alumnos;
 
 public class PerfilAlumnoViewModel : ViewModel
 {
-    private IServicioAlumnos _servicioAlumno;
+    private IServicioAlumno _servicioAlumno;
 
     private PersonaConDetallesResponse _personaConDetalles;
     private DomicilioRequest _datosDomicilioTemporal;
@@ -31,7 +31,7 @@ public class PerfilAlumnoViewModel : ViewModel
     #endregion
 
 
-    public PerfilAlumnoViewModel(IServicioAlumnos servicioAlumno, PerfilBuscadoStore perfilBuscadoStore)
+    public PerfilAlumnoViewModel(IServicioAlumno servicioAlumno, PerfilBuscadoStore perfilBuscadoStore)
     {
         _servicioAlumno = servicioAlumno;
         _perfilBuscadoStore = perfilBuscadoStore;

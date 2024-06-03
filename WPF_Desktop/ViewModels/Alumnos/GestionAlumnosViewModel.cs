@@ -15,7 +15,7 @@ namespace WPF_Desktop.ViewModels.Alumnos;
 
 public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private IServicioAlumnos _servicioAlumnos;
+    private IServicioAlumno _servicioAlumnos;
     private INavigationService _registrarAlumnoNavigationService;
     private INavigationService _verPerfilNavigationService;
     private PerfilBuscadoStore _perfilBuscadoStore;
@@ -39,7 +39,7 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
     #endregion
 
 
-    public GestionAlumnosViewModel(IServicioAlumnos servicioAlumnos,
+    public GestionAlumnosViewModel(IServicioAlumno servicioAlumnos,
                                    INavigationService registrarAlumnoNavigationService,
                                    INavigationService verPerfilNavigationService,
                                    PerfilBuscadoStore perfilBuscadoStore)

@@ -1,10 +1,4 @@
-﻿using Core.ServicioCursos.DTOs.Responses;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using Core.ServicioMaterias.DTOs.Responses;
 using WPF_Desktop.Shared;
 
 namespace WPF_Desktop.ViewModels.Cursos;

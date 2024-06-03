@@ -9,7 +9,7 @@ namespace WPF_Desktop.ViewModels.Alumnos;
 
 public class InscripcionEnCursoViewModel : ViewModel
 {
-    private readonly IServicioCursos _servicioCursos;
+    private readonly IServicioCurso _servicioCursos;
 
     #region Responses
 
@@ -19,7 +19,7 @@ public class InscripcionEnCursoViewModel : ViewModel
     private ObservableCollection<DivisionViewModel> _divisiones;
 
 
-    public InscripcionEnCursoViewModel(IServicioCursos servicioCursos)
+    public InscripcionEnCursoViewModel(IServicioCurso servicioCursos)
     {
         _servicioCursos = servicioCursos;
 

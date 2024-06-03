@@ -76,9 +76,10 @@
             <Label Content="Sexo"
                    Margin="4 0 0 0"
                    Style="{ StaticResource ResourceKey=Form }"/>
-            <ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos } }"
+            <ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos }}"
                       SelectedIndex="{ Binding Path=Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                      Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
+                      Style="{ StaticResource ResourceKey=ComboBoxStyle }">
+            </ComboBox>
         </StackPanel>
 
         <!-- NACIONALIDAD -->

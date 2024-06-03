@@ -1,5 +1,4 @@
 ﻿using Domain.Alumnos;
-using Infrastructure.Shared;
 
 namespace Infrastructure.Repository;
 
@@ -12,4 +11,6 @@ public class AlumnoRepository : Repository<Alumno>, IAlumnoRepository
         : base(context) { }
 
     public bool EsDocumentoInvalido(string documento) => _context.Alumnos.Any(x => x.InformacionPersonal.Documento == documento);
+
+    public bool ExisteID(Guid id) => _context.Alumnos.Any(x => x.Id == id);
 }

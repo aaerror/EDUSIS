@@ -15,11 +15,11 @@ public class CursosConfigurations : IEntityTypeConfiguration<Curso>
 
     private void ConfigureTablaCursos(EntityTypeBuilder<Curso> builder)
     {
-        builder.ToTable("cursos");
+        builder.ToTable("curso");
 
         // PK_CURSOS
         builder.HasKey(x => x.Id)
-               .HasName("PK_CURSOS");
+               .HasName("PK_CURSO");
 
         builder.Property(x => x.Id)
                .HasColumnName("curso_id")
@@ -32,7 +32,8 @@ public class CursosConfigurations : IEntityTypeConfiguration<Curso>
         builder.Property(x => x.NivelEducativo)
                .HasColumnName("nivel_educativo")
                .HasColumnType("varchar(15)")
-               .HasConversion(nivelEducativo => nivelEducativo.ToString(), value => (NivelEducativo)Enum.Parse(typeof(NivelEducativo), value));
+               .HasConversion(toProvider => toProvider.ToString(),
+                              fromProvider => (NivelEducativo) Enum.Parse(typeof(NivelEducativo), fromProvider));
 
         builder.Ignore(x => x.CantidadDivisiones);
         builder.Ignore(x => x.CantidadMaterias);

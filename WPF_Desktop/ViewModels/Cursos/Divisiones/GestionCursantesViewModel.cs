@@ -10,12 +10,16 @@ using System.Collections;
 using System.Linq;
 using Core.ServicioCursos.DTOs.Requests;
 using System.Windows;
+using Core.ServicioMaterias;
+using Core.ServicioMaterias.DTOs.Requests;
+using WPF_Desktop.ViewModels.Materias;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private readonly IServicioCursos _servicioCursos;
+    private readonly IServicioCurso _servicioCursos;
+    private readonly IServicioMateria _servicioMaterias;
     private readonly DivisionStore _divisionStore;
 
     #region Request
@@ -25,8 +29,8 @@ public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
     private string _periodo = string.Empty;
 
     private bool _mostrarCalificacionView;
-    private MateriaDetalleViewModel _materia;
-    private ObservableCollection<MateriaDetalleViewModel> _materias;
+    private MateriaViewModel _materia;
+    private ObservableCollection<MateriaViewModel> _materias;
     private CalificacionViewModel _calificacion;
     private CursanteViewModel _cursante;
     private ObservableCollection<CursanteViewModel> _cursantes;
@@ -45,15 +49,16 @@ public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
 
 
 
-    public GestionCursantesViewModel(IServicioCursos servicioCursos, DivisionStore divisionStore)
+    public GestionCursantesViewModel(IServicioCurso servicioCursos, IServicioMateria servicioMaterias, DivisionStore divisionStore)
     {
         _servicioCursos = servicioCursos;
+        _servicioMaterias = servicioMaterias;
         _divisionStore = divisionStore;
 
         MostrarCalificacionView = false;
 
-        var materias = _servicioCursos.BuscarMaterias(divisionStore.Division.CursoID);
-        _materias = new ObservableCollection<MateriaDetalleViewModel>(materias.Select(x => new MateriaDetalleViewModel(_servicioCursos, x)));
+        var materias = _servicioMaterias.BuscarMateriaSegunCurso(new BuscarMateriaSegunCursoRequest(divisionStore.Division.CursoID));
+        _materias = new ObservableCollection<MateriaViewModel>(materias.Select(x => new MateriaViewModel(_servicioMaterias, x)));
 
         BuscarCommand = new ViewModelCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
         ABMCommand = new ViewModelCommand(ExecuteABMCommand, CanExecuteABMCommand);
@@ -118,7 +123,7 @@ public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public MateriaDetalleViewModel Materia
+    public MateriaViewModel Materia
     {
         get
         {
@@ -132,7 +137,7 @@ public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public ObservableCollection<MateriaDetalleViewModel> Materias
+    public ObservableCollection<MateriaViewModel> Materias
     {
         get
         {

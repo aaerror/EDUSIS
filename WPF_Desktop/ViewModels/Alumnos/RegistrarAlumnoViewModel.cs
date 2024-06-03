@@ -20,8 +20,8 @@ namespace WPF_Desktop.ViewModels.Alumnos;
 
 public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
 {
-    private readonly IServicioAlumnos _servicioAlumnos;
-    private readonly IServicioCursos _servicioCursos;
+    private readonly IServicioAlumno _servicioAlumnos;
+    private readonly IServicioCurso _servicioCursos;
 
     #region Request
     private CrearCursanteRequest _crearCursanteRequest;
@@ -75,7 +75,7 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
     #endregion
 
 
-    public RegistrarAlumnoViewModel(IServicioAlumnos servicioAlumnos, IServicioCursos servicioCursos)
+    public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumnos, IServicioCurso servicioCursos)
     {
         _servicioAlumnos = servicioAlumnos;
         _servicioCursos = servicioCursos;
@@ -268,7 +268,7 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
     #region ContinuarCommand
     private bool CanExecuteContinuarCommand(object obj) => !InformacionPersonalViewModel.HasErrors && !DomicilioViewModel.HasErrors && !ContactoViewModel.HasErrors;
 
-    private void ExecuteContinuarCommand(object obj)
+    private async void ExecuteContinuarCommand(object obj)
     {
         string messageBoxText = string.Empty;
         string caption = string.Empty;
@@ -336,7 +336,7 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
                     }
 
                     var request = new RegistrarAlumnoRequest(requestInformacionPersonal, requestDomicilio, requestContacto);
-                    alumnoID = _servicioAlumnos.RegistrarAlumno(request);
+                    alumnoID = await _servicioAlumnos.RegistrarAlumnoAsync(request);
 
                     messageBoxText = $"Se han registrado los datos de un nuevo alumno.";
                     caption = "Operación Exitosa";

@@ -12,7 +12,7 @@ namespace WPF_Desktop.ViewModels.Docentes;
 
 public class PerfilDocenteViewModel : ViewModel
 {
-    private readonly IServicioDocentes _servicioDocentes;
+    private readonly IServicioDocente _servicioDocentes;
     private PerfilBuscadoStore _perfilBuscadoStore;
 
     private readonly DocenteConDetalleResponse _docenteTemporal = null;
@@ -32,7 +32,7 @@ public class PerfilDocenteViewModel : ViewModel
     #endregion
 
 
-    public PerfilDocenteViewModel(IServicioDocentes servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
+    public PerfilDocenteViewModel(IServicioDocente servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
     {
         _servicioDocentes = servicioDocentes;
         _perfilBuscadoStore = perfilBuscadoStore;

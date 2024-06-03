@@ -1,6 +1,5 @@
 ﻿using Domain.Personas.Exceptions;
 using Domain.Shared;
-using System.Diagnostics.Contracts;
 
 namespace Domain.Docentes.Licencias;
 
@@ -43,15 +42,9 @@ public class Licencia : ValueObject
         FechaFin = fechaInicio.AddDays(dias).Date;
     }
 
-    public static Licencia Crear(Articulo articulo, int dias, DateTime fechaInicio, string observacion)
-    {
-        return new(articulo, Estado.Pendiente, dias, fechaInicio, observacion);
-    }
+    public static Licencia Crear(Articulo articulo, int dias, DateTime fechaInicio, string observacion) => new(articulo, Estado.Pendiente, dias, fechaInicio, observacion);
 
-    public Licencia ActualizarLicencia(Articulo articulo, int dias, DateTime fechaInicio, string observacion)
-    {
-        return Crear(articulo, dias, fechaInicio, observacion);
-    }
+    public Licencia ActualizarLicencia(Articulo articulo, int dias, DateTime fechaInicio, string observacion) => Crear(articulo, dias, fechaInicio, observacion);
 
     public Licencia Activar() => new(Articulo, Estado.Activa, Dias, FechaInicio, Observacion);
 
@@ -69,10 +62,7 @@ public class Licencia : ValueObject
         return new(Articulo, Estado, Dias + dias, FechaInicio, Observacion);
     }
 
-    public Licencia CambiarObservacion(string observacion)
-    {
-        return new(Articulo, Estado, Dias, FechaInicio, observacion);
-    }
+    public Licencia CambiarObservacion(string observacion) => new(Articulo, Estado, Dias, FechaInicio, observacion);
 
     public override IEnumerable<object> GetEqualityCommponents()
     {

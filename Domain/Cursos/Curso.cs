@@ -1,6 +1,8 @@
 ﻿using Domain.Cursos.Divisiones;
 using Domain.Cursos.Divisiones.Cursantes;
-using Domain.Cursos.Materias;
+using Domain.Cursos.DomainEvents;
+using Domain.Materias;
+using Domain.Materias.Horarios;
 using Domain.Shared;
 using System.Text.RegularExpressions;
 
@@ -27,7 +29,7 @@ public class Curso : Entity
     protected Curso(Guid cursoId)
         : base(cursoId) { }
 
-    public Curso(Guid cursoId, string descripcion, NivelEducativo nivelEducativo)
+    protected Curso(Guid cursoId, string descripcion, NivelEducativo nivelEducativo)
         : this(cursoId)
     {
         if (string.IsNullOrWhiteSpace(descripcion))
@@ -115,8 +117,7 @@ public class Curso : Entity
     {
         var materia = BuscarMateria(unaMateria);
 
-        materia.ActualizarNombre(descripcion);
-        materia.ActualizarCargaHoraria(horasCatedra);
+        materia.ModificarMateria(descripcion, horasCatedra);
     }
 
     public void QuitarMateria(Guid aEliminar)
@@ -133,6 +134,7 @@ public class Curso : Entity
         }
 
         _materias.Remove(materia);
+        AgregarEvento(new MateriaEliminadaEvent(aEliminar));
     }
 
     public void AgregarHorarioAMateria(Guid materiaId, Horario unHorario)
@@ -173,31 +175,7 @@ public class Curso : Entity
     }
     #endregion
 
-    #region Situacion de Revista
-    public SituacionRevista BuscarSituacionRevista(Guid unaMateria, Guid unProfesor)
-    {
-        Materia materia = BuscarMateria(unaMateria);
-        return materia.BuscarCargoDelDocente(unProfesor);
-    }
-
-    public void AgregarProfesorEnMateria(Guid unaMateria, Guid unProfesor, Cargo unCargo, DateTime fechaAlta, bool enFunciones)
-    {
-        Materia materia = BuscarMateria(unaMateria);
-        materia.RegistrarNuevaSituacionRevista(unProfesor, unCargo, fechaAlta, enFunciones);
-    }
-
-    public void EliminarProfesorDelCargo(Guid unaMateria, Guid unProfesor, DateTime fechaBaja)
-    {
-        Materia materia = BuscarMateria(unaMateria);
-        materia.QuitarDocenteDelCargo(unProfesor, fechaBaja);
-    }
-
-    public void EstablecerEnFuncionesAlProfesor(Guid unaMateria, Guid unProfesor)
-    {
-        Materia materia = BuscarMateria(unaMateria);
-        materia.EstablecerDocenteEnFunciones(unProfesor);
-    }
-    #endregion
+    
 
     #region Division
     private bool ExisteDivision(Guid unaDivision)
