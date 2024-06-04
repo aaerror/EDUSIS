@@ -29,7 +29,7 @@
         </Grid.RowDefinitions>
         
         <!-- MATERIA DETALLE -->
-        <Grid Grid.Column="0"
+        <Grid Grid.ColumnSpan="2"
               Grid.Row="0"
               Margin="0 0 0 10">
             <Grid.ColumnDefinitions>
@@ -83,133 +83,148 @@
                 <!-- PROFESOR -->
                 <Label Content="Profesor a Cargo"
                        Style="{ StaticResource Form }"/>
-                <TextBox Text="{ Binding Path=NombreCompletoProfesor, TargetNullValue='No hay profesor asignado', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                <TextBox Text="{ Binding Path=NombreCompletoProfesor, FallbackValue='Profesor sin asignar', TargetNullValue='Profesor sin asignar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                          IsEnabled="False"
                          Style="{ StaticResource TextBox}"/>
 
                 <!-- HORAS CATEDRA SIN ASIGNAR -->
                 <Label Content="Horas Cátedra sin Asignar"
                        Style="{ StaticResource Form }"/>
-                <TextBox Text="{ Binding Path=HorasCatedraSinAsignar, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                <TextBox Text="{ Binding Path=HorasCatedraSinAsignar, FallbackValue='Sin horas cátedras', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
                          IsEnabled="False"
                          Style="{ StaticResource TextBox}"/>
             </StackPanel>
-
-            <!-- COMMANDS -->
+            <!-- SITUACIÓN DE REVISTA Y HORARIOS -->
             <StackPanel Grid.ColumnSpan="2"
                         Grid.Row="2"
-                        Visibility="Collapsed">
-                <WrapPanel Margin="0 10 0 0"
-                           HorizontalAlignment="Right">
-                    <Button Command="{ Binding CancelarCommand }"
-                            Content="Cancelar"
-                            Margin="0 0 5 0"
-                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }"
-                            Style="{ StaticResource Tertiary }"/>
+                        Margin="0 10">
+                <TabControl IsEnabled="{ Binding Path=VerLista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                            Visibility="{ Binding Path=IsEnabled, Converter={ StaticResource ResourceKey=Converter }, RelativeSource={ RelativeSource Mode=Self } }">
+                    <!-- PROFESORES -->
+                    <TabItem Header="Situación de Revista"
+                             Padding="10 5">
+                        <StackPanel>
+                            <DataGrid x:Name="HistorialDataGrid"
+                                      ItemsSource="{ Binding Path=Historial, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                      SelectedItem="{ Binding Path=SituacionRevista, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                                      AutoGenerateColumns="False"
+                                      HorizontalContentAlignment="Center"
+                                      IsSynchronizedWithCurrentItem="True"
+                                      IsReadOnly="True"
+                                      Style="{ StaticResource ResourceKey=DataGrid }">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Binding="{ Binding Path=CargoDescripcion }"
+                                                        Header="Cargo"
+                                                        Width="Auto"/>
+                                    <DataGridTextColumn Binding="{ Binding Path=Docente, FallbackValue='Sin datos del docente' }"
+                                                        Header="Docente"
+                                                        Width="1*"/>
+                                    <DataGridTextColumn Binding="{ Binding Path=FechaAlta, ConverterCulture='es_ES', StringFormat='D' }"
+                                                        Header="Fecha de Alta"
+                                                        Width="1*"/>
+                                    <DataGridTextColumn Binding="{ Binding Path=FechaBaja, ConverterCulture='es_ES', StringFormat='D', TargetNullValue='Sin fecha de baja' }"
+                                                        Header="Fecha de Baja"
+                                                        Width="1*"/>
+                                    <DataGridCheckBoxColumn Binding="{ Binding Path=EnFunciones }"
+                                                            Header="En Funciones?"
+                                                            Width="Auto"/>
 
-                    <Button Command="{ Binding GuardarCommand }"
-                            Content="Guardar"
-                            Margin="5 0 0 0"
-                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                            Style="{ StaticResource Primary }"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
 
-                    <Button Command="{ Binding EditarCommand }"
-                            Content="Editar Materia"
-                            Margin="0 0 5 0"
-                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                            Style="{ StaticResource Secondary }"/>
+                            <WrapPanel Margin="5 10"
+                                       HorizontalAlignment="Right">
+                                <!-- ELIMINAR DOCENTE -->
+                                <Button Command="{ Binding Path=EliminarCommand }"
+                                        CommandParameter="Docente"
+                                        Content="Quitar Docente"
+                                        Visibility="{ Binding Path=IsEnabled, Converter={ StaticResource Converter }, RelativeSource={ RelativeSource Mode=Self } }"
+                                        Margin="0 0 5 0"
+                                        Style="{ StaticResource ResourceKey=Tertiary }"/>
 
-                    <Button Command="{ Binding HorarioCommand }"
-                            Content="Agregar Horario"
-                            Margin="5 0 0 0"
-                            Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                            Style="{ StaticResource Secondary }"/>
-                </WrapPanel>
+                                <!-- GUARDAR DOCENTE -->
+                                <Button Command="{ Binding Path=GuardarCommand }"
+                                        CommandParameter="Docente"
+                                        Content="Establecer En Funciones"
+                                        Margin="5 0 0 0"
+                                        Style="{ StaticResource ResourceKey=Primary }"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- HORARIOS -->
+                    <TabItem Header="Horarios"
+                             Padding="10 5"
+                             IsEnabled="{ Binding Path=ListarHorarios, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                             Visibility="{ Binding Path=IsEnabled, Converter={ StaticResource ResourceKey=Converter }, RelativeSource={ RelativeSource Mode=Self } }">
+                        <StackPanel>
+                            <DataGrid x:Name="HorariosDataGrid"
+                                      ItemsSource="{ Binding Path=Horarios, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                                      AutoGenerateColumns="False"
+                                      HorizontalContentAlignment="Center"
+                                      IsSynchronizedWithCurrentItem="True"
+                                      IsReadOnly="True"
+                                      Style="{ StaticResource ResourceKey=DataGrid }">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Binding="{ Binding Path=Turno }"
+                                                        Header="Turno"
+                                                        Width="*"/>
+                                    <DataGridTextColumn Binding="{ Binding Path=DiaSemana }"
+                                                        Header="Día"
+                                                        Width="Auto"/>
+                                    <DataGridTextColumn Binding="{ Binding Path=HoraInicio }"
+                                                        Header="Hora Inicio"
+                                                        Width="Auto"/>
+                                    <DataGridTextColumn Binding="{ Binding Path=HoraFin }"
+                                                        Header="Hora Fin"
+                                                        Width="Auto"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
             </StackPanel>
         </Grid>
 
+        <!-- COMMANDS -->
+        <WrapPanel Grid.Column="0"
+                   Grid.Row="1"
+                   HorizontalAlignment="Left">
+            <!-- HISTORIAL SITUACION REVISTA -->
+            <Button Command="{ Binding Path=ListarCommand }"
+                    CommandParameter="SituacionRevista"
+                    Content="Docentes"
+                    Style="{ StaticResource ResourceKey=Tertiary }"/>
 
-        <!-- PROFESORES -->
-        <StackPanel Grid.Column="1">
-            <Expander Header="Situación de Revista"
-          Margin="0 10"
-          Padding="0 5"
-          IsEnabled="{ Binding Path=ListarHistorialSituacionRevista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-          Visibility="{ Binding Path=IsEnabled, Converter={ StaticResource ResourceKey=Converter }, RelativeSource={ RelativeSource Mode=Self } }">
-                <!-- PROFESORES -->
-                <DataGrid x:Name="HistorialDataGrid"
-              ItemsSource="{ Binding Path=Historial, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-              AutoGenerateColumns="False"
-              IsEnabled="False"
-              IsSynchronizedWithCurrentItem="True"
-              Style="{ StaticResource ResourceKey=DataGrid }">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{ Binding Path=Docente }"
-                                Header="Docente"
-                                Width="Auto"/>
-                        <DataGridTextColumn Binding="{ Binding Path=CargoDescripcion }"
-                                Header="Cargo"
-                                Width="Auto"/>
-                        <DataGridTextColumn Binding="{ Binding Path=FechaAlta, ConverterCulture='es_ES', StringFormat='D' }"
-                                Header="Fecha de Alta"
-                                Width="Auto"/>
-                        <DataGridTextColumn Binding="{ Binding Path=FechaBaja, ConverterCulture='es_ES', StringFormat='D', TargetNullValue='Sin fecha de baja' }"
-                                Header="Fecha de Baja"
-                                Width="Auto"/>
-                        <DataGridTextColumn Binding="{ Binding Path=EnFunciones }"
-                                Header="EnFunciones"
-                                Width="Auto"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Expander>
+            <!-- CRONOGRAMA -->
+            <Button Command="{ Binding Path=ListarCommand }"
+                    CommandParameter="Horarios"
+                    Content="Horarios"
+                    Style="{ StaticResource ResourceKey=Tertiary }"/>
+        </WrapPanel>
 
-            <!-- HORARIOS -->
-            <Expander Header="Cronograma"
-          Margin="0 10"
-          Padding="0 5">
-                <DataGrid x:Name="HorariosDataGrid"
-              ItemsSource="{ Binding Path=Horarios, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-              AutoGenerateColumns="False"
-              IsEnabled="False"
-              IsSynchronizedWithCurrentItem="True"
-              Style="{ StaticResource ResourceKey=DataGrid }">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{ Binding Path=Turno }"
-                                Header="Turno"
-                                Width="Auto"/>
-                        <DataGridTextColumn Binding="{ Binding Path=DiaSemana }"
-                                Header="Día"
-                                Width="Auto"/>
-                        <DataGridTextColumn Binding="{ Binding Path=HoraInicio }"
-                                Header="Hora Inicio"
-                                Width="Auto"/>
-                        <DataGridTextColumn Binding="{ Binding Path=HoraFin }"
-                                Header="Hora Fin"
-                                Width="Auto"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Expander>
-        </StackPanel>
-        <StackPanel Grid.Row="1">
-            <WrapPanel HorizontalAlignment="Right">
-                <!-- SITUACION REVISTA ELIMINAR -->
-                <Button Command="{Binding Path=HistorialCommand }"
-                        CommandParameter="SituacionRevista"
-                        Content="Histórico Situación Revista"
-                        Style="{StaticResource ResourceKey=Tertiary}"/>
-                <Button Command="{Binding Path=EliminarCommand}"
-                        CommandParameter="Docente"
-                        Content="Quitar Docente"
-                        Margin="5 0"
-                        Visibility="{ Binding Path=IsEnabled, Converter={ StaticResource Converter }, RelativeSource={ RelativeSource Mode=Self } }"
-                        Style="{StaticResource ResourceKey=Tertiary}"/>
-                <Button Command="{Binding Path=GuardarCommand}"
-                        CommandParameter="DocenteEnFunciones"
-                        Content="Establecer En Funciones"
-                        Margin="5 0 0 0"
-                        Visibility="{Binding Path=IsEnabled, Converter={StaticResource Converter}, RelativeSource={RelativeSource Mode=Self}}"
-                        Style="{StaticResource ResourceKey=Primary}"/>
-            </WrapPanel>
-        </StackPanel>
+        <!-- COMMANDS -->
+        <WrapPanel Grid.Column="1"
+                   Grid.Row="1"
+                   HorizontalAlignment="Right">
+            <Button Command="{ Binding GuardarCommand }"
+                    CommandParameter="Materia"
+                    Content="Guardar"
+                    Margin="5 0 0 0"
+                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                    Style="{ StaticResource Primary }"/>
+
+            <Button Command="{ Binding EditarCommand }"
+                    Content="Editar Materia"
+                    Margin="0 0 5 0"
+                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                    Style="{ StaticResource Secondary }"/>
+
+            <Button Command="{ Binding HorarioCommand }"
+                    Content="Agregar Horario"
+                    Margin="5 0 0 0"
+                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
+                    Style="{ StaticResource Secondary }"/>
+        </WrapPanel>
     </Grid>
 </UserControl>

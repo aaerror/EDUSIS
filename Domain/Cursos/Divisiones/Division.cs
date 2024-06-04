@@ -155,7 +155,7 @@ public class Division : Entity
     public void AgregarCalificacion(Guid unCursante, Guid unaMateria, bool asistencia, DateTime fecha, Instancia instancia, double? nota)
     {
         var cursante = BuscarCursante(unCursante);
-        var nuevaCalificacion = Calificacion.Crear(unaMateria, asistencia, fecha, instancia, nota);
+        var nuevaCalificacion = Calificacion.Crear(CursoID, unaMateria, asistencia, fecha, instancia, nota);
         cursante.AgregarCalificacion(nuevaCalificacion);
     }
 

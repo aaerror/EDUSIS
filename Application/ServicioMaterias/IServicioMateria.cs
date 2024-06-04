@@ -20,6 +20,8 @@ namespace Core.ServicioMaterias
         void QuitarDocenteDeMateria(EliminarSituacionRevistaRequest request);
 
         void RegistrarHorario(RegistrarHorarioEnMateria request);
-        
+        IReadOnlyCollection<HorarioResponse> HorariosDeMateria(BuscarHorariosRequest request);
+
+
     }
 }

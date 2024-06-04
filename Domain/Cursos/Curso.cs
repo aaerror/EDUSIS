@@ -10,7 +10,7 @@ namespace Domain.Cursos;
 
 public class Curso : Entity
 {
-    private List<Materia> _materias = new();
+    private List<Guid> _materias = new();
     private List<Division> _divisiones = new();
 
     // Educación Primaria - Educación Secundaria
@@ -19,7 +19,7 @@ public class Curso : Entity
     public int CantidadDivisiones => _divisiones.Count;
     public int CantidadMaterias => _materias.Count;
     public int CantidadAlumnos => _divisiones.Sum(x => x.TotalAlumnos);
-    public IReadOnlyCollection<Materia> Materias => _materias.AsReadOnly();
+    public IReadOnlyCollection<Guid> Materias => _materias.AsReadOnly();
     public IReadOnlyCollection<Division> Divisiones => _divisiones.AsReadOnly();
 
 
@@ -49,7 +49,7 @@ public class Curso : Entity
 
         Descripcion = descripcion;
         NivelEducativo = nivelEducativo;
-        _materias = new List<Materia>();
+        _materias = new List<Guid>();
     }
 
     public Curso(string descripcion, NivelEducativo nivelEducativo)
@@ -81,43 +81,17 @@ public class Curso : Entity
             throw new ArgumentNullException(nameof(unaMateria), "Debe proporcionar datos de la materia para realizar la búsqueda.");
         }
 
-        return _materias.Exists(x => x.Id.Equals(unaMateria));
+        return _materias.Any(x => x.Equals(unaMateria));
     }
 
-    private Materia BuscarMateria(Guid unaMateria)
+    public void AgregarMateria(Guid nuevaMateria)
     {
-        if (Guid.Empty.Equals(unaMateria))
+        if (ExisteMateria(nuevaMateria))
         {
-            throw new ArgumentNullException(nameof(unaMateria), "Debe proporcionar datos de la materia para realizar la búsqueda.");
+            throw new ArgumentException($"La materia ya se encuentra registrada en el curso { Descripcion }° año ({ NivelEducativo })", nameof(nuevaMateria));
         }
 
-        var materia = _materias.Find(x => x.Id.Equals(unaMateria));
-        if (materia is null)
-        {
-            throw new ArgumentException("La materia que esta buscando no se encuentra en este curso.", nameof(unaMateria));
-        }
-
-        return materia;
-    }
-
-    private bool MateriasConHorasCatedrasSinAsignar() => _materias.Any(x => x.ExistenHorasCatedraSinAsignar());
-
-    public void AgregarMateria(string descripcion, int horasCatedra)
-    {
-        var materia = _materias.Find(x => x.Descripcion == descripcion);
-        if (materia is not null)
-        {
-            throw new ArgumentException($"La materia { materia.Descripcion } ya se encuentra registrada con { materia.HorasCatedra } horas cátedra.", nameof(descripcion));
-        }
-
-        _materias.Add(new Materia(Id, descripcion, horasCatedra));
-    }
-
-    public void ActualizarMateria(Guid unaMateria, string descripcion, int horasCatedra)
-    {
-        var materia = BuscarMateria(unaMateria);
-
-        materia.ModificarMateria(descripcion, horasCatedra);
+        _materias.Add(nuevaMateria);
     }
 
     public void QuitarMateria(Guid aEliminar)
@@ -127,55 +101,15 @@ public class Curso : Entity
             throw new ArgumentNullException(nameof(aEliminar), "Se debe especificar que materia desea eliminar.");
         }
 
-        var materia = _materias.Find(x => x.Id.Equals(aEliminar));
-        if (materia is null)
+        if (!ExisteMateria(aEliminar))
         {
             throw new ArgumentException($"La materia no se encuentra registrada en el curso { Descripcion } año ({ NivelEducativo })", nameof(aEliminar));
         }
 
-        _materias.Remove(materia);
+        _materias.Remove(aEliminar);
         AgregarEvento(new MateriaEliminadaEvent(aEliminar));
     }
-
-    public void AgregarHorarioAMateria(Guid materiaId, Horario unHorario)
-    {
-        var horarioDisponible = !_materias.Any(x => x.HorarioOcupado(unHorario));
-
-        if (!horarioDisponible)
-        {
-            throw new ArgumentException("El horario que desea asignar a la materia se encuentra ocupado.", nameof(unHorario));
-        }
-
-        Materia materiaBuscada = BuscarMateria(materiaId);
-        materiaBuscada.AgregarHorario(unHorario);
-    }
-
-    public void ModificarHorarioDeMateria(Guid materiaId, Horario antiguo, Horario nuevo)
-    {
-        Materia materia = BuscarMateria(materiaId);
-        materia.CambiarHorario(antiguo, nuevo);
-    }
-
-    public IReadOnlyCollection<Materia> ListaMateriasConHorasCatedrasSinAsignar()
-    {
-        if (!MateriasConHorasCatedrasSinAsignar())
-        {
-            throw new ArgumentException("No existen materias con horas cátedras sin asignar.");
-        }
-
-        return _materias.FindAll(x => x.ExistenHorasCatedraSinAsignar())
-                        .ToList()
-                        .AsReadOnly();
-    }
-
-    public IReadOnlyCollection<Materia> MateriasConCargoVacante()
-    {
-        return _materias.FindAll(x => !x.ExisteDocenteEnFunciones())
-                        .AsReadOnly();
-    }
     #endregion
-
-    
 
     #region Division
     private bool ExisteDivision(Guid unaDivision)

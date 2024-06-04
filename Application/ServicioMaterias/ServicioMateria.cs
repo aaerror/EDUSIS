@@ -34,8 +34,9 @@ public class ServicioMateria : IServicioMateria
                                                materia.Id,
                                                materia.Descripcion,
                                                materia.HorasCatedra,
+                                               materia.HorasCatedraSinAsignar,
                                                materia.ProfesorID,
-                                               _unitOfWork.Docentes.BuscarPorID(materia.ProfesorID).InformacionPersonal.NombreCompleto());
+                                               _unitOfWork.Docentes.BuscarPorID(materia.ProfesorID.Value).InformacionPersonal.NombreCompleto());
                                                /*materia.Profesores.Select(st => new SituacionRevistaResponse(st.ProfesorID,
                                                                                                             _unitOfWork.Docentes.BuscarPorID(st.ProfesorID).InformacionPersonal.NombreCompleto(),
                                                                                                             (int)st.Cargo,
@@ -52,7 +53,8 @@ public class ServicioMateria : IServicioMateria
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+            throw;
         }
     }
 
@@ -66,13 +68,15 @@ public class ServicioMateria : IServicioMateria
                                                                     x.Id,
                                                                     x.Descripcion,
                                                                     x.HorasCatedra,
+                                                                    x.HorasCatedraSinAsignar,
                                                                     x.ProfesorID,
-                                                                    _unitOfWork.Docentes.BuscarPorID(x.ProfesorID)?.InformacionPersonal.NombreCompleto())).ToList();
+                                                                    _unitOfWork.Docentes.BuscarPorID(x.ProfesorID.Value)?.InformacionPersonal.NombreCompleto())).ToList();
             return response;
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
         }
     }
 
@@ -84,12 +88,12 @@ public class ServicioMateria : IServicioMateria
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Excepción: {ex.Message}");
-            throw ex;
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
         }
     }
 
-    #region Registrar, Modificar, Eliminar
+    #region Materia: Registrar, Modificar, Eliminar
     public async Task RegistrarMateria(RegistrarMateriaRequest request)
     {
         try
@@ -102,6 +106,7 @@ public class ServicioMateria : IServicioMateria
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -119,6 +124,7 @@ public class ServicioMateria : IServicioMateria
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -134,6 +140,7 @@ public class ServicioMateria : IServicioMateria
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -142,21 +149,31 @@ public class ServicioMateria : IServicioMateria
     #region Situacion de Revista
     public IReadOnlyCollection<SituacionRevistaResponse> HistoricoSituacionRevista(HistoricoSituacionRevistaRequest request)
     {
+        List<SituacionRevistaResponse> historial = new List<SituacionRevistaResponse>();
         try
         {
             var historico = _unitOfWork.Materias.HistoricoSituacionRevista(request.cursoID, request.materiaID);
-
+            /*foreach (var situacionRevista in historico)
+            {
+                historial.Add(new SituacionRevistaResponse(situacionRevista.ProfesorID,
+                                                           _unitOfWork.Docentes.BuscarPorID(situacionRevista.ProfesorID).InformacionPersonal.NombreCompleto(),
+                                                           (int)situacionRevista.Cargo,
+                                                           situacionRevista.Cargo.ToString(),
+                                                           situacionRevista.FechaAlta,
+                                                           situacionRevista.FechaBaja,
+                                                           situacionRevista.EnFunciones));
+            }*/
             return historico.Select(x => new SituacionRevistaResponse(x.ProfesorID,
                                                                       _unitOfWork.Docentes.BuscarPorID(x.ProfesorID).InformacionPersonal.NombreCompleto(),
                                                                       (int) x.Cargo,
                                                                       x.Cargo.ToString(),
                                                                       x.FechaAlta,
                                                                       x.FechaBaja,
-                                                                      x.EnFunciones))
-                            .ToList();
+                                                                      x.EnFunciones)).ToList();
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -184,6 +201,7 @@ public class ServicioMateria : IServicioMateria
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
             throw;
         }
     }
@@ -200,6 +218,7 @@ public class ServicioMateria : IServicioMateria
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -216,12 +235,29 @@ public class ServicioMateria : IServicioMateria
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
     #endregion
 
     #region Horarios
+    public IReadOnlyCollection<HorarioResponse> HorariosDeMateria(BuscarHorariosRequest request)
+    {
+        try
+        {
+            var horarios = _unitOfWork.Materias.BuscarHorarios(request.CursoID, request.MateriaID);
+
+            return horarios.Select(x => new HorarioResponse(x.Turno.ToString(), x.DiaSemana.ToString(), x.HoraInicio, x.HoraFin))
+                           .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
+    }
+
     public void RegistrarHorario(RegistrarHorarioEnMateria request)
     {
         try
@@ -234,11 +270,11 @@ public class ServicioMateria : IServicioMateria
             _unitOfWork.Materias.Modificar(materia);
             _unitOfWork.GuardarCambiosAsync();
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
-
     }
     #endregion
 }

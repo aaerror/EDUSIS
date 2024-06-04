@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 // https://gist.github.com/hclewk/a41d937eba12c0388f70429a997cd7ec
 
-namespace Core.ServicioSeguridad;
+namespace Core.ServicioSeguridades;
 
 public class ServicioSeguridad : IServicio, IServicioSeguridad
 {

@@ -14,7 +14,7 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
     private SituacionRevistaResponse _situacionRevista;
 
     private Guid _docenteID = Guid.Empty;
-    private string _nombreCompleto = string.Empty;
+    private string _docente = string.Empty;
     private int _cargo = 0;
     private string _cargoDescripcion = string.Empty;
     private DateTime _fechaAlta = DateTime.Now;
@@ -39,7 +39,7 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
         {
             _situacionRevista = situacionRevista;
             DocenteID = _situacionRevista.DocenteID;
-            NombreCompleto = _situacionRevista.Docente;
+            Docente = _situacionRevista.Docente;
             Cargo = _situacionRevista.Cargo;
             FechaAlta = _situacionRevista.FechaAlta;
             FechaBaja = _situacionRevista.FechaBaja;
@@ -62,17 +62,17 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public string NombreCompleto
+    public string Docente
     {
         get
         {
-            return _nombreCompleto;
+            return _docente;
         }
 
         set
         {
-            _nombreCompleto = value;
-            OnPropertyChanged(nameof(NombreCompleto));
+            _docente = value;
+            OnPropertyChanged(nameof(Docente));
         }
     }
 

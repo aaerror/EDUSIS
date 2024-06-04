@@ -128,7 +128,7 @@ public partial class App : Application
         services.AddTransient<GestionMateriasViewModel>(provider => new GestionMateriasViewModel(provider.GetRequiredService<IServicioMateria>(),
                                                                                                  provider.GetRequiredService<IServicioDocente>(),
                                                                                                  provider.GetRequiredService<CursoStore>()));
-        services.AddTransient<MateriaViewModel>();
+        //services.AddTransient<MateriaViewModel>();
         #endregion
 
         services.AddScoped(provider => new MainWindow

@@ -15,7 +15,7 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
         builder.ToTable("materia");
 
         // PK_MATERIAS
-        builder.HasKey(x => x.Id)
+        builder.HasKey(x => new { x.CursoID, x.Id })
                .HasName("PK_MATERIA");
 
         builder.Property(x => x.Id)
@@ -24,7 +24,7 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 
         // FK_CURSOS_MATERIAS
         builder.HasOne<Curso>()
-               .WithMany(x => x.Materias)
+               .WithMany()
                .HasPrincipalKey(x => x.Id)
                .HasForeignKey(x => x.CursoID)
                .HasConstraintName("FK_CURSO_MATERIA");
@@ -57,11 +57,11 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 
             // FK_MATERIAS_SITUACION-REVISTA
             situacionRevistaBuilder.WithOwner()
-                                   .HasForeignKey("materia_id")
+                                   .HasForeignKey("curso_id", "materia_id")
                                    .HasConstraintName("FK_MATERIA_SITUACION-REVISTA");
 
             // PK_SITUACION-REVISTA
-            situacionRevistaBuilder.HasKey("materia_id", "situacion_revista_id")
+            situacionRevistaBuilder.HasKey("curso_id", "materia_id", "situacion_revista_id")
                                    .HasName("PK_SITUACION-REVISTA");
 
 
@@ -73,10 +73,7 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
                                    .WithMany()
                                    .HasForeignKey(x => x.ProfesorID)
                                    .HasConstraintName("FK_DOCENTE_SITUACION-REVISTA");
-            /*.WithOne()
-            .HasForeignKey<SituacionRevista>(x => x.ProfesorId)
-            .HasConstraintName("FK_DOCENTES_SITUACION-REVISTA");*/
-
+            
             situacionRevistaBuilder.Property(x => x.Cargo)
                                    .HasColumnName("cargo")
                                    .HasColumnType("varchar(10)")
@@ -94,6 +91,7 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 
             situacionRevistaBuilder.Property(x => x.EnFunciones)
                                    .HasColumnName("en_funciones")
+                                   .HasColumnType("bit")
                                    .HasDefaultValue(false);
         });
 
@@ -108,11 +106,11 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 
             // FK_MATERIAS_HORARIOS
             horarioBuilder.WithOwner()
-                          .HasForeignKey("materia_id")
+                          .HasForeignKey("curso_id", "materia_id")
                           .HasConstraintName("FK_MATERIA_HORARIO");
 
             // PK_HORARIOS
-            horarioBuilder.HasKey("materia_id", "horario_id")
+            horarioBuilder.HasKey("curso_id", "materia_id", "horario_id")
                           .HasName("PK_HORARIO");
 
             horarioBuilder.Property(x => x.DiaSemana)

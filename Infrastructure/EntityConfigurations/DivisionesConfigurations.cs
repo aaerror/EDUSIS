@@ -1,5 +1,4 @@
 ﻿using Domain.Alumnos;
-using Domain.Cursos;
 using Domain.Cursos.Divisiones;
 using Domain.Cursos.Divisiones.Cursantes;
 using Domain.Docentes;
@@ -23,11 +22,11 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
                .HasColumnName("division_id")
                .ValueGeneratedNever();
 
-        // FK_CURSOS_DIVISIONES
+        /*// FK_CURSOS_DIVISIONES
         builder.HasOne<Curso>()
                .WithMany(x => x.Divisiones)
                .HasForeignKey(x => x.CursoID)
-               .HasConstraintName("FK_CURSO_DIVISION");
+               .HasConstraintName("FK_CURSO_DIVISION");*/
 
         builder.Property(x => x.CursoID)
                .HasColumnName("curso_id")
@@ -48,7 +47,7 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
         builder.Property(x => x.Preceptor)
                .HasColumnName("preceptor_id");
 
-        // CURSANTES
+        #region CURSANTE
         builder.OwnsMany(x => x.ListadosDefinitivos, cursantesBuilder =>
         {
             cursantesBuilder.ToTable("cursante");
@@ -78,50 +77,53 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
 
             cursantesBuilder.Property(x => x.AlumnoID)
                             .HasColumnName("alumno_id");
+            #endregion
 
-            // CICLO_LECTIVO
+            #region CICLO LECTIVO
             cursantesBuilder.OwnsOne(x => x.CicloLectivo, cicloLectivoBuilder =>
             {
-/*
+            /*
                 cicloLectivoBuilder.ToTable("ciclo_lectivo");
 
                 cicloLectivoBuilder.WithOwner()
                                    .HasForeignKey("curso_id", "division_id", "cursante_id");
-*/
+            */
 
                 cicloLectivoBuilder.Property(x => x.Periodo)
                                    .HasColumnName("periodo")
                                    .HasMaxLength(4);
-
             });
+            #endregion
 
+            #region CALIFICACIÓN
             cursantesBuilder.OwnsMany(x => x.Calificaciones, calificacionBuilder =>
             {
                 calificacionBuilder.ToTable("calificacion");
-
-                // SHADOW PROPERTY
-                calificacionBuilder.Property<int>("calificacion_id")
-                                   .UseIdentityColumn();
-
-                // PK_CALIFICACIONES
-                calificacionBuilder.HasKey("calificacion_id");
 
                 // FK_CURSANTES_CALIFICACIONES
                 calificacionBuilder.WithOwner()
                                    .HasForeignKey("cursante_id")
                                    .HasConstraintName("FK_CURSANTE_CALIFICACION");
 
+                // SHADOW PROPERTY
+                calificacionBuilder.Property<int>("calificacion_id")
+                                   .UseIdentityColumn();
 
                 // FK_MATERIAS_CALIFICACIONES
                 calificacionBuilder.HasOne<Materia>()
                                    .WithMany()
-                                   .HasForeignKey(x => x.MateriaID)
+                                   .HasForeignKey(x => new { x.CursoID, x.MateriaID })
                                    .HasConstraintName("FK_MATERIA_CALIFICACION")
                                    .OnDelete(DeleteBehavior.NoAction);
 
+                calificacionBuilder.Property(x => x.CursoID)
+                                   .HasColumnName("curso_id");
+
                 calificacionBuilder.Property(x => x.MateriaID)
-                                   .HasColumnName("materia_id")
-                                   .IsRequired(true);
+                                   .HasColumnName("materia_id");
+
+                // PK_CALIFICACIONES
+                calificacionBuilder.HasKey("CursoID", "MateriaID", "calificacion_id");
 
                 calificacionBuilder.Property(x => x.Fecha)
                                    .HasColumnName("fecha")
@@ -142,6 +144,7 @@ public class DivisionesConfigurations : IEntityTypeConfiguration<Division>
                                    .HasColumnType("decimal(5,2)")
                                    .IsRequired(false);
             });
+            #endregion
 
             // Calificaciones
             /*cursantesBuilder.Metadata.FindNavigation(nameof(Cursante.Calificaciones))

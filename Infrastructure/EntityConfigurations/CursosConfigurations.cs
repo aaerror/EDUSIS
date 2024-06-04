@@ -35,12 +35,16 @@ public class CursosConfigurations : IEntityTypeConfiguration<Curso>
                .HasConversion(toProvider => toProvider.ToString(),
                               fromProvider => (NivelEducativo) Enum.Parse(typeof(NivelEducativo), fromProvider));
 
+        builder.HasMany(x => x.Divisiones)
+               .WithOne()
+               .HasForeignKey(x => x.CursoID)
+               .HasPrincipalKey(x => x.Id)
+               .HasConstraintName("FK_CURSO_DIVISION")
+               .OnDelete(DeleteBehavior.NoAction);
+
         builder.Ignore(x => x.CantidadDivisiones);
         builder.Ignore(x => x.CantidadMaterias);
         builder.Ignore(x => x.CantidadAlumnos);
-
-        builder.Metadata.FindNavigation(nameof(Curso.Materias))
-                        .SetPropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Metadata.FindNavigation(nameof(Curso.Divisiones))
                         .SetPropertyAccessMode(PropertyAccessMode.Field);

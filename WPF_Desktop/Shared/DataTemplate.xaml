@@ -137,8 +137,8 @@
     </DataTemplate>
     <!--#endregion-->
 
-    <DataTemplate DataType="{ x:Type vmCursos:HorarioViewModel }">
-        <vCursos:HorarioView/>
+    <DataTemplate DataType="{ x:Type vmMaterias:HorarioViewModel }">
+        <vMaterias:HorarioView/>
     </DataTemplate>
 
     <!--#region SITUACIÓN DE REVISTA -->

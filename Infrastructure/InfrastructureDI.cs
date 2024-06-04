@@ -14,7 +14,7 @@ public static class InfrastructureDI
         services.AddDbContext<EdusisDBContext>(options =>
         {
             options.UseSqlServer("Data Source=localhost; Initial Catalog=EdusisDB; Integrated Security=True; Encrypt=True; TrustServerCertificate=True")
-            .LogTo(Console.WriteLine, LogLevel.Information);
+                   .LogTo(Console.WriteLine, LogLevel.Information);
         });
 
         // MEDIATOR

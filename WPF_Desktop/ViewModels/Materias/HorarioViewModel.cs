@@ -1,7 +1,7 @@
 ﻿using Core.ServicioMaterias.DTOs.Responses;
 using WPF_Desktop.Shared;
 
-namespace WPF_Desktop.ViewModels.Cursos;
+namespace WPF_Desktop.ViewModels.Materias;
 
 public class HorarioViewModel : ViewModel
 {
@@ -24,8 +24,8 @@ public class HorarioViewModel : ViewModel
 
             DiaSemana = horarioResponse.DiaSemana;
             Turno = horarioResponse.Turno;
-            HoraInicio = horarioResponse.HoraInicio;
-            HoraFin = horarioResponse.HoraFin;
+            HoraInicio = horarioResponse.HoraInicio.ToString();
+            HoraFin = horarioResponse.HoraFin.ToString();
         }
     }
 

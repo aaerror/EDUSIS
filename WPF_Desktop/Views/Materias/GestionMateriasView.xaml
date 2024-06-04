@@ -82,8 +82,7 @@
                             <DataGrid x:Name="DataGridMaterias"
                                       ItemsSource="{ Binding Path=Materias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                       SelectedItem="{ Binding Path=MateriaDetalleViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                      AutoGenerateColumns="False"
-                                      HorizontalContentAlignment="Center"
+                                      IsReadOnly="True"
                                       IsSynchronizedWithCurrentItem="True"
                                       Margin="0 10"
                                       Style="{ StaticResource ResourceKey=DataGrid }">
@@ -94,13 +93,10 @@
                                                         Width="Auto"/>
                                     <DataGridTextColumn Binding="{ Binding Descripcion }"
                                                         Header="Materia"
-                                                        Width="Auto"/>
-                                    <DataGridTextColumn Binding="{ Binding HorasCatedra }"
-                                                        Header="Horas Cátedra"
-                                                        Width="Auto"/>
+                                                        Width="1*"/>
                                     <DataGridTextColumn Binding="{ Binding NombreCompletoProfesor, TargetNullValue='No hay profesor asignado' }"
                                                         Header="Profesor a Cargo"
-                                                        Width="Auto"/>
+                                                        Width="2*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
 

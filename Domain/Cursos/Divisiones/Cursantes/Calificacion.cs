@@ -6,6 +6,7 @@ public class Calificacion : ValueObject
 {
     private bool _asistencia = false;
 
+    public Guid CursoID { get; private set; }
     public Guid MateriaID { get; private set; }
     public DateTime? Fecha { get; private set; }
     public Instancia Instancia { get; private set; }
@@ -14,7 +15,7 @@ public class Calificacion : ValueObject
 
     private Calificacion() {}
 
-    private Calificacion(Guid materiaID, bool asistencia, DateTime? fecha, Instancia instancia, double? nota)
+    private Calificacion(Guid cursoID, Guid materiaID, bool asistencia, DateTime? fecha, Instancia instancia, double? nota)
     {
         if (asistencia)
         {
@@ -39,21 +40,21 @@ public class Calificacion : ValueObject
             }
         }
         
-
+        CursoID = cursoID;
         MateriaID = materiaID;
         _asistencia = asistencia;
         Fecha = fecha.Value.Date;
         Instancia = instancia;
     }
 
-    public static Calificacion Crear(Guid materiaID, bool asistencia, DateTime? fecha, Instancia instancia, double? nota)
+    public static Calificacion Crear(Guid cursoID, Guid materiaID, bool asistencia, DateTime? fecha, Instancia instancia, double? nota)
     {
-        return new(materiaID, asistencia, fecha, instancia, nota);
+        return new(cursoID, materiaID, asistencia, fecha, instancia, nota);
     }
 
     public Calificacion ModificarCalificacion(bool asistencia, DateTime? fecha, Instancia instancia, double? nota)
     {
-        return new(MateriaID, asistencia, fecha, instancia, nota);
+        return new(CursoID, MateriaID, asistencia, fecha, instancia, nota);
     }
 
     public bool EstuvoPresente() => _asistencia;
@@ -62,6 +63,7 @@ public class Calificacion : ValueObject
 
     public override IEnumerable<object> GetEqualityCommponents()
     {
+        yield return CursoID;
         yield return MateriaID;
         yield return _asistencia;
         yield return Fecha;

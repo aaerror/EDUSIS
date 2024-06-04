@@ -8,13 +8,14 @@ namespace Domain.Materias;
 
 public class Materia : Entity
 {
+    private Guid? _profesorID;
     private readonly List<Horario> _horarios = new();
     private readonly List<SituacionRevista> _profesores = new();
 
     public Guid CursoID { get; private set; }
     public string Descripcion { get; private set; }
     public int HorasCatedra { get; private set; }
-    public Guid ProfesorID { get; private set; } = Guid.Empty;
+    
     public IReadOnlyCollection<Horario> Horarios => _horarios.AsReadOnly();
     public IReadOnlyCollection<SituacionRevista> Profesores => _profesores.AsReadOnly();
 
@@ -48,6 +49,19 @@ public class Materia : Entity
     public Materia(Guid cursoID, string descripcion, int horasCatedra)
         : this(cursoID, Guid.NewGuid(), descripcion, horasCatedra) { }
 
+    public Guid? ProfesorID
+    {
+        get
+        {
+            return DocenteEnFunciones()?.ProfesorID ?? Guid.Empty;
+        }
+        
+        private set
+        {
+            _profesorID = value;
+        }
+    }
+
     private void EditarDescripcion(string descripcion)
     {
         if (string.IsNullOrWhiteSpace(descripcion))
@@ -76,7 +90,9 @@ public class Materia : Entity
     }
 
     #region Profesores
-    public SituacionRevista DocenteEnFunciones() => _profesores.Where(x => x.EnFunciones && x.FechaBaja is null).FirstOrDefault();
+    public SituacionRevista? DocenteEnFunciones() =>
+        _profesores.Where(x => x.EnFunciones && !x.FechaBaja.HasValue)
+                   .FirstOrDefault();
 
     public SituacionRevista BuscarSituacionRevista(Guid unProfesor)
     {
@@ -85,13 +101,14 @@ public class Materia : Entity
             throw new ArgumentNullException(nameof(unProfesor), "Se deben especificar los datos del profesor que desea buscar.");
         }
 
-        return _profesores.Where(x => x.ProfesorID.Equals(unProfesor) && x.FechaBaja is null)
+        return _profesores.Where(x => x.ProfesorID.Equals(unProfesor) && !x.FechaBaja.HasValue)
                           .FirstOrDefault();
     }
 
-    private bool CargoDisponible(Cargo unCargo) => !_profesores.Any(x => x.Cargo.Equals(unCargo) && x.FechaBaja is null);
+    private bool CargoDisponible(Cargo unCargo) =>
+        !_profesores.Any(x => x.Cargo.Equals(unCargo) && !x.FechaBaja.HasValue);
 
-    public bool ExisteDocenteEnFunciones() => _profesores.Any(x => x.EnFunciones && x.FechaBaja is null);
+    public bool ExisteDocenteEnFunciones() => _profesores.Any(x => x.EnFunciones && !x.FechaBaja.HasValue);
 
     public void EstablecerDocenteEnFunciones(Guid unProfesor)
     {

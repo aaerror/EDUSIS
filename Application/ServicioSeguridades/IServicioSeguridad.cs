@@ -1,4 +1,4 @@
-﻿namespace Core.ServicioSeguridad;
+﻿namespace Core.ServicioSeguridades;
 
 public interface IServicioSeguridad
 {

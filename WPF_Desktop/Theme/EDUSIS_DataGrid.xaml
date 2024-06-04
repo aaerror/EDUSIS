@@ -44,6 +44,7 @@
         <Setter Property="AutoGenerateColumns" Value="False"/>
         <Setter Property="GridLinesVisibility" Value="All"/>
         <Setter Property="HeadersVisibility" Value="All"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="RowDetailsVisibilityMode" Value="VisibleWhenSelected"/>
         <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
         <Setter Property="ScrollViewer.PanningMode" Value="Both"/>

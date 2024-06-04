@@ -4,11 +4,11 @@ public record HorarioResponse
 {
     public string Turno { get; set; }
     public string DiaSemana { get; set; }
-    public string HoraInicio { get; set; }
-    public string HoraFin { get; set; }
+    public TimeOnly HoraInicio { get; set; }
+    public TimeOnly HoraFin { get; set; }
 
 
-    public HorarioResponse(string turno, string diaSemana, string horaInicio, string horaFin)
+    public HorarioResponse(string turno, string diaSemana, TimeOnly horaInicio, TimeOnly horaFin)
     {
         Turno = turno;
         DiaSemana = diaSemana;

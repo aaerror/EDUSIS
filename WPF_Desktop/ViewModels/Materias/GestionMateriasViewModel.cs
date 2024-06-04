@@ -521,7 +521,7 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
 
             DocenteInstitucionalViewModel = new(_docenteInfoResponse.Institucional);
             SituacionRevistaViewModel = new(null);
-            SituacionRevistaViewModel.NombreCompleto = _docenteInfoResponse.NombreCompleto;
+            SituacionRevistaViewModel.Docente = _docenteInfoResponse.NombreCompleto;
             _profesorID = _docenteInfoResponse.DocenteID;
         }
         catch (Exception ex)
