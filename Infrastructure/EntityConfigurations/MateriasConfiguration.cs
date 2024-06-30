@@ -2,25 +2,32 @@
 using Domain.Docentes;
 using Domain.Materias;
 using Domain.Materias.Horarios;
-using Domain.Materias.SituacionRevistaDocente;
+using Domain.Materias.CargosDocentes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.EntityConfigurations;
 
-public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
+internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 {
     public void Configure(EntityTypeBuilder<Materia> builder)
     {
-        builder.ToTable("materia");
+        ConfigureTableMaterias(builder);
+        ConfigureTableSituacionRevista(builder);
+        ConfigureTableHorarios(builder);
+    }
 
-        // PK_MATERIAS
-        builder.HasKey(x => new { x.CursoID, x.Id })
-               .HasName("PK_MATERIA");
+    private void ConfigureTableMaterias(EntityTypeBuilder<Materia> builder)
+    {
+        builder.ToTable("materia");
 
         builder.Property(x => x.Id)
                .HasColumnName("materia_id")
                .ValueGeneratedNever();
+
+        // PK_MATERIA
+        builder.HasKey(x => new { x.CursoID, x.Id })
+               .HasName("PK_MATERIA");
 
         // FK_CURSOS_MATERIAS
         builder.HasOne<Curso>()
@@ -30,8 +37,13 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
                .HasConstraintName("FK_CURSO_MATERIA");
 
         builder.Property(x => x.CursoID)
-               .HasColumnName("curso_id")
-               .HasColumnOrder(0);
+               .HasColumnName("curso_id");
+
+        /*builder.HasOne<Curricula>()
+               .WithMany(x => x.Materias)
+               .HasPrincipalKey(x => x.Materias)
+               .HasForeignKey(x => x.Id)
+               .HasConstraintName("FK_CURRICULA_MATERIA");*/
 
         builder.Property(x => x.Descripcion)
                .HasColumnName("descripcion")
@@ -44,10 +56,12 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
                .IsRequired();
 
         // IGNORE
-        builder.Ignore(x => x.ProfesorID);
+        builder.Ignore(x => x.DocenteID);
+    }
 
-        // SITUACION REVISTA
-        builder.OwnsMany(x => x.Profesores, situacionRevistaBuilder =>
+    private void ConfigureTableSituacionRevista(EntityTypeBuilder<Materia> builder)
+    {
+        builder.OwnsMany(x => x.Docentes, situacionRevistaBuilder =>
         {
             situacionRevistaBuilder.ToTable("situacion_revista");
 
@@ -64,21 +78,20 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
             situacionRevistaBuilder.HasKey("curso_id", "materia_id", "situacion_revista_id")
                                    .HasName("PK_SITUACION-REVISTA");
 
-
-            situacionRevistaBuilder.Property(x => x.ProfesorID)
-                                   .HasColumnName("profesor_id");
+            situacionRevistaBuilder.Property(x => x.DocenteID)
+                                   .HasColumnName("docente_id");
 
             // FK_PROFESORES_SITUACION-REVISTA
             situacionRevistaBuilder.HasOne<Docente>()
                                    .WithMany()
-                                   .HasForeignKey(x => x.ProfesorID)
+                                   .HasForeignKey(x => x.DocenteID)
                                    .HasConstraintName("FK_DOCENTE_SITUACION-REVISTA");
-            
+
             situacionRevistaBuilder.Property(x => x.Cargo)
                                    .HasColumnName("cargo")
                                    .HasColumnType("varchar(10)")
                                    .HasConversion(toProvider => toProvider.ToString(),
-                                                  fromProvider => (Cargo)Enum.Parse(typeof(Cargo), fromProvider));
+                                                  fromProvider => (Cargo) Enum.Parse(typeof(Cargo), fromProvider));
 
             situacionRevistaBuilder.Property(x => x.FechaAlta)
                                    .HasColumnName("fecha_alta")
@@ -93,9 +106,13 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
                                    .HasColumnName("en_funciones")
                                    .HasColumnType("bit")
                                    .HasDefaultValue(false);
-        });
+        })
+            .Navigation(x => x.Docentes)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
 
-        // HORARIOS
+    private void ConfigureTableHorarios(EntityTypeBuilder<Materia> builder)
+    {
         builder.OwnsMany(m => m.Horarios, horarioBuilder =>
         {
             horarioBuilder.ToTable("horario");
@@ -117,7 +134,7 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
                           .HasColumnName("dia")
                           .HasColumnType("varchar(10)")
                           .HasConversion(toProvider => toProvider.ToString(),
-                                         fromProvider => (Dia) Enum.Parse(typeof(Dia), fromProvider));
+                                         fromProvider => (Dia)Enum.Parse(typeof(Dia), fromProvider));
 
             horarioBuilder.Property(x => x.HoraInicio)
                           .HasColumnName("hora_inicio")
@@ -135,7 +152,9 @@ public class MateriasConfiguration : IEntityTypeConfiguration<Materia>
                           .HasColumnName("turno")
                           .HasColumnType("varchar(10)")
                           .HasConversion(toProvider => toProvider.ToString(),
-                                         fromProvider => (Turno) Enum.Parse(typeof(Turno), fromProvider));
-        });
+                                         fromProvider => (Turno)Enum.Parse(typeof(Turno), fromProvider));
+        })
+            .Navigation(x => x.Horarios)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

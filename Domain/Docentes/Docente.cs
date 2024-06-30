@@ -13,18 +13,17 @@ public class Docente : Persona
      
     public string Legajo { get; private set; }
     public string CUIL { get; private set; }
-    public Guid UsuarioID { get; } = Guid.Empty;
     public DateTime FechaAlta { get; private set; }
     public DateTime? FechaBaja { get; private set; } = null;
-    public bool EstaActivo { get; private set; } = true;
+    public bool EstaActivo => !FechaBaja.HasValue;
     public IReadOnlyCollection<Licencia> Licencias => _licencias.AsReadOnly();
     public IReadOnlyCollection<Puesto> Puestos => _puestos.AsReadOnly();
 
 
     protected Docente()
-        : base() { }
+        : base() {}
 
-    public Docente(string legajo, string cuil, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono)
+    public Docente(string legajo, string cuil, DateTime fechaAlta, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono)
         : base(informacionPersonal, domicilio, email, telefono)
     {
         if (informacionPersonal.Edad() < 18)
@@ -32,12 +31,17 @@ public class Docente : Persona
             throw new ArgumentException($"El docente es menor de edad ({ informacionPersonal.Edad() } años).");
         }
 
+        if (fechaAlta.Date > DateTime.Today.Date)
+        {
+            throw new ArgumentException($"La fecha de alta ({ fechaAlta.Date.ToString("D") }) debe ser anterior al día de hoy ({ DateTime.Now.Date.ToString("D") }).");
+        }
+
         ValidarLegajo(legajo);
         ValidarCuil(cuil);
 
         Legajo = legajo;
         CUIL = cuil;
-        FechaAlta = DateTime.Today;
+        FechaAlta = fechaAlta.Date;
     }
 
     private void ValidarLegajo(string legajoDocente)
@@ -58,9 +62,19 @@ public class Docente : Persona
     }
 
     #region Puesto Docente
+    private void ValidarFechaInicio(DateTime fechaInicio)
+    {
+        if (FechaAlta.Date > fechaInicio.Date)
+        {
+            throw new ArgumentException($"La fecha de inicio ({ fechaInicio.Date.ToString("D") }) en el puesto docente debe ser igual o posterior a la fecha de alta del docente en la institución ({ FechaAlta.Date.ToString("D") })");
+        }
+    }
+
     public Puesto AgregarPuesto(Posicion nuevaPosicion, DateTime fechaInicio)
     {
-        var puesto = _puestos.Find(x => x.Posicion == nuevaPosicion && x.FechaFin is null);
+        ValidarFechaInicio(fechaInicio);
+
+        var puesto = _puestos.Find(x => x.Posicion.Equals(nuevaPosicion) && x.FechaFin is null);
         if (puesto is not null)
         {
             throw new ArgumentException($"El docente ya se encuentra en el puesto de { puesto.Posicion }, desde el { puesto.FechaInicio.ToString("D") }.");
@@ -74,6 +88,8 @@ public class Docente : Persona
     
     public Puesto CambiarPuesto(Posicion nuevaPosicion, DateTime fechaInicio)
     {
+        ValidarFechaInicio(fechaInicio);
+
         var puestoViejo = _puestos.Where(x => x.FechaFin is not null)
                                          .FirstOrDefault();
         if (puestoViejo is null)
@@ -87,6 +103,7 @@ public class Docente : Persona
 
     public Puesto QuitarPuesto(int posicion, DateTime fechaInicio)
     {
+        // TODO: Verificar que el docente solo pueda tener un puesto docente
         var puesto = _puestos.Find(x => x.Posicion.Equals((Posicion) posicion) && x.FechaInicio.Date == fechaInicio.Date && x.FechaFin is null);
         if (puesto is null)
         {

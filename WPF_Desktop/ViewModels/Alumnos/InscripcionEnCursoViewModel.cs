@@ -23,7 +23,7 @@ public class InscripcionEnCursoViewModel : ViewModel
     {
         _servicioCursos = servicioCursos;
 
-        var cursos = _servicioCursos.BuscarCursos();
+        var cursos = _servicioCursos.ListarCursos();
         //_divisiones = new ObservableCollection<DivisionViewModel>(cursos.Select(x => new CursoViewModel(x)));
     }
 

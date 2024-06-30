@@ -1,17 +1,23 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.RegistrarCursoView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos"
+             xmlns:cursoDomain="clr-namespace:Domain.Cursos;assembly=Domain"
+             xmlns:components="clr-namespace:WPF_Desktop.Components"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos"
-             xmlns:components="clr-namespace:WPF_Desktop.Components"
-             xmlns:cursos="clr-namespace:Domain.Cursos;assembly=Domain"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib">
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
     <ContentControl.Resources>
+        <ObjectDataProvider x:Key="grados" ObjectType="{ x:Type sys:Enum }" MethodName="GetValues">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="cursoDomain:Grado"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        
         <ObjectDataProvider x:Key="nivelEducativo" ObjectType="{ x:Type sys:Enum }" MethodName="GetValues">
             <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="cursos:NivelEducativo"/>
+                <x:Type TypeName="cursoDomain:NivelEducativo"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
     </ContentControl.Resources>
@@ -30,7 +36,7 @@
         <!-- INPUTs -->
         <Border Grid.Row="1"
                 Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
                 BorderThickness="1"
                 CornerRadius="4"
                 Margin="20 10"
@@ -54,10 +60,10 @@
                 <StackPanel Grid.Row="0"
                             Margin="10 5">
                     <Label Content="NUEVO CURSO"
-                           BorderBrush="{ StaticResource Gray200 }"
+                           BorderBrush="{ StaticResource ResourceKey=Gray200 }"
                            BorderThickness="0 0 0 2"
-                           Foreground="{ StaticResource Neutral400 }"
-                           Style="{ StaticResource Headline }"/>
+                           Foreground="{ StaticResource ResourceKey=Neutral400 }"
+                           Style="{ StaticResource ResourceKey=Headline }"/>
                     <Grid Margin="20 5">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -72,7 +78,7 @@
                         <!-- CURSO -->
                         <Label Grid.Column="0"
                                Grid.Row="0"
-                               Content="Curso"
+                               Content="Grado"
                                HorizontalAlignment="Right"
                                Style="{ StaticResource ResourceKey=Form }"/>
 <!--
@@ -90,27 +96,18 @@
                                   Grid.Row="0"
                                   HorizontalAlignment="Left"
                                   Margin="10 5"
-                                  SelectedIndex="{ Binding Path=Curso, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged }"
-                                  SelectedValue="{ Binding Path=CursoSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                                  ItemsSource="{ Binding Source={ StaticResource ResourceKey=grados } }"
+                                  SelectedIndex="{ Binding Path=Grado, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                  SelectedItem="{ Binding Path=GradoSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                   Width="200"
-                                  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-                            <ComboBoxItem Content="Primer Año" IsSelected="True"/>
-                            <ComboBoxItem Content="Segundo Año"/>
-                            <ComboBoxItem Content="Tercer Año"/>
-                            <ComboBoxItem Content="Cuarto Año"/>
-                            <ComboBoxItem Content="Quinto Año"/>
-                            <ComboBoxItem Content="Sexto Año"/>
-                            <ComboBoxItem Content="Séptimo Año"/>
-                            <ComboBoxItem Content="Octavo Año"/>
-                            <ComboBoxItem Content="Noveno Año"/>
-                        </ComboBox>
+                                  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
 
                         <!-- NIVEL EDUCATIVO -->
                         <Label Grid.Column="0"
                                Grid.Row="1"
                                Content="Nivel Educativo"
                                HorizontalAlignment="Right"
-                               Style="{ StaticResource Form }"/>
+                               Style="{ StaticResource ResourceKey=Form }"/>
 
                         <ComboBox Grid.Column="1"
                                   Grid.Row="1"
@@ -123,7 +120,7 @@
                                   Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
                     </Grid>
 
-                    <Button Command="{ Binding Path=RegistrarCursoCommand }"
+                    <Button Command="{ Binding Path=RegistrarCommand }"
                             Content="Registrar Curso"
                             HorizontalAlignment="Right"
                             Style="{ StaticResource ResourceKey=Primary }"/>

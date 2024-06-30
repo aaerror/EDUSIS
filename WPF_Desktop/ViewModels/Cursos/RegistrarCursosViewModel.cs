@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using WPF_Desktop.Shared;
 
 namespace WPF_Desktop.ViewModels.Cursos;
@@ -19,9 +18,9 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
     private RegistrarCursoRequest _crearCursoRequest;
     #endregion
 
-    private int _curso;
-    private ComboBoxItem _cursoSelected;
-    private int _nivelEducativo = 0;
+    private int _grado;
+    private string _cursoSelected;
+    private int _nivelEducativo;
     private string _nivelEducativoSelected;
 
     private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
@@ -30,7 +29,7 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
     #region Commands
-    public ViewModelCommand RegistrarCursoCommand { get; }
+    public ViewModelCommand RegistrarCommand { get; }
     #endregion
 
 
@@ -38,59 +37,39 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
     {
         _servicioCursos = servicioCursos;
 
-        RegistrarCursoCommand = new ViewModelCommand(ExecuteRegistrarCursoCommand, CanExecuteRegistrarCursoCommand);
+        RegistrarCommand = new ViewModelCommand(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
 
-        Curso = 0;
+        Grado = 0;
         NivelEducativo = 0;
     }
 
     #region Properties
-    public int Curso
+    public int Grado
     {
         get
         {
-            return _curso;
+            return _grado;
         }
 
         set
         {
-            _errorsByProperty.Remove(nameof(Curso));
-            _curso = value;
-            OnPropertyChanged(nameof(Curso));
+            _errorsByProperty.Remove(nameof(Grado));
+            _grado = value;
+            OnPropertyChanged(nameof(Grado));
 
-            if (Curso < 0)
+            if (Grado is -1)
             {
-                _errorsByProperty.Add(nameof(Curso), new List<string>
+                _errorsByProperty.Add(nameof(Grado), new List<string>
                 {
-                    "Se debe seleccionar el curso que desea seleccionar."
+                    "Se debe seleccionar el grado del curso que desea registrar."
                 });
 
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Curso)));
+                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Grado)));
             }
-
-            /*if (string.IsNullOrWhiteSpace(Descripcion))
-            {
-                _errorsByProperty.Add(nameof(Descripcion), new List<string>
-                {
-                    "Se debe ingresar el nombre del curso que desea agregar."
-                });
-
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Descripcion)));
-            }
-
-            if (!Regex.IsMatch(Descripcion.Trim(), @"^(\d){1}$", RegexOptions.None, TimeSpan.FromMilliseconds(2000)))
-            {
-                _errorsByProperty.Add(nameof(Descripcion), new List<string>
-                {
-                    "Se debe ingresar un dígito como nombre del curso que desea agregar."
-                });
-
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Descripcion)));
-            }*/
         }
     }
 
-    public ComboBoxItem CursoSelected
+    public string GradoSelected
     {
         get
         {
@@ -100,7 +79,7 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
         set
         {
             _cursoSelected = value;
-            OnPropertyChanged(nameof(CursoSelected));
+            OnPropertyChanged(nameof(GradoSelected));
         }
     }
 
@@ -117,11 +96,11 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
             _nivelEducativo = value;
             OnPropertyChanged(nameof(NivelEducativo));
 
-            if (Curso < 0)
+            if (Grado is -1)
             {
                 _errorsByProperty.Add(nameof(NivelEducativo), new List<string>
                 {
-                    "Se debe seleccionar el nivel educativo que desea seleccionar."
+                    "Se debe seleccionar el nivel educativo del curso que desea agregar."
                 });
             }
         }
@@ -146,20 +125,20 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
     public IEnumerable GetErrors(string? propertyName) => _errorsByProperty.GetValueOrDefault(propertyName).AsEnumerable();
     #endregion
 
-    #region RegistrarCursoCommand
-    private bool CanExecuteRegistrarCursoCommand(object obj)
+    #region RegistrarCommand
+    private bool CanExecuteRegistrarCommand(object obj)
     {
         return !HasErrors;
     }
 
-    private void ExecuteRegistrarCursoCommand(object obj)
+    private async void ExecuteRegistrarCommand(object obj)
     {
         string messageBoxText = string.Empty;
         string caption = string.Empty;
         MessageBoxResult result;
 
         messageBoxText = $"Se van a registrar los siguientes datos del nuevo curso:\n" +
-                         $"Nombre: { CursoSelected.Content }\n" +
+                         $"Grado: { GradoSelected }\n" +
                          $"Nivel Educativo: { NivelEducativoSelected }\n\n" +
                          $"¿Desea continuar?";
         caption = "Registrar Curso";
@@ -169,17 +148,14 @@ public class RegistrarCursosViewModel : ViewModel, INotifyDataErrorInfo
         {
             try
             {
-                _crearCursoRequest = new RegistrarCursoRequest((Curso + 1).ToString(), NivelEducativo);
-                _servicioCursos.RegistrarCurso(_crearCursoRequest);
-                MessageBox.Show("Datos guardados correctamente", "Operación exitosa",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
+                _crearCursoRequest = new RegistrarCursoRequest(Grado + 1, NivelEducativo);
+                await _servicioCursos.RegistrarCurso(_crearCursoRequest);
+
+                MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                messageBoxText = $"Error al registrar un nuevo curso. { ex.Message }";
-                caption = "Registrar curso";
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error al registrar un nuevo curso.{ ex.Message }", "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

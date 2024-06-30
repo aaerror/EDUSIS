@@ -31,7 +31,7 @@
         <!-- DETAILS -->
         <Border Grid.Row="2"
                 Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
                 BorderThickness="1"
                 CornerRadius="4"
                 Margin="20 10">
@@ -131,7 +131,7 @@
                                   FontWeight="Normal"
                                   Padding="30 20"
                                   IsEnabled="{ Binding Path=HabilitarPuestoInfo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                  Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }">
+                                  Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Self }, FallbackValue='False', Converter={ StaticResource ResourceKey=Converter } }">
                             <local:PuestoDocenteView DataContext="{ Binding Path=PuestoDocenteViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
                         </GroupBox>
                     </StackPanel>
@@ -140,51 +140,51 @@
                     <StackPanel Grid.Row="3"
                                 Margin="20 10 20 20">
                         <WrapPanel HorizontalAlignment="Right">
-                            <Button Command="{ Binding EliminarCommand }"
+                            <Button Command="{ Binding Path=EliminarCommand }"
                                     CommandParameter="PuestoDocente"
                                     Content="Quitar"
                                     Margin="0 0 0 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                    Style="{ StaticResource Tertiary }"/>
+                                    Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, FallbackValue='False', Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Tertiary }"/>
 
                             <!--#region EDITAR -->
-                            <Button Command="{ Binding EditarCommand }"
+                            <Button Command="{ Binding Path=EditarCommand }"
                                     Content="Cambiar Puesto"
                                     Margin="5 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                    Style="{ StaticResource Secondary }"/>
-                            <Button Command="{ Binding CancelarCommand }"
+                                    Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+                            <Button Command="{ Binding Path=CancelarCommand }"
                                     CommandParameter="Editar"
                                     Content="Cancelar"
                                     Margin="0 0 5 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                    Style="{ StaticResource Secondary }"/>
-                            <Button Command="{ Binding GuardarCommand }"
+                                    Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, FallbackValue='False', Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+                            <Button Command="{ Binding Path=GuardarCommand }"
                                     CommandParameter="Editar"
                                     Content="Guardar"
                                     Margin="5 0 0 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                    Style="{ StaticResource Primary }"/>
+                                    Visibility="{ Binding Path=IsEnabled,RelativeSource={ RelativeSource Mode=Self }, FallbackValue='False', Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
                             <!--#endregion -->
 
                             <!--#region NUEVO -->
-                            <Button Command="{ Binding RegistrarCommand }"
+                            <Button Command="{ Binding Path=RegistrarCommand }"
                                     Content="Registrar Puesto"
                                     Margin="5 0 0 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                    Style="{ StaticResource Secondary }"/>
-                            <Button Command="{ Binding CancelarCommand }"
+                                    Visibility="{ Binding Path=IsEnabled,RelativeSource={ RelativeSource Mode=Self }, FallbackValue='False', Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+                            <Button Command="{ Binding Path=CancelarCommand }"
                                     CommandParameter="Nuevo"
                                     Content="Cancelar"
                                     Margin="0 0 5 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, FallbackValue='False', Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                    Style="{ StaticResource Secondary }"/>
-                            <Button Command="{ Binding GuardarCommand }"
+                                    Visibility="{ Binding Path=IsEnabled,RelativeSource={ RelativeSource Mode=Self }, FallbackValue='False', Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+                            <Button Command="{ Binding Path=GuardarCommand }"
                                     CommandParameter="Nuevo"
                                     Content="Guardar"
                                     Margin="5 0 0 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                    Style="{ StaticResource Primary }"/>
+                                    Visibility="{ Binding Path=IsEnabled,RelativeSource={ RelativeSource Mode=Self }, FallbackValue='False', Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
                             <!--#endregion -->
                         </WrapPanel>
                     </StackPanel>

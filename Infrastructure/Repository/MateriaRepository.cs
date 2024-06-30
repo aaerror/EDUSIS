@@ -1,6 +1,4 @@
 ﻿using Domain.Materias;
-using Domain.Materias.Horarios;
-using Domain.Materias.SituacionRevistaDocente;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
@@ -11,24 +9,30 @@ public class MateriaRepository : Repository<Materia>, IMateriaRepository
 
 
     public MateriaRepository(EdusisDBContext context)
-        : base(context)
-    {}
+        : base(context) { }
 
-    public bool NombreDuplicado(Guid cursoID, string descripcion) =>
-        _context.Materias.Where(x => x.CursoID.Equals(cursoID))
-            .Any(x => x.Descripcion.ToLower().Trim().Equals(descripcion.ToLower().Trim()));
+    public bool NombreDuplicadoEnCurso(Guid cursoID, Guid? materiaID, string descripcion)
+    {
+        if (materiaID.HasValue)
+        {
+            return _context.Materias
+                .Where(x => x.CursoID.Equals(cursoID) && !x.Id.Equals(materiaID) && string.Equals(x.Descripcion.Trim().ToLower(), descripcion.Trim().ToLower()))
+                .Any();
+        }
+        
+        return _context.Materias
+            .Where(x => x.CursoID.Equals(cursoID) && string.Equals(x.Descripcion.Trim().ToLower(), descripcion.Trim().ToLower()))
+            .Any();
+    }
 
-    public IEnumerable<SituacionRevista> HistoricoSituacionRevista(Guid cursoID, Guid materiaID) =>
+    public Materia? BuscarMateria(Guid cursoID, Guid materiaID) =>
         _context.Materias
-            .AsNoTracking()
-            .Where(x => x.CursoID.Equals(cursoID) && x.Id.Equals(materiaID))
-            .Select(x => x.Profesores)
-            .FirstOrDefault();
+            .Find(cursoID, materiaID);
 
-    public IEnumerable<Horario> BuscarHorarios(Guid cursoID, Guid materiaID) =>
+    public IEnumerable<Materia> MateriasSegunCurso(Guid cursoID) =>
         _context.Materias
-            .AsNoTracking()
-            .Where(x => x.CursoID.Equals(cursoID) && x.Id.Equals(materiaID))
-            .Select(x => x.Horarios)
-            .FirstOrDefault();
+            .Include(x => x.Horarios)
+            .Include(x => x.Docentes)
+            .Where(x => x.CursoID.Equals(cursoID))
+            .ToList();
 }

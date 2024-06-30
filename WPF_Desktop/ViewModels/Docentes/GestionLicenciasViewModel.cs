@@ -5,9 +5,7 @@ using Domain.Docentes.Licencias;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Controls;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 
@@ -16,7 +14,7 @@ namespace WPF_Desktop.ViewModels.Docentes;
 public class GestionLicenciasViewModel : ViewModel
 {
     private IServicioDocente _servicioDocentes;
-    private PerfilBuscadoStore _perfilBuscadoStore;
+    private LegajoStore _perfilBuscadoStore;
 
     private bool _habilitarLicenciaViewModel = false;
     private bool _habilitarEdicion = false;
@@ -44,7 +42,7 @@ public class GestionLicenciasViewModel : ViewModel
     #endregion
 
 
-    public GestionLicenciasViewModel(IServicioDocente servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
+    public GestionLicenciasViewModel(IServicioDocente servicioDocentes, LegajoStore perfilBuscadoStore)
     {
         _servicioDocentes = servicioDocentes;
         _perfilBuscadoStore = perfilBuscadoStore;

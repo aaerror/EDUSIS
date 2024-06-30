@@ -1,18 +1,3 @@
-﻿using Core.Shared.DTOs.Personas;
+﻿namespace Core.ServicioAlumnos.DTOs.Requests;
 
-namespace Core.ServicioAlumnos.DTOs.Requests;
-
-public record RegistrarAlumnoRequest
-{
-    public InformacionPersonalDTO InformacionPersonalDTO { get; init; }
-    public DomicilioDTO DomicilioDTO { get; init; }
-    public ContactoDTO ContactoDTO { get; init; }
-
-
-    public RegistrarAlumnoRequest(InformacionPersonalDTO informacionPersonalDTO, DomicilioDTO domicilioDTO, ContactoDTO contactoDTO)
-    {
-        InformacionPersonalDTO = informacionPersonalDTO;
-        DomicilioDTO = domicilioDTO;
-        ContactoDTO = contactoDTO;
-    }
-}
+public record RegistrarAlumnoRequest(string Apellido, string Nombre, string DNI, int Sexo, DateTime FechaNacimiento, string Nacionalidad, string Telefono, string Email, string Calle, string Altura, int Vivienda, string Observacion, string Localidad, string Provincia, string Pais);

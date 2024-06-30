@@ -18,7 +18,7 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
     private IServicioAlumno _servicioAlumnos;
     private INavigationService _registrarAlumnoNavigationService;
     private INavigationService _verPerfilNavigationService;
-    private PerfilBuscadoStore _perfilBuscadoStore;
+    private LegajoStore _perfilBuscadoStore;
 
     private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
     public bool HasErrors => _errorsByProperty.Any();
@@ -42,7 +42,7 @@ public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
     public GestionAlumnosViewModel(IServicioAlumno servicioAlumnos,
                                    INavigationService registrarAlumnoNavigationService,
                                    INavigationService verPerfilNavigationService,
-                                   PerfilBuscadoStore perfilBuscadoStore)
+                                   LegajoStore perfilBuscadoStore)
     {
         _servicioAlumnos = servicioAlumnos;
         _registrarAlumnoNavigationService = registrarAlumnoNavigationService;

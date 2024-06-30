@@ -1,59 +1,48 @@
 ﻿using Domain.Cursos.Divisiones;
 using Domain.Cursos.Divisiones.Cursantes;
-using Domain.Cursos.DomainEvents;
-using Domain.Materias;
-using Domain.Materias.Horarios;
 using Domain.Shared;
-using System.Text.RegularExpressions;
 
 namespace Domain.Cursos;
 
 public class Curso : Entity
 {
-    private List<Guid> _materias = new();
     private List<Division> _divisiones = new();
+    private List<Guid> _materias = new();
 
     // Educación Primaria - Educación Secundaria
     public NivelEducativo NivelEducativo { get; }
-    public string Descripcion { get; private set; } = string.Empty;
+    public Grado Grado { get; private set; }
     public int CantidadDivisiones => _divisiones.Count;
-    public int CantidadMaterias => _materias.Count;
     public int CantidadAlumnos => _divisiones.Sum(x => x.TotalAlumnos);
-    public IReadOnlyCollection<Guid> Materias => _materias.AsReadOnly();
-    public IReadOnlyCollection<Division> Divisiones => _divisiones.AsReadOnly();
+    public IReadOnlyCollection<Division> Divisiones => _divisiones.ToList();
+    public IReadOnlyCollection<Guid> Materias => _materias.ToList();
 
 
-    protected Curso()
-        : base() { }
+    private Curso()
+        : base() {}
 
-    protected Curso(Guid cursoId)
-        : base(cursoId) { }
+    private Curso(Guid cursoId)
+        : base(cursoId) {}
 
-    protected Curso(Guid cursoId, string descripcion, NivelEducativo nivelEducativo)
+    protected Curso(Guid cursoId, Grado grado, NivelEducativo nivelEducativo)
         : this(cursoId)
     {
-        if (string.IsNullOrWhiteSpace(descripcion))
+        /*if (!Regex.IsMatch(grado.Trim(), @"^(\d){1}$", RegexOptions.None))
         {
-            throw new ArgumentNullException("Datos incompletos del nombre del curso.", nameof(descripcion));
-        }
+            throw new ArgumentException("El año/grado debe ser un número.", nameof(grado));
+        }*/
 
-        if (!Regex.IsMatch(descripcion.Trim(), @"^(\d){1}$", RegexOptions.None))
+        /*if (int.Parse(grado) > 7)
         {
-            throw new ArgumentException("El año/grado debe ser un número.", nameof(descripcion));
-        }
+            throw new ArgumentException("El curso máximo en educación es septimo ya sea en educación primaria o secundaria.", nameof(grado));
+        }*/
 
-        if (int.Parse(descripcion) > 7)
-        {
-            throw new ArgumentException("El curso máximo en educación es septimo ya sea en educación primaria o secundaria.", nameof(descripcion));
-        }
-
-        Descripcion = descripcion;
+        Grado = grado;
         NivelEducativo = nivelEducativo;
-        _materias = new List<Guid>();
     }
 
-    public Curso(string descripcion, NivelEducativo nivelEducativo)
-        : this(Guid.NewGuid(), descripcion, nivelEducativo) { }
+    public Curso(Grado grado, NivelEducativo nivelEducativo)
+        : this(Guid.NewGuid(), grado, nivelEducativo) {}
 
     #region Calificacion
     public void AgregarCalificacion(Guid unaDivision, Guid unCursante, Guid unaMateria, bool asistencia, DateTime fecha, Instancia instancia, double? nota)
@@ -64,50 +53,12 @@ public class Curso : Entity
             throw new ArgumentException("No se encontró la división en este curso.", nameof(unaDivision));
         }
 
-        if (!ExisteMateria(unaMateria))
+        /*if (!ExisteMateria(unaMateria))
         {
             throw new ArgumentException("No se encontró la materia en este curso.", nameof(unaDivision));
-        }
+        }*/
 
         division.AgregarCalificacion(unCursante, unaMateria, asistencia, fecha, instancia, nota);
-    }
-    #endregion
-
-    #region Materias
-    private bool ExisteMateria(Guid unaMateria)
-    {
-        if (Guid.Empty.Equals(unaMateria))
-        {
-            throw new ArgumentNullException(nameof(unaMateria), "Debe proporcionar datos de la materia para realizar la búsqueda.");
-        }
-
-        return _materias.Any(x => x.Equals(unaMateria));
-    }
-
-    public void AgregarMateria(Guid nuevaMateria)
-    {
-        if (ExisteMateria(nuevaMateria))
-        {
-            throw new ArgumentException($"La materia ya se encuentra registrada en el curso { Descripcion }° año ({ NivelEducativo })", nameof(nuevaMateria));
-        }
-
-        _materias.Add(nuevaMateria);
-    }
-
-    public void QuitarMateria(Guid aEliminar)
-    {
-        if (Guid.Empty.Equals(aEliminar))
-        {
-            throw new ArgumentNullException(nameof(aEliminar), "Se debe especificar que materia desea eliminar.");
-        }
-
-        if (!ExisteMateria(aEliminar))
-        {
-            throw new ArgumentException($"La materia no se encuentra registrada en el curso { Descripcion } año ({ NivelEducativo })", nameof(aEliminar));
-        }
-
-        _materias.Remove(aEliminar);
-        AgregarEvento(new MateriaEliminadaEvent(aEliminar));
     }
     #endregion
 
@@ -147,7 +98,7 @@ public class Curso : Entity
             siguiente = char.ConvertFromUtf32(char.Parse(division) + 1);
         }
 
-        _divisiones.Add(new Division(Id, siguiente));
+        _divisiones.Add(new Division(siguiente));
     }
 
     public void QuitarDivision(Guid aEliminar)
@@ -165,7 +116,7 @@ public class Curso : Entity
     {
         if (!ExisteDivision(unaDivision))
         {
-            throw new ArgumentException($"No se encuentra la división en el curso {Descripcion}", nameof(unaDivision));
+            throw new ArgumentException($"No se encuentra la división en el curso { Grado.ToString().ToLower() } año.", nameof(unaDivision));
         }
 
         return _divisiones.Find(x => x.Equals(unaDivision)).ListadoAlumnoCicloLectivoEnCurso();
@@ -176,7 +127,7 @@ public class Curso : Entity
         var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
         if (division is null)
         {
-            throw new ArgumentException($"No se encuentra la división en el curso { Descripcion }° Año.", nameof(unaDivision));
+            throw new ArgumentException($"No se encuentra la división en el curso { Grado.ToString().ToLower() } año.", nameof(unaDivision));
         }
 
         return division.ListadoPorPeriodo(periodo);

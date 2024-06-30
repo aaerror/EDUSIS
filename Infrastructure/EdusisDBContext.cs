@@ -5,7 +5,6 @@ using Domain.Materias;
 using Domain.Personas;
 using Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 
 namespace Infrastructure;
 
@@ -20,7 +19,7 @@ public class EdusisDBContext : DbContext
 
 
     public EdusisDBContext(DbContextOptions options)
-        : base(options) { }
+        : base(options) {}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,7 +50,7 @@ public class EdusisDBContext : DbContext
         modelBuilder.ApplyConfiguration(new DivisionesConfigurations());
         modelBuilder.ApplyConfiguration(new UsuariosConfiguration());*/
 
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(EdusisDBContext).Assembly);
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

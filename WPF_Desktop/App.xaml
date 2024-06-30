@@ -17,6 +17,7 @@
                 <ResourceDictionary Source="/Theme/EDUSIS_TextBox.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_DatePicker.xaml"/>
                 <ResourceDictionary Source="/Theme/EDUSIS_DataGrid.xaml"/>
+                <ResourceDictionary Source="/Theme/EDUSIS_ListView.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

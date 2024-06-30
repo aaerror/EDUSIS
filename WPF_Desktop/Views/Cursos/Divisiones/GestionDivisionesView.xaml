@@ -29,13 +29,13 @@
             <StackPanel Grid.Column="0">
                 <WrapPanel HorizontalAlignment="Left"
                            Margin="25 10">
-                    <Button Command="{ Binding Path=ABMCommand }"
-                            CommandParameter="Nueva"
-                            Content="Registrar División"
+                    <Button Command="{ Binding Path=RegistrarCommand }"
+                            CommandParameter="Division"
+                            Content="Agregar División"
                             Margin="0 0 5 0"
                             Style="{ StaticResource ResourceKey=Secondary }"/>
-                    <Button Command="{ Binding Path=ABMCommand }"
-                            CommandParameter="Eliminar"
+                    <Button Command="{ Binding Path=EliminarCommand }"
+                            CommandParameter="Division"
                             Content="Quitar División"
                             Margin="5 0 0 0"
                             Style="{ StaticResource ResourceKey=Secondary }"/>
@@ -81,10 +81,38 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0"
-                                Margin="0 10">
-                        <Label Content="DIVISIONES"
-                               Style="{ StaticResource ResourceKey=Headline }"/>
-                        <Separator Background="{ StaticResource Gray400 }"
+                                Margin="0 10"
+                                VerticalAlignment="Center">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <Label Grid.Column="0"
+                                   Content="{ Binding Path=Curso, FallbackValue='Sin datos', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                   ContentStringFormat="Divisiones de {0}"
+                                   Style="{ StaticResource ResourceKey=Headline }"/>
+                            <StackPanel Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center">
+                                <WrapPanel>
+                                    <Label Content="Nivel Educativo: "
+                                           Style="{ StaticResource ResourceKey=Caption }"/>
+                                    <Label Content="{ Binding Path=CursoNivelEducativo, FallbackValue='Sin datos', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                           HorizontalAlignment="Center"
+                                           Style="{ StaticResource ResourceKey=Caption }"/>
+                                </WrapPanel>
+                                <WrapPanel>
+                                    <Label Content="Cant. Divisiones: "
+                                           Style="{ StaticResource ResourceKey=Caption }"/>
+                                    <Label Content="{ Binding Path=TotalDivisiones, FallbackValue='Sin datos', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                                           Style="{ StaticResource ResourceKey=Caption }"/>
+                                </WrapPanel>
+                            </StackPanel>
+                            
+                        </Grid>
+                        <Separator Background="{ StaticResource ResourceKey=Gray400 }"
                                    Height=".8"
                                    Width="Auto"/>
                     </StackPanel>
@@ -93,22 +121,19 @@
                         <DataGrid x:Name="DataGrid_Divisiones"
                                   ItemsSource="{ Binding Path=Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
                                   SelectedItem="{ Binding Path=Division, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
-                                  AutoGenerateColumns="False"
-                                  HorizontalContentAlignment="Center"
+                                  HorizontalAlignment="Center"
                                   IsSynchronizedWithCurrentItem="True"
                                   Margin="0 0 0 10"
                                   Style="{ StaticResource ResourceKey=DataGrid }">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="CursoID"
-                                                    Binding="{ Binding Path=CursoID, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
-                                                    Visibility="Hidden"
-                                                    Width="Auto"/>
-                                <DataGridTextColumn Header="Curso"
-                                                    Binding="{ Binding Path=CursoDescripcion, Mode=OneTime, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0}° Año}"
-                                                    Width="Auto"/>
                                 <DataGridTextColumn Header="División"
-                                                    Binding="{ Binding Path=DivisionDescripcion, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
-                                                    Width="Auto"/>
+                                                    Binding="{ Binding Path=Descripcion, FallbackValue='División sin detalles', TargetNullValue='Sin datos de la división', Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
+                                                    Width="*"/>
+                                <DataGridTextColumn Header="Preceptor"
+                                                    Binding="{ Binding Path=Preceptor, FallbackValue='Sin datos del preceptor', TargetNullValue='Preceptor no asignado', Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
+                                                    Width="3*">
+                                    
+                                </DataGridTextColumn>
                             </DataGrid.Columns>
                         </DataGrid>
 

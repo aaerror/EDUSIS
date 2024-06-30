@@ -1,6 +1,5 @@
 ﻿using Core.ServicioAlumnos;
 using Core.ServicioAlumnos.DTOs.Requests;
-using Core.Shared.DTOs.Personas;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,6 +14,8 @@ using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using System.Text.RegularExpressions;
 using Core.ServicioCursos.DTOs.Requests;
+using Core.Shared.DTOs.Personas.Requests;
+using Core.Shared.DTOs.Personas.Responses;
 
 namespace WPF_Desktop.ViewModels.Alumnos;
 
@@ -25,38 +26,21 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
 
     #region Request
     private CrearCursanteRequest _crearCursanteRequest;
+    private RegistrarInformacionPersonalRequest _informacionPersonalRequest;
+    private RegistrarContactoRequest _contactoRequest;
+    private RegistrarDomicilioRequest _domicilioRequest;
     #endregion
 
-    private Guid alumnoID = Guid.Empty;
-    private InformacionPersonalDTO _informacionPersonalDTO;
-    private ContactoDTO _contactoDTO;
-    private DomicilioDTO _domicilioDTO;
-
-    private string _periodo;
+    #region ViewModel
     private InformacionPersonalViewModel _informacionPersonalViewModel;
     private DomicilioViewModel _domicilioViewModel;
     private ContactoViewModel _contactoViewModel;
-
     private CursoViewModel _cursoViewModel;
     private DivisionViewModel _divisionViewModel;
+    #endregion
 
-    /*
-        private string _apellido = string.Empty;
-        private string _nombre = string.Empty;
-        private string _documento = string.Empty;
-        private int _sexo;
-        private DateTime _fechaNacimento = DateTime.Today.Date;
-        private string _nacionalidad = "Argentina";
-        private string _email = string.Empty;
-        private string _telefono = string.Empty;
-        private string _calle = string.Empty;
-        private string _altura = string.Empty;
-        private int _vivienda;
-        private string _observaciones = string.Empty;
-        private string _localidad = string.Empty;
-        private string _provincia = string.Empty;
-        private string _pais = "Argentina";
-    */
+    private Guid alumnoID = Guid.Empty;
+    private string _periodo;
 
     private int _tab = 0;
 
@@ -80,9 +64,9 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
         _servicioAlumnos = servicioAlumnos;
         _servicioCursos = servicioCursos;
 
-        _informacionPersonalViewModel = new(_informacionPersonalDTO);
-        _domicilioViewModel = new(_domicilioDTO);
-        _contactoViewModel = new(_contactoDTO);
+        _informacionPersonalViewModel = new(null);
+        _domicilioViewModel = new(null);
+        _contactoViewModel = new(null);
 
         ActualizarCursos();
 
@@ -93,7 +77,7 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
 
     private void ActualizarCursos()
     {
-        var cursos = _servicioCursos.BuscarCursos();
+        var cursos = _servicioCursos.ListarCursos();
         _cursos = new ObservableCollection<CursoViewModel>(cursos.Select(x => new CursoViewModel(x)));
     }
 
@@ -274,68 +258,91 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
         string caption = string.Empty;
         MessageBoxResult result;
 
-        if (string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Documento) || string.IsNullOrWhiteSpace(DomicilioViewModel.Calle) ||
-            string.IsNullOrWhiteSpace(DomicilioViewModel.Localidad) || string.IsNullOrWhiteSpace(DomicilioViewModel.Provincia) || string.IsNullOrWhiteSpace(ContactoViewModel.Telefono) || string.IsNullOrWhiteSpace(ContactoViewModel.Email))
+        if (string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.DNI) || string.IsNullOrWhiteSpace(DomicilioViewModel.Calle) || string.IsNullOrWhiteSpace(DomicilioViewModel.Localidad) || string.IsNullOrWhiteSpace(DomicilioViewModel.Provincia) || string.IsNullOrWhiteSpace(ContactoViewModel.Telefono) || string.IsNullOrWhiteSpace(ContactoViewModel.Email))
         {
             messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
             caption = "Error al Registrar un Docente";
             MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
-            InformacionPersonalViewModel = new InformacionPersonalViewModel(new InformacionPersonalDTO(string.Empty,
-                                                                                                       string.Empty,
-                                                                                                       string.Empty,
-                                                                                                       0,
-                                                                                                       DateTime.Now,
-                                                                                                       string.Empty));
-            DomicilioViewModel = new DomicilioViewModel(new DomicilioDTO(string.Empty,
-                                                                         string.Empty,
-                                                                         0,
-                                                                         string.Empty,
-                                                                         string.Empty,
-                                                                         string.Empty,
-                                                                         string.Empty));
-            ContactoViewModel = new ContactoViewModel(new ContactoDTO(string.Empty, string.Empty));
+            InformacionPersonalViewModel = new InformacionPersonalViewModel(
+                new InformacionPersonalResponse(
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    DateTime.Now,
+                    string.Empty));
+
+            DomicilioViewModel = new DomicilioViewModel(
+                new DomicilioResponse(
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty));
+
+            ContactoViewModel = new ContactoViewModel(
+                new ContactoResponse(string.Empty, string.Empty));
 
             return;
         }
         else
         {
-            messageBoxText = $"¿Está seguro que desea registrar los datos del alumno {InformacionPersonalViewModel.Apellido}, {InformacionPersonalViewModel.Nombre}?";
+            messageBoxText = $"¿Está seguro que desea registrar los datos del alumno { InformacionPersonalViewModel.Apellido }, { InformacionPersonalViewModel.Nombre }?";
             caption = "Registrar Alumno";
             result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result is MessageBoxResult.Yes)
             {
-                var requestInformacionPersonal = new InformacionPersonalDTO(InformacionPersonalViewModel.Apellido,
-                                                                            InformacionPersonalViewModel.Nombre,
-                                                                            InformacionPersonalViewModel.Documento,
-                                                                            InformacionPersonalViewModel.Sexo,
-                                                                            InformacionPersonalViewModel.FechaNacimiento,
-                                                                            InformacionPersonalViewModel.Nacionalidad);
+                var requestInformacionPersonal = new RegistrarInformacionPersonalRequest(
+                    InformacionPersonalViewModel.Apellido,
+                    InformacionPersonalViewModel.Nombre,
+                    InformacionPersonalViewModel.DNI,
+                    InformacionPersonalViewModel.Sexo,
+                    InformacionPersonalViewModel.FechaNacimiento,
+                    InformacionPersonalViewModel.Nacionalidad);
 
-                var requestDomicilio = new DomicilioDTO(DomicilioViewModel.Calle,
-                                                        DomicilioViewModel.Altura,
-                                                        DomicilioViewModel.Vivienda,
-                                                        DomicilioViewModel.Observaciones,
-                                                        DomicilioViewModel.Localidad,
-                                                        DomicilioViewModel.Provincia,
-                                                        DomicilioViewModel.Pais);
+                var requestDomicilio = new RegistrarDomicilioRequest(
+                    DomicilioViewModel.Calle,
+                    DomicilioViewModel.Altura,
+                    DomicilioViewModel.Vivienda,
+                    DomicilioViewModel.Observaciones,
+                    DomicilioViewModel.Localidad,
+                    DomicilioViewModel.Provincia,
+                    DomicilioViewModel.Pais);
 
-                var requestContacto = new ContactoDTO(ContactoViewModel.Telefono, ContactoViewModel.Email);
+                var requestContacto = new RegistrarContactoRequest(ContactoViewModel.Telefono, ContactoViewModel.Email);
 
                 try
                 {
                     if (_servicioAlumnos.EsDocumentoInvalido(requestInformacionPersonal.Documento))
                     {
-                        messageBoxText = $"El número de documento ({requestInformacionPersonal.Documento}) ya se encuentra registrado con otra persona.";
+                        messageBoxText = $"El número de documento ({ requestInformacionPersonal.Documento }) ya se encuentra registrado con otra persona.";
                         caption = "Error";
                         MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-                        InformacionPersonalViewModel.Documento = string.Empty;
+                        InformacionPersonalViewModel.DNI = string.Empty;
 
                         return;
                     }
 
-                    var request = new RegistrarAlumnoRequest(requestInformacionPersonal, requestDomicilio, requestContacto);
+                    var request = new RegistrarAlumnoRequest(
+                        Apellido: InformacionPersonalViewModel.Apellido,
+                        Nombre: InformacionPersonalViewModel.Nombre,
+                        DNI: InformacionPersonalViewModel.DNI,
+                        Sexo: InformacionPersonalViewModel.Sexo,
+                        FechaNacimiento: InformacionPersonalViewModel.FechaNacimiento,
+                        Nacionalidad: InformacionPersonalViewModel.Nacionalidad,
+                        Telefono: ContactoViewModel.Telefono,
+                        Email: ContactoViewModel.Email,
+                        Calle: DomicilioViewModel.Calle,
+                        Altura: DomicilioViewModel.Altura,
+                        Vivienda: DomicilioViewModel.Vivienda,
+                        Observacion: DomicilioViewModel.Observaciones,
+                        Localidad: DomicilioViewModel.Localidad,
+                        Provincia: DomicilioViewModel.Provincia,
+                        Pais: DomicilioViewModel.Pais);
                     alumnoID = await _servicioAlumnos.RegistrarAlumnoAsync(request);
 
                     messageBoxText = $"Se han registrado los datos de un nuevo alumno.";
@@ -383,8 +390,8 @@ public class RegistrarAlumnoViewModel : ViewModel, INotifyDataErrorInfo
         }
 
         messageBoxText = $"Está a punto de inscribir a { InformacionPersonalViewModel.Apellido } { InformacionPersonalViewModel.Nombre } en:\n" +
-                         $"\tCurso: { CursoViewModel.Descripcion }° Año ({ CursoViewModel.NivelEducativo })\n"+
-                         $"\tDivisión: { DivisionViewModel.DivisionDescripcion }\n"+
+                         $"\tCurso: { CursoViewModel.GradoDescripcion }° Año ({ CursoViewModel.NivelEducativo })\n"+
+                         $"\tDivisión: { DivisionViewModel.Descripcion }\n"+
                          $"\tCiclo Lectivo: { Periodo }\n\n"+
                          $"¿Desea continuar?";
         caption = "Inscripción del Alumno";

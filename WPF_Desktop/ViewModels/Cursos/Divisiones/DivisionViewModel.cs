@@ -1,6 +1,5 @@
 ﻿using Core.ServicioCusos.DTOs.Responses;
 using System;
-using System.Windows.Forms;
 using WPF_Desktop.Shared;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
@@ -11,74 +10,25 @@ public class DivisionViewModel : ViewModel
     private DivisionResponse _divisionResponse;
     #endregion
 
-    private Guid _cursoID;
-    private string _cursoDescripcion;
-    private string _nivelEducativo;
     private Guid _divisionID;
-    private string _divisionDescripcion;
+    private string _descripcion;
+    private string _preceptor;
     private string _alumnos;
 
 
     public DivisionViewModel(DivisionResponse divisionResponse)
     {
-        CursoDescripcion = string.Empty;
-        NivelEducativo = string.Empty;
-        DivisionDescripcion = string.Empty;
-
         if (divisionResponse is not null)
         {
             _divisionResponse = divisionResponse;
-            CursoID = divisionResponse.CursoID;
-            CursoDescripcion = divisionResponse.CursoDescripcion;
-            NivelEducativo = divisionResponse.NivelEducativo;
-            DivisionID = divisionResponse.DivisionID;
-            DivisionDescripcion = divisionResponse.DivisionDescripcion;
-            Alumnos = divisionResponse.Alumnos.ToString();
+            DivisionID = _divisionResponse.DivisionID;
+            Descripcion = _divisionResponse.Descripcion;
+            Preceptor = _divisionResponse.Preceptor;
+            Alumnos = _divisionResponse.Alumnos.ToString();
         }
     }
 
     #region Properties
-    public Guid CursoID
-    {
-        get
-        {
-            return _cursoID;
-        }
-
-        set
-        {
-            _cursoID = value;
-            OnPropertyChanged(nameof(CursoID));
-        }
-    }
-
-    public string CursoDescripcion
-    {
-        get
-        {
-            return _cursoDescripcion;
-        }
-
-        set
-        {
-            _cursoDescripcion = value;
-            OnPropertyChanged(nameof(CursoDescripcion));
-        }
-    }
-
-    public string NivelEducativo
-    {
-        get
-        {
-            return _nivelEducativo;
-        }
-
-        set
-        {
-            _nivelEducativo = value;
-            OnPropertyChanged(nameof(NivelEducativo));
-        }
-    }
 
     public Guid DivisionID
     {
@@ -94,17 +44,31 @@ public class DivisionViewModel : ViewModel
         }
     }
 
-    public string DivisionDescripcion
+    public string Descripcion
     {
         get
         {
-            return _divisionDescripcion;
+            return _descripcion;
         }
 
         set
         {
-            _divisionDescripcion = value;
-            OnPropertyChanged(nameof(DivisionDescripcion));
+            _descripcion = value;
+            OnPropertyChanged(nameof(Descripcion));
+        }
+    }
+
+    public string Preceptor
+    {
+        get
+        {
+            return _preceptor;
+        }
+
+        set
+        {
+            _preceptor = value;
+            OnPropertyChanged(nameof(Preceptor));
         }
     }
 

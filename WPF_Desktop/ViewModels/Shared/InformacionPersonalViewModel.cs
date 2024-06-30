@@ -1,4 +1,4 @@
-﻿using Core.Shared.DTOs.Personas;
+﻿using Core.Shared.DTOs.Personas.Responses;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,9 +13,9 @@ public class InformacionPersonalViewModel : ViewModel, INotifyDataErrorInfo
 {
     private string _apellido = string.Empty;
     private string _nombre = string.Empty;
-    private string _documento = string.Empty;
+    private string _dni = string.Empty;
     private int _sexo = 0;
-    private DateTime _fechaNacimento = DateTime.Now;
+    private DateTime _fechaNacimento = DateTime.Now.Date;
     private string _nacionalidad = "Argentina";
 
     private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
@@ -24,16 +24,16 @@ public class InformacionPersonalViewModel : ViewModel, INotifyDataErrorInfo
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
 
-    public InformacionPersonalViewModel(InformacionPersonalDTO informacionPersonalDTO)
+    public InformacionPersonalViewModel(InformacionPersonalResponse informacionPersonalResponse)
     {
-        if (informacionPersonalDTO is not null)
+        if (informacionPersonalResponse is not null)
         {
-            Apellido = informacionPersonalDTO.Apellido;
-            Nombre = informacionPersonalDTO.Nombre;
-            Documento = informacionPersonalDTO.Documento;
-            Sexo = informacionPersonalDTO.Sexo;
-            FechaNacimiento = informacionPersonalDTO.FechaNacimiento;
-            Nacionalidad = informacionPersonalDTO.Nacionalidad;
+            Apellido = informacionPersonalResponse.Apellido;
+            Nombre = informacionPersonalResponse.Nombre;
+            DNI = informacionPersonalResponse.DNI;
+            Sexo = informacionPersonalResponse.Sexo;
+            FechaNacimiento = informacionPersonalResponse.FechaNacimiento;
+            Nacionalidad = informacionPersonalResponse.Nacionalidad;
         }
     }
 
@@ -88,41 +88,41 @@ public class InformacionPersonalViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public string Documento
+    public string DNI
     {
         get
         {
-            return _documento;
+            return _dni;
         }
 
         set
         {
-            _errorsByProperty.Remove(nameof(Documento));
-            _documento = value;
-            OnPropertyChanged(nameof(Documento));
+            _errorsByProperty.Remove(nameof(DNI));
+            _dni = value;
+            OnPropertyChanged(nameof(DNI));
 
-            if (string.IsNullOrWhiteSpace(Documento))
+            if (string.IsNullOrWhiteSpace(DNI))
             {
-                _errorsByProperty.Add(nameof(Documento), new List<string>
+                _errorsByProperty.Add(nameof(DNI), new List<string>
                 {
                     "Se debe ingresar el número de documento."
                 });
 
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Documento)));
+                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(DNI)));
             }
             else
             {
                 /**
                  * A través de una regular expression verificamos que el dato ingresado sea un número
                  */
-                if (!Regex.IsMatch(Documento, @"^(\d){8}$", RegexOptions.None, TimeSpan.FromMilliseconds(2500)))
+                if (!Regex.IsMatch(DNI, @"^(\d){8}$", RegexOptions.None, TimeSpan.FromMilliseconds(2500)))
                 {
-                    _errorsByProperty.Add(nameof(Documento), new List<string>
+                    _errorsByProperty.Add(nameof(DNI), new List<string>
                     {
                         "Formato de número de documento inválido. Se debe ingresar un número de ocho dígitos."
                     });
 
-                    ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Documento)));
+                    ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(DNI)));
                 }
 
                 /*var esValido = _servicioAlumno.EsDocumentoValido(Documento);

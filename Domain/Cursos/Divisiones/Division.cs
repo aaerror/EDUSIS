@@ -10,22 +10,21 @@ public class Division : Entity
     private const int MAX_ALUMNOS = 35;
     private const int MIN_ALUMNOS = 15;
 
-    private List<Cursante> _listadosDefinitivos = new();
+    private List<Cursante> _cursantes = new();
 
-    public Guid CursoID { get; private set; }
     public string Descripcion { get; private set; } = string.Empty;
     public Guid? Preceptor { get; private set; }
-    public int TotalAlumnos => _listadosDefinitivos.Count;
-    public IReadOnlyCollection<Cursante> ListadosDefinitivos => _listadosDefinitivos.AsReadOnly();
+    public int TotalAlumnos => _cursantes.Count;
+    public IReadOnlyCollection<Cursante> Cursantes => _cursantes.ToList();
 
 
-    protected Division()
+    private Division()
         : base() {}
+    
+    private Division(Guid divisionID)
+        : base(divisionID) {}
 
-    protected Division(Guid divisionID)
-        : base(divisionID) { }
-
-    public Division(Guid cursoID, string descripcion)
+    public Division(string descripcion)
         : this(Guid.NewGuid())
     {
         if (string.IsNullOrWhiteSpace(descripcion))
@@ -38,7 +37,6 @@ public class Division : Entity
             throw new ArgumentException("La división del curso debe ser una letra.", nameof(descripcion));
         }
 
-        CursoID = cursoID;
         Descripcion = descripcion.ToUpper();
     }
 
@@ -79,7 +77,7 @@ public class Division : Entity
     #region Alumnos
     private Cursante BuscarCursante(Guid unCursante)
     {
-        var cursante = _listadosDefinitivos.Where(x => x.Id.Equals(unCursante))
+        var cursante = _cursantes.Where(x => x.Id.Equals(unCursante))
                                            .FirstOrDefault();
         if (cursante is null)
         {
@@ -96,7 +94,7 @@ public class Division : Entity
             throw new NullReferenceException($"Datos incompletos o inexistentes para comprobar si el alumno se encuentra registrado en la división.");
         }
 
-        return _listadosDefinitivos.Exists(x => x.AlumnoID.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo));
+        return _cursantes.Exists(x => x.AlumnoID.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo));
     }
 
     public void AgregarCursante(Guid unAlumno, string periodo)
@@ -107,31 +105,31 @@ public class Division : Entity
             throw new ArgumentException($"El alumno ya se encuentra registrado en el ciclo lectivo { periodo } para esta división.", nameof(unAlumno));
         }
 
-        var nuevoCursante = new Cursante(Id, unAlumno, cicloLectivo);
-        _listadosDefinitivos.Add(nuevoCursante);
+        var nuevoCursante = new Cursante(unAlumno, cicloLectivo);
+        _cursantes.Add(nuevoCursante);
     }
 
     public void QuitarCursante(Guid unAlumno, string periodo)
     {
         var cicloLectivo = CicloLectivo.Crear(periodo);
-        var cursante = _listadosDefinitivos.Find(x => x.Id.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo));
+        var cursante = _cursantes.Find(x => x.Id.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo));
         if (cursante is null)
         {
             throw new ArgumentException("El alumno no se encuentra registrado en esta división o en el ciclo lectivo seleccionado.", nameof(unAlumno));
         }
 
-        _listadosDefinitivos.Remove(cursante);
+        _cursantes.Remove(cursante);
     }
 
     public IReadOnlyCollection<Guid> ListadoAlumnoCicloLectivoEnCurso()
     {
-        return _listadosDefinitivos.Where(x => x.CicloLectivo.AñoEnCurso())
+        return _cursantes.Where(x => x.CicloLectivo.AñoEnCurso())
                                    .Select(x => x.AlumnoID).ToList().AsReadOnly();
     }
 
     public IReadOnlyCollection<Guid> ListadoPorPeriodo(string periodo)
     {
-        return _listadosDefinitivos.Where(x => x.CicloLectivo.Equals(CicloLectivo.Crear(periodo)))
+        return _cursantes.Where(x => x.CicloLectivo.Equals(CicloLectivo.Crear(periodo)))
                                    .Select(x => x.AlumnoID)
                                    .ToList()
                                    .AsReadOnly();
@@ -142,7 +140,7 @@ public class Division : Entity
     public IReadOnlyCollection<Calificacion> NotasDelAlumno(Guid unAlumno, string periodo)
     {
         var cicloLectivo = CicloLectivo.Crear(periodo);
-        var cursante = _listadosDefinitivos.Where(x => x.AlumnoID.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo))
+        var cursante = _cursantes.Where(x => x.AlumnoID.Equals(unAlumno) && x.CicloLectivo.Equals(cicloLectivo))
                                            .FirstOrDefault();
         if (cursante is null)
         {
@@ -155,7 +153,7 @@ public class Division : Entity
     public void AgregarCalificacion(Guid unCursante, Guid unaMateria, bool asistencia, DateTime fecha, Instancia instancia, double? nota)
     {
         var cursante = BuscarCursante(unCursante);
-        var nuevaCalificacion = Calificacion.Crear(CursoID, unaMateria, asistencia, fecha, instancia, nota);
+        var nuevaCalificacion = Calificacion.Crear(unaMateria, asistencia, fecha, instancia, nota);
         cursante.AgregarCalificacion(nuevaCalificacion);
     }
 

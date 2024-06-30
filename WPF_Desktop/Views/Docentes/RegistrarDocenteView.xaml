@@ -108,7 +108,7 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10 5 10 10">
                             <!-- ALTA EN INSTITUCIÓN -->
-                            <local:DocenteInstitucionalView DataContext="{ Binding Path=DocenteInstitucionalViewModel, Mode=TwoWay }"/>
+                            <local:LegajoDocenteView DataContext="{ Binding Path=DocenteInstitucionalViewModel, Mode=TwoWay }"/>
 
 
                             <!-- PUESTO EN LA INSTITUCIÓN -->

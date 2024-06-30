@@ -18,7 +18,7 @@ public class PerfilAlumnoViewModel : ViewModel
     private ContactoRequest _datosContactoTemporal;
     private CambiarSexoRequest _datosSexoTemporal;
 
-    private PerfilBuscadoStore _perfilBuscadoStore;
+    private LegajoStore _perfilBuscadoStore;
 
     private bool _habilitarEditarContacto = false;
     private bool _habilitarEditarDomicilio = false;
@@ -31,7 +31,7 @@ public class PerfilAlumnoViewModel : ViewModel
     #endregion
 
 
-    public PerfilAlumnoViewModel(IServicioAlumno servicioAlumno, PerfilBuscadoStore perfilBuscadoStore)
+    public PerfilAlumnoViewModel(IServicioAlumno servicioAlumno, LegajoStore perfilBuscadoStore)
     {
         _servicioAlumno = servicioAlumno;
         _perfilBuscadoStore = perfilBuscadoStore;

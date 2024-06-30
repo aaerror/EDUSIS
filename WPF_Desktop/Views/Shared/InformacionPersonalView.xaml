@@ -30,7 +30,7 @@
                    Margin="4 0 0 0"
                    Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar el apellido&#x2026;"
-                     Text="{ Binding Path=Apellido, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Text="{ Binding Path=Apellido, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                      Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
@@ -41,7 +41,7 @@
                    Margin="4 0 0 0"
                    Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar el nombre&#x2026;"
-                     Text="{ Binding Path=Nombre, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Text="{ Binding Path=Nombre, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                      Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
@@ -52,7 +52,7 @@
                    Margin="4 0 0 0"
                    Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar el documento&#x2026;"
-                     Text="{ Binding Path=Documento, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Text="{ Binding Path=DNI, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                      Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
@@ -89,7 +89,7 @@
                    Margin="4 0 0 0"
                    Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar la nacionalidad&#x2026;"
-                     Text="{ Binding Path=Nacionalidad, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Text="{ Binding Path=Nacionalidad, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                      Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
     </StackPanel>

@@ -13,10 +13,10 @@ namespace WPF_Desktop.ViewModels.Docentes;
 public class PerfilDocenteViewModel : ViewModel
 {
     private readonly IServicioDocente _servicioDocentes;
-    private PerfilBuscadoStore _perfilBuscadoStore;
+    private LegajoStore _perfilBuscadoStore;
 
-    private readonly DocenteConDetalleResponse _docenteTemporal = null;
-    private DocenteConDetalleResponse _docente = null;
+    private readonly PerfilPersonalDeDocenteResponse _docenteTemporal = null;
+    private PerfilPersonalDeDocenteResponse _docente = null;
     private CambiarSexoRequest _cambiarSexoRequest = null;
     private CambiarContactoRequest _cambiarContactoRequest = null;
     private CambiarDomicilioRequest _cambiarDomicilioRequest = null;
@@ -32,7 +32,7 @@ public class PerfilDocenteViewModel : ViewModel
     #endregion
 
 
-    public PerfilDocenteViewModel(IServicioDocente servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
+    public PerfilDocenteViewModel(IServicioDocente servicioDocentes, LegajoStore perfilBuscadoStore)
     {
         _servicioDocentes = servicioDocentes;
         _perfilBuscadoStore = perfilBuscadoStore;
@@ -42,7 +42,7 @@ public class PerfilDocenteViewModel : ViewModel
             throw new ArgumentNullException(nameof(perfilBuscadoStore.Documento), "Error al ver el perfil del docente. Primero debe buscar un docente antes de continuar.");
         }
 
-        _docenteTemporal = _servicioDocentes.BuscarDocenteConDetalle(_perfilBuscadoStore.PersonaID);
+        _docenteTemporal = _servicioDocentes.BuscarPerfilPersonalDelDocente(_perfilBuscadoStore.PersonaID);
         Docente = _docenteTemporal;
 
         EditarCommand = new ViewModelCommand(EditarCommandExecute, EditarCommandCanExecute);
@@ -51,7 +51,7 @@ public class PerfilDocenteViewModel : ViewModel
     }
 
     #region Properties
-    public DocenteConDetalleResponse Docente
+    public PerfilPersonalDeDocenteResponse Docente
     {
         get
         {

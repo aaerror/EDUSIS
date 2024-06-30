@@ -2,23 +2,23 @@
 using Core.ServicioCursos.DTOs.Responses;
 using Core.ServicioCusos.DTOs.Responses;
 
-namespace Core.ServicioCursos
+namespace Core.ServicioCursos;
+
+public interface IServicioCurso
 {
-    public interface IServicioCurso
-    {
-        Task RegistrarCurso(RegistrarCursoRequest request);
-        IReadOnlyCollection<CursoResponse> BuscarCursos();
+    IReadOnlyCollection<CursoResponse> ListarCursos();
+    Task RegistrarCurso(RegistrarCursoRequest request);
+    void EliminarCurso(EliminarCursoRequest request);
 
-        #region Divisiones
-        IReadOnlyCollection<DivisionResponse> BuscarDivisiones(Guid unCurso);
-        IReadOnlyCollection<CursanteResponse> BuscarListado(BuscarListadoRequest request);
-        void InscribirAlumnoEnDivision(CrearCursanteRequest request);
-        void AgregarDivisionAlCurso(Guid unCurso);
-        void QuitarDivisiosDelCurso(EliminarDivisionRequest request);
-        #endregion
+    #region Divisiones
+    IReadOnlyCollection<DivisionResponse> BuscarDivisiones(Guid unCurso);
+    IReadOnlyCollection<CursanteResponse> BuscarListado(BuscarListadoRequest request);
+    void InscribirAlumnoEnDivision(CrearCursanteRequest request);
+    void AgregarDivisionAlCurso(Guid unCurso);
+    void QuitarDivisiosDelCurso(EliminarDivisionRequest request);
+    #endregion
 
-        #region Calificación
-        void RegistrarCalificacion(CrearCalificationRequest request);
-        #endregion
-    }
+    #region Calificación
+    void RegistrarCalificacion(CrearCalificationRequest request);
+    #endregion
 }

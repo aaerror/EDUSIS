@@ -1,0 +1,91 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style x:Key="LV_ScrollViewer" TargetType="{ x:Type TypeName=ScrollViewer }">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollViewer">
+                    <Grid Background="{ TemplateBinding Property=Background }">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Margin="{ TemplateBinding Property=Padding }">
+                            <ScrollViewer DockPanel.Dock="Top"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden"
+                                          Focusable="false">
+                                <GridViewHeaderRowPresenter Margin="2 0 2 0"
+                                                            Columns="{ Binding Path=TemplatedParent.View.Columns, RelativeSource={ RelativeSource Mode=TemplatedParent } }"
+                                                            ColumnHeaderContainerStyle="{ Binding Path=TemplatedParent.View.ColumnHeaderContainerStyle, RelativeSource={ RelativeSource Mode=TemplatedParent } }"
+                                                            ColumnHeaderTemplate="{ Binding Path=TemplatedParent.View.ColumnHeaderTemplate, RelativeSource={ RelativeSource Mode=TemplatedParent } }"
+                                                            ColumnHeaderTemplateSelector="{ Binding  Path=TemplatedParent.View.ColumnHeaderTemplateSelector, RelativeSource={ RelativeSource Mode=TemplatedParent } }"
+                                                            AllowsColumnReorder="{ Binding Path=TemplatedParent.View.AllowsColumnReorder, RelativeSource={ RelativeSource Mode=TemplatedParent } }"
+                                                            ColumnHeaderContextMenu="{ Binding Path=TemplatedParent.View.ColumnHeaderContextMenu, RelativeSource={ RelativeSource Mode=TemplatedParent } }"
+                                                            ColumnHeaderToolTip="{ Binding Path=TemplatedParent.View.ColumnHeaderToolTip, RelativeSource={ RelativeSource Mode=TemplatedParent } }"
+                                                            SnapsToDevicePixels="{ TemplateBinding Property=SnapsToDevicePixels }"/>
+                            </ScrollViewer>
+
+                            <ScrollContentPresenter Name="PART_ScrollContentPresenter"
+                                                    KeyboardNavigation.DirectionalNavigation="Local"
+                                                    CanContentScroll="True"
+                                                    CanHorizontallyScroll="False"
+                                                    CanVerticallyScroll="False"/>
+                            </DockPanel>
+
+                        <ScrollBar Name="PART_HorizontalScrollBar"
+                                   Orientation="Horizontal"
+                                   Grid.Row="1"
+                                   Maximum="{ TemplateBinding Property=ScrollableWidth }"
+                                   ViewportSize="{ TemplateBinding Property=ViewportWidth }"
+                                   Value="{ TemplateBinding HorizontalOffset }"
+                                   Visibility="{ TemplateBinding Property=ComputedHorizontalScrollBarVisibility }"/>
+
+                        <ScrollBar Name="PART_VerticalScrollBar"
+                                   Grid.Column="1"
+                                   Maximum="{ TemplateBinding Property=ScrollableHeight }"
+                                   ViewportSize="{ TemplateBinding Property=ViewportHeight }"
+                                   Value="{ TemplateBinding Property=VerticalOffset }"
+                                   Visibility="{ TemplateBinding Property=ComputedVerticalScrollBarVisibility }"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ListViewStyle" TargetType="{ x:Type TypeName=ListView }">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+        <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+        <Setter Property="SelectionMode" Value="Single"/>
+        <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListView">
+                    <Border x:Name="Border"
+                            Background="{ StaticResource ResourceKey=Neutral100 }"
+                            BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            HorizontalAlignment="Stretch"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer Style="{ StaticResource ResourceKey=LV_ScrollViewer }">
+                            <ItemsPresenter/>
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

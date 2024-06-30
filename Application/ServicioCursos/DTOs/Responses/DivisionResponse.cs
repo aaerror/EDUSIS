@@ -2,21 +2,20 @@
 
 public record DivisionResponse
 {
-    public Guid CursoID { get; init; }
+    /*public Guid CursoID { get; init; }
     public string CursoDescripcion { get; init; }
-    public string NivelEducativo { get; init; }
+    public string NivelEducativo { get; init; }*/
     public Guid DivisionID { get; init; }
-    public string DivisionDescripcion { get; init; }
-    public int Alumnos {  get; init; }
+    public string Descripcion { get; init; }
+    public string Preceptor { get; init; }
+    public int Alumnos { get; init; }
 
 
-    public DivisionResponse(Guid cursoID, string cursoDescripcion, string nivelEducativo, Guid divisionID, string divisionDescripcion, int alumnos)
+    public DivisionResponse(Guid divisionID, string descripcion, string preceptor, int alumnos)
     {
-        CursoID = cursoID;
-        CursoDescripcion = cursoDescripcion;
-        NivelEducativo = nivelEducativo;
         DivisionID = divisionID;
-        DivisionDescripcion = divisionDescripcion;
+        Descripcion = descripcion;
+        Preceptor = preceptor;
         Alumnos = alumnos;
     }
 }

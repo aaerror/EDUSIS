@@ -1,6 +1,6 @@
 ﻿using Core.ServicioDocentes;
 using Core.ServicioDocentes.DTOs.Requests;
-using Core.Shared.DTOs.Personas;
+using Core.Shared.DTOs.Personas.Responses;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -16,15 +16,17 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
 {
     private readonly IServicioDocente _servicioDocentes;
 
-    private InformacionPersonalDTO _informacionPersonalDTO;
-    private ContactoDTO _contactoDTO;
-    private DomicilioDTO _domicilioDTO;
+    #region Requests
+    private RegistrarDocenteRequest _registrarDocenteRequest;
+    #endregion
 
+    #region ViewModel
     private InformacionPersonalViewModel _informacionPersonalViewModel;
     private ContactoViewModel _contactoViewModel;
     private DomicilioViewModel _domicilioViewModel;
-    private DocenteInstitucionalViewModel _docenteInstitucionalViewModel;
+    private LegajoDocenteViewModel _docenteInstitucionalViewModel;
     private PuestoDocenteViewModel _puestoDocenteViewModel;
+    #endregion
 
     private int _tab = 0;
 
@@ -34,9 +36,9 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
     #region Commands
-    public ViewModelCommand AtrasCommand { get; }
-    public ViewModelCommand ContinuarCommand { get; }
     public ViewModelCommand GuardarCommand { get; }
+    public ViewModelCommand ContinuarCommand { get; }
+    public ViewModelCommand AtrasCommand { get; }
     #endregion
 
 
@@ -44,9 +46,9 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
     {
         _servicioDocentes = servicioDocentes;
 
-        _informacionPersonalViewModel = new(_informacionPersonalDTO);
-        _contactoViewModel = new(_contactoDTO);
-        _domicilioViewModel = new(_domicilioDTO);
+        _informacionPersonalViewModel = new(null);
+        _contactoViewModel = new(null);
+        _domicilioViewModel = new(null);
         _docenteInstitucionalViewModel = new(null);
         _puestoDocenteViewModel = new(null);
 
@@ -120,7 +122,7 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public DocenteInstitucionalViewModel DocenteInstitucionalViewModel
+    public LegajoDocenteViewModel DocenteInstitucionalViewModel
     {
         get
         {
@@ -153,56 +155,6 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
     public IEnumerable GetErrors(string? propertyName) => _errorsByProperty.GetValueOrDefault(propertyName).AsEnumerable();
     #endregion
 
-    #region AtrasCommand
-    private bool CanExecuteAtrasCommand(object obj) => !DocenteInstitucionalViewModel.HasErrors && !PuestoDocenteViewModel.HasErrors;
-
-    private void ExecuteAtrasCommand(object obj)
-    {
-        Tab = 0;
-    }
-    #endregion
-
-    #region ContinuarCommand
-    private bool CanExecuteContinuarCommand(object obj) => !InformacionPersonalViewModel.HasErrors && !DomicilioViewModel.HasErrors && !ContactoViewModel.HasErrors;
-
-    private void ExecuteContinuarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-        MessageBoxResult result;
-
-        if (string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Documento) || string.IsNullOrWhiteSpace(DomicilioViewModel.Calle) ||
-            string.IsNullOrWhiteSpace(DomicilioViewModel.Localidad) || string.IsNullOrWhiteSpace(DomicilioViewModel.Provincia) || string.IsNullOrWhiteSpace(ContactoViewModel.Telefono) || string.IsNullOrWhiteSpace(ContactoViewModel.Email))
-        {
-            messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
-            caption = "Error al Registrar un Docente";
-
-            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-            InformacionPersonalViewModel = new InformacionPersonalViewModel(new InformacionPersonalDTO(string.Empty,
-                                                                                                       string.Empty,
-                                                                                                       string.Empty,
-                                                                                                       0,
-                                                                                                       DateTime.Now,
-                                                                                                       string.Empty));
-            DomicilioViewModel = new DomicilioViewModel(new DomicilioDTO(string.Empty,
-                                                                         string.Empty,
-                                                                         0,
-                                                                         string.Empty,
-                                                                         string.Empty,
-                                                                         string.Empty,
-                                                                         string.Empty));
-
-            ContactoViewModel = new ContactoViewModel(new ContactoDTO(string.Empty, string.Empty));
-
-            return;
-        }
-
-        DocenteInstitucionalViewModel.Documento = InformacionPersonalViewModel.Documento;
-        Tab = 1;
-    }
-    #endregion
-
     #region GuardarCommand
     private bool CanExecuteGuardarCommand(object obj) => !HasErrors && !InformacionPersonalViewModel.HasErrors && !DomicilioViewModel.HasErrors && !ContactoViewModel.HasErrors;
 
@@ -215,7 +167,7 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
         if (string.IsNullOrWhiteSpace(DocenteInstitucionalViewModel.Legajo) || string.IsNullOrWhiteSpace(DocenteInstitucionalViewModel.PrefijoCuil) || string.IsNullOrWhiteSpace(DocenteInstitucionalViewModel.PosfijoCuil))
         {
             messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
-            caption = "Error al Registrar un Docente";
+            caption = "Error en la operación";
 
             MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
@@ -225,45 +177,42 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
         }
         else
         {
-            messageBoxText = $"¿Está seguro que desea registrar los datos del docente { InformacionPersonalViewModel.Apellido }, { InformacionPersonalViewModel.Nombre }?";
+            messageBoxText = $"¿Está seguro que desea registrar los datos del docente {InformacionPersonalViewModel.Apellido}, {InformacionPersonalViewModel.Nombre}?";
             caption = "Registrar Docente";
             result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result == MessageBoxResult.Yes)
+            if (result is MessageBoxResult.Yes)
             {
-                var requestInformacionPersonal = new InformacionPersonalDTO(InformacionPersonalViewModel.Apellido,
-                                                                            InformacionPersonalViewModel.Nombre,
-                                                                            InformacionPersonalViewModel.Documento,
-                                                                            InformacionPersonalViewModel.Sexo,
-                                                                            InformacionPersonalViewModel.FechaNacimiento,
-                                                                            InformacionPersonalViewModel.Nacionalidad);
+                var requestPuesto = new RegistrarPuestoDocenteRequest(PuestoDocenteViewModel.Posicion, PuestoDocenteViewModel.FechaInicio);
 
-                var requestDomicilio = new DomicilioDTO(DomicilioViewModel.Calle,
-                                                        DomicilioViewModel.Altura,
-                                                        DomicilioViewModel.Vivienda,
-                                                        DomicilioViewModel.Observaciones,
-                                                        DomicilioViewModel.Localidad,
-                                                        DomicilioViewModel.Provincia,
-                                                        DomicilioViewModel.Pais);
-
-                var requestContacto = new ContactoDTO(ContactoViewModel.Telefono, ContactoViewModel.Email);
-
-                var requestPuesto = new RegistrarPuestoDocenteRequest(PuestoDocenteViewModel.PosicionIndex, PuestoDocenteViewModel.FechaInicio);
-
-                var request = new RegistrarDocenteRequest(DocenteInstitucionalViewModel.Legajo,
-                                                          DocenteInstitucionalViewModel.CUIL,
-                                                          requestPuesto,
-                                                          requestInformacionPersonal,
-                                                          requestContacto,
-                                                          requestDomicilio);
+                var request = new RegistrarDocenteRequest(
+                    Legajo: DocenteInstitucionalViewModel.Legajo,
+                    CUIL: DocenteInstitucionalViewModel.CUIL,
+                    FechaAlta: DocenteInstitucionalViewModel.FechaAlta,
+                    Puesto: requestPuesto,
+                    Apellido: InformacionPersonalViewModel.Apellido,
+                    Nombre: InformacionPersonalViewModel.Nombre,
+                    DNI: InformacionPersonalViewModel.DNI,
+                    Sexo: InformacionPersonalViewModel.Sexo,
+                    FechaNacimiento: InformacionPersonalViewModel.FechaNacimiento,
+                    Nacionalidad: InformacionPersonalViewModel.Nacionalidad,
+                    Telefono: ContactoViewModel.Telefono,
+                    Email: ContactoViewModel.Email,
+                    Calle: DomicilioViewModel.Calle,
+                    Altura: DomicilioViewModel.Altura,
+                    Vivienda: DomicilioViewModel.Vivienda,
+                    Observacion: DomicilioViewModel.Observaciones,
+                    Localidad: DomicilioViewModel.Localidad,
+                    Provincia: DomicilioViewModel.Provincia,
+                    Pais: DomicilioViewModel.Pais);
                 try
                 {
-                    if (_servicioDocentes.EsDocumentoInvalido(request.InformacionPersonalDTO.Documento))
+                    if (_servicioDocentes.EsDocumentoInvalido(request.DNI))
                     {
-                        messageBoxText = $"El número de documento, { request.InformacionPersonalDTO.Documento }, ya se encuentra registrado con otro docente.";
-                        caption = "Error";
+                        messageBoxText = $"El número de documento, {request.DNI}, ya se encuentra registrado con otro docente.";
+                        caption = "Error en la operación";
                         MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-                        InformacionPersonalViewModel.Documento = string.Empty;
+                        InformacionPersonalViewModel.DNI = string.Empty;
                         Tab = 0;
 
                         return;
@@ -271,8 +220,8 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
 
                     if (_servicioDocentes.EsLegajoInvalido(request.Legajo))
                     {
-                        messageBoxText = $"El legajo docente, { request.Legajo }, ya se encuentra registrado con otro docente.";
-                        caption = "Error";
+                        messageBoxText = $"El legajo docente, {request.Legajo}, ya se encuentra registrado con otro docente.";
+                        caption = "Error en la operación";
                         MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
                         DocenteInstitucionalViewModel.Legajo = string.Empty;
@@ -282,8 +231,8 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
 
                     if (_servicioDocentes.EsCuilInvalido(request.CUIL))
                     {
-                        messageBoxText = $"El CUIL del docente, { request.InformacionPersonalDTO.Apellido } {request.InformacionPersonalDTO.Nombre }, ya se encuentra registrado con otro personal de la institución.";
-                        caption = "Error";
+                        messageBoxText = $"El CUIL del docente, {request.Apellido} {request.Nombre}, ya se encuentra registrado con otro personal de la institución.";
+                        caption = "Error en la operación";
                         MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
                         DocenteInstitucionalViewModel.PrefijoCuil = string.Empty;
@@ -301,17 +250,72 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
                     InformacionPersonalViewModel = new InformacionPersonalViewModel(null);
                     DomicilioViewModel = new DomicilioViewModel(null);
                     ContactoViewModel = new ContactoViewModel(null);
-                    DocenteInstitucionalViewModel = new DocenteInstitucionalViewModel(null);
+                    DocenteInstitucionalViewModel = new LegajoDocenteViewModel(null);
                     PuestoDocenteViewModel = new PuestoDocenteViewModel(null);
 
                     Tab = 0;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
+    }
+    #endregion
+
+    #region ContinuarCommand
+    private bool CanExecuteContinuarCommand(object obj) => !InformacionPersonalViewModel.HasErrors && !DomicilioViewModel.HasErrors && !ContactoViewModel.HasErrors;
+
+    private void ExecuteContinuarCommand(object obj)
+    {
+        string messageBoxText = string.Empty;
+        string caption = string.Empty;
+        MessageBoxResult result;
+
+        if (string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.DNI) || string.IsNullOrWhiteSpace(DomicilioViewModel.Calle) || string.IsNullOrWhiteSpace(DomicilioViewModel.Localidad) || string.IsNullOrWhiteSpace(DomicilioViewModel.Provincia) || string.IsNullOrWhiteSpace(ContactoViewModel.Telefono) || string.IsNullOrWhiteSpace(ContactoViewModel.Email))
+        {
+            messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
+            caption = "Error en la operación";
+
+            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+
+            InformacionPersonalViewModel = new InformacionPersonalViewModel(
+                new InformacionPersonalResponse(
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    DateTime.Now,
+                    string.Empty));
+
+            DomicilioViewModel = new DomicilioViewModel(
+                new DomicilioResponse(
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty));
+
+            ContactoViewModel = new ContactoViewModel(
+                new ContactoResponse(string.Empty, string.Empty));
+
+            return;
+        }
+
+        DocenteInstitucionalViewModel.DNI = InformacionPersonalViewModel.DNI;
+        Tab = 1;
+    }
+    #endregion
+
+    #region AtrasCommand
+    private bool CanExecuteAtrasCommand(object obj) => !DocenteInstitucionalViewModel.HasErrors && !PuestoDocenteViewModel.HasErrors;
+
+    private void ExecuteAtrasCommand(object obj)
+    {
+        Tab = 0;
     }
     #endregion
 }

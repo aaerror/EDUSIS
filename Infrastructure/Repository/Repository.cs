@@ -18,7 +18,7 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
 
     public async Task AgregarRango(IEnumerable<TEntity> entities) => await Context.AddRangeAsync(entities);
 
-    public virtual TEntity? BuscarPorID(Guid id) => Context.Set<TEntity>().Find(id);
+    public virtual TEntity? BuscarPorID(params object[] ids) => Context.Set<TEntity>().Find(ids);
 
     public IEnumerable<TEntity> BuscarTodos() => Context.Set<TEntity>().ToList();
 
@@ -26,9 +26,9 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
 
     public virtual void Modificar(TEntity entity) => Context.Update(entity);
 
-    public void Eliminar(Guid id)
+    public void Eliminar(params object[] ids)
     {
-        var entity = BuscarPorID(id);
+        var entity = BuscarPorID(ids);
         Context.Remove(entity);
     }
 

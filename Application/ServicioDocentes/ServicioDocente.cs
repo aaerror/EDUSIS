@@ -4,88 +4,205 @@ using Domain.Personas.Domicilios;
 using Domain.Personas;
 using Infrastructure.Shared;
 using Core.ServicioDocentes.DTOs.Responses;
-using Core.Shared.DTOs.Personas;
 using Core.Shared.DTOs.Personas.Requests;
 using Domain.Docentes.Licencias;
+using Microsoft.EntityFrameworkCore;
+using Core.Shared.DTOs.Personas.Responses;
+using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioDocentes;
 
 public class ServicioDocente : IServicioDocente
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<ServicioDocente> _logger;
 
 
-    public ServicioDocente(IUnitOfWork unitOfWork)
+    public ServicioDocente(IUnitOfWork unitOfWork, ILogger<ServicioDocente> logger)
     {
         _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
     private Docente BuscarDocentePorID(Guid docenteID)
     {
-        Docente docente = _unitOfWork.Docentes.BuscarPorID(docenteID);
-        if (docente == null)
+        try
         {
-            throw new NullReferenceException($"No se encontró el docente.");
-        }
+            var docente = _unitOfWork.Docentes.BuscarPorID(docenteID);
+            if (docente is null)
+            {
+                throw new NullReferenceException($"No se encontró el docente.");
+            }
 
-        return docente;
+            return docente;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
     }
 
-    public DocenteConDetalleResponse BuscarDocenteConDetalle(Guid docenteID)
+    public bool EsCuilInvalido(string cuil)
+    {
+        try
+        {
+            bool esInvalido = true;
+            if (!string.IsNullOrWhiteSpace(cuil))
+            {
+                esInvalido = _unitOfWork.Docentes.EsCuilInvalido(cuil);
+            }
+
+            return esInvalido;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
+    }
+
+    public bool EsDocumentoInvalido(string documento)
+    {
+        try
+        {
+            bool esInvalido = true;
+            if (!string.IsNullOrWhiteSpace(documento))
+            {
+                esInvalido = _unitOfWork.Docentes.EsDocumentoInvalido(documento);
+            }
+
+            return esInvalido;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
+    }
+
+    public bool EsLegajoInvalido(string legajo)
+    {
+        try
+        {
+            bool esInvalido = true;
+            if (!string.IsNullOrWhiteSpace(legajo))
+            {
+                esInvalido = _unitOfWork.Docentes.EsLegajoInvalido(legajo);
+            }
+
+            return esInvalido;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
+    }
+
+    #region Docente: Listar, Registrar, Modificar, Eliminar
+    public PerfilPersonalDeDocenteResponse BuscarPerfilPersonalDelDocente(Guid docenteID)
     {
         try
         {
             Docente docente = BuscarDocentePorID(docenteID);
 
-            var informacionPersonal = new InformacionPersonalDTO(docente.InformacionPersonal.Apellido,
-                                                                 docente.InformacionPersonal.Nombre,
-                                                                 docente.InformacionPersonal.Documento,
-                                                                 (int) docente.InformacionPersonal.Sexo,
-                                                                 docente.InformacionPersonal.FechaNacimiento,
-                                                                 docente.InformacionPersonal.Nacionalidad);
+            var informacionPersonal = new InformacionPersonalResponse(
+                Apellido: docente.InformacionPersonal.Apellido,
+                Nombre: docente.InformacionPersonal.Nombre,
+                DNI: docente.InformacionPersonal.Documento,
+                Sexo: (int) docente.InformacionPersonal.Sexo,
+                FechaNacimiento: docente.InformacionPersonal.FechaNacimiento,
+                Nacionalidad: docente.InformacionPersonal.Nacionalidad);
 
-            var domicilio = new DomicilioDTO(docente.Domicilio.Direccion.Calle,
-                                             docente.Domicilio.Direccion.Altura,
-                                             (int) docente.Domicilio.Direccion.Vivienda,
-                                             docente.Domicilio.Direccion.Observacion,
-                                             docente.Domicilio.Ubicacion.Localidad,
-                                             docente.Domicilio.Ubicacion.Provincia,
-                                             docente.Domicilio.Ubicacion.Pais);
+            var domicilio = new DomicilioResponse(
+                Calle: docente.Domicilio.Direccion.Calle,
+                Altura: docente.Domicilio.Direccion.Altura,
+                Vivienda: (int) docente.Domicilio.Direccion.Vivienda,
+                Observacion: docente.Domicilio.Direccion.Observacion,
+                Localidad: docente.Domicilio.Ubicacion.Localidad,
+                Provincia: docente.Domicilio.Ubicacion.Provincia,
+                Pais: docente.Domicilio.Ubicacion.Pais);
 
-            var contacto = new ContactoDTO(docente.Telefono, docente.Email);
+            var contacto = new ContactoResponse(
+                Telefono: docente.Telefono, Email: docente.Email);
 
-            return new DocenteConDetalleResponse(docente.Id,
-                                                 informacionPersonal,
-                                                 domicilio,
-                                                 contacto,
-                                                 docente.Puestos.Select(x => new PuestoResponse((int) x.Posicion, x.Posicion.ToString(), x.FechaInicio, x.FechaFin))
-                                                                .ToList()
-                                                                .AsReadOnly());
+            return new PerfilPersonalDeDocenteResponse(
+                DocenteID: docente.Id,
+                InformacionPersonalDTO: informacionPersonal,
+                DomicilioDTO: domicilio,
+                ContactoDTO: contacto);
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
 
-    public DocenteInfoResponse BuscarDocentePorDNI(string documento)
+    public LegajoDocenteResponse BuscarLegajoDocentePorDNI(string documento)
     {
-        Docente docente = _unitOfWork.Docentes.Buscar(x => x.InformacionPersonal.Documento == documento)
-                                              .FirstOrDefault();
-        if (docente is null)
+        try
         {
-            throw new NullReferenceException($"No se encontró ningún docente con el D.N.I. { documento }");
-        }
+            var docente = _unitOfWork.Docentes.Buscar(x => x.InformacionPersonal.Documento == documento)
+                                              .FirstOrDefault();
+            if (docente is null)
+            {
+                throw new NullReferenceException($"No se encontró ningún docente con el D.N.I. { documento }");
+            }
 
-        return new DocenteInfoResponse(docente.Id,
-                                       docente.InformacionPersonal.NombreCompleto(),
-                                       new DocenteIntsitucionalResponse(docente.Id,
-                                                                        docente.InformacionPersonal.Documento,
-                                                                        docente.FechaAlta,
-                                                                        docente.FechaBaja,
-                                                                        docente.Legajo,
-                                                                        docente.CUIL,
-                                                                        docente.EstaActivo));
+            return new LegajoDocenteResponse(
+                DocenteID: docente.Id,
+                NombreCompleto: docente.InformacionPersonal.NombreCompleto(),
+                Legajo: docente.Legajo,
+                FechaAlta: docente.FechaAlta,
+                FechaBaja: docente.FechaBaja,
+                CUIL: docente.CUIL,
+                EstaActivo: docente.EstaActivo,
+                Puestos: docente.Puestos.Select(x =>
+                    new PuestoResponse(
+                        Posicion: (int)x.Posicion,
+                        PosicionDescripcion: x.Posicion.ToString(),
+                        FechaInicio: x.FechaInicio,
+                        FechaFin: x.FechaFin))
+                .ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
+    }
+
+    public IReadOnlyCollection<LegajoDocenteResponse> BuscarLegajoDocentePorApellidoNombre(BuscarDocentePorApellidoNombreRequest request)
+    {
+        try
+        {
+            var docentes = _unitOfWork.Docentes.Buscar(x =>
+                EF.Functions.Like(x.InformacionPersonal.Nombre.Trim().ToLower(), $"%{ request.NombreCompleto.Trim().ToLower() }%") ||
+                EF.Functions.Like(x.InformacionPersonal.Apellido.Trim().ToLower(), $"%{ request.NombreCompleto.Trim().ToLower() }%"));
+
+            return docentes.Select(x =>
+                new LegajoDocenteResponse(DocenteID: x.Id,
+                                          NombreCompleto: x.InformacionPersonal.NombreCompleto(),
+                                          Legajo: x.Legajo,
+                                          FechaAlta: x.FechaAlta,
+                                          FechaBaja: x.FechaBaja,
+                                          CUIL: x.CUIL,
+                                          EstaActivo: x.EstaActivo,
+                                          Puestos: x.Puestos.Select(p =>
+                                            new PuestoResponse(Posicion: (int)p.Posicion,
+                                                               PosicionDescripcion: p.Posicion.ToString(),
+                                                               FechaInicio: p.FechaInicio.Date,
+                                                               FechaFin: p.FechaFin))
+                                          .ToList()))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
     }
 
     public DocenteConPuestosResponse BuscarDocenteConPuestos(Guid docenteID)
@@ -98,46 +215,14 @@ public class ServicioDocente : IServicioDocente
                                                          docente.Legajo,
                                                          docente.InformacionPersonal.Documento,
                                                          docente.InformacionPersonal.NombreCompleto(),
-                                                         docente.Puestos.Select(x => new PuestoResponse((int) x.Posicion, x.Posicion.ToString(), x.FechaInicio, x.FechaFin)).ToList());
+                                                         docente.Puestos.Select(x => new PuestoResponse((int)x.Posicion, x.Posicion.ToString(), x.FechaInicio, x.FechaFin)).ToList());
             return response;
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
-    }
-
-    public bool EsCuilInvalido(string cuil)
-    {
-        bool esInvalido = true;
-        if (!string.IsNullOrWhiteSpace(cuil))
-        {
-            esInvalido = _unitOfWork.Docentes.EsCuilInvalido(cuil);
-        }
-
-        return esInvalido;
-    }
-
-    public bool EsDocumentoInvalido(string documento)
-    {
-        bool esInvalido = true;
-        if (!string.IsNullOrWhiteSpace(documento))
-        {
-            esInvalido = _unitOfWork.Docentes.EsDocumentoInvalido(documento);
-        }
-
-        return esInvalido;
-    }
-
-    public bool EsLegajoInvalido(string legajo)
-    {
-        bool esInvalido = true;
-        if (!string.IsNullOrWhiteSpace(legajo))
-        {
-            esInvalido = _unitOfWork.Docentes.EsLegajoInvalido(legajo);
-        }
-
-        return esInvalido;
     }
 
     public void RegistrarDocente(RegistrarDocenteRequest request)
@@ -149,27 +234,31 @@ public class ServicioDocente : IServicioDocente
                 throw new NullReferenceException("Datos incompletos para registrar el docente.");
             }
 
-            var informacionPersonal = InformacionPersonal.Crear(request.InformacionPersonalDTO.Apellido,
-                                                                request.InformacionPersonalDTO.Nombre,
-                                                                request.InformacionPersonalDTO.Documento,
-                                                                request.InformacionPersonalDTO.Sexo,
-                                                                request.InformacionPersonalDTO.FechaNacimiento,
-                                                                request.InformacionPersonalDTO.Nacionalidad);
+            var informacionPersonal = InformacionPersonal.Crear(
+                apellido: request.Apellido,
+                nombre: request.Nombre,
+                dni: request.DNI,
+                sexo: request.Sexo,
+                fechaNacimiento: request.FechaNacimiento,
+                nacionalidad: request.Nacionalidad);
 
-            var domicilio = Domicilio.Crear(request.DomicilioDTO.Calle,
-                                            request.DomicilioDTO.Altura,
-                                            request.DomicilioDTO.Vivienda,
-                                            request.DomicilioDTO.Observacion,
-                                            request.DomicilioDTO.Localidad,
-                                            request.DomicilioDTO.Provincia,
-                                            request.DomicilioDTO.Pais);
+            var domicilio = Domicilio.Crear(
+                calle: request.Calle,
+                altura: request.Altura,
+                vivienda: request.Vivienda,
+                observacion: request.Observacion,
+                localidad: request.Localidad,
+                provincia: request.Provincia,
+                pais: request.Pais);
 
-            var nuevoDocente = new Docente(request.Legajo,
-                                           request.CUIL,
-                                           informacionPersonal,
-                                           domicilio,
-                                           request.ContactoDTO.Email,
-                                           request.ContactoDTO.Telefono);
+            var nuevoDocente = new Docente(
+                legajo: request.Legajo,
+                cuil: request.CUIL,
+                fechaAlta: request.FechaAlta,
+                informacionPersonal: informacionPersonal,
+                domicilio: domicilio,
+                email: request.Email,
+                telefono: request.Telefono);
 
             nuevoDocente.AgregarPuesto((Posicion) request.Puesto.Posicion, request.Puesto.FechaInicio);
 
@@ -178,6 +267,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -194,6 +284,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -211,6 +302,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -227,6 +319,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -240,9 +333,11 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
+    #endregion
 
     #region Licencias
     public IReadOnlyCollection<LicenciaResponse> BuscarLicencias(Guid docenteID)
@@ -259,6 +354,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -283,6 +379,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
         
@@ -318,6 +415,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -343,6 +441,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -361,7 +460,8 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
         }
     }
 
@@ -382,6 +482,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -403,6 +504,7 @@ public class ServicioDocente : IServicioDocente
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }
@@ -418,13 +520,14 @@ public class ServicioDocente : IServicioDocente
             _unitOfWork.Docentes.Modificar(docente);
             _unitOfWork.GuardarCambiosAsync();
 
-            return new PuestoResponse((int)puestoEliminado.Posicion,
-                                             puestoEliminado.Posicion.ToString(),
-                                             puestoEliminado.FechaInicio,
-                                             puestoEliminado.FechaFin);
+            return new PuestoResponse((int) puestoEliminado.Posicion,
+                                            puestoEliminado.Posicion.ToString(),
+                                            puestoEliminado.FechaInicio,
+                                            puestoEliminado.FechaFin);
         }
         catch (Exception ex)
         {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
             throw;
         }
     }

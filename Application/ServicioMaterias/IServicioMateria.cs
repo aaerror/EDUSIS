@@ -1,27 +1,23 @@
 ﻿using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Responses;
 
-namespace Core.ServicioMaterias
+namespace Core.ServicioMaterias;
+
+public interface IServicioMateria
 {
-    public interface IServicioMateria
-    {
-        MateriaResponse BuscarMateria(BuscarMateriaRequest request);
-        IReadOnlyCollection<MateriaResponse> BuscarMateriaSegunCurso(BuscarMateriaSegunCursoRequest request);
+    IReadOnlyCollection<MateriaResponse> ListarMateriasSegunCurso(ListarMateriasSegunCursoRequest request);
 
-        bool EsNombreDuplicadoMateria(NombreDuplicadoRequest request);
+    Task RegistrarMateria(RegistrarMateriaRequest request);
+    void ModificarMateria(ModificarMateriaRequest request);
+    void EliminarMateria(EliminarMateriaRequest request);
 
-        Task RegistrarMateria(RegistrarMateriaRequest request);
-        void ModificarMateria(ModificarMateriaRequest request);
-        void EliminarMateria(EliminarMateriaRequest request);
+    IReadOnlyCollection<SituacionRevistaResponse> ListarCargosDocenteSegunMateria(ListarCargosDocentesSegunMateriaRequest request);
+    SituacionRevistaResponse RegistrarDocenteEnMateria(RegistrarDocenteEnMateriaRequest request);
+    void EstablecerDocenteDeAula(EstablecerDocenteDeAulaRequest request);
+    void QuitarDocenteDeMateria(EliminarSituacionRevistaRequest request);
 
-        IReadOnlyCollection<SituacionRevistaResponse> HistoricoSituacionRevista(HistoricoSituacionRevistaRequest request);
-        SituacionRevistaResponse RegistrarDocenteEnMateria(RegistrarSituacionRevistaRequest request);
-        void EstablecerDocenteEnFunciones(RegistrarDocenteEnFuncionesRequest request);
-        void QuitarDocenteDeMateria(EliminarSituacionRevistaRequest request);
-
-        void RegistrarHorario(RegistrarHorarioEnMateria request);
-        IReadOnlyCollection<HorarioResponse> HorariosDeMateria(BuscarHorariosRequest request);
+    void RegistrarHorarioEnMateria(RegistrarHorarioEnMateriaRequest request);
+    IReadOnlyCollection<HorarioResponse> ListarHorariosDeMateria(ListarHorariosRequest request);
 
 
-    }
 }

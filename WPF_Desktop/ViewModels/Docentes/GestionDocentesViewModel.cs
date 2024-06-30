@@ -1,7 +1,9 @@
 ﻿using Core.ServicioDocentes;
+using Core.ServicioDocentes.DTOs.Requests;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
@@ -13,28 +15,35 @@ namespace WPF_Desktop.ViewModels.Docentes;
 
 public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
 {
+    #region Servicios
     private readonly IServicioDocente _servicioDocentes;
+    #endregion
+
+    #region NavigationService
     private readonly INavigationService _registrarDocenteNavigationService;
     private readonly INavigationService _perfilDocenteNavigationService;
     private readonly INavigationService _gestionPuestosNavigationService;
     private readonly INavigationService _gestionLicenciasNavigationService;
+    #endregion
 
-    private PerfilBuscadoStore _perfilBuscadoStore;
+    private LegajoStore _perfilBuscadoStore;
 
-    private DocenteInfoViewModel _docenteInfoViewModel;
+    private LegajoDocenteViewModel _legajoDocenteViewModel;
+    private ObservableCollection<LegajoDocenteViewModel> _legajosDocentes = new ObservableCollection<LegajoDocenteViewModel>();
 
-    private string _documento = string.Empty;
+    private string _nombreCompleto = string.Empty;
+    private string _dni = string.Empty;
     private bool _mostrarVista;
 
     private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
-    public bool HasErrors => _errorsByProperty.Any();
 
+    public bool HasErrors => _errorsByProperty.Any();
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
     #region Commands
     public ViewModelCommand RegistrarDocenteCommand { get; }
     public ViewModelCommand BuscarCommand { get; }
-    public ViewModelCommand QuitarCommand { get; }
+    public ViewModelCommand EliminarCommand { get; }
     public ViewModelCommand NavigationCommand { get; }
     #endregion
 
@@ -44,7 +53,7 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
                                     INavigationService perfilDocenteNavigationService,
                                     INavigationService gestionPuestoNavigationService,
                                     INavigationService gestionLicenciasNavigationService,
-                                    PerfilBuscadoStore perfilBuscadoStore)
+                                    LegajoStore perfilBuscadoStore)
     {
         _servicioDocentes = servicioDocentes;
         _registrarDocenteNavigationService = registrarDocenteNavigationService;
@@ -57,35 +66,60 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
         {
             _registrarDocenteNavigationService.Navigate();
         });
+
         BuscarCommand = new ViewModelCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
-        QuitarCommand = new ViewModelCommand(ExecuteQuitarCommand, CanExecuteQuitarCommand);
+        EliminarCommand = new ViewModelCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
         NavigationCommand = new ViewModelCommand(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
         MostrarVista = false;
     }
 
+    private void LoadLegajosDocente(IEnumerable<LegajoDocenteViewModel> legajosDocentes)
+    {
+        LegajosDocentes.Clear();
+        foreach (var legajoDocente in legajosDocentes)
+        {
+            LegajosDocentes.Add(legajoDocente);
+        }
+    }
+
     #region Properties
-    public string Documento
+    public string NombreCompleto
     {
         get
         {
-            return _documento;
+            return _nombreCompleto;
         }
 
         set
         {
-            _errorsByProperty.Remove(nameof(Documento));
-            _documento = value;
-            OnPropertyChanged(nameof(Documento));
+            _errorsByProperty.Remove(nameof(NombreCompleto));
+            _nombreCompleto = value;
+            OnPropertyChanged(nameof(NombreCompleto));
+        }
+    }
 
-            if (string.IsNullOrWhiteSpace(Documento))
+    public string DNI
+    {
+        get
+        {
+            return _dni;
+        }
+
+        set
+        {
+            _errorsByProperty.Remove(nameof(DNI));
+            _dni = value;
+            OnPropertyChanged(nameof(DNI));
+
+            if (string.IsNullOrWhiteSpace(DNI))
             {
-                _errorsByProperty.Add(nameof(Documento), new List<string>
+                _errorsByProperty.Add(nameof(DNI), new List<string>
                 {
                     "Se debe ingresar el DNI del docente que desea buscar."
                 });
 
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Documento)));
+                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(DNI)));
             }
         }
     }
@@ -104,17 +138,31 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public DocenteInfoViewModel DocenteInfoViewModel
+    public LegajoDocenteViewModel LegajoDocenteViewModel
     {
         get
         {
-            return _docenteInfoViewModel;
+            return _legajoDocenteViewModel;
         }
 
         set
         {
-            _docenteInfoViewModel = value;
-            OnPropertyChanged(nameof(DocenteInfoViewModel));
+            _legajoDocenteViewModel = value;
+            OnPropertyChanged(nameof(LegajoDocenteViewModel));
+        }
+    }
+
+    public ObservableCollection<LegajoDocenteViewModel> LegajosDocentes
+    {
+        get
+        {
+            return _legajosDocentes;
+        }
+
+        set
+        {
+            _legajosDocentes = value;
+            OnPropertyChanged(nameof(LegajosDocentes));
         }
     }
     #endregion
@@ -130,38 +178,64 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
     {
         string messageBoxText = string.Empty;
         string caption = string.Empty;
-        MessageBoxResult result;
 
-        if (string.IsNullOrWhiteSpace(Documento))
+        switch (obj)
         {
-            messageBoxText = "Se deben ingresar el DNI del docente que desea consultar.";
-            caption = "Error al Consultar Docente";
+/*
+            case "DNI":
+                if (string.IsNullOrWhiteSpace(DNI))
+                {
+                    MessageBox.Show("Se deben ingresar el DNI del docente que desea consultar.", "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+                    DNI = string.Empty;
 
-            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+                    break;
+                }
 
-            Documento = string.Empty;
+                try
+                {
+                    var legajoDocente = _servicioDocentes.BuscarLegajoDocentePorDNI(DNI);
+                    LegajoDocenteViewModel = new LegajoDocenteViewModel(legajoDocente);
+                    MostrarVista = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                break;
+*/
+            case "NombreCompleto":
+                try
+                {
+                    var response = _servicioDocentes.BuscarLegajoDocentePorApellidoNombre(
+                        new BuscarDocentePorApellidoNombreRequest(NombreCompleto));
 
-            return;
-        }
+                    if (response.Count is 0)
+                    {
+                        messageBoxText = $"No se ha encontrado ningún docente. Vuelva a intentarlo nuevamente.";
+                        caption = "Resultado de la búsqueda";
+                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-        try
-        {
-            var docente = _servicioDocentes.BuscarDocentePorDNI(Documento);
-            DocenteInfoViewModel = new DocenteInfoViewModel(docente);
-            MostrarVista = true;
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        break;
+                    }
+
+                    MostrarVista = true;
+                    LoadLegajosDocente(response.Select(x =>
+                        new LegajoDocenteViewModel(x)));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                break;
         }
     }
     #endregion
 
-    #region QuitarCommand
-    private bool CanExecuteQuitarCommand(object obj)
+    #region EliminarCommand
+    private bool CanExecuteEliminarCommand(object obj)
     {
         bool canExecute = false;
-        if (DocenteInfoViewModel is not null)
+        if (LegajoDocenteViewModel is not null)
         {
             canExecute = true;
         }
@@ -169,13 +243,13 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
         return canExecute;
     }
 
-    private void ExecuteQuitarCommand(object obj)
+    private void ExecuteEliminarCommand(object obj)
     {
         string messageBoxText = string.Empty;
         string caption = string.Empty;
         MessageBoxResult result;
 
-        if (DocenteInfoViewModel is null)
+        if (LegajoDocenteViewModel is null)
         {
             messageBoxText = "Se debe buscar previamente el docente para poder realizar los cambios que necesite.";
             caption = "Quitar Docente";
@@ -184,22 +258,22 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
             return;
         }
 
-        messageBoxText = $"¿Está seguro que desea quitar el docente { DocenteInfoViewModel.NombreCompleto }?";
+        messageBoxText = $"¿Está seguro que desea quitar el docente { LegajoDocenteViewModel.NombreCompleto }?";
         caption = "Quitar Docente";
         result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (result == MessageBoxResult.Yes)
         {
             try
             {
-                _servicioDocentes.QuitarDocente(DocenteInfoViewModel.DocenteID);
-                messageBoxText = $"El docente, { DocenteInfoViewModel.NombreCompleto }, se quitó correctamente.";
+                _servicioDocentes.QuitarDocente(LegajoDocenteViewModel.DocenteID);
+                messageBoxText = $"El docente, { LegajoDocenteViewModel.NombreCompleto }, se quitó correctamente.";
                 caption = "Operación Exitosa";
                 MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-                DocenteInfoViewModel = new DocenteInfoViewModel(null);
+                LegajoDocenteViewModel = new LegajoDocenteViewModel(null);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
@@ -209,7 +283,7 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
     private bool CanExecuteNavigationCommand(object obj)
     {
         bool canExecute = false;
-        if (DocenteInfoViewModel is not null)
+        if (LegajoDocenteViewModel is not null)
         {
             canExecute = true;
         }
@@ -222,7 +296,7 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
         string messageBoxText = string.Empty;
         string caption = string.Empty;
 
-        if (DocenteInfoViewModel is null)
+        if (LegajoDocenteViewModel is null)
         {
             messageBoxText = "Se debe buscar previamente el docente que desea visitar el perfil.";
             caption = "Perfil Docente";
@@ -231,8 +305,8 @@ public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
             return;
         }
 
-        _perfilBuscadoStore.PersonaID = DocenteInfoViewModel.DocenteID;
-        _perfilBuscadoStore.Documento = DocenteInfoViewModel.Institucional.Documento;
+        _perfilBuscadoStore.PersonaID = LegajoDocenteViewModel.DocenteID;
+        _perfilBuscadoStore.Documento = LegajoDocenteViewModel.CUIL;
 
         switch (obj)
         {

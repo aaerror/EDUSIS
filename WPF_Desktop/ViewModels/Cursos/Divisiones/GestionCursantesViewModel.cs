@@ -8,11 +8,11 @@ using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using System.Collections;
 using System.Linq;
-using Core.ServicioCursos.DTOs.Requests;
 using System.Windows;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 using Core.ServicioMaterias;
 using Core.ServicioMaterias.DTOs.Requests;
-using WPF_Desktop.ViewModels.Materias;
+using Core.ServicioCursos.DTOs.Requests;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
@@ -20,6 +20,7 @@ public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
 {
     private readonly IServicioCurso _servicioCursos;
     private readonly IServicioMateria _servicioMaterias;
+    private readonly CursoStore _cursoStore;
     private readonly DivisionStore _divisionStore;
 
     #region Request
@@ -40,24 +41,22 @@ public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
 
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
-
-
     #region Commands
     public ViewModelCommand BuscarCommand { get; }
     public ViewModelCommand ABMCommand { get; }
     #endregion
 
-
-
-    public GestionCursantesViewModel(IServicioCurso servicioCursos, IServicioMateria servicioMaterias, DivisionStore divisionStore)
+    public GestionCursantesViewModel(IServicioCurso servicioCursos, IServicioMateria servicioMaterias, CursoStore cursoStore, DivisionStore divisionStore)
     {
         _servicioCursos = servicioCursos;
         _servicioMaterias = servicioMaterias;
+        _cursoStore = cursoStore;
         _divisionStore = divisionStore;
 
         MostrarCalificacionView = false;
 
-        var materias = _servicioMaterias.BuscarMateriaSegunCurso(new BuscarMateriaSegunCursoRequest(divisionStore.Division.CursoID));
+        var request = new ListarMateriasSegunCursoRequest(CursoID: _cursoStore.Curso.CursoID);
+        var materias = _servicioMaterias.ListarMateriasSegunCurso(request);
         _materias = new ObservableCollection<MateriaViewModel>(materias.Select(x => new MateriaViewModel(_servicioMaterias, x)));
 
         BuscarCommand = new ViewModelCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
@@ -66,7 +65,7 @@ public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
 
     private void BuscarCursantes(string periodo)
     {
-        _buscarListadoRequest = new BuscarListadoRequest(_divisionStore.Division.CursoID, _divisionStore.Division.DivisionID, periodo);
+        _buscarListadoRequest = new BuscarListadoRequest(_cursoStore.Curso.CursoID, _divisionStore.Division.DivisionID, periodo);
         var listado = _servicioCursos.BuscarListado(_buscarListadoRequest);
         Cursantes = new ObservableCollection<CursanteViewModel>(listado.Select(x => new CursanteViewModel(x)));
     }

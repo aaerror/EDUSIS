@@ -1,14 +1,5 @@
-﻿namespace Core.ServicioCursos.DTOs.Requests;
+﻿using Domain.Cursos;
 
-public record RegistrarCursoRequest
-{
-    public string Descripcion { get; init; }
-    public int NivelEducativo { get; init; }
+namespace Core.ServicioCursos.DTOs.Requests;
 
-
-    public RegistrarCursoRequest(string descripcion, int nivelEducativo)
-    {
-        Descripcion = descripcion;
-        NivelEducativo = nivelEducativo;
-    }
-}
+public record RegistrarCursoRequest(int Grado, int NivelEducativo);

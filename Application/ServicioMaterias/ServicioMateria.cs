@@ -1,10 +1,10 @@
 ﻿using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Responses;
-using Domain.Materias;
-using Domain.Materias.Horarios;
-using Domain.Materias.SituacionRevistaDocente;
 using Infrastructure.Shared;
 using Microsoft.Extensions.Logging;
+using Domain.Materias.Horarios;
+using Domain.Materias.CargosDocentes;
+using Domain.Materias;
 
 namespace Core.ServicioMaterias;
 
@@ -20,58 +20,13 @@ public class ServicioMateria : IServicioMateria
         _logger = logger;
     }
 
-    public MateriaResponse BuscarMateria(BuscarMateriaRequest request)
+    private bool EsNombreMateriaDuplicado(NombreDuplicadoRequest request)
     {
         try
         {
-            var materia = _unitOfWork.Materias.BuscarPorID(request.MateriaID);
-            if (materia is null)
-            {
-                throw new NullReferenceException();
-            }
+            var esDuplicado = _unitOfWork.Materias.NombreDuplicadoEnCurso(request.CursoID, request.MateriaID, request.Descripcion);
 
-            var response = new MateriaResponse(materia.CursoID,
-                                               materia.Id,
-                                               materia.Descripcion,
-                                               materia.HorasCatedra,
-                                               materia.HorasCatedraSinAsignar,
-                                               materia.ProfesorID,
-                                               _unitOfWork.Docentes.BuscarPorID(materia.ProfesorID.Value).InformacionPersonal.NombreCompleto());
-                                               /*materia.Profesores.Select(st => new SituacionRevistaResponse(st.ProfesorID,
-                                                                                                            _unitOfWork.Docentes.BuscarPorID(st.ProfesorID).InformacionPersonal.NombreCompleto(),
-                                                                                                            (int)st.Cargo,
-                                                                                                            st.Cargo.ToString(),
-                                                                                                            st.FechaAlta,
-                                                                                                            st.FechaBaja,
-                                                                                                            st.EnFunciones)).ToList(),
-                                               materia.Horarios.Select(h => new HorarioResponse(h.Turno.ToString(),
-                                                                                                h.DiaSemana.ToString(),
-                                                                                                h.HoraInicio.ToString(),
-                                                                                                h.HoraFin.ToString())).ToList());*/
-
-            return response;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
-            throw;
-        }
-    }
-
-    public IReadOnlyCollection<MateriaResponse> BuscarMateriaSegunCurso(BuscarMateriaSegunCursoRequest request)
-    {
-        try
-        {
-            var materias = _unitOfWork.Materias.Buscar(x => x.CursoID.Equals(request.CursoID));
-
-            var response = materias.Select(x => new MateriaResponse(x.CursoID,
-                                                                    x.Id,
-                                                                    x.Descripcion,
-                                                                    x.HorasCatedra,
-                                                                    x.HorasCatedraSinAsignar,
-                                                                    x.ProfesorID,
-                                                                    _unitOfWork.Docentes.BuscarPorID(x.ProfesorID.Value)?.InformacionPersonal.NombreCompleto())).ToList();
-            return response;
+            return esDuplicado;
         }
         catch (Exception ex)
         {
@@ -80,11 +35,45 @@ public class ServicioMateria : IServicioMateria
         }
     }
 
-    public bool EsNombreDuplicadoMateria(NombreDuplicadoRequest request)
+    /*public CurriculaResponse BuscarCurriculaVigenteSegunCurso(CurriculaSegunCursoRequest request)
+    {
+        var curricula = _unitOfWork.Materias.BuscarCurriculaVigenteSegunCurso(request.CursoID);
+        if (curricula is null)
+        {
+            throw new ArgumentNullException("No se encontró el diseño curricular vigente del curso.");
+        }
+
+        return new CurriculaResponse(curricula.Id, curricula.CursoID, curricula.FechaInicio, curricula.FechaFin);
+    }*/
+
+    #region Materia: Listar, Registrar, Modificar, Eliminar
+    private Materia BuscarMateria(Guid cursoID, Guid materiaID)
+    {
+        var materia = _unitOfWork.Materias.BuscarPorID(cursoID, materiaID);
+        if (materia is null)
+        {
+            throw new ArgumentNullException("No se encontró el diseño curricular en el sistema.");
+        }
+
+        return materia;
+    }
+
+    public IReadOnlyCollection<MateriaResponse> ListarMateriasSegunCurso(ListarMateriasSegunCursoRequest request)
     {
         try
         {
-            return _unitOfWork.Materias.NombreDuplicado(request.CursoID, request.Descripcion);
+            var materias = _unitOfWork.Materias.MateriasSegunCurso(request.CursoID);
+
+            _logger.LogInformation($"Se encontraron {materias.Count()} materias en el diseño curricular.");
+
+            return materias.Select(x => new MateriaResponse(request.CursoID,
+                                                            x.Id,
+                                                            x.Descripcion,
+                                                            x.HorasCatedra,
+                                                            x.HorasCatedraSinAsignar,
+                                                            x.DocenteID,
+                                                            _unitOfWork.Docentes.BuscarPorID(x.DocenteID.GetValueOrDefault())?.InformacionPersonal.NombreCompleto()))
+                           .ToList();
         }
         catch (Exception ex)
         {
@@ -92,17 +81,26 @@ public class ServicioMateria : IServicioMateria
             throw;
         }
     }
-
-    #region Materia: Registrar, Modificar, Eliminar
+    
     public async Task RegistrarMateria(RegistrarMateriaRequest request)
     {
         try
         {
-            var nuevaMateria = new Materia(request.CursoID, request.Descripcion, request.HorasCatedra);
+            var esNombreDuplicado = EsNombreMateriaDuplicado(new NombreDuplicadoRequest(CursoID: request.CursoID,
+                                                                                        MateriaID: null,
+                                                                                        Descripcion: request.Descripcion));
+            if (esNombreDuplicado)
+            {
+                // TODO: Enviar excepción personalizada para notificar a la vista del error en el campo
+                throw new ArgumentException("Otra materia con el mismo nombre ya se encuentra registrada en el curso.");
+            }
 
-            _unitOfWork.Materias.AgregarAsync(nuevaMateria);
+            var materia = new Materia(request.CursoID, request.Descripcion, request.HorasCatedra);
+
+            await _unitOfWork.Materias.AgregarAsync(materia);
             var result = await _unitOfWork.GuardarCambiosAsync();
-            _logger.LogInformation($"{result} materia registrada correctamente", result);
+
+            _logger.LogInformation($"{result} materia registrada correctamente en el diseño curricular.", result);
         }
         catch (Exception ex)
         {
@@ -115,12 +113,21 @@ public class ServicioMateria : IServicioMateria
     {
         try
         {
-            var materia = _unitOfWork.Materias.BuscarPorID(request.MateriaID);
+            var esNombreDuplicado = EsNombreMateriaDuplicado(new NombreDuplicadoRequest(CursoID: request.CursoID,
+                                                                                        MateriaID: request.MateriaID,
+                                                                                        Descripcion: request.Descripcion));
+            if (esNombreDuplicado)
+            {
+                throw new ArgumentException("Otra materia con el mismo nombre ya se encuentra registrada en el curso", nameof(request.Descripcion));
+            }
 
+            var materia = BuscarMateria(request.CursoID, request.MateriaID);
             materia.ModificarMateria(request.Descripcion, request.HorasCatedra);
-
+            
             _unitOfWork.Materias.Modificar(materia);
-            _unitOfWork.GuardarCambiosAsync();
+            var result = _unitOfWork.GuardarCambiosAsync();
+
+            _logger.LogInformation($"{result} materia modificada correctamente en el diseño curricular.", result);
         }
         catch (Exception ex)
         {
@@ -133,10 +140,10 @@ public class ServicioMateria : IServicioMateria
     {
         try
         {
-            var materia = _unitOfWork.Materias.BuscarPorID(request.MateriaID);
+            _unitOfWork.Materias.Eliminar(request.CursoID, request.MateriaID);
+            var result = _unitOfWork.GuardarCambiosAsync();
 
-            _unitOfWork.Materias.Eliminar(materia.Id);
-            _unitOfWork.GuardarCambiosAsync();
+            _logger.LogInformation($"{result} materia eliminada del diseño curricular", result);
         }
         catch (Exception ex)
         {
@@ -146,30 +153,24 @@ public class ServicioMateria : IServicioMateria
     }
     #endregion
 
-    #region Situacion de Revista
-    public IReadOnlyCollection<SituacionRevistaResponse> HistoricoSituacionRevista(HistoricoSituacionRevistaRequest request)
+    #region Situacion de Revista, Listar, Registrar, Modificar, Eliminar
+    public IReadOnlyCollection<SituacionRevistaResponse> ListarCargosDocenteSegunMateria(ListarCargosDocentesSegunMateriaRequest request)
     {
-        List<SituacionRevistaResponse> historial = new List<SituacionRevistaResponse>();
         try
         {
-            var historico = _unitOfWork.Materias.HistoricoSituacionRevista(request.cursoID, request.materiaID);
-            /*foreach (var situacionRevista in historico)
-            {
-                historial.Add(new SituacionRevistaResponse(situacionRevista.ProfesorID,
-                                                           _unitOfWork.Docentes.BuscarPorID(situacionRevista.ProfesorID).InformacionPersonal.NombreCompleto(),
-                                                           (int)situacionRevista.Cargo,
-                                                           situacionRevista.Cargo.ToString(),
-                                                           situacionRevista.FechaAlta,
-                                                           situacionRevista.FechaBaja,
-                                                           situacionRevista.EnFunciones));
-            }*/
-            return historico.Select(x => new SituacionRevistaResponse(x.ProfesorID,
-                                                                      _unitOfWork.Docentes.BuscarPorID(x.ProfesorID).InformacionPersonal.NombreCompleto(),
-                                                                      (int) x.Cargo,
-                                                                      x.Cargo.ToString(),
-                                                                      x.FechaAlta,
-                                                                      x.FechaBaja,
-                                                                      x.EnFunciones)).ToList();
+            var materia = BuscarMateria(request.CursoID, request.MateriaID);
+
+            _logger.LogInformation($"Se encontraron {materia.Docentes.Count()} registros sobre la situacion de revista en la materia.");
+
+            return materia.Docentes.Select(x => 
+                new SituacionRevistaResponse(
+                    x.DocenteID,
+                    _unitOfWork.Docentes.BuscarPorID(x.DocenteID).InformacionPersonal.NombreCompleto(),
+                    (int)x.Cargo,
+                    x.Cargo.ToString(),
+                    x.FechaAlta,
+                    x.FechaBaja,
+                    x.EnFunciones)).ToList();
         }
         catch (Exception ex)
         {
@@ -178,26 +179,17 @@ public class ServicioMateria : IServicioMateria
         }
     }
 
-    public SituacionRevistaResponse RegistrarDocenteEnMateria(RegistrarSituacionRevistaRequest request)
+    public SituacionRevistaResponse RegistrarDocenteEnMateria(RegistrarDocenteEnMateriaRequest request)
     {
         try
         {
-            var materia = _unitOfWork.Materias.BuscarPorID(request.MateriaID);
-
-            materia.RegistrarNuevaSituacionRevista(request.ProfesorID, (Cargo)request.Cargo, request.FechaAlta, request.EnFunciones);
+            var materia = BuscarMateria(request.CursoID, request.MateriaID);
+            materia.RegistrarCargoDocente(request.DocenteID, (Cargo) request.Cargo, request.FechaAlta, request.EnFunciones);
 
             _unitOfWork.Materias.Modificar(materia);
             _unitOfWork.GuardarCambiosAsync();
 
-            SituacionRevista nuevoCargo = materia.BuscarSituacionRevista(request.ProfesorID);
-            var response = new SituacionRevistaResponse(nuevoCargo.ProfesorID,
-                                                        _unitOfWork.Docentes.BuscarPorID(nuevoCargo.ProfesorID).InformacionPersonal.NombreCompleto(),
-                                                        (int)nuevoCargo.Cargo,
-                                                        nuevoCargo.Cargo.ToString(),
-                                                        nuevoCargo.FechaAlta,
-                                                        nuevoCargo.FechaBaja,
-                                                        nuevoCargo.EnFunciones);
-            return response;
+            return null;
         }
         catch (Exception ex)
         {
@@ -210,11 +202,13 @@ public class ServicioMateria : IServicioMateria
     {
         try
         {
-            var materia = _unitOfWork.Materias.BuscarPorID(request.MateriaID);
-            materia.QuitarDocenteDelCargo(request.DocenteID, request.FechaBaja);
-
+            var materia = BuscarMateria(request.CursoID, request.MateriaID);
+            materia.DarBajaCargoDocente(request.DocenteID);
+            
             _unitOfWork.Materias.Modificar(materia);
-            _unitOfWork.GuardarCambiosAsync();
+            var result = _unitOfWork.GuardarCambiosAsync();
+
+            _logger.LogInformation($"{result} docente se ha quitado del cargo de la materia", result);
         }
         catch (Exception ex)
         {
@@ -223,15 +217,18 @@ public class ServicioMateria : IServicioMateria
         }
     }
 
-    public void EstablecerDocenteEnFunciones(RegistrarDocenteEnFuncionesRequest request)
+    public void EstablecerDocenteDeAula(EstablecerDocenteDeAulaRequest request)
     {
         try
         {
-            var materia = _unitOfWork.Materias.BuscarPorID(request.MateriaID);
-            materia.EstablecerDocenteEnFunciones(request.MateriaID);
+            var materia = BuscarMateria(request.CursoID, request.MateriaID);
+            materia.AsignarDocenteDeAula(request.DocenteID);
+
 
             _unitOfWork.Materias.Modificar(materia);
-            _unitOfWork.GuardarCambiosAsync();
+            var result = _unitOfWork.GuardarCambiosAsync();
+
+            _logger.LogInformation($"{result} docente se ha establecido como docente de aula", result);
         }
         catch (Exception ex)
         {
@@ -241,12 +238,15 @@ public class ServicioMateria : IServicioMateria
     }
     #endregion
 
-    #region Horarios
-    public IReadOnlyCollection<HorarioResponse> HorariosDeMateria(BuscarHorariosRequest request)
+    #region Horarios: Listar, Registrar, Modificar, Eliminar
+    public IReadOnlyCollection<HorarioResponse> ListarHorariosDeMateria(ListarHorariosRequest request)
     {
         try
         {
-            var horarios = _unitOfWork.Materias.BuscarHorarios(request.CursoID, request.MateriaID);
+            var materia = BuscarMateria(request.CursoID, request.MateriaID);
+            var horarios = materia.Horarios;
+
+            _logger.LogInformation($"Se encontraron {horarios.Count()} horarios asignados en la materia.");
 
             return horarios.Select(x => new HorarioResponse(x.Turno.ToString(), x.DiaSemana.ToString(), x.HoraInicio, x.HoraFin))
                            .ToList();
@@ -258,17 +258,17 @@ public class ServicioMateria : IServicioMateria
         }
     }
 
-    public void RegistrarHorario(RegistrarHorarioEnMateria request)
+    public void RegistrarHorarioEnMateria(RegistrarHorarioEnMateriaRequest request)
     {
         try
         {
-            var materia = _unitOfWork.Materias.BuscarPorID(request.MateriaID);
-            var nuevoHorario = Horario.Crear((Turno)request.Turno, (Dia)request.DiaSemana, TimeOnly.Parse(request.HoraInicio), request.Duracion);
-
-            materia.AgregarHorario(nuevoHorario);
+            var materia = BuscarMateria(request.CursoID, request.MateriaID);
+            materia.AgregarHorario((Turno) request.Turno, (Dia) request.Dia, TimeOnly.Parse(request.HoraInicio), request.Duracion);
 
             _unitOfWork.Materias.Modificar(materia);
-            _unitOfWork.GuardarCambiosAsync();
+            var result = _unitOfWork.GuardarCambiosAsync();
+
+            _logger.LogInformation($"Se registro {result} horario nuevo en la materia.");
         }
         catch (Exception ex)
         {

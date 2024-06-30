@@ -1,4 +1,4 @@
-﻿using Core.Shared.DTOs.Personas;
+﻿using Core.Shared.DTOs.Personas.Responses;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,12 +20,12 @@ public class ContactoViewModel : ViewModel, INotifyDataErrorInfo
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
 
-    public ContactoViewModel(ContactoDTO contactoDTO)
+    public ContactoViewModel(ContactoResponse contactoResponse)
     {
-        if (contactoDTO is not null)
+        if (contactoResponse is not null)
         {
-            Telefono = contactoDTO.Telefono;
-            Email = contactoDTO.Email;
+            Telefono = contactoResponse.Telefono;
+            Email = contactoResponse.Email;
         }
     }
 

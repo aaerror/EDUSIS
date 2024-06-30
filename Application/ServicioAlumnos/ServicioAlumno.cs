@@ -95,25 +95,29 @@ public class ServicioAlumno : IServicio, IServicioAlumno
                 throw new ArgumentNullException("Datos incompletos para registrar un alumno.");
             }
 
-            var informacionPersonal = InformacionPersonal.Crear(request.InformacionPersonalDTO.Apellido,
-                                                                request.InformacionPersonalDTO.Nombre,
-                                                                request.InformacionPersonalDTO.Documento,
-                                                                request.InformacionPersonalDTO.Sexo,
-                                                                request.InformacionPersonalDTO.FechaNacimiento,
-                                                                request.InformacionPersonalDTO.Nacionalidad);
-            var domicilio = Domicilio.Crear(request.DomicilioDTO.Calle,
-                                request.DomicilioDTO.Altura,
-                                request.DomicilioDTO.Vivienda,
-                                request.DomicilioDTO.Observacion,
-                                request.DomicilioDTO.Localidad,
-                                request.DomicilioDTO.Provincia,
-                                request.DomicilioDTO.Pais);
+            var informacionPersonal = InformacionPersonal.Crear(
+                request.Apellido,
+                request.Nombre,
+                request.DNI,
+                request.Sexo,
+                request.FechaNacimiento,
+                request.Nacionalidad);
+
+            var domicilio = Domicilio.Crear(
+                request.Calle,
+                request.Altura,
+                request.Vivienda,
+                request.Observacion,
+                request.Localidad,
+                request.Provincia,
+                request.Pais);
             
-            Alumno alumno = new Alumno(Guid.NewGuid().ToString().GetHashCode().ToString("x"),
-                                       informacionPersonal,
-                                       domicilio,
-                                       request.ContactoDTO.Email,
-                                       request.ContactoDTO.Telefono);
+            Alumno alumno = new Alumno(
+                Guid.NewGuid().ToString().GetHashCode().ToString("x"),
+                informacionPersonal,
+                domicilio,
+                request.Email,
+                request.Telefono);
 
             await _unitOfWork.Alumnos.AgregarAsync(alumno);
             await _unitOfWork.GuardarCambiosAsync();

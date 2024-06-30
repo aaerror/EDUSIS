@@ -1,14 +1,16 @@
 ﻿using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes.DTOs.Responses;
 using Core.Shared.DTOs.Personas.Requests;
-using Domain.Docentes;
 
 namespace Core.ServicioDocentes
 {
     public interface IServicioDocente
     {
-        DocenteConDetalleResponse BuscarDocenteConDetalle(Guid docenteID);
-        DocenteInfoResponse BuscarDocentePorDNI(string documento);
+        PerfilPersonalDeDocenteResponse BuscarPerfilPersonalDelDocente(Guid docenteID);
+        LegajoDocenteResponse BuscarLegajoDocentePorDNI(string documento);
+        IReadOnlyCollection<LegajoDocenteResponse> BuscarLegajoDocentePorApellidoNombre(BuscarDocentePorApellidoNombreRequest request);
+
+
         DocenteConPuestosResponse BuscarDocenteConPuestos(Guid docenteID);
         bool EsCuilInvalido(string cuil);
         bool EsDocumentoInvalido(string documento);

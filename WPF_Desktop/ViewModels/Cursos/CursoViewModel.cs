@@ -9,30 +9,31 @@ public class CursoViewModel : ViewModel
     private CursoResponse _cursoResponse;
 
     private Guid _cursoID;
-    private string _descripcion;
-    private string _nivelEducativo;
+    private int _grado;
+    private string _gradoDescripcion;
+    private int _nivelEducativo;
+    private string _nivelEducativoDescripcion;
     private string _divisiones;
-    private string _materias;
     private string _alumnos;
 
 
     public CursoViewModel(CursoResponse cursoResponses)
     {
         CursoID = Guid.Empty;
-        Descripcion = string.Empty;
-        NivelEducativo = string.Empty;
+        GradoDescripcion = string.Empty;
+        NivelEducativoDescripcion = string.Empty;
         Divisiones = string.Empty;
-        Materias = string.Empty;
         Alumnos = string.Empty;
 
         if (cursoResponses is not null)
         {
             _cursoResponse = cursoResponses;
             CursoID = _cursoResponse.CursoID;
-            Descripcion = _cursoResponse.Descripcion;
+            Grado = _cursoResponse.Grado;
+            GradoDescripcion = _cursoResponse.GradoDescripcion;
             NivelEducativo = _cursoResponse.NivelEducativo;
+            NivelEducativoDescripcion = _cursoResponse.NivelEducativoDescripcion;
             Divisiones = _cursoResponse.Divisiones.ToString();
-            Materias = _cursoResponse.Materias.ToString();
             Alumnos = _cursoResponse.Alumnos.ToString();
         }
     }
@@ -52,21 +53,35 @@ public class CursoViewModel : ViewModel
         }
     }
 
-    public string Descripcion
+    public int Grado
     {
         get
         {
-            return _descripcion;
+            return _grado;
         }
 
         set
         {
-            _descripcion = value;
-            OnPropertyChanged(nameof(Descripcion));
+            _grado = value;
+            OnPropertyChanged(nameof(Grado));
         }
     }
 
-    public string NivelEducativo
+    public string GradoDescripcion
+    {
+        get
+        {
+            return _gradoDescripcion;
+        }
+
+        set
+        {
+            _gradoDescripcion = value;
+            OnPropertyChanged(nameof(GradoDescripcion));
+        }
+    }
+
+    public int NivelEducativo
     {
         get
         {
@@ -77,6 +92,20 @@ public class CursoViewModel : ViewModel
         {
             _nivelEducativo = value;
             OnPropertyChanged(nameof(NivelEducativo));
+        }
+    }
+
+    public string NivelEducativoDescripcion
+    {
+        get
+        {
+            return _nivelEducativoDescripcion;
+        }
+
+        set
+        {
+            _nivelEducativoDescripcion= value;
+            OnPropertyChanged(nameof(NivelEducativoDescripcion));
         }
     }
 
@@ -91,20 +120,6 @@ public class CursoViewModel : ViewModel
         {
             _divisiones = value;
             OnPropertyChanged(nameof(Divisiones));
-        }
-    }
-
-    public string Materias
-    {
-        get
-        {
-            return _materias;
-        }
-
-        set
-        {
-            _materias = value;
-            OnPropertyChanged(nameof(Materias));
         }
     }
 

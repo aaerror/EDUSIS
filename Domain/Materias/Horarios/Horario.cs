@@ -1,4 +1,4 @@
-﻿using Domain.Cursos.Exceptions;
+﻿using Domain.Materias.Exceptions;
 using Domain.Shared;
 
 namespace Domain.Materias.Horarios;
@@ -15,6 +15,7 @@ public class Horario : ValueObject
 
 
     private Horario() { }
+
     private Horario(Turno turno, Dia diaSemana, TimeOnly horaInicio, int duracionHoraCatedra)
     {
         if (diaSemana.Equals(Dia.Sabado) || diaSemana.Equals(Dia.Domingo))

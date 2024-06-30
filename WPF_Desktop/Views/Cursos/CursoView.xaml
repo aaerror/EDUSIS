@@ -34,7 +34,7 @@
                     Margin="0 5 10 10">
             <Label Content="Curso"
                    Style="{ StaticResource Form }"/>
-            <TextBox Text="{ Binding Path=Descripcion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0}° Año}"
+            <TextBox Text="{ Binding Path=Grado, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0}° Año}"
                      Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
@@ -44,7 +44,7 @@
                     Margin="10 5 0 10">
             <Label Content="Nivel Educativo"
                    Style="{ StaticResource Form }"/>
-            <TextBox Text="{ Binding Path=NivelEducativo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+            <TextBox Text="{ Binding Path=NivelEducativoDescripcion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
                      Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
@@ -64,15 +64,6 @@
                 <Label Content="Divisiones"
                        Style="{ StaticResource Form }"/>
                 <TextBox Text="{ Binding Path=Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                         Style="{ StaticResource ResourceKey=TextBox }"/>
-            </StackPanel>
-
-            <!-- CANTIDAD DE MATERIAS -->
-            <StackPanel Grid.Column="1"
-                        Margin="10 0">
-                <Label Content="Materias"
-                       Style="{ StaticResource Form }"/>
-                <TextBox Text="{ Binding Path=Materias, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
                          Style="{ StaticResource ResourceKey=TextBox }"/>
             </StackPanel>
 

@@ -5,24 +5,26 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.EntityConfigurations;
 
-public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
+internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 {
     public void Configure(EntityTypeBuilder<Persona> builder)
     {
+        ConfigureTablePersonas(builder);
+        ConfigureTableDomicilios(builder);
+    }
+
+    private void ConfigureTablePersonas(EntityTypeBuilder<Persona> builder)
+    {
         builder.ToTable("persona");
 
+        // PK_PERSONA
         builder.HasKey(x => x.Id);
 
-        // ID
         builder.Property(x => x.Id)
                .HasColumnName("persona_id")
                .ValueGeneratedNever();
-            //.HasColumnType("varchar(50)")
-            /*.HasConversion(
-                id => id.ToString(),
-                value => Guid.Parse(value));*/
 
-        // INFORMACIÓN PERSONAL
+        #region Información Personal
         builder.OwnsOne(p => p.InformacionPersonal, informacionPersonalBuilder =>
         {
             informacionPersonalBuilder.Property(x => x.Apellido)
@@ -64,24 +66,40 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
             informacionPersonalBuilder.HasIndex(x => x.Documento)
                                       .IsUnique();
         });
+        #endregion
 
-        // DOMICILIO
+        #region Contacto
+        builder.Property(x => x.Telefono)
+               .HasColumnName("telefono")
+               .HasColumnType("varchar(15)");
+
+        builder.Property(x => x.Email)
+               .HasColumnName("email")
+               .HasColumnType("varchar(50)");
+
+        builder.HasIndex(x => x.Email)
+               .IsUnique();
+        #endregion
+    }
+
+    private void ConfigureTableDomicilios(EntityTypeBuilder<Persona> builder)
+    {
         builder.OwnsOne(x => x.Domicilio, domiciliosBuilder =>
         {
             domiciliosBuilder.ToTable("domicilio");
 
+            // FK_PERSONA_DOMICILIO
             domiciliosBuilder.WithOwner()
                              .HasForeignKey("persona_id")
                              .HasConstraintName("FK_PERSONA_DOMICILIO");
 
+            // PK_DOMICILIO
             domiciliosBuilder.HasKey("persona_id")
                              .HasName("PK_DOMICILIO");
 
-            // DIRECCIÓN
+            #region Dirección
             domiciliosBuilder.OwnsOne(x => x.Direccion, direccionBuilder =>
             {
-                //direccionBuilder.WithOwner();
-
                 direccionBuilder.Property("Calle")
                                 .HasColumnName("calle")
                                 .HasColumnType("varchar(50)")
@@ -103,8 +121,9 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
                                 .HasColumnName("observaciones")
                                 .HasColumnType("varchar(120)");
             });
+            #endregion
 
-            // UBICACIÓN
+            #region Ubicación
             domiciliosBuilder.OwnsOne(x => x.Ubicacion, ubicacionBuilder =>
             {
                 ubicacionBuilder.WithOwner();
@@ -115,11 +134,11 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
                                 .IsRequired();
 
                 /**
-                    * u.Property("CodigoPostal")
-                    *  .HasColumnName("codigo_postal")
-                    *  .HasColumnType("char(4)")
-                    *  .IsRequired();
-                    */
+                 * u.Property("CodigoPostal")
+                 *  .HasColumnName("codigo_postal")
+                 *  .HasColumnType("char(4)")
+                 *  .IsRequired();
+                 **/
 
                 ubicacionBuilder.Property("Provincia")
                                 .HasColumnName("provincia")
@@ -131,18 +150,7 @@ public class PersonasConfiguration : IEntityTypeConfiguration<Persona>
                                 .HasColumnType("varchar(50)")
                                 .IsRequired();
             });
+            #endregion
         });
-
-        // CONTACTO
-        builder.Property(x => x.Telefono)
-               .HasColumnName("telefono")
-               .HasColumnType("varchar(15)");
-
-        builder.Property(x => x.Email)
-               .HasColumnName("email")
-               .HasColumnType("varchar(50)");
-
-        builder.HasIndex(x => x.Email)
-               .IsUnique();
     }
 }

@@ -8,6 +8,7 @@
     <PackageReference Include="MediatR" Version="12.2.0" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Cursos\Exceptions\" />
     <Folder Include="Usuarios\DomainEvents\" />
   </ItemGroup>
 </Project>

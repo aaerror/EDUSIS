@@ -9,11 +9,13 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="Converter"/>
     </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <!-- TITTLE AND SUBTITLE -->
         <components:Header Grid.Row="0"
@@ -23,16 +25,15 @@
         <!-- INPUTS -->
         <WrapPanel Grid.Row="1"
                    Margin="20 10 20 5">
-            <Button Command="{ Binding RegistrarDocenteCommand }"
+            <Button Command="{ Binding Path=RegistrarDocenteCommand }"
                     Content="Registrar Docente"
                     Margin="0 0 5 0"
-                    Style="{ StaticResource Secondary }"/>
+                    Style="{ StaticResource ResourceKey=Secondary }"/>
         </WrapPanel>
 
-        <!-- DETAILS -->
         <Border Grid.Row="2"
                 Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
                 BorderThickness="1"
                 CornerRadius="4"
                 Margin="20 10"
@@ -46,69 +47,112 @@
             <!-- SEARCH PANEL -->
             <Grid Margin="0 10">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition/>
+                    <RowDefinition/>
                 </Grid.RowDefinitions>
 
                 <!-- SEARCH BUTTON -->
-                <Grid Grid.Row="0"
-                      HorizontalAlignment="Center"
-                      Margin="0 10">
-
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-
-                    <WrapPanel Grid.Row="0">
-                        <TextBox Text="{ Binding Path=Documento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                                 Margin="0 0 5 0"
-                                 Tag="ingresar DNI del docente..."
-                                 Width="200"
-                                 Style="{ StaticResource TextBox}"/>
-                        <Button Command="{ Binding BuscarCommand }"
-                                Content="Buscar"
-                                Margin="5 0 0 0"
-                                Style="{ StaticResource Primary }"/>
-                    </WrapPanel>
-                </Grid>
-
-                <!-- INFO DEL DOCENTE -->
-                <local:DocenteInfoView Grid.Row="1"
-                                       DataContext="{ Binding Path=DocenteInfoViewModel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                       Margin="0 10"
-                                       Visibility="{ Binding Path=MostrarVista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"/>
-
-                <StackPanel Grid.Row="2"
+                <StackPanel Grid.Row="0"
+                            HorizontalAlignment="Center"
                             Margin="0 10">
-                    <WrapPanel HorizontalAlignment="Right">
-                        <Button Command="{ Binding QuitarCommand }"
-                                Content="Quitar"
-                                Margin="0 0 5 0"
-                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-                                Style="{ StaticResource Tertiary }"/>
-                        <Button Command="{ Binding NavigationCommand }"
-                                CommandParameter="Puesto"
-                                Content="Puestos"
-                                Margin="5 0"
-                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-                                Style="{ StaticResource Primary }"/>
-                        <Button Command="{ Binding NavigationCommand }"
-                                CommandParameter="Licencia"
-                                Content="Licencias"
-                                Margin="5 0"
-                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-                                Style="{ StaticResource Primary }"/>
-                        <Button Command="{ Binding NavigationCommand }"
-                                CommandParameter="Perfil"
-                                Content="Perfil"
+                    <WrapPanel>
+                        <TextBox Text="{ Binding Path=NombreCompleto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                 Margin="0 0 5 0"
+                                 Tag="ingresar nombre completo o dni del docente..."
+                                 Width="200"
+                                 Style="{ StaticResource ResourceKey=TextBox}"/>
+                        <Button Command="{ Binding Path=BuscarCommand }"
+                                Content="Buscar"
+                                CommandParameter="NombreCompleto"
                                 Margin="5 0 0 0"
-                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-                                Style="{ StaticResource Primary }"/>
+                                Style="{ StaticResource ResourceKey=Primary }"/>
                     </WrapPanel>
                 </StackPanel>
+
+                <!-- LIST -->
+                <StackPanel Grid.Row="1"
+                            Margin="0 10"
+                            Visibility="{ Binding Path=MostrarVista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }">
+                    <Label Content="Listado de docentes"
+                           HorizontalAlignment="Left"
+                           Style="{ StaticResource ResourceKey=Headline }">
+                    </Label>
+                    <ListView x:Name="ListDocentes"
+                             ItemsSource="{ Binding Path=LegajosDocentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                             SelectedItem="{ Binding Path=LegajoDocenteViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                             IsSynchronizedWithCurrentItem="True"
+                             Margin="0 5"
+                             d:ItemsSource="{ d:SampleData ItemCount=5 }"
+                             Style="{ StaticResource ResourceKey=ListViewStyle }">
+                        <ListView.View>
+                            <GridView AllowsColumnReorder="False">
+                                <GridView.Columns>
+                                    <GridViewColumn Header="Docente"
+                                                    DisplayMemberBinding="{ Binding NombreCompleto, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+                                                    Width="Auto"/>
+                                    <GridViewColumn Header="Legajo"
+                                                    DisplayMemberBinding="{ Binding Legajo, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+                                                    Width="Auto"/>
+                                </GridView.Columns>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </StackPanel>
             </Grid>
+        </Border>
+
+        <!-- DETAILS -->
+        <Border Grid.Row="3"
+                Background="#FFFFFF"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+                BorderThickness="1"
+                CornerRadius="4"
+                Margin="20 10"
+                IsEnabled="{ Binding Path=LegajoDocenteViewModel, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
+                Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15"
+                                  Color="#373737"
+                                  ShadowDepth="5"
+                                  Opacity=".3"/>
+            </Border.Effect>
+            <ScrollViewer Padding="50 10"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- INFO DEL DOCENTE -->
+                    <local:LegajoDocenteView DataContext="{ Binding Path=SelectedItem, ElementName=ListDocentes }"
+                                             Margin="0 10"
+                                             IsEnabled="False"/>
+                    <StackPanel Grid.Row="2"
+                                Margin="0 10">
+                        <WrapPanel HorizontalAlignment="Right">
+                            <Button Command="{ Binding Path=EliminarCommand }"
+                                    Content="Quitar"
+                                    Margin="0 0 5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Tertiary }"/>
+                            <Button Command="{ Binding Path=NavigationCommand }"
+                                    CommandParameter="Puesto"
+                                    Content="Puestos"
+                                    Margin="5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
+                            <Button Command="{ Binding Path=NavigationCommand }"
+                                    CommandParameter="Licencia"
+                                    Content="Licencias"
+                                    Margin="5 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
+                            <Button Command="{ Binding Path=NavigationCommand }"
+                                    CommandParameter="Perfil"
+                                    Content="Perfil"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

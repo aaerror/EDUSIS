@@ -1,8 +1,10 @@
 ﻿using Core.ServicioCursos;
+using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos.DTOs.Responses;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Data;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
@@ -11,18 +13,27 @@ namespace WPF_Desktop.ViewModels.Cursos;
 
 public class GestionCursosViewModel : ViewModel
 {
+    #region Servicios
     private readonly IServicioCurso _servicioCursos;
+    #endregion
+
+    #region NavigationService
     private readonly INavigationService _registrarCursoNavigationService;
     private readonly INavigationService _gestionDivisionesNavigationService;
     private readonly INavigationService _registrarMateriaNavigationService;
+    #endregion
+    
     private CursoStore _cursoStore;
 
     private CursoViewModel _curso = null;
+    
     private ObservableCollection<CursoViewModel> _cursos = new ObservableCollection<CursoViewModel>();
+    private ListCollectionView _listCollectionView;
 
     #region Commands
     public ViewModelCommand NavigateCommand { get; }
-    public ViewModelCommand VerCursosCommand { get; }
+    public ViewModelCommand EliminarCommand { get; }
+    public ViewModelCommand ListarCommand { get; }
     #endregion
 
 
@@ -39,8 +50,10 @@ public class GestionCursosViewModel : ViewModel
         _cursoStore = cursoStore;
 
         NavigateCommand = new ViewModelCommand(ExecuteNavigateCommand, CanExecuteNavigateCommand);
-        //NuevaDivisionCommand = new ViewModelCommand(ExecuteNuevaDivisionCommand, CanExecuteNuevaDivisionCommand);
-        VerCursosCommand = new ViewModelCommand(ExecuteVerCursosCommand);
+        EliminarCommand = new ViewModelCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
+        ListarCommand = new ViewModelCommand(ExecuteListarCommand);
+
+        LoadCursos();
     }
 
     #region Properties
@@ -58,17 +71,17 @@ public class GestionCursosViewModel : ViewModel
         }
     }
 
-    public ObservableCollection<CursoViewModel> Cursos
+    public ListCollectionView ListCollectionView
     {
         get
         {
-            return _cursos;
+            return _listCollectionView;
         }
 
         set
         {
-            _cursos = value;
-            OnPropertyChanged(nameof(Cursos));
+            _listCollectionView = value;
+            OnPropertyChanged(nameof(ListCollectionView));
         }
     }
     #endregion
@@ -77,8 +90,9 @@ public class GestionCursosViewModel : ViewModel
     {
         try
         {
-            var lista = _servicioCursos.BuscarCursos();
-            if (lista.Count == 0)
+            _cursos.Clear();
+            var lista = _servicioCursos.ListarCursos();
+            if (lista.Count is 0)
             {
                 string messageBoxText = "No existen cursos agregados hasta el momento.";
                 string caption = "Oferta Educativa";
@@ -86,17 +100,20 @@ public class GestionCursosViewModel : ViewModel
             }
             else
             {
-                _cursos.Clear();
                 foreach (CursoResponse response in lista)
                 {
                     _cursos.Add(new CursoViewModel(response));
                 }
+
+                _listCollectionView = new ListCollectionView(_cursos);
+                ListCollectionView.GroupDescriptions.Add(new PropertyGroupDescription("NivelEducativo"));
             }
         }
         catch (Exception ex)
         {
-            string messageBoxText = $"Error al cargar las materias del curso.\nError: {ex.InnerException.Message}";
-            MessageBox.Show(messageBoxText, "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            string messageBoxText = $"Error al cargar las materias del curso.\nError: {ex.Message}";
+            string caption = "Error en la operación";
+            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -134,49 +151,63 @@ public class GestionCursosViewModel : ViewModel
     }
     #endregion
 
-    #region VerCursosCommand
-    private void ExecuteVerCursosCommand(object obj)
+    #region ListarCommand
+    private void ExecuteListarCommand(object obj)
     {
-        LoadCursos();
+        switch (obj)
+        {
+            case "Curso":
+                LoadCursos();
+                break;
+        }
     }
     #endregion
 
-/*
-    #region NuevaDivisionCommand
-    private bool CanExecuteNuevaDivisionCommand(object obj) => Curso is not null;
+    #region EliminaCommand
+    private bool CanExecuteEliminarCommand(object obj)
+    {
+        switch (obj)
+        {
+            case "Curso":
+                return Curso is not null;
+            default: return false;
+        }
+    }
 
-    private void ExecuteNuevaDivisionCommand(object obj)
+    private void ExecuteEliminarCommand(object obj)
     {
         string messageBoxText = string.Empty;
         string caption = string.Empty;
         MessageBoxResult result;
 
-        messageBoxText = $"Se va a registrar una nueva división al curso seleccionado:\n" +
-                         $"Curso: { Curso.Descripcion }\n" +
-                         $"Formación: { Curso.NivelEducativo }\n\n" +
-                         $"¿Desea continuar?";
-        caption = "Registrar división";
-
-        result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (result == MessageBoxResult.Yes)
+        switch (obj)
         {
-            try
-            {
-                _servicioCursos.AgregarDivisionAlCurso(Curso.CursoID);
-                MessageBox.Show("Datos guardados correctamente",
-                                "Operación exitosa",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
-                LoadCursos();
-            }
-            catch (Exception ex)
-            {
-                messageBoxText = $"Error al agregar una división al curso.\nError: {ex.Message}";
-                caption = "Error";
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            case "Curso":
+                messageBoxText = $"Se va a eliminar el curso:\n" +
+                                 $"Grado: {Curso.GradoDescripcion}\n" +
+                                 $"Nivel Educativo: {Curso.NivelEducativoDescripcion}\n\n" +
+                                 $"¿Desea continuar?";
+                caption = "Eliminar Curso";
+                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (result is MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        _servicioCursos.EliminarCurso(new EliminarCursoRequest(Curso.CursoID));
+                        MessageBox.Show("Curso eliminado correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
+                        LoadCursos();
+                    }
+                    catch (Exception ex)
+                    {
+                        messageBoxText = $"Error al eliminar un nuevo curso. {ex.Message}";
+                        caption = "Error en la operación";
+                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+
+                break;
         }
     }
     #endregion
-*/
 }

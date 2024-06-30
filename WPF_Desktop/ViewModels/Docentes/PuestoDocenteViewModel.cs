@@ -12,7 +12,7 @@ public class PuestoDocenteViewModel : ViewModel, INotifyDataErrorInfo
 {
     private PuestoResponse _puestoDocenteResponse;
 
-    private int _posicionIndex = 0;
+    private int _posicion = 0;
     private string _posicionDescripcion = string.Empty;
     private DateTime _fechaInicio;
     private DateTime? _fechaFin;
@@ -31,7 +31,7 @@ public class PuestoDocenteViewModel : ViewModel, INotifyDataErrorInfo
         if (puestoDocenteResponse is not null)
         {
             _puestoDocenteResponse = puestoDocenteResponse;
-            PosicionIndex = _puestoDocenteResponse.PosicionIndex;
+            Posicion = _puestoDocenteResponse.Posicion;
             PosicionDescripcion = _puestoDocenteResponse.PosicionDescripcion;
             FechaInicio = _puestoDocenteResponse.FechaInicio;
             FechaFin = _puestoDocenteResponse.FechaFin;
@@ -39,17 +39,17 @@ public class PuestoDocenteViewModel : ViewModel, INotifyDataErrorInfo
     }
 
     #region Properties
-    public int PosicionIndex
+    public int Posicion
     {
         get
         {
-            return _posicionIndex;
+            return _posicion;
         }
 
         set
         {
-            _posicionIndex = value;
-            OnPropertyChanged(nameof(PosicionIndex));
+            _posicion = value;
+            OnPropertyChanged(nameof(Posicion));
         }
     }
 

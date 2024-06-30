@@ -6,7 +6,6 @@ public class Cursante : Entity
 {
     private List<Calificacion> _calificaciones;
 
-    public Guid DivisionID { get; private set; }
     public Guid AlumnoID { get; private set; } = Guid.Empty;
     public CicloLectivo CicloLectivo { get; private set; }
     public IReadOnlyCollection<Calificacion> Calificaciones => _calificaciones.AsReadOnly();
@@ -17,7 +16,7 @@ public class Cursante : Entity
     private Cursante(Guid cursanteID)
         : base(cursanteID) { }
 
-    public Cursante(Guid divisionID, Guid alumnoID, CicloLectivo cicloLectivo)
+    public Cursante(Guid alumnoID, CicloLectivo cicloLectivo)
         : this(Guid.NewGuid())
     {
         if (Guid.Empty.Equals(alumnoID) || cicloLectivo is null)
@@ -25,7 +24,6 @@ public class Cursante : Entity
             throw new NullReferenceException($"Datos del alumno incompletos o inexistentes para registrarlo en la division.");
         }
 
-        DivisionID = divisionID;
         AlumnoID = alumnoID;
         CicloLectivo = cicloLectivo;
         _calificaciones = new List<Calificacion>();

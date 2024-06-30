@@ -12,7 +12,7 @@ public class Usuario : Entity
     public string Username { get; private set; }
     public string PasswordSalt { get; private set; }
     public string PasswordHash { get; private set; }
-    public IReadOnlyCollection<Acceso> Accesos => _accesos.AsReadOnly();
+    public IReadOnlyCollection<Acceso> Accesos => _accesos.ToList();
 
 
     protected Usuario(Guid usuarioID) : base(usuarioID) { }

@@ -17,7 +17,7 @@ namespace WPF_Desktop.ViewModels.Docentes;
 public class GestionPuestosViewModel : ViewModel
 {
     private readonly IServicioDocente _servicioDocentes;
-    private PerfilBuscadoStore _perfilBuscadoStore;
+    private LegajoStore _perfilBuscadoStore;
 
     private bool _habilitarEditarPuesto = false;
     private bool _habilitarNuevoPuesto = false;
@@ -50,7 +50,7 @@ public class GestionPuestosViewModel : ViewModel
     #endregion
 
 
-    public GestionPuestosViewModel(IServicioDocente servicioDocentes, PerfilBuscadoStore perfilBuscadoStore)
+    public GestionPuestosViewModel(IServicioDocente servicioDocentes, LegajoStore perfilBuscadoStore)
     {
         _servicioDocentes = servicioDocentes;
         _perfilBuscadoStore = perfilBuscadoStore;
@@ -263,7 +263,7 @@ public class GestionPuestosViewModel : ViewModel
                     {
                         var puestoIndex = _puestos.IndexOf(PuestoDocenteViewModel);
                         _eliminarPuestoDocente = new EliminarPuestoDocenteRequest(_docenteConPuestosResponse.DocenteID,
-                                                                                  PuestoDocenteViewModel.PosicionIndex,
+                                                                                  PuestoDocenteViewModel.Posicion,
                                                                                   PuestoDocenteViewModel.FechaInicio);
 
                         _puestoDocenteResponse = _servicioDocentes.QuitarPuestoDocente(_eliminarPuestoDocente);
@@ -308,7 +308,7 @@ public class GestionPuestosViewModel : ViewModel
             case "Editar":
                 messageBoxText = $"¿Está seguro que desea modificar el puesto del docente { NombreCompleto }?\n" +
                                  $"Puesto Nuevo:" +
-                                 $"\tCargo: { (Posicion) PuestoDocenteViewModel.PosicionIndex }\n" +
+                                 $"\tCargo: { (Posicion) PuestoDocenteViewModel.Posicion }\n" +
                                  $"\tFecha Inicio: { PuestoDocenteViewModel.FechaInicio.Date.ToString("D") }\n\n";
                 caption = "Modificar Puesto Docente";
                 result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
@@ -317,7 +317,7 @@ public class GestionPuestosViewModel : ViewModel
                     try
                     {
                         _crearPuestoDocenteRequest = new CrearPuestoDocenteRequest(_docenteConPuestosResponse.DocenteID,
-                                                                                   PuestoDocenteViewModel.PosicionIndex,
+                                                                                   PuestoDocenteViewModel.Posicion,
                                                                                    PuestoDocenteViewModel.FechaInicio);
                         _puestoDocenteResponse = _servicioDocentes.AsignarPuestoDocente(_crearPuestoDocenteRequest);
 
@@ -342,7 +342,7 @@ public class GestionPuestosViewModel : ViewModel
 
                 break;
             case "Nuevo":
-                messageBoxText = $"¿Está seguro que desea agregar el docente { NombreCompleto } al puesto { (Posicion) PuestoDocenteViewModel.PosicionIndex }?";
+                messageBoxText = $"¿Está seguro que desea agregar el docente { NombreCompleto } al puesto { (Posicion) PuestoDocenteViewModel.Posicion }?";
                 caption = "Asignar un Nuevo Puesto";
 
                 result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
@@ -351,7 +351,7 @@ public class GestionPuestosViewModel : ViewModel
                     try
                     {
                         _crearPuestoDocenteRequest = new CrearPuestoDocenteRequest(_docenteConPuestosResponse.DocenteID,
-                                                                                   PuestoDocenteViewModel.PosicionIndex,
+                                                                                   PuestoDocenteViewModel.Posicion,
                                                                                    PuestoDocenteViewModel.FechaInicio);
                         _puestoDocenteResponse = _servicioDocentes.AsignarPuestoDocente(_crearPuestoDocenteRequest);
 

@@ -6,7 +6,6 @@
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="42"/>
         <Setter Property="FontWeight" Value="Light"/>
-        <Setter Property="HorizontalAlignment" Value="{ Binding Template }"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Padding" Value="0"/>
     </Style>

@@ -1,32 +1,32 @@
-﻿using Domain.Cursos.Exceptions;
-using Domain.Materias.DomainEvents;
+﻿using Domain.Materias.DomainEvents;
+using Domain.Materias.Exceptions;
 using Domain.Materias.Horarios;
-using Domain.Materias.SituacionRevistaDocente;
+using Domain.Materias.CargosDocentes;
 using Domain.Shared;
+using MediatR;
 
 namespace Domain.Materias;
 
 public class Materia : Entity
 {
-    private Guid? _profesorID;
+    private readonly List<SituacionRevista> _docentes = new();
     private readonly List<Horario> _horarios = new();
-    private readonly List<SituacionRevista> _profesores = new();
 
     public Guid CursoID { get; private set; }
+    public Guid? DocenteID { get => DocenteEnFunciones()?.DocenteID; }
     public string Descripcion { get; private set; }
     public int HorasCatedra { get; private set; }
-    
-    public IReadOnlyCollection<Horario> Horarios => _horarios.AsReadOnly();
-    public IReadOnlyCollection<SituacionRevista> Profesores => _profesores.AsReadOnly();
+    public IReadOnlyCollection<SituacionRevista> Docentes => _docentes.ToList();
+    public IReadOnlyCollection<Horario> Horarios => _horarios.ToList();
 
 
-    protected Materia()
+    private Materia()
         : base() { }
 
-    protected Materia(Guid materiaID)
+    private Materia(Guid materiaID)
         : base(materiaID) { }
 
-    public Materia(Guid cursoID, Guid materiaID, string descripcion, int horasCatedra)
+    private Materia(Guid materiaID, Guid cursoID, string descripcion, int horasCatedra)
         : this(materiaID)
     {
         if (string.IsNullOrWhiteSpace(descripcion))
@@ -47,20 +47,7 @@ public class Materia : Entity
     }
 
     public Materia(Guid cursoID, string descripcion, int horasCatedra)
-        : this(cursoID, Guid.NewGuid(), descripcion, horasCatedra) { }
-
-    public Guid? ProfesorID
-    {
-        get
-        {
-            return DocenteEnFunciones()?.ProfesorID ?? Guid.Empty;
-        }
-        
-        private set
-        {
-            _profesorID = value;
-        }
-    }
+        : this(Guid.NewGuid(), cursoID, descripcion, horasCatedra) { }
 
     private void EditarDescripcion(string descripcion)
     {
@@ -89,117 +76,86 @@ public class Materia : Entity
         EditarCargaHoraria(horasCatedra);
     }
 
-    #region Profesores
-    public SituacionRevista? DocenteEnFunciones() =>
-        _profesores.Where(x => x.EnFunciones && !x.FechaBaja.HasValue)
+    #region Docente
+    private SituacionRevista? DocenteEnFunciones() =>
+        _docentes.Where(x => x.EnFunciones && !x.FechaBaja.HasValue)
                    .FirstOrDefault();
 
-    public SituacionRevista BuscarSituacionRevista(Guid unProfesor)
+    private SituacionRevista? BuscarSituacionRevistaActiva(Guid unDocente)
     {
-        if (Guid.Empty.Equals(unProfesor))
+        if (Guid.Empty.Equals(unDocente))
         {
-            throw new ArgumentNullException(nameof(unProfesor), "Se deben especificar los datos del profesor que desea buscar.");
+            throw new ArgumentNullException(nameof(unDocente), "Se deben especificar los datos del docente que desea buscar.");
         }
 
-        return _profesores.Where(x => x.ProfesorID.Equals(unProfesor) && !x.FechaBaja.HasValue)
-                          .FirstOrDefault();
+        return _docentes.Where(x => x.DocenteID.Equals(unDocente) && !x.FechaBaja.HasValue)
+                        .FirstOrDefault();
     }
 
     private bool CargoDisponible(Cargo unCargo) =>
-        !_profesores.Any(x => x.Cargo.Equals(unCargo) && !x.FechaBaja.HasValue);
+        !_docentes.Any(x => x.Cargo.Equals(unCargo) && !x.FechaBaja.HasValue);
 
-    public bool ExisteDocenteEnFunciones() => _profesores.Any(x => x.EnFunciones && !x.FechaBaja.HasValue);
-
-    public void EstablecerDocenteEnFunciones(Guid unProfesor)
+    private void DarBajaCargoDocente(SituacionRevista aModificar)
     {
-        var situacionRevista = BuscarSituacionRevista(unProfesor);
+        var index = _docentes.IndexOf(aModificar);
+        _docentes[index] = aModificar.QuitarCargo(DateTime.Now.Date);
+    }
+
+    public void DarBajaCargoDocente(Guid unDocente)
+    {
+        var aModificar = BuscarSituacionRevistaActiva(unDocente);
+        DarBajaCargoDocente(aModificar);
+    }
+
+    public void RegistrarCargoDocente(Guid docenteID, Cargo cargo, DateTime fechaAlta, bool enFunciones)
+    {
+        if (!CargoDisponible(cargo))
+        {
+            throw new ArgumentException($"Ya existe un docente ocupando este cargo ({cargo}) en la materia. Debe dar de baja ese cargo antes de continuar.", nameof(cargo));
+        }
+
+        var situacionRevista = BuscarSituacionRevistaActiva(docenteID);
+        var unaSituacionRevista = SituacionRevista.Crear(docenteID, cargo, fechaAlta, enFunciones);
+
         if (situacionRevista is null)
         {
-            throw new ArgumentException($"El profesor no tiene un cargo en la materia de {Descripcion}.", nameof(unProfesor));
+            _docentes.Add(unaSituacionRevista);
         }
-
-        QuitarDocenteDeFunciones();
-
-        var index = _profesores.IndexOf(situacionRevista);
-        _profesores[index] = situacionRevista.EstablecerEnFunciones();
-        ProfesorID = unProfesor;
+        else
+        {
+            DarBajaCargoDocente(situacionRevista);
+            _docentes.Add(unaSituacionRevista);
+        }
     }
 
-    public void RegistrarNuevaSituacionRevista(Guid unProfesor, Cargo enCargo, DateTime fechaAlta, bool enFunciones)
+    public void ModificarCargoDocente(Guid docenteID, Cargo cargo, DateTime fechaAlta)
     {
-        if (Guid.Empty.Equals(unProfesor))
+        //GP87WFW2
+        if (!CargoDisponible(cargo))
         {
-            throw new ArgumentNullException(nameof(unProfesor), $"Se debe especificar el profesor que desea asignar a la materia {Descripcion}.");
+            throw new ArgumentException($"Ya existe un docente ocupando este nuevo cargo ({cargo}) en la materia. Debe dar de baja ese cargo antes de continuar.", nameof(cargo));
         }
 
-        if (!CargoDisponible(enCargo))
-        {
-            throw new ArgumentException($"Este cargo docente no se encuentra disponible en la materia {Descripcion}.", nameof(enCargo));
-        }
-
-        var situacionRevista = BuscarSituacionRevista(unProfesor);
-        if (situacionRevista is not null && situacionRevista.FechaBaja is null)
-        {
-            throw new ArgumentException($"El profesor ya se encuentra con un cargo en la materia. Cargo: { situacionRevista.Cargo } desde el { situacionRevista.FechaAlta.ToString("d") }", nameof(unProfesor));
-        }
-
-        var nuevaSituacionRevista = SituacionRevista.Crear(unProfesor, enCargo, fechaAlta, enFunciones);
-        if (enFunciones)
-        {
-            QuitarDocenteDeFunciones();
-
-            _profesores.Add(nuevaSituacionRevista);
-            ProfesorID = nuevaSituacionRevista.ProfesorID;
-
-            return;
-        }
-
-        _profesores.Add(nuevaSituacionRevista);
+        var aModificar = BuscarSituacionRevistaActiva(docenteID);
+        var index = _docentes.IndexOf(aModificar);
+        _docentes[index] = aModificar.CambiarSituacionRevista(cargo, fechaAlta);
     }
 
-    public void CambiarCargoDelProfesor(Guid unProfesor, Cargo nuevoCargo, DateTime fechaAltaCargoNuevo, DateTime fechaBajaCargoAnterior, bool enFunciones)
+    public void AsignarDocenteDeAula(Guid unDocente)
     {
-        if (!CargoDisponible(nuevoCargo))
-        {
-            throw new ArgumentException($"El cargo {nuevoCargo} ya se encuentra ocupado en la materia {Descripcion}.");
-        }
-
-        var situacionRevista = BuscarSituacionRevista(unProfesor);
+        var situacionRevista = BuscarSituacionRevistaActiva(unDocente);
         if (situacionRevista is null)
         {
-            throw new ArgumentException($"El profesor no tiene un cargo en la materia de {Descripcion}.", nameof(unProfesor));
+            throw new ArgumentNullException(nameof(unDocente), "El docente no tiene un cargo asignado en la materia.");
         }
 
-        if (enFunciones && ExisteDocenteEnFunciones())
+        if (situacionRevista.EnFunciones)
         {
-            throw new ArgumentException($"Error al hacer un cambio de revista. Ya existe un profesor en funciones.", nameof(unProfesor));
+            throw new ArgumentException(nameof(unDocente), "El docente ya se encuentra como docente de aula en la materia.");
         }
 
-        QuitarDocenteDelCargo(unProfesor, fechaBajaCargoAnterior);
-        SituacionRevista nuevaSituacionRevista = situacionRevista.CambiarSituacionRevista(nuevoCargo, fechaAltaCargoNuevo, enFunciones);
-        _profesores.Add(nuevaSituacionRevista);
-    }
-
-    public void QuitarDocenteDelCargo(Guid unProfesor, DateTime fechaBaja)
-    {
-        var situacionRevista = BuscarSituacionRevista(unProfesor);
-        if (situacionRevista is null)
-        {
-            throw new ArgumentException($"El profesor no tiene un cargo en la materia de {Descripcion}.", nameof(unProfesor));
-        }
-
-        var index = _profesores.IndexOf(situacionRevista);
-        _profesores[index] = situacionRevista.QuitarCargo(fechaBaja);
-    }
-
-    public void QuitarDocenteDeFunciones()
-    {
-        var aEliminar = DocenteEnFunciones();
-        if (aEliminar is not null)
-        {
-            int index = _profesores.IndexOf(aEliminar);
-            _profesores[index] = aEliminar.QuitarDeFunciones();
-        }
+        _docentes.Remove(situacionRevista);
+        _docentes.Add(situacionRevista.EstablecerEnFunciones());
     }
     #endregion
 
@@ -208,13 +164,14 @@ public class Materia : Entity
 
     public bool HorarioOcupado(Horario horarioBuscado) => _horarios.Contains(horarioBuscado);
 
-    public void AgregarHorario(Horario unHorario)
+    public void AgregarHorario(Turno unTurno, Dia unDia, TimeOnly horaInicio, int duracion)
     {
         if (_horarios.Count >= HorasCatedra)
         {
             throw new ArgumentException("Error al agregar un horario. La materia ya tiene sus horas cátedras completas.");
         }
 
+        var unHorario = Horario.Crear(unTurno, unDia, horaInicio, duracion);
         _horarios.Add(unHorario);
     }
 

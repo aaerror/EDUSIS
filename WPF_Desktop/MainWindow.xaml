@@ -7,6 +7,7 @@
         xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
         xmlns:local="clr-namespace:WPF_Desktop"
         xmlns:components="clr-namespace:WPF_Desktop.Components"
+        xmlns:modal="clr-namespace:WPF_Desktop.Views.Shared.Modal"
         Title="EDUSIS"
         AllowsTransparency="True"
         Background="Transparent"
@@ -120,7 +121,10 @@
                     CornerRadius="0 8 8 0"
                     Padding="5">
                 <Grid x:Name="MainContainer">
-                    <ContentControl Content="{ Binding ViewModelActual }"/>
+                    <components:ModalComponent Panel.ZIndex="10" EstaAbierto="{ Binding Path=ModalEstaAbierto, UpdateSourceTrigger=PropertyChanged }">
+                        <ContentControl Content="{ Binding Path=ModalViewModelActual, UpdateSourceTrigger=PropertyChanged }" />
+                    </components:ModalComponent>
+                    <ContentControl Content="{ Binding Path=ViewModelActual }"/>
                 </Grid>
             </Border>
         </Grid>

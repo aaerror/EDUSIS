@@ -5,12 +5,10 @@ namespace Domain.Cursos;
 
 public interface ICursoRepository : IRepository<Curso>
 {
-    IEnumerable<Division> BuscarDivisiones(Guid unCurso);
-    IEnumerable<Curso> CursosConDivisionesMaterias();
-    void CambiarAlumnoDeCurso(Guid alumnoId, Guid nuevoCursoId, Guid nuevaDivisionId);
+    Curso CursoConDivisiones(Guid cursoID);
 
-    #region Materias
-    void RegistrarMateria(Guid materiaId);
-    void QuitarMateria(Guid materiaId);
-    #endregion
+    void CambiarAlumnoDeCurso(Guid alumnoID, Guid nuevoCursoID, Guid nuevaDivisionID);
+
+    IEnumerable<Division> DivisionesDelCurso(Guid unCurso);
+    IEnumerable<Curso> CursosConDivisiones();
 }

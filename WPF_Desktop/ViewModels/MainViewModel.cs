@@ -1,6 +1,7 @@
 ﻿using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
+using WPF_Desktop.Store.Modal;
 
 namespace WPF_Desktop.ViewModels;
 

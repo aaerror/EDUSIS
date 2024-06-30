@@ -1,5 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vmModal="clr-namespace:WPF_Desktop.ViewModels.Shared.Modal"
+                    xmlns:vModal="clr-namespace:WPF_Desktop.Views.Shared.Modal"
                     xmlns:vmShared="clr-namespace:WPF_Desktop.ViewModels.Shared"
                     xmlns:vShared="clr-namespace:WPF_Desktop.Views.Shared"
                     xmlns:vmDocentes="clr-namespace:WPF_Desktop.ViewModels.Docentes"
@@ -8,10 +10,15 @@
                     xmlns:vAlumnos="clr-namespace:WPF_Desktop.Views.Alumnos"
                     xmlns:vmCursos="clr-namespace:WPF_Desktop.ViewModels.Cursos"
                     xmlns:vCursos="clr-namespace:WPF_Desktop.Views.Cursos"
-                    xmlns:vmMaterias="clr-namespace:WPF_Desktop.ViewModels.Materias"
-                    xmlns:vMaterias="clr-namespace:WPF_Desktop.Views.Materias"
-                    xmlns:vmCursosDivisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones"
-                    xmlns:vCursosDivisiones="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones">
+                    xmlns:vmMaterias="clr-namespace:WPF_Desktop.ViewModels.Cursos.Curriculas.Materias"
+                    xmlns:vMaterias="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias"
+                    xmlns:vmDivisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones"
+                    xmlns:vDivisiones="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones">
+    
+    <DataTemplate DataType="{ x:Type vmModal:BuscarViewModel }">
+        <vModal:BuscarView/>
+    </DataTemplate>
+    
     <!-- -SHARED -->
     <DataTemplate DataType="{ x:Type vmShared:InformacionPersonalViewModel }">
         <vShared:InformacionPersonalView/>
@@ -26,8 +33,8 @@
     </DataTemplate>
 
 
-    <!-- DOCENTES -->
-    <!--#region GESTIÓN DOCENTES -->
+    <!-- #region DOCENTES -->
+    <!-- GESTIÓN DOCENTES -->
     <DataTemplate DataType="{ x:Type vmDocentes:GestionDocentesViewModel }">
         <vDocentes:GestionDocentesView/>
     </DataTemplate>
@@ -43,23 +50,17 @@
     <DataTemplate DataType="{ x:Type vmDocentes:RegistrarDocenteViewModel }">
         <vDocentes:RegistrarDocenteView/>
     </DataTemplate>
-    <!--#endregion-->
-    
-    <DataTemplate DataType="{ x:Type vmDocentes:DocenteInstitucionalViewModel }">
-        <vDocentes:DocenteInstitucionalView/>
+
+    <DataTemplate DataType="{ x:Type vmDocentes:LegajoDocenteViewModel }">
+        <vDocentes:LegajoDocenteView/>
     </DataTemplate>
 
-    <DataTemplate DataType="{ x:Type vmDocentes:DocenteInfoViewModel }">
-        <vDocentes:DocenteInfoView/>
-    </DataTemplate>
-
-    <!--#region GESTIÓN LICENCIAS -->
+    <!-- GESTIÓN LICENCIAS -->
     <DataTemplate DataType="{ x:Type vmDocentes:GestionLicenciasViewModel }">
         <vDocentes:GestionLicenciasView/>
     </DataTemplate>
-    <!--#endregion-->
 
-    <!--#region GESTIÓN PUESTOS -->
+    <!-- GESTIÓN PUESTOS -->
     <DataTemplate DataType="{ x:Type vmDocentes:GestionPuestosViewModel }">
         <vDocentes:GestionPuestosView/>
     </DataTemplate>
@@ -70,7 +71,7 @@
     <!--#endregion-->
 
 
-    <!-- ALUMNO -->
+    <!-- #region ALUMNOS -->
     <DataTemplate DataType="{ x:Type vmAlumnos:GestionAlumnosViewModel }">
         <vAlumnos:GestionAlumnosView/>
     </DataTemplate>
@@ -83,12 +84,14 @@
         <vAlumnos:InscripcionEnCursoView/>
     </DataTemplate>
 
+    <!-- LEGAJO -->
     <DataTemplate DataType="{ x:Type vmAlumnos:PerfilAlumnoViewModel }">
         <vAlumnos:PerfilAlumnoView/>
     </DataTemplate>
+    <!--#endregion-->
 
-    <!-- CURSOS -->
-    <!--#region GESTIÓN DE CURSOS -->
+    <!-- #region CURSOS -->
+    <!-- GESTIÓN DE CURSOS -->
     <DataTemplate DataType="{ x:Type vmCursos:CursoViewModel }">
         <vCursos:CursoView/>
     </DataTemplate>
@@ -100,32 +103,33 @@
     <DataTemplate DataType="{ x:Type vmCursos:RegistrarCursosViewModel }">
         <vCursos:RegistrarCursoView/>
     </DataTemplate>
-    <!--#endregion-->
 
-    <!--#region CURSANTES -->
-    <DataTemplate DataType="{ x:Type vmCursosDivisiones:CursanteViewModel }">
-        <vCursosDivisiones:CursanteView/>
+    <!-- CURSANTES -->
+    <DataTemplate DataType="{ x:Type vmDivisiones:CursanteViewModel }">
+        <vDivisiones:CursanteView/>
     </DataTemplate>
 
-    <DataTemplate DataType="{ x:Type vmCursosDivisiones:CalificacionViewModel }">
-        <vCursosDivisiones:CalificacionView/>
+    <DataTemplate DataType="{ x:Type vmDivisiones:CalificacionViewModel }">
+        <vDivisiones:CalificacionView/>
     </DataTemplate>
-    <!--#endregion-->
     
     <!--#region DIVISIONES -->
-    <DataTemplate DataType="{ x:Type vmCursosDivisiones:GestionDivisionesViewModel }">
-        <vCursosDivisiones:GestionDivisionesView/>
+    <DataTemplate DataType="{ x:Type vmDivisiones:GestionDivisionesViewModel }">
+        <vDivisiones:GestionDivisionesView/>
     </DataTemplate>
 
-    <DataTemplate DataType="{ x:Type vmCursosDivisiones:DivisionViewModel }">
-        <vCursosDivisiones:DivisionView/>
+    <DataTemplate DataType="{ x:Type vmDivisiones:DivisionViewModel }">
+        <vDivisiones:DivisionView/>
     </DataTemplate>
 
-    <DataTemplate DataType="{ x:Type vmCursosDivisiones:GestionCursantesViewModel }">
-        <vCursosDivisiones:GestionCursantesView/>
+    <DataTemplate DataType="{ x:Type vmDivisiones:GestionCursantesViewModel }">
+        <vDivisiones:GestionCursantesView/>
     </DataTemplate>
     <!--#endregion-->
 
+    <!-- #region DISEÑO CURRICULAR -->
+    <!--#endregion-->
+    
     <!-- MATERIAS -->
     <!--#region MATERIAS -->
     <DataTemplate DataType="{ x:Type vmMaterias:GestionMateriasViewModel }">

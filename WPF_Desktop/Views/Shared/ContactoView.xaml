@@ -20,8 +20,8 @@
                     Grid.Row="0"
                     Margin="0 0 5 0">
             <Label Content="Contacto"
-                   Style="{ StaticResource Headline }"/>
-            <Separator Background="{ StaticResource Gray400 }"
+                   Style="{ StaticResource ResourceKey=Headline }"/>
+            <Separator Background="{ StaticResource ResourceKey=Gray400 }"
                    Height=".8"
                    Width="Auto"/>
         </StackPanel>
@@ -30,18 +30,18 @@
                     Grid.Row="1"
                     Margin="0 0 10 0">
             <Label Content="Telefono"
-                   Style="{ StaticResource Form }"/>
-            <TextBox Text="{ Binding Path=Telefono, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                     Style="{ StaticResource TextBox }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
+            <TextBox Text="{ Binding Path=Telefono, FallbackValue='Sin datos', TargetNullValue='Sin datos', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                     Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
         <StackPanel Grid.Column="1"
                     Grid.Row="1"
                     Margin="10 0 0 0">
             <Label Content="Email"
-                   Style="{ StaticResource Form }"/>
-            <TextBox Text="{ Binding Path=Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                     Style="{ StaticResource TextBox }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
+            <TextBox Text="{ Binding Path=Email, FallbackValue='Sin datos', TargetNullValue='Sin datos', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                     Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
     </Grid>
 </UserControl>

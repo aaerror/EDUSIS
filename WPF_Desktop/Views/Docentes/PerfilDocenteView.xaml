@@ -45,9 +45,9 @@
                         <StackPanel>
                             <components:InfoPersonalComponent Apellido="{ Binding Path=Docente.InformacionPersonalDTO.Apellido, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                                               Nombre="{ Binding Path=Docente.InformacionPersonalDTO.Nombre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                              Documento="{ Binding Path=Docente.InformacionPersonalDTO.Documento }"
+                                                              Documento="{ Binding Path=Docente.InformacionPersonalDTO.DNI }"
                                                               Sexo="{ Binding Path=Docente.InformacionPersonalDTO.Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                              FechaNacimiento="{ Binding Path=Docente.InformacionPersonalDTO.FechaNacimiento }"
+                                                              FechaNacimiento="{ Binding Path=Docente.InformacionPersonalDTO.FechaNacimiento, StringFormat={}{0:D}, ConverterCulture='es_ES' }"
                                                               Nacionalidad="{ Binding Path=Docente.InformacionPersonalDTO.Nacionalidad }"
                                                               EstaHabilitado="{ Binding HabilitarEditarSexo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
                             <WrapPanel HorizontalAlignment="Right"

@@ -17,8 +17,8 @@
 
     <StackPanel>
         <Label Content="Domicilio"
-               Style="{ StaticResource Headline }"/>
-        <Separator Background="{ StaticResource Gray400 }"
+               Style="{ StaticResource ResourceKey=Headline }"/>
+        <Separator Background="{ StaticResource ResourceKey=Gray400 }"
                    Height=".8"
                    Width="Auto"/>
 
@@ -26,9 +26,9 @@
         <!-- CALLE -->
         <Grid HorizontalAlignment="Stretch">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0"
@@ -36,11 +36,11 @@
                         VerticalAlignment="Center">
                 <Label Content="Calle"
                        Margin="4 0 0 0"
-                       Style="{ StaticResource Form }"/>
+                       Style="{ StaticResource ResourceKey=Form }"/>
 
                 <TextBox Tag="ingresar la calle&#x2026;"
-                         Text="{ Binding Calle, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                         Style="{StaticResource TextBox }"/>
+                         Text="{ Binding Path=Calle, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                         Style="{ StaticResource ResourceKey=TextBox }"/>
             </StackPanel>
 
             <!-- ALTURA -->
@@ -49,10 +49,10 @@
                         VerticalAlignment="Center">
                 <Label Content="Altura"
                        Margin="4 0 0 0"
-                       Style="{ StaticResource Form }"/>
+                       Style="{ StaticResource ResourceKey=Form }"/>
                 <TextBox Tag="9999"
-                         Text="{ Binding Altura, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                         Style="{StaticResource TextBox }"/>
+                         Text="{ Binding Path=Altura, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                         Style="{ StaticResource ResourceKey=TextBox }"/>
             </StackPanel>
 
             <!-- VIVIENDA -->
@@ -60,10 +60,10 @@
                         Margin="5 0 0 0">
                 <Label Content="Vivienda"
                        Margin="4 0 0 0"
-                       Style="{ StaticResource Form }"/>
-                <ComboBox ItemsSource="{ Binding Source={ StaticResource viviendas } }"
-                          SelectedIndex="{ Binding Vivienda, UpdateSourceTrigger=PropertyChanged }"
-                          Style="{ StaticResource ComboBoxStyle }"/>
+                       Style="{ StaticResource ResourceKey=Form }"/>
+                <ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=viviendas } }"
+                          SelectedIndex="{ Binding Path=Vivienda, UpdateSourceTrigger=PropertyChanged }"
+                          Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
             </StackPanel>
         </Grid>
         <!--#endregion Dirección -->
@@ -73,30 +73,30 @@
         <StackPanel VerticalAlignment="Center">
             <Label Content="Localidad"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar la localidad&#x2026;"
-                     Text="{ Binding Localidad, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource TextBox }"/>
+                     Text="{ Binding Path=Localidad, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
         <!-- PROVINCIA -->
         <StackPanel VerticalAlignment="Center">
             <Label Content="Provincia"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar la provincia&#x2026;"
-                     Text="{ Binding Provincia, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource TextBox }"/>
+                     Text="{ Binding Path=Provincia, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
         <!-- PAIS -->
         <StackPanel VerticalAlignment="Center">
             <Label Content="País"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox Tag="ingresar la país&#x2026;"
-                     Text="{ Binding Pais, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource TextBox }"/>
+                     Text="{ Binding Path=Pais, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                     Style="{StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
         <!--#endregion Ubicación -->
 
@@ -104,15 +104,15 @@
         <StackPanel>
             <Label Content="Observación"
                    Margin="4 0 0 0"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <TextBox AcceptsReturn="True"
                      MaxLength="120"
                      Height="94"
                      Tag="observaciones&#x2026;"
-                     Text="{ Binding Observaciones, UpdateSourceTrigger=PropertyChanged }"
+                     Text="{ Binding Path=Observaciones, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged }"
                      TextWrapping="Wrap"
                      VerticalContentAlignment="Top"
-                     Style="{ StaticResource TextBox }"/>
+                     Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
     </StackPanel>
 </UserControl>

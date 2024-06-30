@@ -20,16 +20,20 @@ public class GestionDivisionesViewModel : ViewModel
 
     private readonly INavigationService _gestionCursantesNavigationService;
 
-
     #region Request
     private EliminarDivisionRequest _elimniarDivisionRequest;
     #endregion
 
+    private int _totalDivisiones;
     private DivisionViewModel _division;
     private ObservableCollection<DivisionViewModel> _divisiones;
 
+    public string Curso => _cursoStore.Curso.GradoDescripcion;
+    public string CursoNivelEducativo => _cursoStore.Curso.NivelEducativoDescripcion;
+
     #region Commands
-    public ViewModelCommand ABMCommand { get; }
+    public ViewModelCommand RegistrarCommand { get; }
+    public ViewModelCommand EliminarCommand { get; }
     public ViewModelCommand NavigationCommand { get; }
     #endregion
 
@@ -46,9 +50,11 @@ public class GestionDivisionesViewModel : ViewModel
         _cursoStore = cursoStore;
         _divisionStore = divisionStore;
 
+        _divisiones = new ObservableCollection<DivisionViewModel>();
         ActualizarDivisiones();
 
-        ABMCommand = new ViewModelCommand(ExecuteABMCommand, CanExecuteABMCommand);
+        RegistrarCommand = new ViewModelCommand(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
+        EliminarCommand = new ViewModelCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
         NavigationCommand = new ViewModelCommand(ExecuteNavigationCommand, CanExecuteNavigationCommand);
     }
 
@@ -58,10 +64,25 @@ public class GestionDivisionesViewModel : ViewModel
         {
             var divisiones = _servicioCursos.BuscarDivisiones(_cursoStore.Curso.CursoID);
             Divisiones = new ObservableCollection<DivisionViewModel>(divisiones.Select(x => new DivisionViewModel(x)).ToList());
+            TotalDivisiones = Divisiones.Count;
         }
     }
 
     #region Properties
+    public int TotalDivisiones
+    {
+        get
+        {
+            return _totalDivisiones;
+        }
+
+        private set
+        {
+            _totalDivisiones = value;
+            OnPropertyChanged(nameof(TotalDivisiones));
+        }
+    }
+
     public CursoStore CursoStore
     {
         get
@@ -93,26 +114,25 @@ public class GestionDivisionesViewModel : ViewModel
 
         set
         {
+            _divisiones.Clear();
             _divisiones = value;
             OnPropertyChanged(nameof(Divisiones));
         }
     }
     #endregion
 
-    #region ABMCommand
-    private bool CanExecuteABMCommand(object obj)
+    #region RegistrarCommand
+    private bool CanExecuteRegistrarCommand(object obj)
     {
         switch (obj)
         {
-            case "Nueva":
+            case "Division":
                 return CursoStore is not null;
-            case "Eliminar":
-                return Division is not null;
             default: return false;
         }
     }
 
-    private void ExecuteABMCommand(object obj)
+    private void ExecuteRegistrarCommand(object obj)
     {
         string messageBoxText = string.Empty;
         string caption = string.Empty;
@@ -120,9 +140,8 @@ public class GestionDivisionesViewModel : ViewModel
 
         switch (obj)
         {
-            case "Nueva":
-                messageBoxText = $"Se va a registrar una nueva división en {CursoStore.Curso.Descripcion}° Año " +
-                                 $"({CursoStore.Curso.NivelEducativo})\n\n" +
+            case "Division":
+                messageBoxText = $"Se va a registrar una nueva división en { Curso }° Año\n\n" +
                                  $"¿Desea continuar?";
                 caption = "Registrar División";
                 result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -141,8 +160,31 @@ public class GestionDivisionesViewModel : ViewModel
                 }
 
                 break;
-            case "Eliminar":
-                messageBoxText = $"Se va a eliminar la división { Division.DivisionDescripcion } del curso.\n\n" +
+        }
+    }
+    #endregion
+
+    #region EliminarCommand
+    private bool CanExecuteEliminarCommand(object obj)
+    {
+        switch (obj)
+        {
+            case "Division":
+                return Division is not null;
+            default: return false;
+        }
+    }
+
+    private void ExecuteEliminarCommand(object obj)
+    {
+        string messageBoxText = string.Empty;
+        string caption = string.Empty;
+        MessageBoxResult result;
+
+        switch (obj)
+        {
+            case "Division":
+                messageBoxText = $"Se va a eliminar la división { Division.Descripcion } del curso.\n\n" +
                                  $"¿Desea continuar?";
                 caption = "Eliminar División";
                 result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);

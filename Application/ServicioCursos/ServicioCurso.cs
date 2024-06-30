@@ -20,7 +20,7 @@ public class ServicioCurso : IServicioCurso
         _logger = logger;
     }
 
-    private Curso BuscarCursoPorID(Guid unCurso)
+    private Curso BuscarCurso(Guid unCurso)
     {
         if (Guid.Empty.Equals(unCurso))
         {
@@ -36,23 +36,25 @@ public class ServicioCurso : IServicioCurso
         return cursoBuscado;
     }
 
-    public IReadOnlyCollection<CursoResponse> BuscarCursos()
+    #region Registrar, Modificar, Eliminar
+
+    public IReadOnlyCollection<CursoResponse> ListarCursos()
     {
         try
         {
-            var cursos = _unitOfWork.Cursos.CursosConDivisionesMaterias();
-            return cursos.Select(x => new CursoResponse
-                                {
-                                    CursoID = x.Id,
-                                    Descripcion = x.Descripcion.ToString(),
-                                    NivelEducativo = x.NivelEducativo.ToString(),
-                                    Divisiones = x.Divisiones.Count(),
-                                    Materias = x.Materias.Count(),
-                                    Alumnos = x.Divisiones.Select(d => d.TotalAlumnos).FirstOrDefault()
-                                })
-                         .OrderBy(x => x.NivelEducativo)
-                         .ThenBy(x => x.Descripcion)
-                         .ToList();
+            var cursos = _unitOfWork.Cursos.BuscarTodos();
+
+            return cursos.Select(x =>
+                new CursoResponse(CursoID: x.Id,
+                                  Grado: (int) x.Grado,
+                                  GradoDescripcion: x.Grado.ToString(),
+                                  NivelEducativo: (int) x.NivelEducativo,
+                                  NivelEducativoDescripcion: x.NivelEducativo.ToString(),
+                                  Divisiones: x.Divisiones.Count(),
+                                  Alumnos: x.CantidadAlumnos))
+                .OrderBy(x => x.Grado)
+                .ThenBy(x => x.NivelEducativo)
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -60,27 +62,43 @@ public class ServicioCurso : IServicioCurso
         }
     }
 
-    #region Registrar, Modificar, Eliminar
     public async Task RegistrarCurso(RegistrarCursoRequest request)
     {
         try
         {
-            var existeCurso = _unitOfWork.Cursos.Buscar(x => x.Descripcion == request.Descripcion && x.NivelEducativo.Equals((NivelEducativo) request.NivelEducativo))
-                                                .Any();
+            var existeCurso = _unitOfWork.Cursos
+                .Buscar(x => x.Grado.Equals((Grado) request.Grado) && x.NivelEducativo.Equals((NivelEducativo) request.NivelEducativo))
+                .Any();
+
             if (existeCurso)
             {
                 throw new CursoDuplicadoException();
             }
 
-            Curso nuevoCurso = new(request.Descripcion, (NivelEducativo) request.NivelEducativo);
+            Curso nuevoCurso = new((Grado) request.Grado, (NivelEducativo) request.NivelEducativo);
 
-            _unitOfWork.Cursos.AgregarAsync(nuevoCurso);
+            await _unitOfWork.Cursos.AgregarAsync(nuevoCurso);
             var result = await _unitOfWork.GuardarCambiosAsync();
+
             _logger.LogInformation($"Resultado de registrar materia: {result}", result);
         }
         catch (Exception ex)
         {
-            throw ex.InnerException;
+            throw;
+        }
+    }
+
+    public void EliminarCurso(EliminarCursoRequest request)
+    {
+        try
+        {
+            _unitOfWork.Cursos.Eliminar(request.CursoID);
+            // TODO: Eliminar todas las materias con este curso asociado
+            _unitOfWork.GuardarCambiosAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
         }
     }
     #endregion
@@ -90,7 +108,7 @@ public class ServicioCurso : IServicioCurso
     {
         try
         {
-            Curso curso = BuscarCursoPorID(request.Curso);
+            Curso curso = BuscarCurso(request.Curso);
 
 
         }
@@ -106,16 +124,12 @@ public class ServicioCurso : IServicioCurso
     {
         try
         {
-            Curso curso = BuscarCursoPorID(unCurso);
-
-            var div = _unitOfWork.Cursos.BuscarDivisiones(unCurso);
-            return div.Select(x => new DivisionResponse(curso.Id,
-                                                        curso.Descripcion,
-                                                        curso.NivelEducativo.ToString(),
-                                                        x.Id,
-                                                        x.Descripcion,
-                                                        x.TotalAlumnos))
-                             .OrderBy(x => x.DivisionDescripcion)
+            var divisiones = _unitOfWork.Cursos.DivisionesDelCurso(unCurso);
+            return divisiones.Select(x => new DivisionResponse(x.Id,
+                                                               x.Descripcion,
+                                                               _unitOfWork.Docentes.BuscarPorID(x.Preceptor ?? Guid.Empty)?.InformacionPersonal.NombreCompleto(),
+                                                               x.TotalAlumnos))
+                             .OrderBy(x => x.Descripcion)
                              .ToList()
                              .AsReadOnly();
         }
@@ -129,7 +143,7 @@ public class ServicioCurso : IServicioCurso
     {
         try
         {
-            Curso curso = BuscarCursoPorID(request.CursoID);
+            Curso curso = BuscarCurso(request.CursoID);
             var alumnos = curso.CursantesPorPeriodo(request.DivisionID, request.Periodo);
 
             return alumnos.Select(x => new CursanteResponse(x,
@@ -149,7 +163,7 @@ public class ServicioCurso : IServicioCurso
     {
         try
         {
-            Curso curso = BuscarCursoPorID(request.CursoID);
+            Curso curso = BuscarCurso(request.CursoID);
 
             curso.AgregarAlumnoAlListadoDefinitivo(request.DivisionID, request.AlumnoID, request.Periodo);
 
@@ -166,11 +180,10 @@ public class ServicioCurso : IServicioCurso
     {
         try
         {
-            Curso curso = BuscarCursoPorID(unCurso);
+            Curso curso = BuscarCurso(unCurso);
             curso.AgregarDivision();
 
             _unitOfWork.Cursos.Modificar(curso);
-
             _unitOfWork.GuardarCambiosAsync();
         }
         catch (Exception ex)
@@ -184,7 +197,7 @@ public class ServicioCurso : IServicioCurso
     {
         try
         {
-            Curso curso = BuscarCursoPorID(request.CursoID);
+            Curso curso = _unitOfWork.Cursos.CursoConDivisiones(request.CursoID);
 
             curso.QuitarDivision(request.DivisionID);
 

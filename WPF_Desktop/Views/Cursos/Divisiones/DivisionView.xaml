@@ -1,10 +1,11 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Divisiones.DivisionView"
              xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
+             xmlns:divisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:divisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones" d:DataContext="{d:DesignInstance Type=divisiones:DivisionViewModel}">
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
@@ -55,7 +56,7 @@
                     Margin="0 5 10 0">
             <Label Content="División"
                    Style="{ StaticResource ResourceKey=Form }"/>
-            <TextBox Text="{ Binding Path=DivisionDescripcion, TargetNullValue='División sin detallar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+            <TextBox Text="{ Binding Path=Descripcion, FallbackValue='División sin detalles', TargetNullValue='Sin datos de la división', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
                      Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
@@ -65,7 +66,7 @@
                     Margin="10 5 0 0">
             <Label Content="Cantidad de Alumnos"
                    Style="{ StaticResource ResourceKey=Form }"/>
-            <TextBox Text="{ Binding Path=Alumnos, TargetNullValue='Cantidad de alumnos sin detallar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+            <TextBox Text="{ Binding Path=Alumnos, FallbackValue='Listado de alumnos sin detalles', TargetNullValue='Sin datos del listado de alumnos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
                      Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
     </Grid>

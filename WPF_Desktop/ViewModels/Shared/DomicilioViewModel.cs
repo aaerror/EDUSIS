@@ -1,4 +1,4 @@
-﻿using Core.Shared.DTOs.Personas;
+﻿using Core.Shared.DTOs.Personas.Responses;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,17 +24,17 @@ public class DomicilioViewModel : ViewModel, INotifyDataErrorInfo
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
 
-    public DomicilioViewModel(DomicilioDTO domicilioDTO)
+    public DomicilioViewModel(DomicilioResponse domicilioResponse)
     {
-        if (domicilioDTO is not null)
+        if (domicilioResponse is not null)
         {
-            Calle = domicilioDTO.Calle;
-            Altura = domicilioDTO.Altura;
-            Vivienda = domicilioDTO.Vivienda;
-            Localidad = domicilioDTO.Localidad;
-            Provincia = domicilioDTO.Provincia;
-            Pais = domicilioDTO.Pais;
-            Observaciones = domicilioDTO.Observacion;
+            Calle = domicilioResponse.Calle;
+            Altura = domicilioResponse.Altura;
+            Vivienda = domicilioResponse.Vivienda;
+            Localidad = domicilioResponse.Localidad;
+            Provincia = domicilioResponse.Provincia;
+            Pais = domicilioResponse.Pais;
+            Observaciones = domicilioResponse.Observacion;
         }
     }
 
