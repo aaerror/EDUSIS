@@ -8,19 +8,19 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="100"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- TITTLE AND SUBTITLE -->
         <components:Header Grid.Row="0"
-                           Title="Gestión de Cursos"
+                           Title="Cursos"
                            Subtitle="Divisiones, Materias y Horarios"/>
 
         <!-- INPUTS -->
         <WrapPanel Grid.Row="1"
-                   Margin="26 10">
+                   Margin="20 10">
             <Button Command="{ Binding Path=NavigateCommand }"
                     CommandParameter="Curso"
                     Content="Registrar Curso"

@@ -305,6 +305,7 @@ public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
             return;
         }
 
+        DocenteInstitucionalViewModel.NombreCompleto = InformacionPersonalViewModel.Apellido + ", " + InformacionPersonalViewModel.Nombre;
         DocenteInstitucionalViewModel.DNI = InformacionPersonalViewModel.DNI;
         Tab = 1;
     }

@@ -14,6 +14,7 @@ public class Materia : Entity
 
     public Guid CursoID { get; private set; }
     public Guid? DocenteID { get => DocenteEnFunciones()?.DocenteID; }
+    public SituacionRevista? Docente => DocenteEnFunciones();
     public string Descripcion { get; private set; }
     public int HorasCatedra { get; private set; }
     public IReadOnlyCollection<SituacionRevista> Docentes => _docentes.ToList();
@@ -79,7 +80,7 @@ public class Materia : Entity
     #region Docente
     private SituacionRevista? DocenteEnFunciones() =>
         _docentes.Where(x => x.EnFunciones && !x.FechaBaja.HasValue)
-                   .FirstOrDefault();
+                 .FirstOrDefault();
 
     private SituacionRevista? BuscarSituacionRevistaActiva(Guid unDocente)
     {

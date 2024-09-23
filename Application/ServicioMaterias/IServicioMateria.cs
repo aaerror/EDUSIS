@@ -11,7 +11,8 @@ public interface IServicioMateria
     void ModificarMateria(ModificarMateriaRequest request);
     void EliminarMateria(EliminarMateriaRequest request);
 
-    IReadOnlyCollection<SituacionRevistaResponse> ListarCargosDocenteSegunMateria(ListarCargosDocentesSegunMateriaRequest request);
+    IReadOnlyCollection<SituacionRevistaResponse> ListarCargosDocenteSegunMateria(ListarCargosDocenteSegunMateriaRequest request);
+    IReadOnlyCollection<SituacionRevistaResponse> ListarCargosDocenteActivosSegunMateria(ListarCargosDocenteActivoSegunMateriaRequest request);
     SituacionRevistaResponse RegistrarDocenteEnMateria(RegistrarDocenteEnMateriaRequest request);
     void EstablecerDocenteDeAula(EstablecerDocenteDeAulaRequest request);
     void QuitarDocenteDeMateria(EliminarSituacionRevistaRequest request);

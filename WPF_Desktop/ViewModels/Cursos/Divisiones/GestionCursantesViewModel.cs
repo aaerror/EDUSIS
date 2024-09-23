@@ -18,8 +18,11 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
 {
+    #region Servicios
     private readonly IServicioCurso _servicioCursos;
     private readonly IServicioMateria _servicioMaterias;
+    #endregion
+
     private readonly CursoStore _cursoStore;
     private readonly DivisionStore _divisionStore;
 
@@ -57,7 +60,8 @@ public class GestionCursantesViewModel : ViewModel, INotifyDataErrorInfo
 
         var request = new ListarMateriasSegunCursoRequest(CursoID: _cursoStore.Curso.CursoID);
         var materias = _servicioMaterias.ListarMateriasSegunCurso(request);
-        _materias = new ObservableCollection<MateriaViewModel>(materias.Select(x => new MateriaViewModel(_servicioMaterias, x)));
+        _materias = new ObservableCollection<MateriaViewModel>();
+        //_materias = new ObservableCollection<MateriaViewModel>(materias.Select(x => new MateriaViewModel(_servicioMaterias, x)));
 
         BuscarCommand = new ViewModelCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
         ABMCommand = new ViewModelCommand(ExecuteABMCommand, CanExecuteABMCommand);

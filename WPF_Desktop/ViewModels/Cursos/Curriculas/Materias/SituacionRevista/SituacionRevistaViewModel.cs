@@ -7,7 +7,7 @@ using System.ComponentModel;
 using System.Linq;
 using WPF_Desktop.Shared;
 
-namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
+namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
 public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
 {
@@ -23,7 +23,6 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
 
 
     private Dictionary<string, List<string>> _errorsByProperty = new();
-
     public bool HasErrors => _errorsByProperty.Any();
 
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;

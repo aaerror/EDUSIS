@@ -7,13 +7,12 @@
              mc:Ignorable="d"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
     <!-- TITTLE AND SUBTITLE -->
-    <Border Grid.Row="0"
-            Background="#FFFFFF"
+    <Border Background="#FFFFFF"
             BorderBrush="{ StaticResource ResourceKey=Gray200 }"
             BorderThickness="1"
             CornerRadius="4"
             Margin="20 10"
-            Padding="20 0">
+            Padding="10">
         <Border.Effect>
             <DropShadowEffect BlurRadius="15"
                               Color="#373737"
@@ -21,16 +20,14 @@
                               Opacity=".3"/>
         </Border.Effect>
 
-        <StackPanel Grid.Row="0"
+        <StackPanel Margin="20 5"
                     VerticalAlignment="Center">
             <Label Content="{ Binding Path=Title, ElementName=aHeader }"
-                   Margin="0 0 0 0"
                    Style="{ StaticResource ResourceKey=Title }"/>
             <Separator Background="{ StaticResource ResourceKey=Gray300 }"
                        Height="2"
                        Margin="0 2"/>
             <Label Content="{ Binding Subtitle, ElementName=aHeader }"
-                   Margin="0 0 0 5"
                    Style="{ StaticResource ResourceKey=Subtitle }"/>
         </StackPanel>
     </Border>

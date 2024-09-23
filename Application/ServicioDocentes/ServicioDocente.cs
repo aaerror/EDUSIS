@@ -9,6 +9,7 @@ using Domain.Docentes.Licencias;
 using Microsoft.EntityFrameworkCore;
 using Core.Shared.DTOs.Personas.Responses;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace Core.ServicioDocentes;
 
@@ -170,6 +171,37 @@ public class ServicioDocente : IServicioDocente
         catch (Exception ex)
         {
             _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
+    }
+
+    //TODO: ListarDocentesXCargo
+
+    public IReadOnlyCollection<LegajoDocenteResponse> ListarDocentesActivos()
+    {
+        try
+        {
+            var docentes = _unitOfWork.Docentes.Buscar(x => !x.FechaBaja.HasValue);
+
+            return docentes.Select(x =>
+                new LegajoDocenteResponse(DocenteID: x.Id,
+                                          NombreCompleto: x.InformacionPersonal.NombreCompleto(),
+                                          Legajo: x.Legajo,
+                                          FechaAlta: x.FechaAlta,
+                                          FechaBaja: x.FechaBaja,
+                                          CUIL: x.CUIL,
+                                          EstaActivo: x.EstaActivo,
+                                          Puestos: x.Puestos.Select(p =>
+                                            new PuestoResponse(Posicion: (int)p.Posicion,
+                                                               PosicionDescripcion: p.Posicion.ToString(),
+                                                               FechaInicio: p.FechaInicio.Date,
+                                                               FechaFin: p.FechaFin))
+                                            .ToList()))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"Excepción generada: {ex.Message}\n");
             throw;
         }
     }

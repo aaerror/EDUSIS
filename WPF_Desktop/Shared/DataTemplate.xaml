@@ -12,6 +12,8 @@
                     xmlns:vCursos="clr-namespace:WPF_Desktop.Views.Cursos"
                     xmlns:vmMaterias="clr-namespace:WPF_Desktop.ViewModels.Cursos.Curriculas.Materias"
                     xmlns:vMaterias="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias"
+                    xmlns:vmSituacionRevista="clr-namespace:WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista"
+                    xmlns:vSituacionRevista="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
                     xmlns:vmDivisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones"
                     xmlns:vDivisiones="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones">
     
@@ -146,8 +148,12 @@
     </DataTemplate>
 
     <!--#region SITUACIÓN DE REVISTA -->
-    <DataTemplate DataType="{ x:Type vmMaterias:SituacionRevistaViewModel }">
-        <vMaterias:SituacionRevistaView/>
+    <DataTemplate DataType="{ x:Type vmSituacionRevista:GestionSituacionRevistaViewModel }">
+        <vSituacionRevista:GestionSituacionRevistaView/>
+    </DataTemplate>
+    
+    <DataTemplate DataType="{ x:Type vmSituacionRevista:SituacionRevistaViewModel }">
+        <vSituacionRevista:SituacionRevistaView/>
     </DataTemplate>
     <!--#endregion-->
 </ResourceDictionary>

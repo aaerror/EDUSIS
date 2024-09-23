@@ -15,26 +15,23 @@ public class GestionCursosViewModel : ViewModel
 {
     #region Servicios
     private readonly IServicioCurso _servicioCursos;
-    #endregion
-
-    #region NavigationService
     private readonly INavigationService _registrarCursoNavigationService;
     private readonly INavigationService _gestionDivisionesNavigationService;
     private readonly INavigationService _registrarMateriaNavigationService;
     #endregion
-    
-    private CursoStore _cursoStore;
-
-    private CursoViewModel _curso = null;
-    
-    private ObservableCollection<CursoViewModel> _cursos = new ObservableCollection<CursoViewModel>();
-    private ListCollectionView _listCollectionView;
 
     #region Commands
     public ViewModelCommand NavigateCommand { get; }
     public ViewModelCommand EliminarCommand { get; }
     public ViewModelCommand ListarCommand { get; }
     #endregion
+
+    private CursoStore _cursoStore;
+
+    private CursoViewModel _curso = null;
+
+    private ObservableCollection<CursoViewModel> _cursos = new ObservableCollection<CursoViewModel>();
+    private ListCollectionView _listCollectionView;
 
 
     public GestionCursosViewModel(IServicioCurso servicioCursos,
@@ -151,18 +148,6 @@ public class GestionCursosViewModel : ViewModel
     }
     #endregion
 
-    #region ListarCommand
-    private void ExecuteListarCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Curso":
-                LoadCursos();
-                break;
-        }
-    }
-    #endregion
-
     #region EliminaCommand
     private bool CanExecuteEliminarCommand(object obj)
     {
@@ -206,6 +191,18 @@ public class GestionCursosViewModel : ViewModel
                     }
                 }
 
+                break;
+        }
+    }
+    #endregion
+
+    #region ListarCommand
+    private void ExecuteListarCommand(object obj)
+    {
+        switch (obj)
+        {
+            case "Curso":
+                LoadCursos();
                 break;
         }
     }

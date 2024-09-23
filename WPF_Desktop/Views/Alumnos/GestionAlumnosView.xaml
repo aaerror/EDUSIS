@@ -15,13 +15,14 @@
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="100"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
         <!-- TITTLE AND SUBTITLE -->
         <components:Header Grid.Row="0"
-                           Title="Gestión de Alumnos"
+                           Title="Alumnos"
                            Subtitle="Altas, Bajas y Modificaciones"/>
 
         <!-- INPUTS -->

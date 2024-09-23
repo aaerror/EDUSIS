@@ -57,6 +57,7 @@ internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 
         // IGNORE
         builder.Ignore(x => x.DocenteID);
+        builder.Ignore(x => x.Docente);
     }
 
     private void ConfigureTableSituacionRevista(EntityTypeBuilder<Materia> builder)

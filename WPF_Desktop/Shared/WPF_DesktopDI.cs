@@ -9,6 +9,7 @@ using WPF_Desktop.Navigation.NavigationServices.Modal;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels;
 using WPF_Desktop.ViewModels.Alumnos;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.ViewModels.Docentes;
@@ -17,7 +18,8 @@ using Core.ServicioCursos;
 using Core.ServicioMaterias;
 using WPF_Desktop.ViewModels.Shared.Modal;
 using WPF_Desktop.Store.Modal;
-using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
+
 
 namespace WPF_Desktop.Shared;
 
@@ -40,6 +42,7 @@ internal static class WPF_DesktopDI
         services.AddSingleton<LegajoStore>();
         services.AddSingleton<CursoStore>();
         services.AddSingleton<DivisionStore>();
+        services.AddSingleton<MateriaStore>();
 
         return services;
     }
@@ -113,10 +116,19 @@ internal static class WPF_DesktopDI
 
         #region Materias
         services.AddTransient<GestionMateriasViewModel>(provider =>
-            new GestionMateriasViewModel(provider.GetRequiredService<IServicioMateria>(),
+            new GestionMateriasViewModel(CreateGestionSituacionRevistaNavigationService(provider),
+                                         provider.GetRequiredService<IServicioMateria>(),
                                          provider.GetRequiredService<IServicioDocente>(),
                                          provider.GetRequiredService<CursoStore>(),
-                                         CreateBuscarModalNavigationService(provider)));
+                                         provider.GetRequiredService<MateriaStore>()));
+        #endregion
+
+        #region SituaciónRevista
+        services.AddTransient<GestionSituacionRevistaViewModel>(provider =>
+            new GestionSituacionRevistaViewModel(provider.GetRequiredService<IServicioDocente>(),
+                                                 provider.GetRequiredService<IServicioMateria>(),
+                                                 provider.GetRequiredService<CursoStore>(),
+                                                 provider.GetRequiredService<MateriaStore>()));
         #endregion
 
         return services;
@@ -215,6 +227,13 @@ internal static class WPF_DesktopDI
     private static INavigationService CreateGestionDisenoCurricularNavigationService(IServiceProvider serviceProvider) =>
         new GestionDisenoCurricularNavigationService<GestionMateriasViewModel>(() =>
             serviceProvider.GetRequiredService<GestionMateriasViewModel>(),
+            serviceProvider.GetRequiredService<NavigationStore>());
+    #endregion
+
+    #region SituaciónRevistaNavigationService
+    private static INavigationService CreateGestionSituacionRevistaNavigationService(IServiceProvider serviceProvider) =>
+        new GestionSituacionRevistaNavigationService<GestionSituacionRevistaViewModel>(() =>
+            serviceProvider.GetRequiredService<GestionSituacionRevistaViewModel>(),
             serviceProvider.GetRequiredService<NavigationStore>());
     #endregion
 }

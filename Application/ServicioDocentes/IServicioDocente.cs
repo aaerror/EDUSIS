@@ -8,6 +8,7 @@ namespace Core.ServicioDocentes
     {
         PerfilPersonalDeDocenteResponse BuscarPerfilPersonalDelDocente(Guid docenteID);
         LegajoDocenteResponse BuscarLegajoDocentePorDNI(string documento);
+        IReadOnlyCollection<LegajoDocenteResponse> ListarDocentesActivos();
         IReadOnlyCollection<LegajoDocenteResponse> BuscarLegajoDocentePorApellidoNombre(BuscarDocentePorApellidoNombreRequest request);
 
 

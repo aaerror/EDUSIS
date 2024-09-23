@@ -52,7 +52,7 @@ public class ServicioMateria : IServicioMateria
         var materia = _unitOfWork.Materias.BuscarPorID(cursoID, materiaID);
         if (materia is null)
         {
-            throw new ArgumentNullException("No se encontró el diseño curricular en el sistema.");
+            throw new ArgumentNullException("No se encontró la materia en el diseño curricular del curso.");
         }
 
         return materia;
@@ -62,26 +62,49 @@ public class ServicioMateria : IServicioMateria
     {
         try
         {
+            List<MateriaResponse> listar = new();
             var materias = _unitOfWork.Materias.MateriasSegunCurso(request.CursoID);
 
-            _logger.LogInformation($"Se encontraron {materias.Count()} materias en el diseño curricular.");
+            _logger.LogInformation($"Se encontraron { materias.Count() } materias en el diseño curricular.");
 
-            return materias.Select(x => new MateriaResponse(request.CursoID,
-                                                            x.Id,
-                                                            x.Descripcion,
-                                                            x.HorasCatedra,
-                                                            x.HorasCatedraSinAsignar,
-                                                            x.DocenteID,
-                                                            _unitOfWork.Docentes.BuscarPorID(x.DocenteID.GetValueOrDefault())?.InformacionPersonal.NombreCompleto()))
-                           .ToList();
+            // TODO: Revisar mejor implementación del código
+            foreach (var materia in materias)
+            {
+                if (materia.Docente is null)
+                {
+                    listar.Add(new MateriaResponse(CursoID: materia.CursoID,
+                                                   MateriaID: materia.Id,
+                                                   Descripcion: materia.Descripcion,
+                                                   HorasCatedra: materia.HorasCatedra,
+                                                   HorasCatedraSinAsignar: materia.HorasCatedraSinAsignar,
+                                                   SituacionRevistaResponse: null));
+                }
+                else
+                {
+                    listar.Add(new MateriaResponse(CursoID: materia.CursoID,
+                                                   MateriaID: materia.Id,
+                                                   Descripcion: materia.Descripcion,
+                                                   HorasCatedra: materia.HorasCatedra,
+                                                   HorasCatedraSinAsignar: materia.HorasCatedraSinAsignar,
+                                                   SituacionRevistaResponse: new SituacionRevistaResponse(materia.Docente.DocenteID,
+                                                                                                          _unitOfWork.Docentes.BuscarPorID(materia.Docente.DocenteID).InformacionPersonal
+                                                                                                                              .NombreCompleto(),
+                                                                                                          (int) materia.Docente.Cargo,
+                                                                                                          materia.Docente.Cargo.ToString(),
+                                                                                                          materia.Docente.FechaAlta,
+                                                                                                          materia.Docente.FechaBaja,
+                                                                                                          materia.Docente.EnFunciones)));
+                }
+            }
+            return listar;
         }
         catch (Exception ex)
         {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            _logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
             throw;
         }
     }
-    
+
     public async Task RegistrarMateria(RegistrarMateriaRequest request)
     {
         try
@@ -123,7 +146,7 @@ public class ServicioMateria : IServicioMateria
 
             var materia = BuscarMateria(request.CursoID, request.MateriaID);
             materia.ModificarMateria(request.Descripcion, request.HorasCatedra);
-            
+
             _unitOfWork.Materias.Modificar(materia);
             var result = _unitOfWork.GuardarCambiosAsync();
 
@@ -154,7 +177,7 @@ public class ServicioMateria : IServicioMateria
     #endregion
 
     #region Situacion de Revista, Listar, Registrar, Modificar, Eliminar
-    public IReadOnlyCollection<SituacionRevistaResponse> ListarCargosDocenteSegunMateria(ListarCargosDocentesSegunMateriaRequest request)
+    public IReadOnlyCollection<SituacionRevistaResponse> ListarCargosDocenteSegunMateria(ListarCargosDocenteSegunMateriaRequest request)
     {
         try
         {
@@ -166,11 +189,37 @@ public class ServicioMateria : IServicioMateria
                 new SituacionRevistaResponse(
                     x.DocenteID,
                     _unitOfWork.Docentes.BuscarPorID(x.DocenteID).InformacionPersonal.NombreCompleto(),
-                    (int)x.Cargo,
+                    (int) x.Cargo,
                     x.Cargo.ToString(),
                     x.FechaAlta,
                     x.FechaBaja,
                     x.EnFunciones)).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+            throw;
+        }
+    }
+
+    public IReadOnlyCollection<SituacionRevistaResponse> ListarCargosDocenteActivosSegunMateria(ListarCargosDocenteActivoSegunMateriaRequest request)
+    {
+        try
+        {
+            var materia = BuscarMateria(request.CursoID, request.MateriaID);
+
+            _logger.LogInformation($"Se encontraron { materia.Docentes.Count() } registros sobre la situacion de revista en la materia.");
+
+            return materia.Docentes.Where(x => x.EnFunciones)
+                .Select(x =>
+                    new SituacionRevistaResponse(
+                        x.DocenteID,
+                        _unitOfWork.Docentes.BuscarPorID(x.DocenteID).InformacionPersonal.NombreCompleto(),
+                        (int)x.Cargo,
+                        x.Cargo.ToString(),
+                        x.FechaAlta,
+                        x.FechaBaja,
+                        x.EnFunciones)).ToList();
         }
         catch (Exception ex)
         {

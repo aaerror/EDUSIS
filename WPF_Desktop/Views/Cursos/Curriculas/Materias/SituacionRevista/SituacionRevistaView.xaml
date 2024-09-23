@@ -1,5 +1,5 @@
-﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevistaView"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias"
+﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista.SituacionRevistaView"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
              xmlns:domainMaterias="clr-namespace:Domain.Materias;assembly=Domain"
              xmlns:domainSituacionRevista="clr-namespace:Domain.Materias.CargosDocentes;assembly=Domain"
              xmlns:sys="clr-namespace:System;assembly=System.Runtime"
@@ -31,8 +31,8 @@
                     Grid.Row="0"
                     Margin="0 0 10 0">
             <Label Content="Docente"
-                   Style="{ StaticResource Form }"/>
-            <TextBox Text="{ Binding Path=NombreCompleto, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                   Style="{ StaticResource ResourceKey=Form }"/>
+            <TextBox Text="{ Binding Path=Docente, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
                      IsEnabled="False"
                      Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
@@ -44,9 +44,9 @@
                     Margin="10 0 0 0">
             <Label Content="Cargo en la Materia"
                    Style="{ StaticResource Form }"/>
-            <ComboBox ItemsSource="{ Binding Source={ StaticResource cargos } }"
+            <ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=cargos } }"
                       SelectedIndex="{ Binding Path=Cargo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                      Style="{ StaticResource ComboBoxStyle }"/>
+                      Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
         </StackPanel>
 
         <!-- FECHA ALTA -->
@@ -54,13 +54,13 @@
                     Grid.Row="1"
                     Margin="0 0 10 0">
             <Label Content="Fecha Alta"
-                   Style="{ StaticResource Form }"/>
+                   Style="{ StaticResource ResourceKey=Form }"/>
             <DatePicker SelectedDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                         DisplayDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                         DisplayDateStart="01/01/2000"
                         DisplayDateEnd="{ x:Static sys:DateTime.Now }"
-                        CalendarStyle="{ StaticResource Calendar }"
-                        Style="{ StaticResource DatePicker }"/>
+                        CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+                        Style="{ StaticResource ResourceKey=DatePicker }"/>
         </StackPanel>
 
         <!-- FECHA BAJA -->
@@ -68,10 +68,10 @@
                     Grid.Row="1"
                     Margin="10 0 0 0">
             <Label Content="Fecha Baja"
-                   Style="{ StaticResource Form }"/>
-            <TextBox Text="{ Binding Path=FechaBaja, FallbackValue='Fecha sin especificar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                   Style="{ StaticResource ResourceKey=Form }"/>
+            <TextBox Text="{ Binding Path=FechaBaja, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat='D', ConverterCulture='es_ES', FallbackValue='Sin datos', TargetNullValue='Sin datos', ValidatesOnDataErrors=True }"
                      IsEnabled="False"
-                     Style="{ StaticResource TextBox }"/>
+                     Style="{ StaticResource ResourceKey=TextBox }"/>
         </StackPanel>
 
         <StackPanel Grid.ColumnSpan="2"

@@ -16,16 +16,21 @@ using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Docentes;
 using Domain.Materias.CargosDocentes;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 
 public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
 {
-    #region ServicesAndStore
-    private readonly INavigationService _navigationService;
+    #region Services
+    private readonly INavigationService _gestionSituacionRevistaNavigationService;
     private readonly IServicioMateria _servicioMateria;
     private readonly IServicioDocente _servicioDocente;
+    #endregion
+
+    #region Store
     private readonly CursoStore _cursoStore;
+    private readonly MateriaStore _materiaStore;
     #endregion
 
     #region Requests
@@ -47,6 +52,7 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
     public string Curso => $"{ _cursoStore.Curso.Grado }° Año de { _cursoStore.Curso.NivelEducativoDescripcion }";
 
     public ObservableCollection<MateriaViewModel> _materias = new ObservableCollection<MateriaViewModel>();
+    public ObservableCollection<LegajoDocenteViewModel> _docentes;
 
     private string _descripcion = string.Empty;
     private int _cargaHoraria = 0;
@@ -67,15 +73,12 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
     private bool _habilitarRegistrarMateria = false;
     private bool _habilitarRegistrarHorario = false;
     private bool _habilitarRegistrarProfesor = false;
+    private bool _habilitarListaDocentes = false;
+    
 
 
     public DateTime FechaHoy { get; } = DateTime.Now;
 
-
-    private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
-
-    public bool HasErrors => _errorsByProperty.Any();
-    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
     #region Commands
     public ViewModelCommand GuardarCommand { get; }
@@ -86,25 +89,32 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
     public ViewModelCommand ListarCommand { get; }
     #endregion
 
+    private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
 
-    public GestionMateriasViewModel(IServicioMateria servicioMateria, IServicioDocente servicioDocente, CursoStore cursoStore, INavigationService navigationService)
+    public bool HasErrors => _errorsByProperty.Any();
+    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+
+
+    public GestionMateriasViewModel(INavigationService gestionSituacionRevistaNavigationService, IServicioMateria servicioMateria, IServicioDocente servicioDocente, CursoStore cursoStore, MateriaStore materiaStore)
     {
-        _navigationService = navigationService;
+        _gestionSituacionRevistaNavigationService = gestionSituacionRevistaNavigationService;
         _servicioMateria = servicioMateria;
         _servicioDocente = servicioDocente;
         _cursoStore = cursoStore;
+        _materiaStore = materiaStore;
 
         HabilitarEditarMateria = false;
         HabilitarRegistrarMateria = true;
         HabilitarRegistrarHorario = false;
         HabilitarRegistrarProfesor = false;
+        HabilitarListaDocentes = false;
 
         GuardarCommand = new ViewModelCommand(ExecuteGuardarCommand, CanExecuteGuardarCommand);
         RegistrarCommand = new ViewModelCommand(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
         CancelarCommand = new ViewModelCommand(ExecuteCancelarCommand, CanExecuteCancelarCommand);
         EliminarCommand = new ViewModelCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
         BuscarCommand = new ViewModelCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
-        ListarCommand = new ViewModelCommand(ExecuteListarCommand, CanExecuteListarCommand);
+        ListarCommand = new ViewModelCommand(ExecuteListarCommand);
 
         LoadMaterias();
     }
@@ -127,7 +137,7 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
                 _materias.Clear();
                 foreach (MateriaResponse materia in lista)
                 {
-                    _materias.Add(new MateriaViewModel(_servicioMateria, materia));
+                    _materias.Add(new MateriaViewModel(_gestionSituacionRevistaNavigationService, _servicioMateria, materia, _materiaStore));
                 }
             }
         }
@@ -180,6 +190,22 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
+    public bool HabilitarListaDocentes
+    {
+        get
+        {
+            return _habilitarListaDocentes;
+        }
+
+        set
+        {
+            _habilitarListaDocentes = value;
+            OnPropertyChanged(nameof(HabilitarListaDocentes));
+        }
+    }
+
+    
+
     public bool HabilitarEditarMateria
     {
         get
@@ -223,6 +249,20 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
         {
             _materias = value;
             OnPropertyChanged(nameof(Materias));
+        }
+    }
+
+    public ObservableCollection<LegajoDocenteViewModel> Docentes
+    {
+        get
+        {
+            return _docentes;
+        }
+
+        set
+        {
+            _docentes = value;
+            OnPropertyChanged(nameof(Docentes));
         }
     }
 
@@ -549,7 +589,7 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
                 }
                 break;
             case "Profesor":
-                if (_docenteInfoResponse is null)
+                if (LegajoDocenteViewModel is null)
                 {
                     messageBoxText = "Se debe buscar previamente que profesor desea inscribir en la materia.";
                     caption = "Error al Cambiar Situación de Revista";
@@ -557,16 +597,15 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
                     MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
                     BuscarProfesor = string.Empty;
-                    _legajoDocenteViewModel = new LegajoDocenteViewModel(null);
 
                     return;
                 }
 
                 messageBoxText = $"¿Está seguro que desea guardar los cambios en la materia?\n" +
-                                 $"Se va a cambiar la situación de revista del profesor {_docenteInfoResponse.NombreCompleto}\n\n" +
-                                 $"Materia: {MateriaDetalleViewModel.Descripcion}\n" +
-                                 $"Cargo nuevo: {(Cargo)SituacionRevistaViewModel.Cargo}\n" +
-                                 $"Fecha Alta: {SituacionRevistaViewModel.FechaAlta.Date.ToString("D")}";
+                                 $"Se va a cambiar la situación de revista del profesor { SituacionRevistaViewModel.Docente }\n\n" +
+                                 $"Materia: { MateriaDetalleViewModel.Descripcion }\n" +
+                                 $"Cargo nuevo: { (Cargo) SituacionRevistaViewModel.Cargo }\n" +
+                                 $"Fecha Alta: { SituacionRevistaViewModel.FechaAlta.Date.ToString("D") }";
                 caption = "Nueva Situación de Revista";
                 result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result is MessageBoxResult.Yes)
@@ -575,7 +614,7 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
                     {
                         _registrarSituacionRevistaRequest = new RegistrarDocenteEnMateriaRequest(CursoID: _cursoStore.Curso.CursoID,
                                                                                                  MateriaID: MateriaDetalleViewModel.MateriaID,
-                                                                                                 DocenteID: _docenteID,
+                                                                                                 DocenteID: SituacionRevistaViewModel.DocenteID,
                                                                                                  Cargo: SituacionRevistaViewModel.Cargo,
                                                                                                  FechaAlta: SituacionRevistaViewModel.FechaAlta,
                                                                                                  EnFunciones: SituacionRevistaViewModel.EnFunciones);
@@ -584,13 +623,11 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
                         messageBoxText = $"¡Cambios guardados exitósamente!";
                         caption = "Operación Exitosa";
                         MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+                        LoadMaterias();
 
-                        var situacionRevistaOld = MateriaDetalleViewModel.Historial.Where(x => x.EnFunciones && x.FechaBaja is null)
-                                                                                    .FirstOrDefault();
-
-                        MateriaDetalleViewModel.Historial.Add(new SituacionRevistaViewModel(_situacionRevistaResponse));
+                        /*MateriaDetalleViewModel.Historial.Add(new SituacionRevistaViewModel(_situacionRevistaResponse));
                         MateriaDetalleViewModel.QuitarDocenteEnFunciones(situacionRevistaOld);
-                        MateriaDetalleViewModel.AgregarDocenteEnFunciones(_situacionRevistaResponse.DocenteID);
+                        MateriaDetalleViewModel.AgregarDocenteEnFunciones(_situacionRevistaResponse.DocenteID);*/
 
                         HabilitarEditarMateria = false;
                         HabilitarRegistrarProfesor = false;
@@ -753,6 +790,8 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
                 result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
                 if (result == MessageBoxResult.Yes)
                 {
+
+                    // TODO: Eliminar docente
                 }
 
                 break;
@@ -799,7 +838,7 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
 
         if (string.IsNullOrWhiteSpace(BuscarProfesor))
         {
-            messageBoxText = "Se debe ingresar el número de documento del profesor que desea buscar.";
+            messageBoxText = "Se debe ingresar el documento del profesor que desea buscar.";
             caption = "Error";
             MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
@@ -810,12 +849,20 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
 
         try
         {
-            _docenteInfoResponse = _servicioDocente.BuscarLegajoDocentePorDNI(BuscarProfesor);
+            var response = _servicioDocente.BuscarLegajoDocentePorDNI(BuscarProfesor);
+            if (response is null)
+            {
+                messageBoxText = $"No existe profesor en actividad registrado con el siguiente D.N.I. buscado ({ BuscarProfesor }).\nIntente nuevamente.";
+                caption = "Error";
+                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-            //DocenteInstitucionalViewModel = new(_docenteInfoResponse.Institucional);
-            SituacionRevistaViewModel = new(null);
-            SituacionRevistaViewModel.Docente = _docenteInfoResponse.NombreCompleto;
-            _docenteID = _docenteInfoResponse.DocenteID;
+                return;
+            }
+
+            Docentes = new ObservableCollection<LegajoDocenteViewModel>();
+            Docentes.Add(new LegajoDocenteViewModel(response));
+
+            HabilitarListaDocentes = true;
         }
         catch (Exception ex)
         {
@@ -825,14 +872,41 @@ public class GestionMateriasViewModel : ViewModel, INotifyDataErrorInfo
     #endregion
 
     #region ListarCommand
-    private bool CanExecuteListarCommand(object obj)
-    {
-        throw new NotImplementedException();
-    }
-
     private void ExecuteListarCommand(object obj)
     {
-        throw new NotImplementedException();
+        string messageBoxText = string.Empty;
+        string caption = string.Empty;
+        MessageBoxResult result;
+
+        switch (obj)
+        {
+            case "Materias":
+                LoadMaterias();
+                break;
+            case "Docentes":
+                try
+                {
+                    var docentes = _servicioDocente.ListarDocentesActivos();
+                    if (docentes.Count == 0)
+                    {
+                        messageBoxText = $"No existen docentes registrados con el criterio de búsqueda ingresado.";
+                        caption = "Error";
+                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                        return;
+                    }
+
+                    Docentes = new ObservableCollection<LegajoDocenteViewModel>(docentes.Select(x => new LegajoDocenteViewModel(x)));
+                    HabilitarListaDocentes = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                break;
+        }
     }
     #endregion
+
+    
 }
