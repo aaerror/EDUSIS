@@ -102,6 +102,11 @@ public class Materia : Entity
         _docentes[index] = aModificar.QuitarCargo(DateTime.Now.Date);
     }
 
+    public int CargosOcupados() =>
+        Docentes
+            .Where(x => x.EnFunciones)
+            .Count();
+
     public void DarBajaCargoDocente(Guid unDocente)
     {
         var aModificar = BuscarSituacionRevistaActiva(unDocente);
@@ -112,7 +117,7 @@ public class Materia : Entity
     {
         if (!CargoDisponible(cargo))
         {
-            throw new ArgumentException($"Ya existe un docente ocupando este cargo ({cargo}) en la materia. Debe dar de baja ese cargo antes de continuar.", nameof(cargo));
+            throw new ArgumentException($"Ya existe un docente ocupando este cargo ({ cargo }) en la materia. Debe dar de baja ese cargo antes de continuar.", nameof(cargo));
         }
 
         var situacionRevista = BuscarSituacionRevistaActiva(docenteID);
@@ -161,7 +166,8 @@ public class Materia : Entity
     #endregion
 
     #region Horarios
-    public int HorasCatedraSinAsignar => HorasCatedra - _horarios.Count();
+    public int HorasCatedraSinAsignar =>
+        HorasCatedra - _horarios.Count();
 
     public bool HorarioOcupado(Horario horarioBuscado) => _horarios.Contains(horarioBuscado);
 
@@ -198,6 +204,7 @@ public class Materia : Entity
         _horarios.Add(nuevo);
     }
 
-    public bool ExistenHorasCatedraSinAsignar() => HorasCatedraSinAsignar >= 0;
+    public bool ExistenHorasCatedraSinAsignar() =>
+        HorasCatedraSinAsignar >= 0;
     #endregion
 }

@@ -12,13 +12,16 @@ public partial class GestionMateriasView : UserControl
     private void DataGridMaterias_Loaded(object sender, System.Windows.RoutedEventArgs e)
     {
         var dataGridMaterias = sender as DataGrid;
-        
-        if (dataGridMaterias.HasItems)
+
+        if (dataGridMaterias.IsEnabled)
         {
-            var firstItem = dataGridMaterias.Items[0];
-            dataGridMaterias.SelectedItem = firstItem;
-            DataGridRow row = (DataGridRow) dataGridMaterias.ItemContainerGenerator.ContainerFromItem(firstItem);
-            dataGridMaterias.Focus();
+            if (dataGridMaterias.HasItems)
+            {
+                var firstItem = dataGridMaterias.Items[0];
+                dataGridMaterias.SelectedItem = firstItem;
+                DataGridRow row = (DataGridRow) dataGridMaterias.ItemContainerGenerator.ContainerFromItem(firstItem);
+                dataGridMaterias.Focus();
+            }
         }
     }
 }

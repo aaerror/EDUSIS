@@ -53,7 +53,7 @@
                                   Opacity=".3"/>
             </Border.Effect>
 
-            <Grid VerticalAlignment="Stretch">
+            <Grid VerticalAlignment="Top">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>

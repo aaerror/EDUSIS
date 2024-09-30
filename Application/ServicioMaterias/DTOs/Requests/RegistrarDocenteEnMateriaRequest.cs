@@ -1,3 +1,5 @@
-﻿namespace Core.ServicioMaterias.DTOs.Requests;
+﻿using Domain.Materias.CargosDocentes;
 
-public record RegistrarDocenteEnMateriaRequest(Guid CursoID, Guid MateriaID, Guid DocenteID, int Cargo, DateTime FechaAlta, bool EnFunciones);
+namespace Core.ServicioMaterias.DTOs.Requests;
+
+public record RegistrarDocenteEnMateriaRequest(Guid CursoID, Guid MateriaID, Guid DocenteID, Cargo Cargo, DateTime FechaAlta, bool EnFunciones);

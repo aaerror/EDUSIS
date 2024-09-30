@@ -20,9 +20,9 @@ public class LegajoDocenteViewModel : ViewModel, INotifyDataErrorInfo
     private string _prefijoCuil = string.Empty;
     private string _dni = string.Empty;
     private string _posfijoCuil = string.Empty;
-    private DateTime _fechaAlta;
+    private DateTime _fechaAlta = DateTime.Now.Date;
     private DateTime? _fechaBaja = null;
-    private bool _estaActivo = false;
+    private bool _estaActivo = true;
 
     private bool _esRegistroDocente = false;
 
@@ -49,9 +49,6 @@ public class LegajoDocenteViewModel : ViewModel, INotifyDataErrorInfo
             FechaBaja = _legajoDocenteResponse.FechaBaja;
             EstaActivo = _legajoDocenteResponse.EstaActivo;
         }
-
-        FechaAlta = DateTime.Now;
-        EstaActivo = true;
     }
 
     #region Properties

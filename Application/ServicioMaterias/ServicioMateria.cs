@@ -76,7 +76,7 @@ public class ServicioMateria : IServicioMateria
                                                    MateriaID: materia.Id,
                                                    Descripcion: materia.Descripcion,
                                                    HorasCatedra: materia.HorasCatedra,
-                                                   HorasCatedraSinAsignar: materia.HorasCatedraSinAsignar,
+                                                   CargosOcupados: materia.CargosOcupados(),
                                                    SituacionRevistaResponse: null));
                 }
                 else
@@ -85,12 +85,11 @@ public class ServicioMateria : IServicioMateria
                                                    MateriaID: materia.Id,
                                                    Descripcion: materia.Descripcion,
                                                    HorasCatedra: materia.HorasCatedra,
-                                                   HorasCatedraSinAsignar: materia.HorasCatedraSinAsignar,
+                                                   CargosOcupados: materia.CargosOcupados(),
                                                    SituacionRevistaResponse: new SituacionRevistaResponse(materia.Docente.DocenteID,
                                                                                                           _unitOfWork.Docentes.BuscarPorID(materia.Docente.DocenteID).InformacionPersonal
                                                                                                                               .NombreCompleto(),
-                                                                                                          (int) materia.Docente.Cargo,
-                                                                                                          materia.Docente.Cargo.ToString(),
+                                                                                                          materia.Docente.Cargo,
                                                                                                           materia.Docente.FechaAlta,
                                                                                                           materia.Docente.FechaBaja,
                                                                                                           materia.Docente.EnFunciones)));
@@ -189,8 +188,7 @@ public class ServicioMateria : IServicioMateria
                 new SituacionRevistaResponse(
                     x.DocenteID,
                     _unitOfWork.Docentes.BuscarPorID(x.DocenteID).InformacionPersonal.NombreCompleto(),
-                    (int) x.Cargo,
-                    x.Cargo.ToString(),
+                    x.Cargo,
                     x.FechaAlta,
                     x.FechaBaja,
                     x.EnFunciones)).ToList();
@@ -210,13 +208,12 @@ public class ServicioMateria : IServicioMateria
 
             _logger.LogInformation($"Se encontraron { materia.Docentes.Count() } registros sobre la situacion de revista en la materia.");
 
-            return materia.Docentes.Where(x => x.EnFunciones)
+            return materia.Docentes.Where(x => !x.FechaBaja.HasValue)
                 .Select(x =>
                     new SituacionRevistaResponse(
                         x.DocenteID,
                         _unitOfWork.Docentes.BuscarPorID(x.DocenteID).InformacionPersonal.NombreCompleto(),
-                        (int)x.Cargo,
-                        x.Cargo.ToString(),
+                        x.Cargo,
                         x.FechaAlta,
                         x.FechaBaja,
                         x.EnFunciones)).ToList();

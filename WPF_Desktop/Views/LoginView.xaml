@@ -72,11 +72,11 @@
                 <WrapPanel HorizontalAlignment="Right"
                            Margin="20 15 20 0">
                     <Button Content="Salir"
-                            Margin="0 0 4 0"
+                            Margin="0 0 5 0"
                             Style="{ StaticResource Secondary }"/>
                     <Button Command="{ Binding LoginCommand }"
                             Content="Ingresar"
-                            Margin="4 0 0 0"
+                            Margin="5 0 0 0"
                             Style="{ StaticResource Primary }"/>
                 </WrapPanel>
                 <!-- FOOTER -->

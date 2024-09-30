@@ -116,7 +116,8 @@ internal static class WPF_DesktopDI
 
         #region Materias
         services.AddTransient<GestionMateriasViewModel>(provider =>
-            new GestionMateriasViewModel(CreateGestionSituacionRevistaNavigationService(provider),
+            new GestionMateriasViewModel(CreateGestionCursosNavigationService(provider),
+                                         CreateGestionSituacionRevistaNavigationService(provider),
                                          provider.GetRequiredService<IServicioMateria>(),
                                          provider.GetRequiredService<IServicioDocente>(),
                                          provider.GetRequiredService<CursoStore>(),
@@ -125,7 +126,8 @@ internal static class WPF_DesktopDI
 
         #region SituaciónRevista
         services.AddTransient<GestionSituacionRevistaViewModel>(provider =>
-            new GestionSituacionRevistaViewModel(provider.GetRequiredService<IServicioDocente>(),
+            new GestionSituacionRevistaViewModel(CreateGestionDisenoCurricularNavigationService(provider),
+                                                 provider.GetRequiredService<IServicioDocente>(),
                                                  provider.GetRequiredService<IServicioMateria>(),
                                                  provider.GetRequiredService<CursoStore>(),
                                                  provider.GetRequiredService<MateriaStore>()));

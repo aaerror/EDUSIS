@@ -1,70 +1,114 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Curriculas.Materias.GestionMateriasView"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias"
-             xmlns:vDocentes="clr-namespace:WPF_Desktop.Views.Docentes"
-             xmlns:components="clr-namespace:WPF_Desktop.Components"
-             xmlns:vAlumnos="clr-namespace:WPF_Desktop.Views.Alumnos"
-             xmlns:vSituacionRevista="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
-             xmlns:domainMaterias="clr-namespace:Domain.Materias;assembly=Domain"
-             xmlns:domainSituacionRevista="clr-namespace:Domain.Materias.CargosDocentes;assembly=Domain"
-             xmlns:domainHorarios="clr-namespace:Domain.Materias.Horarios;assembly=Domain"
-             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias"
+             xmlns:components="clr-namespace:WPF_Desktop.Components"
              xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
+             xmlns:domainMaterias="clr-namespace:Domain.Materias;assembly=Domain"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
     <UserControl.Resources>
         <!-- CONVERTER -->
-        <BooleanToVisibilityConverter x:Key="Converter"/>
-        <converters:EnumConverter x:Key="EnumConverter"/>
-
-        <!-- CARGOS DE PROFESORES -->
-        <ObjectDataProvider x:Key="cargos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="domainSituacionRevista:Cargo"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-
-        <!-- DÍAS DE LA SEMANA -->
-        <ObjectDataProvider x:Key="dias" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="domainHorarios:Dia"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-        <!-- TURNOS -->
-        <ObjectDataProvider x:Key="turnos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="domainHorarios:Turno"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-        <!-- DURACIÓN HORA CÁTEDRA -->
-        <ObjectDataProvider x:Key="duraciones" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="domainMaterias:DuracionHoraCatedra"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
+        <BooleanToVisibilityConverter x:Key="booleanConverter"/>
+        <converters:EnumConverter x:Key="enumConverter"/>
+        <converters:CargoConverter x:Key="cargoConverter"/>
     </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- TITLE AND SUBTITLE -->
         <components:Header Grid.Row="0"
-                           Title="Administración de Materias"
-                           Subtitle="{ Binding Path=Curso, Mode=OneTime }"
+                           Title="{ Binding Path=Curso, Mode=OneTime }"
+                           Subtitle="Gestión de Materias"
                            VerticalContentAlignment="Top"/>
 
-        <Border Grid.Row="1"
+        <!-- COMMAND  -->
+        <Grid Grid.Row="1"
+              Margin="20 10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <WrapPanel Grid.Column="0"
+                       HorizontalAlignment="Left">
+                <Button Command="{ Binding Path=RegistrarCommand }"
+                        CommandParameter="Insert"
+                        Content="Nueva materia"
+                        IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                        Style="{ StaticResource ResourceKey=Secondary }"/>
+            </WrapPanel>
+            <WrapPanel Grid.Column="1"
+                       HorizontalAlignment="Right">
+                <Button Command="{ Binding Path=NavigationCommand }"
+                        CommandParameter="Cursos"
+                        Content="Ir a cursos"
+                        HorizontalAlignment="Right"
+                        IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                        Style="{ StaticResource ResourceKey=Secondary }"/>
+            </WrapPanel>
+        </Grid>
+
+        <!-- MESSAGE -->
+        <Border Grid.Row="2"
                 Background="#FFFFFF"
                 BorderBrush="{ StaticResource ResourceKey=Gray200 }"
                 BorderThickness="1"
                 CornerRadius="4"
+                IsEnabled="{ Binding Path=HabilitarNotificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
                 Margin="20 10"
-                Padding="10 5 10 10"
-                VerticalAlignment="Top">
+                Padding="10"
+                VerticalAlignment="Top"
+                Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15"
+                                  Color="#373737"
+                                  ShadowDepth="5"
+                                  Opacity=".3"/>
+            </Border.Effect>
+            <Grid Margin="20 10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Margin="0 0 0 5">
+                    <Label Content="Diseño Curricular"
+                           Style="{ StaticResource ResourceKey=Headline }"/>
+                    <Separator Background="{ StaticResource ResourceKey=Gray400 }"
+                               Height=".8"
+                               Width="Auto"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1"
+                            Margin="0 5 0 0">
+                    <Label Content="No existen asignaturas en el diseño curricular del curso."
+                           Style="{ StaticResource ResourceKey=Body }"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- GESTIÓN -->
+        <Border Grid.Row="3"
+                Background="#FFFFFF"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+                BorderThickness="1"
+                CornerRadius="4"
+                IsEnabled="{ Binding Path=HabilitarGestionMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                Margin="20 10"
+                Padding="10"
+                VerticalAlignment="Top"
+                Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="15"
                                   Color="#373737"
@@ -72,337 +116,237 @@
                                   Opacity=".3"/>
             </Border.Effect>
 
-            <TabControl Grid.Row="1">
-                <!-- CURRICULA DEL CURSO -->
-                <TabItem Header="DISEÑO CURRICULAR"
-                         FontSize="14"
-                         Padding="10 5">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  Padding="5 0">
-                        <StackPanel Margin="10 5">
-                            <DataGrid x:Name="DataGridMaterias"
-                                      ItemsSource="{ Binding Path=Materias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                      SelectedItem="{ Binding Path=MateriaDetalleViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                      IsReadOnly="True"
-                                      IsSynchronizedWithCurrentItem="True"
-                                      Margin="0 10"
-                                      d:ItemsSource="{ d:SampleData ItemCount=5 }"
-                                      Style="{ StaticResource ResourceKey=DataGrid }"
-                                      Loaded="DataGridMaterias_Loaded">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Binding="{ Binding Path=Materia }"
-                                                        Header="MateriaID"
-                                                        Visibility="Hidden"
-                                                        Width="Auto"/>
-                                    <DataGridTextColumn Binding="{ Binding Path=Descripcion }"
-                                                        Header="Materia"
-                                                        Width="1*"/>
-                                    <DataGridTextColumn Binding="{ Binding Path=SituacionRevista.Docente, FallbackValue='Sin datos', TargetNullValue='No hay profesor asignado' }"
-                                                        Header="Profesor a Cargo"
-                                                        Width="2*"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
+            <Grid Margin="20 10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                            <!-- DETALLE DE ASIGNATURA -->
-                            <Border Background="#FFFFFF"
-                                    BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Margin="0 10"
-                                    Padding="10 5 10 10"
-                                    VerticalAlignment="Center">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="15"
-                                                      Color="#373737"
-                                                      ShadowDepth="5"
-                                                      Opacity=".3"/>
-                                </Border.Effect>
+                <StackPanel Grid.Row="0"
+                            Margin="0 0 0 5">
+                    <Label Content="Diseño Curricular"
+                           Style="{ StaticResource ResourceKey=Headline }"/>
+                    <Separator Background="{ StaticResource ResourceKey=Gray400 }"
+                               Height=".8"
+                               Width="Auto"/>
+                </StackPanel>
 
-                                <StackPanel Margin="20 10">
-                                    <!-- MATERIA VIEW -->
-                                    <local:MateriaView DataContext="{ Binding Path=SelectedItem, ElementName=DataGridMaterias }"/>
-                                </StackPanel>
-                            </Border>
+                <Grid Grid.Row="1"
+                      Margin="0 5 0 0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                            <!-- REGISTRAR PROFESOR -->
-                            <Border Background="#FFFFFF"
-                                    BorderBrush="{StaticResource Gray200}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Margin="0 10"
-                                    Padding="10 5 10 10"
-                                    VerticalAlignment="Center"
-                                    Visibility="{ Binding Path=HabilitarRegistrarProfesor, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="15"
-                                                      Color="#373737"
-                                                      ShadowDepth="5"
-                                                      Opacity=".3"/>
-                                </Border.Effect>
-                                <StackPanel>
-                                    <Label Content="Cambio de Situación de Revista"
-                                           Style="{ StaticResource Headline }"/>
-                                    <Separator Background="{ StaticResource Gray400 }"
-                                               Height=".8"
-                                               Width="Auto"/>
+                    <DataGrid Grid.Row="0"
+                              x:Name="DataGrid_Materias"
+                              ItemsSource="{ Binding Path=Materias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                              SelectedItem="{ Binding Path=Materia, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+                              IsReadOnly="True"
+                              IsSynchronizedWithCurrentItem="True"
+                              d:ItemsSource="{ d:SampleData ItemCount=5 }"
+                              Style="{ StaticResource ResourceKey=DataGrid }"
+                              Loaded="DataGridMaterias_Loaded">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{ Binding Path=Descripcion }"
+                                                Header="Materia"
+                                                Width="1*"/>
+                            <DataGridTextColumn Binding="{ Binding Path=SituacionRevista.Docente, FallbackValue='Sin datos', TargetNullValue='No hay profesor asignado' }"
+                                                Header="Profesor a Cargo"
+                                                Width="2*"/>
+                            <DataGridTextColumn Binding="{ Binding Path=SituacionRevista.Cargo, FallbackValue='Sin datos', TargetNullValue='No hay profesor asignado', Converter={ StaticResource ResourceKey=cargoConverter } }"
+                                                Header="Cargo"
+                                                Width="2*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
 
-                                    <!-- PROFESOR -->
-                                    <GroupBox Header="Docente"
-                                              Padding="20 10"
-                                              Margin="0 5 0 5">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition/>
-                                                <RowDefinition/>
-                                                <RowDefinition/>
-                                            </Grid.RowDefinitions>
-
-                                            <WrapPanel Grid.Column="0"
-                                                       Grid.Row="0"
-                                                       HorizontalAlignment="Stretch"
-                                                       Margin="0 5 0 10">
-                                                <!-- BUSCAR PROFESOR -->
-                                                <TextBox Text="{ Binding Path=BuscarProfesor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                                                         Tag="ingresar documento del profesor&#x2026;"
-                                                         Margin="0 0 5 0"
-                                                         Width="230"
-                                                         Style="{ StaticResource ResourceKey=TextBox }"/>
-
-                                                <Button Command="{ Binding Path=BuscarCommand }"
-                                                        Content="Buscar"
-                                                        Margin="5 0"
-                                                        Style="{ StaticResource ResourceKey=Primary }"/>
-                                            </WrapPanel>
-                                            <WrapPanel Grid.Column="1"
-                                                       Grid.Row="0"
-                                                       HorizontalAlignment="Right"
-                                                       Margin="0 5 0 10">
-                                                <Button Command="{ Binding Path=ListarCommand }"
-                                                        CommandParameter="Docentes"
-                                                        Content="Ver docentes"
-                                                        Margin="5 0 0 0"
-                                                        Style="{ StaticResource ResourceKey=Tertiary }"/>
-                                            </WrapPanel>
-
-                                            <Expander Grid.ColumnSpan="2"
-                                                      Grid.Row="1"
-                                                      Header="Docentes"
-                                                      ExpandDirection="Down"
-                                                      Padding="5"
-                                                      IsEnabled="{ Binding Path=HabilitarListaDocentes, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
-                                                      Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }">
-                                                <!-- LIST -->
-                                                <StackPanel Grid.Row="1"
-                                                            Margin="0 10">
-                                                    <ListView x:Name="ListDocentes"
-                                                              ItemsSource="{ Binding Path=Docentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                                              SelectedItem="{ Binding Path=LegajoDocenteViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                              IsSynchronizedWithCurrentItem="True"
-                                                              Margin="0 5"
-                                                              d:ItemsSource="{ d:SampleData ItemCount=5 }"
-                                                              Style="{ StaticResource ResourceKey=ListViewStyle }">
-                                                        <ListView.View>
-                                                            <GridView AllowsColumnReorder="False">
-                                                                <GridView.Columns>
-                                                                    <GridViewColumn Header="Fecha Alta"
-                                                                                    DisplayMemberBinding="{ Binding Path=FechaAlta, StringFormat='D', ConverterCulture='es_ES', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-                                                                                    Width="Auto"/>
-                                                                    <GridViewColumn Header="Docente"
-                                                                                    DisplayMemberBinding="{ Binding Path=NombreCompleto, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-                                                                                    Width="Auto"/>
-                                                                </GridView.Columns>
-                                                            </GridView>
-                                                        </ListView.View>
-                                                    </ListView>
-
-                                                    <WrapPanel Margin="0 5"
-                                                               HorizontalAlignment="Right">
-                                                        <Button Command="{ Binding Path=SeleccionarCommand }"
-                                                                CommandParameter="Docente"
-                                                                Content="Seleccionar"
-                                                                Margin="0 0 5 0"
-                                                                Style="{ StaticResource ResourceKey=Secondary }"/>
-                                                    </WrapPanel>
-                                                </StackPanel>
-                                            </Expander>
-                                        </Grid>
-                                    </GroupBox>
-
-                                    <!-- SITUACIÓN REVISTA -->
-                                    <GroupBox Header="Nueva Situación de Revista"
-                                              Margin="0 5"
-                                              Padding="20 10"
-                                              IsEnabled="{ Binding Path=HabilitarSituacionRevista, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
-                                              Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }">
-                                        <!--
-                                        <local:GestionMateriasView DataContext="{ Binding Path=SituacionRevistaViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>-->
-                                    </GroupBox>
-
-                                    <!-- COMMANDS -->
-                                    <WrapPanel Grid.ColumnSpan="3"
-                                               Grid.Row="3"
-                                               Margin="0 5 0 5"
-                                               HorizontalAlignment="Right">
-                                        <!-- PROFESOR CANCELAR -->
-                                        <Button Command="{ Binding CancelarCommand }"
-                                                CommandParameter="Profesor"
-                                                Content="Cancelar"
-                                                Margin="0 0 5 0"
-                                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                                Style="{ StaticResource Tertiary }"/>
-                                        <!-- PROFESOR GUARDAR -->
-                                        <Button Command="{ Binding GuardarCommand }"
-                                                CommandParameter="Profesor"
-                                                Content="Guardar"
-                                                Margin="5 0 0 0"
-                                                Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                                Style="{ StaticResource Primary }"/>
-                                    </WrapPanel>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- COMMANDS -->
-                            <Grid Margin="0 10 0 5">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto   "/>
-                                </Grid.ColumnDefinitions>
-
-                                <WrapPanel Grid.Column="0"
-                                           HorizontalAlignment="Left">
-                                    <!-- PROFESOR REGISTRAR -->
-                                    <Button Command="{ Binding Path=RegistrarCommand }"
-                                            CommandParameter="Profesor"
-                                            Content="Agregar Profesor"
-                                            Margin="0 0 0 0"
-                                            Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, Converter={ StaticResource ResourceKey=Converter } }"
-                                            Style="{ StaticResource ResourceKey=Secondary }"/>
-
-                                    <!-- HORARIO CANCELAR-->
-                                    <Button Command="{ Binding Path=CancelarCommand }"
-                                            CommandParameter="Horario"
-                                            Content="Cancelar"
-                                            Margin="0 0 5 0"
-                                            Visibility="Hidden"
-                                            Style="{ StaticResource ResourceKey=Tertiary }"/>
-
-                                    <!-- HORARIO GUARDAR -->
-                                    <Button Command="{ Binding Path=GuardarCommand }"
-                                            CommandParameter="Horario"
-                                            Content="Guardar"
-                                            Margin="5 0 0 0"
-                                            Visibility="Hidden"
-                                            Style="{ StaticResource ResourceKey=Primary }"/>
-
-                                    <!-- HORARIO RGISTRAR -->
-                                    <Button Command="{ Binding Path=RegistrarCommand }"
-                                            CommandParameter="Horario"
-                                            Content="Agregar Horario"
-                                            Margin="5 0 5 0"
-                                            Visibility="Hidden"
-                                            Style="{ StaticResource ResourceKey=Secondary }"/>
-                                </WrapPanel>
-
-                                <WrapPanel Grid.Column="1"
-                                           HorizontalAlignment="Right">
-                                    <!-- MATERIA CANCELAR -->
-                                    <Button Command="{ Binding Path=CancelarCommand }"
-                                            CommandParameter="EditarMateria"
-                                            Content="Cancelar"
-                                            Margin="0 0 5 0"
-                                            Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, Converter={ StaticResource ResourceKey=Converter } }"
-                                            Style="{ StaticResource ResourceKey=Tertiary }"/>
-
-                                    <!-- MATERIA GUARDAR -->
-                                    <Button Command="{ Binding Path=GuardarCommand }"
-                                            CommandParameter="EditarMateria"
-                                            Content="Guardar"
-                                            Margin="5 0 0 0"
-                                            Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, Converter={ StaticResource ResourceKey=Converter } }"
-                                            Style="{ StaticResource ResourceKey=Primary }"/>
-                                    <!-- MATERIA ELIMINAR -->
-                                    <Button Command="{ Binding Path=EliminarCommand }"
-                                            CommandParameter="Materia"
-                                            Content="Quitar Materia"
-                                            Margin="0 0 0 0"
-                                            Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, Converter={ StaticResource ResourceKey=Converter } }"
-                                            Style="{ StaticResource ResourceKey=Secondary }"/>
-                                </WrapPanel>
-                            </Grid>
+                    <!-- DETALLE DE ASIGNATURA -->
+                    <GroupBox Grid.Row="1"
+                              Header="Detalles de la materia"
+                              Margin="0 5 0 5"
+                              Padding="20 5">
+                        <StackPanel Margin="0 5"
+                                    IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }">
+                            <!-- MATERIA VIEW -->
+                            <local:MateriaView DataContext="{ Binding Path=SelectedItem, ElementName=DataGrid_Materias }"/>
                         </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
+                    </GroupBox>
 
-                <!-- REGISTRA UNA MATERIA -->
-                <TabItem Header="REGISTRAR MATERIA"
-                         FontSize="14"
-                         Padding="10 5" Height="29" VerticalAlignment="Top">
-                    <StackPanel Margin="10 5">
-                        <Grid Margin="20 5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition/>
-                            </Grid.ColumnDefinitions>
+                    <!-- COMMANDS -->
+                    <Grid Grid.Row="2"
+                          Margin="0 5 0 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                            <Grid.RowDefinitions>
-                                <RowDefinition/>
-                                <RowDefinition/>
-                            </Grid.RowDefinitions>
-
-                            <!-- DESCRIPICIÓN -->
-                            <Label Grid.Column="0"
-                                   Grid.Row="0"
-                                   Content="Descripción"
-                                   HorizontalAlignment="Right"
-                                   Style="{ StaticResource ResourceKey=Form }"/>
-
-                            <TextBox Grid.Column="1"
-                                     Grid.Row="0"
-                                     Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                                     Tag="ingresar el nombre de la materia&#x2026;"
-                                     HorizontalAlignment="Left"
-                                     MaxLength="30"
-                                     Margin="10 5"
-                                     Width="250"
-                                     Style="{ StaticResource ResourceKey=TextBox }"/>
-
-                            <!-- HORAS CÁTEDRA -->
-                            <Label Grid.Column="0"
-                                   Grid.Row="1"
-                                   Content="Horas Catedras"
-                                   HorizontalAlignment="Right"
-                                   Style="{ StaticResource ResourceKey=Form }"/>
-
-                            <ComboBox Grid.Column="1"
-                                      Grid.Row="1"
-                                      Margin="10 5"
-                                      Width="250"
-                                      HorizontalAlignment="Left"
-                                      SelectedIndex="{ Binding Path=CargaHoraria, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                                      Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-                                <ComboBoxItem Content="1" IsSelected="True"/>
-                                <ComboBoxItem Content="2"/>
-                                <ComboBoxItem Content="3"/>
-                                <ComboBoxItem Content="4"/>
-                                <ComboBoxItem Content="5"/>
-                            </ComboBox>
-                        </Grid>
-
-                        <WrapPanel HorizontalAlignment="Right">
-                            <Button Command="{ Binding Path=RegistrarCommand }"
-                                    CommandParameter="Materia"
-                                    Margin="10 0 0 0"
-                                    Content="Registrar Materia"
-                                    Visibility="{Binding Path=HabilitarRegistrarMateria, Converter={ StaticResource Converter }, UpdateSourceTrigger=PropertyChanged }"
-                                    Style="{ StaticResource ResourceKey=Primary }"/>
+                        <WrapPanel Grid.Column="0"
+                                   HorizontalAlignment="Left">
+                            <!-- GESTIÓN SITUACION REVISTA -->
+                            <Button Command="{ Binding Path=NavigationCommand }"
+                                    CommandParameter="SituacionRevista"
+                                    Content="Situación Revista"
+                                    IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
                         </WrapPanel>
+                        
+                        <WrapPanel Grid.Column="1"
+                                   HorizontalAlignment="Right">
+                            <Button Command="{ Binding Path=CancelarCommand }"
+                                    CommandParameter="Update"
+                                    Content="Cancelar"
+                                    IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Margin="0 0 5 0"
+                                    Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+
+                            <Button Command="{ Binding Path=GuardarCommand }"
+                                    CommandParameter="Update"
+                                    Content="Guardar"
+                                    IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Style="{ StaticResource ResourceKey=Primary }"/>
+
+                            <!-- EDITAR MATERIA -->
+                            <Button Command="{ Binding Path=RegistrarCommand }"
+                                    CommandParameter="Update"
+                                    Content="Editar Materia"
+                                    IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Margin="5 0 5 0"
+                                    Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+
+                            <!-- MATERIA ELIMINAR -->
+                            <Button Command="{ Binding Path=EliminarCommand }"
+                                    Content="Quitar Materia"
+                                    IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Margin="5 0 0 0"
+                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                                    Style="{ StaticResource ResourceKey=Secondary }"/>
+                        </WrapPanel>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- REGISTRAR -->
+        <Border Grid.Row="4"
+                Background="#FFFFFF"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+                BorderThickness="1"
+                CornerRadius="4"
+                IsEnabled="{ Binding Path=HabilitarRegistrarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                Margin="20 10"
+                Padding="10"
+                VerticalAlignment="Top"
+                Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15"
+                                  Color="#373737"
+                                  ShadowDepth="5"
+                                  Opacity=".3"/>
+            </Border.Effect>
+
+            <Grid Margin="20 10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Margin="0 0 0 5">
+                    <Label Content="Registrar nueva materia"
+                           Style="{ StaticResource ResourceKey=Headline }"/>
+                    <Separator Background="{ StaticResource ResourceKey=Gray400 }"
+                               Height=".8"
+                               Width="Auto"/>
+                </StackPanel>
+
+                <Grid Grid.Row="1"
+                      Margin="0 5 0 0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Column="0"
+                                Grid.Row="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Margin="0 0 5 5">
+                        <!-- DESCRIPICIÓN -->
+                        <Label Content="Descripción"
+                               HorizontalAlignment="Right"
+                               Style="{ StaticResource ResourceKey=Form }"/>
                     </StackPanel>
-                </TabItem>
-            </TabControl>
+
+                    <StackPanel Grid.Column="1"
+                                Grid.Row="0"
+                                Margin="5 0 0 5"
+                                VerticalAlignment="Center">
+                        <TextBox Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                 Tag="ingresar el nombre de la materia&#x2026;"
+                                 HorizontalAlignment="Stretch"
+                                 MaxLength="30"
+                                 Width="250"
+                                 Style="{ StaticResource ResourceKey=TextBox }"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="0"
+                                Grid.Row="1"
+                                Margin="0 5 5 5"
+                                VerticalAlignment="Center">
+                        <!-- HORAS CÁTEDRA -->
+                        <Label Content="Horas Cátedras"
+                               HorizontalAlignment="Right"
+                               Style="{ StaticResource ResourceKey=Form }"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Grid.Row="1"
+                                Margin="5 5 0 5"
+                                VerticalAlignment="Center">
+                        <ComboBox Grid.Column="1"
+                                  Width="250"
+                                  HorizontalAlignment="Stretch"
+                                  SelectedIndex="{ Binding Path=CargaHoraria, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                                  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
+                            <ComboBoxItem Content="1" IsSelected="True"/>
+                            <ComboBoxItem Content="2"/>
+                            <ComboBoxItem Content="3"/>
+                            <ComboBoxItem Content="4"/>
+                            <ComboBoxItem Content="5"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <WrapPanel Grid.Column="1"
+                               Grid.Row="2"
+                               HorizontalAlignment="Right"
+                               Margin="0 5 0 0"
+                               VerticalAlignment="Center">
+                        <Button Command="{ Binding Path=CancelarCommand }"
+                                CommandParameter="Insert"
+                                Content="Cancelar"
+                                Margin="0 0 5 0"
+                                Visibility="{Binding Path=HabilitarRegistrarMateria, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource booleanConverter } }"
+                                Style="{ StaticResource ResourceKey=Secondary }"/>
+                        <Button Command="{ Binding Path=GuardarCommand }"
+                                CommandParameter="Insert"
+                                Content="Guardar"
+                                Margin="5 0 0 0"
+                                Visibility="{Binding Path=HabilitarRegistrarMateria, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource booleanConverter } }"
+                                Style="{ StaticResource ResourceKey=Primary }"/>
+                    </WrapPanel>
+                </Grid>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

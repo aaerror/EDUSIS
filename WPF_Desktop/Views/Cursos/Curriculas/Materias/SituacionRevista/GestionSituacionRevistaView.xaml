@@ -1,17 +1,18 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista.GestionSituacionRevistaView"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
-             xmlns:domainSituacionRevista="clr-namespace:Domain.Materias.CargosDocentes;assembly=Domain"
-             xmlns:components="clr-namespace:WPF_Desktop.Components"
-             xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
-             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
+             xmlns:components="clr-namespace:WPF_Desktop.Components"
+             xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
+             xmlns:domainSituacionRevista="clr-namespace:Domain.Materias.CargosDocentes;assembly=Domain"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
     <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="Converter"/>
-        <converters:EnumConverter x:Key="EnumConverter"/>
+        <BooleanToVisibilityConverter x:Key="booleanConverter"/>
+        <converters:EnumConverter x:Key="enumConverter"/>
+        <converters:CargoConverter x:Key="cargoConverter"/>
         <ObjectDataProvider x:Key="cargos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
             <ObjectDataProvider.MethodParameters>
                 <x:Type Type="domainSituacionRevista:Cargo"/>
@@ -24,30 +25,82 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- #region TITLE & SUBTITLE -->
         <components:Header Grid.Row="0"
                            Title="{ Binding Path=Materia.Descripcion, Mode=OneWay }"
                            Subtitle="Situación de Revista de los docentes"
                            VerticalContentAlignment="Top"/>
+        <!-- #endregion -->
 
-        <WrapPanel Grid.Row="1"
-                   Margin="20 10">
-            <Button Command="{ Binding Path=RegistrarCommand }"
-                    CommandParameter="Docente"
-                    Content="Agregar docente"
-                    Style="{ StaticResource ResourceKey=Secondary }"/>
-        </WrapPanel>
+        <!-- #region COMMANDS -->
+        <Grid Grid.Row="1"
+              Margin="20 10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
 
-        <!--#region DOCENTE EN AULA -->
+            <WrapPanel Grid.Column="0"
+                       HorizontalAlignment="Left">
+                <Button Command="{ Binding Path=RegistrarCommand }"
+                        CommandParameter="SituacionRevista"
+                        Content="Registrar"
+                        Style="{ StaticResource ResourceKey=Secondary }"/>
+            </WrapPanel>
+            <WrapPanel Grid.Column="1"
+                       HorizontalAlignment="Right">
+                <Button Command="{ Binding Path=NavigationCommand }"
+                        CommandParameter="Materias"
+                        Content="Ir a materias"
+                        HorizontalAlignment="Right"
+                        Style="{ StaticResource ResourceKey=Secondary }"/>
+            </WrapPanel>
+        </Grid>
+        <!--#endregion-->
+
+        <!-- #region MESSAGE -->
         <Border Grid.Row="2"
                 Background="#FFFFFF"
                 BorderBrush="{ StaticResource ResourceKey=Gray200 }"
                 BorderThickness="1"
                 CornerRadius="4"
-                IsEnabled="{ Binding Path=HabilitarDocenteEnFunciones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter }}"
+                IsEnabled="{ Binding Path=HabilitarNotificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
+                Margin="20 10"
+                Padding="10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15"
+                          Color="#373737"
+                          ShadowDepth="5"
+                          Opacity=".3"/>
+            </Border.Effect>
+            <Grid Margin="20 10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0"
+                        Margin="0 0 0 5">
+                    <Label Content="Situación de Revista"
+                       Style="{ StaticResource ResourceKey=Headline }"/>
+                    <Separator Background="{ StaticResource ResourceKey=Gray400 }"
+                           Height=".8"
+                           Width="Auto"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <!-- #endregion -->
+
+        <!--#region DOCENTE EN FUNCIONES -->
+        <Border Grid.Row="3"
+                Background="#FFFFFF"
+                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+                BorderThickness="1"
+                CornerRadius="4"
                 Margin="20 10"
                 Padding="10">
             <Border.Effect>
@@ -57,15 +110,17 @@
                                   Opacity=".3"/>
             </Border.Effect>
 
-            <Grid Margin="20 10">
+            <Grid IsEnabled="{ Binding Path=HabilitarDocenteEnFunciones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                  Margin="20 10"
+                  Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0"
                             Margin="0 0 0 5">
-                    <Label Content="DOCENTE EN AULA"
+                    <Label Content="Docente en Aula"
                            Style="{ StaticResource ResourceKey=Headline }"/>
                     <Separator Background="{ StaticResource ResourceKey=Gray400 }"
                                Height=".8"
@@ -79,9 +134,9 @@
                 </StackPanel>
             </Grid>
         </Border>
-        <!--#endregion-->
+        <!-- #endregion -->
 
-        <Border Grid.Row="3"
+        <Border Grid.Row="4"
                 Background="#FFFFFF"
                 BorderBrush="{ StaticResource ResourceKey=Gray200 }"
                 BorderThickness="1"
@@ -95,11 +150,12 @@
                                   Opacity=".3"/>
             </Border.Effect>
 
-            <ScrollViewer Padding="10">
+            <ScrollViewer Padding="10"
+                          VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="20 10">
-                    <!--#region LIST -->
-                    <Grid IsEnabled="{ Binding Path=HabilitarUpdate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                          Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }">
+                    <!-- #region GESTIÓN -->
+                    <Grid IsEnabled="{ Binding Path=HabilitarGestionSituacionRevista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                          Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -107,15 +163,14 @@
 
                         <StackPanel Grid.Row="0"
                                     Margin="0 0 0 5">
-                            <Label Content="DOCENTES"
+                            <Label Content="Docentes con cargo en la materia"
                                    Style="{ StaticResource ResourceKey=Headline }"/>
                             <Separator Background="{ StaticResource ResourceKey=Gray400 }"
                                        Height=".8"
                                        Width="Auto"/>
                         </StackPanel>
 
-                        <Grid Grid.Row="1"
-                              Margin="0 0 0 0">
+                        <Grid Grid.Row="1">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
@@ -124,29 +179,26 @@
                             <DataGrid x:Name="DataGrid_Docentes"
                                       Grid.Row="0"
                                       ItemsSource="{ Binding Path=DocentesEnMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                      SelectedItem="{ Binding Path=SituacionRevistaUPDATE, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+                                      SelectedItem="{ Binding Path=SituacionRevistaUPDATE, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                       IsSynchronizedWithCurrentItem="True"
                                       IsReadOnly="True"
                                       Margin="0 0 0 5"
-                                      d:ItemsSource="{ d:SampleData ItemCount=5 }"
+                                      d:ItemsSource="{ d:SampleData ItemCount=4 }"
                                       Style="{ StaticResource ResourceKey=DataGrid }">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Cargo"
-                                                        Binding="{ Binding Path=CargoDescripcion, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-                                                        Width="Auto"/>
-                                    <DataGridTextColumn Header="Fecha Alta"
-                                                        Binding="{ Binding Path=FechaAlta, StringFormat='D', ConverterCulture='es_ES', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+                                                        Binding="{ Binding Path=Cargo, FallbackValue='Sin datos', TargetNullValue='Sin datos', Converter={ StaticResource ResourceKey=cargoConverter } }"
                                                         Width="*"/>
                                     <DataGridTextColumn Header="Docente"
                                                         Binding="{ Binding Path=Docente, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-                                                        Width="*"/>
+                                                        Width="2*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
 
                             <GroupBox Grid.Row="1"
                                       Header="Detalles de la situación de revista"
-                                      Padding="20 10"
-                                      Margin="0 5 0 0">
+                                      Margin="0 5 0 0"
+                                      Padding="20 5">
                                 <StackPanel Margin="0 5">
                                     <local:SituacionRevistaView DataContext="{ Binding Path=SelectedItem, ElementName=DataGrid_Docentes }"
                                                                 IsEnabled="False"/>
@@ -156,7 +208,6 @@
                                         <Button Command="{ Binding Path=EliminarCommand }"
                                                 CommandParameter="Docente"
                                                 Content="Liberar"
-                                                Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }"
                                                 Margin="0 0 5 0"
                                                 Style="{ StaticResource ResourceKey=Tertiary }"/>
                                         <!-- GUARDAR DOCENTE -->
@@ -170,11 +221,11 @@
                             </GroupBox>
                         </Grid>
                     </Grid>
-                    <!--#endregion-->
+                    <!-- #endregion -->
 
-                    <!--#region INSERT -->
-                    <Grid IsEnabled="{ Binding Path=HabilitarInsert, UpdateSourceTrigger=PropertyChanged }"
-                          Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }">
+                    <!-- #region REGISTRAR -->
+                    <Grid IsEnabled="{ Binding Path=HabilitarInsert, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+                          Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -183,51 +234,56 @@
                         <StackPanel Grid.Row="0"
                                     Margin="0 0 0 5">
                             <Label Content="Nueva Situación de Revista"
-                                   Style="{ StaticResource Headline }"/>
-                            <Separator Background="{ StaticResource Gray400 }"
+                                   Style="{ StaticResource ResourceKey=Headline }"/>
+                            <Separator Background="{ StaticResource ResourceKey=Gray400 }"
                                        Height=".8"
                                        Width="Auto"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Row="1">
+                        <StackPanel Grid.Row="1"
+                                    Margin="0 5 0 0">
                             <!-- PROFESOR -->
-                            <GroupBox Header="Docente"
-                                      Padding="20 10"
-                                      Margin="0 5 0 5">
+                            <GroupBox Header="Buscar Docente"
+                                      Padding="20 10">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions>
-                                        <RowDefinition/>
-                                        <RowDefinition/>
-                                        <RowDefinition/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
 
+                                    <!-- BUSCAR PROFESOR -->
                                     <WrapPanel Grid.Column="0"
                                                Grid.Row="0"
+                                               Margin="0 0 0 5"
                                                HorizontalAlignment="Stretch"
-                                               Margin="0 5 0 10">
-                                        <!-- BUSCAR PROFESOR -->
+                                               VerticalAlignment="Center">
+
                                         <TextBox Text="{ Binding Path=BuscarDocente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                                                 Tag="ingresar documento del profesor&#x2026;"
+                                                 Tag="ingresar apellido y nombre del docente&#x2026;"
+                                                 HorizontalContentAlignment="Stretch"
                                                  Margin="0 0 5 0"
-                                                 Width="230"
+                                                 Width="250"
                                                  Style="{ StaticResource ResourceKey=TextBox }"/>
 
-                                        <Button Command="{ Binding Path=BuscarCommand }"
+                                        <Button Command="{ Binding Path=ListarCommand }"
+                                                CommandParameter="Buscar"
                                                 Content="Buscar"
-                                                Margin="5 0"
+                                                Margin="5 0 0 0"
                                                 Style="{ StaticResource ResourceKey=Primary }"/>
                                     </WrapPanel>
+
                                     <WrapPanel Grid.Column="1"
                                                Grid.Row="0"
+                                               Margin="0 0 0 5"
                                                HorizontalAlignment="Right"
-                                               Margin="0 5 0 10">
+                                               VerticalAlignment="Center">
                                         <Button Command="{ Binding Path=ListarCommand }"
+                                                CommandParameter="Listar"
                                                 Content="Ver docentes"
-                                                Margin="5 0 0 0"
                                                 Style="{ StaticResource ResourceKey=Tertiary }"/>
                                     </WrapPanel>
 
@@ -235,14 +291,13 @@
                                               Grid.Row="1"
                                               Header="Docentes"
                                               ExpandDirection="Down"
-                                              Padding="5"
+                                              Margin="0 5 0 0"
                                               IsEnabled="{ Binding Path=HabilitarResultadoBuscar, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                              Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }">
+                                              Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
                                         <!-- LIST -->
-                                        <StackPanel Grid.Row="1"
-                                                    Margin="0 10">
+                                        <StackPanel Margin="10 10 10 0">
                                             <DataGrid x:Name="DataGrid_LegajosDocentes"
-                                                      ItemsSource="{ Binding Path=Docentes }"
+                                                      ItemsSource="{ Binding Path=Docentes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                                                       SelectedItem="{ Binding Path=LegajoDocente, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
                                                       IsReadOnly="True"
                                                       Margin="0 0 0 5"
@@ -252,20 +307,19 @@
                                                     <DataGridTextColumn Header="Fecha Alta"
                                                                         Binding="{ Binding Path=FechaAlta, StringFormat='D', ConverterCulture='es_ES', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
                                                                         Width="*"/>
-                                                    <DataGridTextColumn Header="Fecha Baja"
-                                                                        Binding="{ Binding Path=FechaBaja, StringFormat='D', ConverterCulture='es_ES', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-                                                                        Width="*"/>
                                                     <DataGridTextColumn Header="Docente"
                                                                         Binding="{ Binding Path=NombreCompleto, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
                                                                         Width="2*"/>
+                                                    <DataGridCheckBoxColumn Header="¿En funciones?"
+                                                                            Binding="{ Binding Path=EstaActivo }"
+                                                                            Width="*"/>
                                                 </DataGrid.Columns>
                                             </DataGrid>
 
-                                            <WrapPanel Margin="0 5"
+                                            <WrapPanel Margin="0 5 0 0"
                                                        HorizontalAlignment="Right">
                                                 <Button Command="{ Binding Path=SeleccionarCommand }"
                                                         Content="Seleccionar"
-                                                        Margin="0 0 5 0"
                                                         Style="{ StaticResource ResourceKey=Secondary }"/>
                                             </WrapPanel>
                                         </StackPanel>
@@ -274,36 +328,35 @@
                             </GroupBox>
 
                             <!-- SITUACIÓN REVISTA -->
-                            <GroupBox Header="Nueva Situación de Revista"
-                                      Margin="0 5"
+                            <GroupBox Header="Agregar Situación de Revista"
+                                      Margin="0 5 0 0"
                                       Padding="20 10"
                                       IsEnabled="{ Binding Path=HabilitarNuevaSituacionRevista, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
-                                      Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }">
-                                <local:SituacionRevistaView DataContext="{ Binding Path=SituacionRevistaINSERT, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+                                      Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
+                                <StackPanel>
+                                    <local:SituacionRevistaView DataContext="{ Binding Path=SituacionRevistaINSERT, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+
+                                    <!-- COMMANDS -->
+                                    <WrapPanel Margin="0 5 0 0"
+                                               HorizontalAlignment="Right">
+                                        <!-- PROFESOR CANCELAR -->
+                                        <Button Command="{ Binding Path=CancelarCommand }"
+                                                CommandParameter="Insert"
+                                                Content="Cancelar"
+                                                Margin="0 0 5 0"
+                                                Style="{ StaticResource ResourceKey=Tertiary }"/>
+                                        <!-- PROFESOR GUARDAR -->
+                                        <Button Command="{ Binding Path=GuardarCommand }"
+                                                CommandParameter="Insert"
+                                                Content="Guardar"
+                                                Margin="5 0 0 0"
+                                                Style="{ StaticResource ResourceKey=Primary }"/>
+                                    </WrapPanel>
+                                </StackPanel>
                             </GroupBox>
-                            <!-- COMMANDS -->
-                            <WrapPanel Grid.ColumnSpan="3"
-                                       Grid.Row="3"
-                                       Margin="0 5 0 5"
-                                       HorizontalAlignment="Right">
-                                <!-- PROFESOR CANCELAR -->
-                                <Button Command="{ Binding CancelarCommand }"
-                                        CommandParameter="Docente"
-                                        Content="Cancelar"
-                                        Margin="0 0 5 0"
-                                        Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                        Style="{ StaticResource Tertiary }"/>
-                                <!-- PROFESOR GUARDAR -->
-                                <Button Command="{ Binding GuardarCommand }"
-                                        CommandParameter="Docente"
-                                        Content="Guardar"
-                                        Margin="5 0 0 0"
-                                        Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-                                        Style="{ StaticResource Primary }"/>
-                            </WrapPanel>
                         </StackPanel>
                     </Grid>
-                    <!--#endregion-->
+                    <!-- #endregion -->
                 </StackPanel>
             </ScrollViewer>
         </Border>

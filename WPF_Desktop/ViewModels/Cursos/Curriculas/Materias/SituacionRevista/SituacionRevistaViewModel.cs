@@ -13,14 +13,12 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
 {
     private SituacionRevistaResponse _situacionRevista;
 
-    private Guid _docenteID = Guid.Empty;
-    private string _docente = string.Empty;
-    private int _cargo = 0;
-    private string _cargoDescripcion = string.Empty;
+    private Guid _docenteID;
+    private string _docente;
+    private Cargo _cargo;
     private DateTime _fechaAlta = DateTime.Now;
     private DateTime? _fechaBaja;
     private bool _enFunciones;
-
 
     private Dictionary<string, List<string>> _errorsByProperty = new();
     public bool HasErrors => _errorsByProperty.Any();
@@ -30,9 +28,8 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
 
     public SituacionRevistaViewModel(SituacionRevistaResponse situacionRevista)
     {
-        Cargo = 0;
-        FechaAlta = DateTime.Now;
-        EnFunciones = false;
+        /*FechaAlta = DateTime.Now;
+        EnFunciones = true;*/
 
         if (situacionRevista is not null)
         {
@@ -44,6 +41,13 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
             FechaBaja = _situacionRevista.FechaBaja;
             EnFunciones = _situacionRevista.EnFunciones;
         }
+    }
+
+    public SituacionRevistaViewModel(Guid docenteID, string docente)
+    {
+        DocenteID = docenteID;
+        Docente = docente;
+        EnFunciones = true;
     }
 
     #region Properties
@@ -75,7 +79,7 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
         }
     }
 
-    public int Cargo
+    public Cargo Cargo
     {
         get
         {
@@ -85,15 +89,7 @@ public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
         set
         {
             _cargo = value;
-            base.OnPropertyChanged(nameof(Cargo));
-        }
-    }
-
-    public string CargoDescripcion
-    {
-        get
-        {
-            return Enum.GetName(typeof(Cargo), Cargo);
+            OnPropertyChanged(nameof(Cargo));
         }
     }
 
