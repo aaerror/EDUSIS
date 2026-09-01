@@ -1,0 +1,26 @@
+<Project>
+
+	<!--
+		Gestión central de versiones para los proyectos de prueba (FR-020).
+		Versiones EXACTAS (sin rango x) para que `dotnet test` sea reproducible
+		en un checkout limpio. Actualizarlas es un cambio deliberado.
+		Justificación de cada paquete: specs/001-automated-test-suite/research.md
+		(§Resumen de dependencias nuevas). Sólo aplica bajo tests/; producción no
+		usa ManagePackageVersionsCentrally.
+	-->
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+		<PackageVersion Include="xunit" Version="2.9.2" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+		<PackageVersion Include="Shouldly" Version="4.2.1" />
+		<PackageVersion Include="NSubstitute" Version="5.1.0" />
+		<PackageVersion Include="coverlet.collector" Version="6.0.2" />
+		<PackageVersion Include="Testcontainers.MsSql" Version="3.10.0" />
+		<PackageVersion Include="Respawn" Version="6.2.1" />
+	</ItemGroup>
+
+</Project>

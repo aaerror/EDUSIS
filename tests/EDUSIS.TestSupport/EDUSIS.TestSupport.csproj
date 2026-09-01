@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		Biblioteca de soporte compartida por las cuatro suites: builders de agregados,
+		fakes (UnitOfWorkFake) e infraestructura de base de datos (SqlServerFixture).
+		No es una suite: se excluye de `dotnet test`. Los paquetes (xunit,
+		Testcontainers.MsSql, Respawn, EF Core) se agregan en las fases que los usan
+		(Foundational / US3).
+		No referencia WPF_Desktop.
+	-->
+	<PropertyGroup>
+		<IsTestProject>false</IsTestProject>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Domain\Domain.csproj" />
+		<ProjectReference Include="..\..\Application\Core.csproj" />
+		<ProjectReference Include="..\..\Infrastructure\Infrastructure.csproj" />
+	</ItemGroup>
+
+</Project>
