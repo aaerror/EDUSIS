@@ -12,6 +12,18 @@
 		<IsTestProject>false</IsTestProject>
 	</PropertyGroup>
 
+	<!--
+		Paquetes que necesita la infraestructura de base de datos de US3/US4
+		(SqlServerFixture): xunit por IAsyncLifetime, Testcontainers.MsSql para el
+		SQL Server efímero y Respawn para el reset entre pruebas. EF Core llega
+		transitivamente por el ProjectReference a Infrastructure.
+	-->
+	<ItemGroup>
+		<PackageReference Include="xunit" />
+		<PackageReference Include="Testcontainers.MsSql" />
+		<PackageReference Include="Respawn" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\..\Domain\Domain.csproj" />
 		<ProjectReference Include="..\..\Application\Core.csproj" />
