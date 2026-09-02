@@ -369,9 +369,12 @@ FodyWeavers.xsd
 # Reporte de cobertura de la suite de pruebas (tests/run-tests.sh --cobertura)
 /tests/CoverageReport/
 
-# Spec Kit: tooling y artefactos de especificación (no se versionan)
-/.specify/
-/specs/
 
+# Herramientas de agentes y specs (no versionar)
 .claude/
+# Spec Kit: tooling y artefactos de especificación (no se versionan)
+.specify/
+specs/
 CLAUDE.md
+
+.github/
