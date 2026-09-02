@@ -22,6 +22,8 @@
 		<PackageReference Include="xunit" />
 		<PackageReference Include="Testcontainers.MsSql" />
 		<PackageReference Include="Respawn" />
+		<!-- ComposicionDePruebaE2E.Construir hace AddLogging() sobre el ServiceCollection real (US4). -->
+		<PackageReference Include="Microsoft.Extensions.Logging" />
 	</ItemGroup>
 
 	<ItemGroup>
