@@ -11,6 +11,7 @@
 #
 # - Se puede ejecutar desde cualquier directorio: resuelve la raíz por git.
 # - Propaga tal cual el código de salida de `dotnet test` (0 = ok, 1 = falló algo).
+#   Una prueba `Skip` (incluidas las de FR-018) nunca produce código 1.
 # - Cualquier argumento extra se reenvía a `dotnet test` (p. ej. -v n, --filter ...).
 
 set -euo pipefail
@@ -35,19 +36,26 @@ case "$modo" in
 		exec dotnet test "$SLN" "$@"
 		;;
 	--cobertura)
+		RESULTADOS="$RAIZ/tests/TestResults"
 		SALIDA_COBERTURA="$RAIZ/tests/CoverageReport"
-		codigo=0
-		dotnet test "$SLN" --collect:"XPlat Code Coverage" "$@" || codigo=$?
+		rm -rf "$RESULTADOS" "$SALIDA_COBERTURA"
 
-		if command -v reportgenerator >/dev/null 2>&1; then
-			reportgenerator \
-				"-reports:$RAIZ/tests/**/TestResults/**/coverage.cobertura.xml" \
+		codigo=0
+		dotnet test "$SLN" \
+			--collect:"XPlat Code Coverage" \
+			--results-directory "$RESULTADOS" \
+			"$@" || codigo=$?
+
+		# ReportGenerator se fija en .config/dotnet-tools.json (versión pineada).
+		if dotnet tool restore >/dev/null 2>&1; then
+			dotnet reportgenerator \
+				"-reports:$RESULTADOS/**/coverage.cobertura.xml" \
 				"-targetdir:$SALIDA_COBERTURA" \
 				"-reporttypes:Html"
 			echo "Reporte de cobertura: $SALIDA_COBERTURA/index.html"
 		else
-			echo "AVISO: 'reportgenerator' no está instalado; se omite el HTML de cobertura." >&2
-			echo "       Instalar con: dotnet tool install -g dotnet-reportgenerator-globaltool" >&2
+			echo "AVISO: no se pudo restaurar 'dotnet-reportgenerator-globaltool'; se omite el HTML." >&2
+			echo "       Revisá la conectividad de NuGet o corré 'dotnet tool restore' a mano." >&2
 		fi
 
 		exit "$codigo"
