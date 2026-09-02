@@ -1,156 +1,241 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Docentes.GestionDocentesView"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
-             xmlns:components="clr-namespace:WPF_Desktop.Components"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-    <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="Converter"/>
-    </UserControl.Resources>
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <!-- TITTLE AND SUBTITLE -->
-        <components:Header Grid.Row="0"
-                           Title="Docentes"
-                           Subtitle="Altas, Bajas y Modificaciones de Docentes"/>
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+			 xmlns:components="clr-namespace:WPF_Desktop.Components"
 
-        <!-- INPUTS -->
-        <WrapPanel Grid.Row="1"
-                   Margin="20 10 20 5">
-            <Button Command="{ Binding Path=RegistrarDocenteCommand }"
-                    Content="Registrar Docente"
-                    Margin="0 0 5 0"
-                    Style="{ StaticResource ResourceKey=Secondary }"/>
-        </WrapPanel>
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+	<!--#region RESOURCES-->
+	<UserControl.Resources>
+		<BooleanToVisibilityConverter x:Key="booleanConverter"/>
+	</UserControl.Resources>
+	<!--#endregion-->
+	<!--#region EVENTS-->
+	<!--
+	<behaviors:Interaction.Triggers>
+		<behaviors:EventTrigger EventName="Loaded">
+			<behaviors:InvokeCommandAction Command="{ Binding Path=BuscarCommandAsync }"/>
+		</behaviors:EventTrigger>
+	</behaviors:Interaction.Triggers>
+	-->
+	<!--#endregion-->
 
-        <Border Grid.Row="2"
-                Background="#FFFFFF"
-                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-                BorderThickness="1"
-                CornerRadius="4"
-                Margin="20 10"
-                Padding="50 10">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="15"
-                                  Color="#373737"
-                                  ShadowDepth="5"
-                                  Opacity=".3"/>
-            </Border.Effect>
-            <!-- SEARCH PANEL -->
-            <Grid Margin="0 10">
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
 
-                <!-- SEARCH BUTTON -->
-                <StackPanel Grid.Row="0"
-                            Margin="0 10">
-                    <WrapPanel HorizontalAlignment="Center">
-                        <TextBox Text="{ Binding Path=NombreCompleto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                                 Tag="ingresar el nombre completo..."
-                                 Margin="0 0 5 0"
-                                 Style="{ StaticResource ResourceKey=TextBox }"/>
-                        <Button Command="{ Binding Path=BuscarCommand }"
-                                Content="Buscar"
-                                CommandParameter="NombreCompleto"
-                                Margin="5 0 0 0"
-                                Style="{ StaticResource ResourceKey=Primary }"/>
-                    </WrapPanel>
-                </StackPanel>
+		<!--#region TITTLE AND SUBTITLE-->
+		<components:Header Grid.Row="0"
+						   Title="Docentes"
+						   Subtitle="Altas, Bajas y Modificaciones de Docentes"/>
+		<!--#endregion-->
 
-                <!-- LIST -->
-                <StackPanel Grid.Row="1"
-                            Margin="0 10"
-                            Visibility="{ Binding Path=MostrarVista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }">
-                    <Label Content="Listado de docentes"
-                           HorizontalAlignment="Left"
-                           Style="{ StaticResource ResourceKey=Headline }">
-                    </Label>
-                    <ListView x:Name="ListDocentes"
-                             ItemsSource="{ Binding Path=LegajosDocentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                             SelectedItem="{ Binding Path=LegajoDocenteViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                             IsSynchronizedWithCurrentItem="True"
-                             Margin="0 5"
-                             d:ItemsSource="{ d:SampleData ItemCount=5 }"
-                             Style="{ StaticResource ResourceKey=ListViewStyle }">
-                        <ListView.View>
-                            <GridView AllowsColumnReorder="False">
-                                <GridView.Columns>
-                                    <GridViewColumn Header="Docente"
-                                                    DisplayMemberBinding="{ Binding NombreCompleto, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-                                                    Width="Auto"/>
-                                    <GridViewColumn Header="Legajo"
-                                                    DisplayMemberBinding="{ Binding Legajo, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-                                                    Width="Auto"/>
-                                </GridView.Columns>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </StackPanel>
-            </Grid>
-        </Border>
+		<!--#region COMMAND: RegistrarCommand-->
+		<WrapPanel Grid.Row="1"
+				   Margin="20 10">
+			<Button Command="{Binding Path=RegistrarCommand }"
+					Margin="0 0 5 0"
+					ToolTip="Registrar docente"
+					Style="{ StaticResource ResourceKey=Secondary }">
+				<Button.Content>
+					<WrapPanel>
+						<fa:IconBlock Icon="Plus"
+									  Foreground="{ StaticResource ResourceKey=Neutral800 }"
+									  FontSize="12"
+									  Margin="0 0 1 0"/>
+						<Label Content="Registrar"
+							   Margin="1 0 2 0"/>
+					</WrapPanel>
+				</Button.Content>
+			</Button>
+		</WrapPanel>
+		<!--#endregion-->
 
-        <!-- DETAILS -->
-        <Border Grid.Row="3"
-                Background="#FFFFFF"
-                BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-                BorderThickness="1"
-                CornerRadius="4"
-                Margin="20 10"
-                IsEnabled="{ Binding Path=LegajoDocenteViewModel, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
-                Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=Converter } }">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="15"
-                                  Color="#373737"
-                                  ShadowDepth="5"
-                                  Opacity=".3"/>
-            </Border.Effect>
-            <ScrollViewer Padding="50 10"
-                          VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <!-- INFO DEL DOCENTE -->
-                    <local:LegajoDocenteView DataContext="{ Binding Path=SelectedItem, ElementName=ListDocentes }"
-                                             Margin="0 10"
-                                             IsEnabled="False"/>
-                    <StackPanel Grid.Row="2"
-                                Margin="0 10">
-                        <WrapPanel HorizontalAlignment="Right">
-                            <Button Command="{ Binding Path=EliminarCommand }"
-                                    Content="Quitar"
-                                    Margin="0 0 5 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }"
-                                    Style="{ StaticResource ResourceKey=Tertiary }"/>
-                            <Button Command="{ Binding Path=NavigationCommand }"
-                                    CommandParameter="Puesto"
-                                    Content="Puestos"
-                                    Margin="5 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }"
-                                    Style="{ StaticResource ResourceKey=Primary }"/>
-                            <Button Command="{ Binding Path=NavigationCommand }"
-                                    CommandParameter="Licencia"
-                                    Content="Licencias"
-                                    Margin="5 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }"
-                                    Style="{ StaticResource ResourceKey=Primary }"/>
-                            <Button Command="{ Binding Path=NavigationCommand }"
-                                    CommandParameter="Perfil"
-                                    Content="Perfil"
-                                    Margin="5 0 0 0"
-                                    Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }"
-                                    Style="{ StaticResource ResourceKey=Primary }"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
-    </Grid>
+		<!--#region SEARCHER-->
+		<Border Grid.Row="2"
+				Background="#FFFFFF"
+				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+				BorderThickness="1"
+				CornerRadius="4"
+				Margin="20 10"
+				Padding="20">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="15"
+								  Color="#373737"
+								  ShadowDepth="5"
+								  Opacity=".3"/>
+			</Border.Effect>
+
+			<Grid Margin="20 10">
+				<Grid.RowDefinitions>
+					<RowDefinition/>
+					<RowDefinition/>
+				</Grid.RowDefinitions>
+
+				<!--#region SEARCH BOX-->
+				<StackPanel Grid.Row="0"
+							Margin="0 0 0 10">
+					<WrapPanel HorizontalAlignment="Center">
+						<TextBox Text="{ Binding Path=SearchedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+								 Tag="ingresar el nombre completo..."
+								 Cursor="IBeam"
+								 HorizontalAlignment="Center"
+								 Width="250"
+								 Margin="0 0 5 0"
+								 Style="{ StaticResource ResourceKey=TextBox }"/>
+						<!--#region COMMAND: BuscarCommandAsync-->
+						<Button Command="{ Binding Path=BuscarCommandAsync }"
+								Content="{ fa:Icon Search }"
+								Cursor="Hand"
+								IsDefault="True"
+								Margin="5 0 0 0"
+								ToolTip="Buscar"
+								Style="{ StaticResource ResourceKey=Primary }"/>
+						<!--#endregion-->
+					</WrapPanel>
+				</StackPanel>
+				<!--#endregion-->
+
+				<StackPanel Grid.Row="1"
+							Margin="0 10 0 0"
+							Visibility="{ Binding Path=MostrarVista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }">
+					<StackPanel Margin="0 0 0 5">
+						<Label Content="Listado de docentes"
+							   Style="{ StaticResource ResourceKey=Headline }"/>
+						<Separator Background="{ StaticResource ResourceKey=Gray400 }"
+								   Height=".8"
+								   Width="Auto"/>
+					</StackPanel>
+
+					<StackPanel IsEnabled="{ Binding Path=HabilitarNotificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+								Margin="0 5 0 0"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
+						<Label Content="{ Binding Path=Notificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+							   Style="{ StaticResource ResourceKey=Body }"/>
+					</StackPanel>
+
+					<!--#region ListDocentes-->
+					<StackPanel IsEnabled="{ Binding Path=HabilitarListaDocentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+								Margin="0 5 0 0"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
+						<ListView x:Name="ListDocentes"
+								  ItemsSource="{ Binding Path=LegajosDocentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+								  SelectedItem="{ Binding Path=LegajoDocenteSeleccionado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+								  IsSynchronizedWithCurrentItem="True"
+								  d:ItemsSource="{ d:SampleData ItemCount=5 }"
+								  Style="{ StaticResource ResourceKey=ListViewStyle }">
+							<ListView.View>
+								<GridView AllowsColumnReorder="False">
+									<GridView.Columns>
+										<GridViewColumn Header="Legajo"
+														DisplayMemberBinding="{ Binding Legajo, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+														Width="Auto"/>
+										<GridViewColumn Header="Docente"
+														DisplayMemberBinding="{ Binding NombreCompleto, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+														Width="Auto"/>
+									</GridView.Columns>
+								</GridView>
+							</ListView.View>
+						</ListView>
+					</StackPanel>
+					<!--#endregion-->
+				</StackPanel>
+			</Grid>
+		</Border>
+		<!--#endregion-->
+
+		<!--#region LEGAJO DOCENTE-->
+		<Border Grid.Row="3"
+				Background="#FFFFFF"
+				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+				BorderThickness="1"
+				CornerRadius="4"
+				Margin="20 10"
+				IsEnabled="{ Binding Path=LegajoDocenteSeleccionado, Mode=TwoWay, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="15"
+								  Color="#373737"
+								  ShadowDepth="5"
+								  Opacity=".3"/>
+			</Border.Effect>
+			<ScrollViewer Padding="20"
+						  VerticalScrollBarVisibility="Auto">
+				<StackPanel Margin="20 10 10 10">
+					<!--#region LEGAJO DOCENTE-->
+					<local:LegajoDocenteView DataContext="{ Binding Path=SelectedItem, ElementName=ListDocentes }"
+											 Margin="0 0 0 5"
+											 IsEnabled="False"/>
+					<!--#endregion-->
+
+					<Grid Margin="0 5 0 0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<!--#region COMMANDS-->
+						<WrapPanel Grid.Column="0"
+								   HorizontalAlignment="Left">
+							<!--#region EliminarCommand-->
+							<Button Command="{ Binding Path=EliminarCommand }"
+									Content="{ fa:Icon Trash, Foreground=White }"
+									Background="{ StaticResource ResourceKey=Red500 }"	
+									ToolTip="Eliminar docente"
+									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+									Style="{ StaticResource ResourceKey=Tertiary }"/>
+							<!--#endregion-->
+						</WrapPanel>
+						<!--#endregion-->
+
+						<!--#region COMMANDS: NavigationCommand-->
+						<WrapPanel Grid.Column="1"
+								   HorizontalAlignment="Right">
+							<!--#region NAV: Puesto-->
+							<Button Command="{ Binding Path=NavigationCommand }"
+									CommandParameter="Puesto"
+									Content="Puestos"
+									Cursor="Hand"
+									Margin="0 0 5 0"
+									ToolTip="Ver puestos del docentes"
+									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+									Style="{ StaticResource ResourceKey=Primary }"/>
+							<!--#endregion-->
+							<!--#region NAV: Licencia-->
+							<Button Command="{ Binding Path=NavigationCommand }"
+									CommandParameter="Licencia"
+									Content="Licencias"
+									Cursor="Hand"
+									Margin="5 0"
+									ToolTip="Ver licencias del docentes"
+									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+									Style="{ StaticResource ResourceKey=Primary }"/>
+							<!--#endregion-->
+							<!--#region NAV: Perfil-->
+							<Button Command="{ Binding Path=NavigationCommand }"
+									CommandParameter="Perfil"
+									Content="Perfil"
+									Cursor="Hand"
+									Margin="5 0 0 0"
+									ToolTip="Ver perfil del docentes"
+									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
+									Style="{ StaticResource ResourceKey=Primary }"/>
+							<!--#endregion-->
+						</WrapPanel>
+						<!--#endregion-->
+					</Grid>
+				</StackPanel>
+			</ScrollViewer>
+		</Border>
+		<!--#endregion-->
+	</Grid>
 </UserControl>

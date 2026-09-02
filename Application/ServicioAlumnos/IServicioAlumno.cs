@@ -1,27 +1,28 @@
 ﻿using Core.ServicioAlumnos.DTOs.Requests;
-using Core.ServicioAlumnos.DTOs.Responses;
+using Core.Shared.DTOs.Personas.Requests;
+using Core.Shared.DTOs.Personas.Response;
 
 namespace Core.ServicioAlumnos;
 
 public interface IServicioAlumno
 {
-    Task<Guid> RegistrarAlumnoAsync(RegistrarAlumnoRequest request);
+	Task<PersonaConDetallesResponse> BuscarPorIDAsync(PersonaRequest request);
+	Task<PersonaResponse?> BuscarPorDNIAsync(DocumentoRequest request);
+	Task<PersonaResponse?> BuscarPorNombreCompletoAsync(NombreCompletoRequest request);
 
-    PersonaResponse BuscarPorDNI(string documento);
+	Task<Guid> RegistrarAlumnoAsync(RegistrarAlumnoRequest request);
 
-    PersonaConDetallesResponse BuscarPorDNIConDetalles(string documento);
+	Task<bool> EsDocumentoInvalidoAsync(DocumentoRequest request);
 
-    bool EsDocumentoInvalido(string documento);
 
-    void ModificarContacto(Guid personaId, ContactoRequest cambioContactoRequest);
+	Task ActualizarContacto(CambiarContactoRequest request);
+	Task ActualizarDomicilio(CambiarDomicilioRequest request);
+	Task ActualizarSexo(CambiarSexoRequest request);
 
-    void ModificarSexo(Guid personaId, CambiarSexoRequest cambioSexoRequest);
 
-    void ModificarNombreCompleto(Guid personaId, string nuevoApellido, string nuevoNombre);
+	Task ModificarNombreCompleto(Guid personaId, string nuevoApellido, string nuevoNombre);
 
-    void ModificarDomicilio(Guid personaId, DomicilioRequest domicilioRequest);
+	Task ActualizarDireccion(Guid personaId, DireccionRequest domicilioRequest);
 
-    void ActualizarDireccion(Guid personaId, DireccionRequest domicilioRequest);
-
-    void QuitarAlumno(Guid alumnoId);
+	Task EliminarAlumnoAsync(EliminarAlumnoRequest request);
 }

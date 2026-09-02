@@ -1,17 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Domain\Domain.csproj" />
-    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Domain\Domain.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="MediatR" Version="12.2.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-  </ItemGroup>
+	<!--
+		Único cambio de producción de la feature 001-automated-test-suite
+		(data-model.md §2, plan.md Complexity Tracking). Expone los tipos `internal`
+		del assembly Core a los proyectos de prueba: `ServicioSeguridad` y su interfaz
+		`internal` no se pueden resolver por DI a través de un contrato público.
+		Sólo metadatos de assembly; no cambia comportamiento ni el binario distribuible.
+	-->
+	<ItemGroup>
+		<InternalsVisibleTo Include="Core.UnitTests" />
+		<InternalsVisibleTo Include="EDUSIS.EndToEndTests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MediatR" Version="12.4.1" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="ServicioUsuarios\DTOs\Responses\" />
+	</ItemGroup>
 </Project>

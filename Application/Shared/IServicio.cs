@@ -1,5 +1,3 @@
 ﻿namespace Core.Shared;
 
-public interface IServicio
-{
-}
+public interface IServicio { }

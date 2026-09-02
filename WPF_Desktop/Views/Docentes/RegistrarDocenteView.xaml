@@ -1,137 +1,161 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Docentes.RegistrarDocenteView"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
-             xmlns:shared="clr-namespace:WPF_Desktop.Views.Shared"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             xmlns:domainDocentes="clr-namespace:Domain.Docentes;assembly=Domain"
-             xmlns:components="clr-namespace:WPF_Desktop.Components"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             mc:Ignorable="d">
-    <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="Converter"/>
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
+			 xmlns:vPuestos="clr-namespace:WPF_Desktop.Views.Docentes.Puestos"
 
-        <ObjectDataProvider x:Key="posiciones" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="domainDocentes:Posicion"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-    </UserControl.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="100"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+			 xmlns:shared="clr-namespace:WPF_Desktop.Views.Shared"
+			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+			 xmlns:domainPuestos="clr-namespace:Domain.Docentes.Puestos;assembly=Domain"
+			 xmlns:components="clr-namespace:WPF_Desktop.Components"
 
-        <!-- TITTLE AND SUBTITLE -->
-        <components:Header Grid.Row="0"
-                           Title="Gestión de Docentes"
-                           Subtitle="Registrar Docentes"/>
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+			 mc:Ignorable="d">
+	<UserControl.Resources>
+		<BooleanToVisibilityConverter x:Key="Converter"/>
 
-        <Border Grid.Row="1"
-                Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
-                BorderThickness="1"
-                CornerRadius="4"
-                Margin="20 10"
-                Padding="10 10"
-                VerticalAlignment="Top">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="15"
-                                  Color="#373737"
-                                  ShadowDepth="5"
-                                  Opacity=".3"/>
-            </Border.Effect>
+		<ObjectDataProvider x:Key="posiciones"
+							MethodName="GetValues"
+							ObjectType="{ x:Type sys:Enum }">
+			<ObjectDataProvider.MethodParameters>
+				<x:Type TypeName="domainPuestos:Posicion"/>
+			</ObjectDataProvider.MethodParameters>
+		</ObjectDataProvider>
+	</UserControl.Resources>
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
 
-            <TabControl SelectedIndex="{ Binding Tab, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                        Padding="10">
-                <!-- DATOS PERSONALES -->
-                <TabItem Header="Datos Personales"
-                         FontSize="14"
-                         FontWeight="SemiBold"
-                         IsEnabled="False"
-                         Padding="10 5">
-                    <ScrollViewer Margin="0 -10 -10 -10"
-                                  VerticalScrollBarVisibility="Auto">
-                        <Grid Margin="10 5 20 10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+		<!--#region TITTLE AND SUBTITLE-->
+		<components:Header Grid.Row="0"
+						   Title="Gestión de Docentes"
+						   Subtitle="Registrar Docentes"/>
+		<!--#endregion-->
 
-                            <Grid.RowDefinitions>
-                                <RowDefinition/>
-                                <RowDefinition/>
-                                <RowDefinition/>
-                            </Grid.RowDefinitions>
+		<TabControl Grid.Row="1"
+					Background="#FFFFFF"
+					BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+					BorderThickness="1"
+					SelectedIndex="{ Binding Path=Tab, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+					Margin="20 10"
+					Padding="0">
+			<TabControl.Effect>
+				<DropShadowEffect BlurRadius="15"
+								  Color="#373737"
+								  ShadowDepth="5"
+								  Opacity=".3"/>
+			</TabControl.Effect>
 
-                            <!-- INFORMACIÓN PERSONAL -->
-                            <shared:InformacionPersonalView Grid.Column="0"
-                                                            Grid.Row="0"
-                                                            DataContext="{ Binding Path=InformacionPersonalViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                            Margin="0 5 10 10"/>
+			<!--#region DATOS PERSONALES-->
+			<TabItem Header="DATOS PERSONALES"
+					 FontSize="16"
+					 FontWeight="SemiBold"
+					 IsEnabled="False"
+					 Padding="15 5">
+				<ScrollViewer Padding="20"
+							  VerticalScrollBarVisibility="Auto">
+					<Grid Margin="10 0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
 
-                            <!-- DOMICILIO -->
-                            <shared:DomicilioView Grid.Column="1"
-                                                 Grid.Row="0"
-                                                 DataContext="{ Binding Path=DomicilioViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                 Margin="10 5 0 10"/>
+						<Grid.RowDefinitions>
+							<RowDefinition/>
+							<RowDefinition/>
+							<RowDefinition/>
+						</Grid.RowDefinitions>
 
-                            <!-- CONTACTO -->
-                            <shared:ContactoView Grid.ColumnSpan="2"
-                                                 Grid.Row="1"
-                                                 DataContext="{ Binding Path=ContactoViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                 Margin="0 10 0 0"/>
+						<!--#region INFORMACIÓN PERSONAL-->
+						<shared:InformacionPersonalView Grid.Column="0"
+														Grid.Row="0"
+														DataContext="{ Binding Path=InformacionPersonal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+														Margin="0 0 10 10"
+														Validation.ErrorTemplate="{ x:Null }"/>
+						<!--#endregion-->
 
-                            <!-- COMMAND -->
-                            <StackPanel Grid.ColumnSpan="2"
-                                        Grid.Row="3"
-                                        Margin="0 10 0 0">
-                                <WrapPanel HorizontalAlignment="Right">
-                                    <Button Command="{ Binding Path=ContinuarCommand }"
-                                            Content="Continuar"
-                                            Style="{ StaticResource Tertiary }"/>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Grid>
-                    </ScrollViewer>
-                </TabItem>
+						<!--#region DOMICILIO-->
+						<shared:DomicilioView Grid.Column="1"
+											  Grid.Row="0"
+											  DataContext="{ Binding Path=Domicilio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+											  Margin="10 0 0 10"
+											  Validation.ErrorTemplate="{ x:Null }"/>
+						<!--#endregion-->
 
-                <!-- INSTITUCIÓN -->
-                <TabItem Header="Institución"
-                         FontSize="14"
-                         FontWeight="SemiBold"
-                         Padding="10 5"
-                         IsEnabled="False">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="10 5 10 10">
-                            <!-- ALTA EN INSTITUCIÓN -->
-                            <local:LegajoDocenteView DataContext="{ Binding Path=DocenteInstitucionalViewModel, Mode=TwoWay }"/>
+						<!--#region CONTACTO-->
+						<shared:ContactoView Grid.ColumnSpan="2"
+											 Grid.Row="1"
+											 DataContext="{ Binding Path=Contacto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+											 Margin="0 10 0 10"
+											 Validation.ErrorTemplate="{ x:Null }"/>
+						<!--#endregion-->
 
+						<!--#region COMMANDS-->
+						<StackPanel Grid.ColumnSpan="2"
+									Grid.Row="3"
+									Margin="0 10 0 0">
+							<Separator Background="{ StaticResource ResourceKey=Neutral800 }"
+									   Margin="0 0 0 5"
+									   Height="2"
+									   Width="Auto"/>
+							<WrapPanel HorizontalAlignment="Right"
+									   Margin="0 5 0 0">
+								<Button Command="{ Binding Path=ContinuarCommand }"
+										Content="Continuar"
+										Style="{ StaticResource ResourceKey=Tertiary }"/>
+							</WrapPanel>
+						</StackPanel>
+						<!--#endregion-->
+					</Grid>
+				</ScrollViewer>
+			</TabItem>
+			<!--#endregion-->
 
-                            <!-- PUESTO EN LA INSTITUCIÓN -->
-                            <local:PuestoDocenteView DataContext="{ Binding Path=PuestoDocenteViewModel, Mode=TwoWay }"/>
+			<!--#region INSTITUCIONAL-->
+			<TabItem Header="INSTITUCIÓN"
+					 FontSize="16"
+					 FontWeight="SemiBold"
+					 IsEnabled="False"
+					 Padding="15 5">
+				<ScrollViewer Padding="20"
+							  VerticalScrollBarVisibility="Auto">
+					<StackPanel Margin="10 0">
+						<!--#region ALTA EN INSTITUCIÓN-->
+						<local:LegajoDocenteView DataContext="{ Binding Path=LegajoDocente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+												 Margin="0 0 0 10"/>
+						<!--#endregion-->
 
-                            <!-- COMMAND -->
-                            <StackPanel Grid.ColumnSpan="2"
-                                        Grid.Row="3"
-                                        Margin="0 10 0 0">
-                                <WrapPanel HorizontalAlignment="Right">
-                                    <Button Command="{ Binding Path=AtrasCommand }"
-                                            Content="Atras"
-                                            Style="{ StaticResource Tertiary }"/>
-                                    <Button Command="{ Binding Path=GuardarCommand }"
-                                            Content="Guardar"
-                                            Margin="5 0 0 0"
-                                            Style="{ StaticResource Primary }"/>
-                                </WrapPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>
-        </Border>
-    </Grid>
+						<!--#region PUESTO EN LA INSTITUCIÓN-->
+						<vPuestos:PuestoDocenteView DataContext="{ Binding Path=PuestoDocente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+													Margin="0 10 0 10"/>
+						<!--#endregion-->
+
+						<!--#region COMMANDS-->
+						<StackPanel Margin="0 10 0 0">
+							<Separator Background="{ StaticResource ResourceKey=Neutral800 }"
+									   Margin="0 0 0 5"
+									   Height="2"
+									   Width="Auto"/>
+							<WrapPanel HorizontalAlignment="Right"
+									   Margin="0 5 0 0">
+								<Button Command="{ Binding Path=AtrasCommand }"
+										Content="Atras"
+										Margin="0 0 5 0"
+										Style="{ StaticResource ResourceKey=Tertiary }"/>
+								<Button Command="{ Binding Path=GuardarCommand }"
+										Content="Guardar"
+										Margin="5 0 0 0"
+										Style="{ StaticResource ResourceKey=Primary }"/>
+							</WrapPanel>
+						</StackPanel>
+						<!--#endregion-->
+					</StackPanel>
+				</ScrollViewer>
+			</TabItem>
+			<!--#endregion-->
+		</TabControl>
+	</Grid>
 </UserControl>

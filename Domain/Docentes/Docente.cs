@@ -1,180 +1,225 @@
 ﻿using Domain.Docentes.DomainEvents;
-using Domain.Docentes.Licencias;
+using Domain.Docentes.Exceptions;
+using Domain.Docentes.Puestos;
+using Domain.Licencias;
 using Domain.Personas;
 using Domain.Personas.Domicilios;
+using Domain.Shared;
 using System.Text.RegularExpressions;
 
 namespace Domain.Docentes;
 
-public class Docente : Persona
+public sealed class Docente : Persona
 {
-    private List<Licencia> _licencias = new List<Licencia>();
-    private List<Puesto> _puestos = new List<Puesto>();
-     
-    public string Legajo { get; private set; }
-    public string CUIL { get; private set; }
-    public DateTime FechaAlta { get; private set; }
-    public DateTime? FechaBaja { get; private set; } = null;
-    public bool EstaActivo => !FechaBaja.HasValue;
-    public IReadOnlyCollection<Licencia> Licencias => _licencias.AsReadOnly();
-    public IReadOnlyCollection<Puesto> Puestos => _puestos.AsReadOnly();
+	private List<Puesto> _puestos = new();
+	private List<Licencia> _licencias = new();
+
+	public string Legajo { get; private set; }
+	public string CUIL { get; private set; }
+	public RangoFechas Periodo { get; private set; }
+	public Puesto? Puesto { get; private set; }
+	public bool Activo { get; private set; }
+
+	public IReadOnlyCollection<Puesto> Puestos => _puestos.AsReadOnly();
+	public IReadOnlyCollection<Licencia> Licencias => _licencias.AsReadOnly();
 
 
-    protected Docente()
-        : base() {}
+	#region CONSTRUCTOR
+	private Docente()
+		: base() { }
 
-    public Docente(string legajo, string cuil, DateTime fechaAlta, InformacionPersonal informacionPersonal, Domicilio domicilio, string email, string telefono)
-        : base(informacionPersonal, domicilio, email, telefono)
-    {
-        if (informacionPersonal.Edad() < 18)
-        {
-            throw new ArgumentException($"El docente es menor de edad ({ informacionPersonal.Edad() } años).");
-        }
+	private Docente(string legajo,
+					string cuil,
+					DateTime fechaAlta,
+					DateTime? fechaBaja,
+					DatosPersonales datosPersonales,
+					Domicilio domicilio,
+					string email,
+					string telefono)
+		: base(datosPersonales, domicilio, email, telefono)
+	{
+		if (datosPersonales.Edad() < 18)
+		{
+			throw new DocenteMenorDeEdadException();
+		}
 
-        if (fechaAlta.Date > DateTime.Today.Date)
-        {
-            throw new ArgumentException($"La fecha de alta ({ fechaAlta.Date.ToString("D") }) debe ser anterior al día de hoy ({ DateTime.Now.Date.ToString("D") }).");
-        }
+		if ((datosPersonales.Sexo.Equals(Sexo.Masculino) && datosPersonales.Edad() > 64) || (datosPersonales.Sexo.Equals(Sexo.Femenino) && datosPersonales.Edad() > 59))
+		{
+			throw new DocenteEnEdadJubilatoriaException();
+		}
 
-        ValidarLegajo(legajo);
-        ValidarCuil(cuil);
+		if (fechaAlta.Date > DateTime.Today.Date)
+		{
+			throw new ArgumentException($"La fecha de alta ({fechaAlta.Date.ToString("D")}) debe ser anterior al día de hoy ({DateTime.Now.Date.ToString("D")}).");
+		}
 
-        Legajo = legajo;
-        CUIL = cuil;
-        FechaAlta = fechaAlta.Date;
-    }
+		ValidarLegajo(legajo);
+		ValidarCuil(cuil);
 
-    private void ValidarLegajo(string legajoDocente)
-    {
-        if (!Regex.IsMatch(legajoDocente, @"^(\d{6})$"))
-        {
-            throw new FormatException($"Verificar el legajo del docente: { nameof(legajoDocente) }.");
-        }
-    }
+		Legajo = legajo;
+		CUIL = cuil;
+		Periodo = fechaBaja.HasValue ? RangoFechas.Create(fechaAlta, fechaBaja.Value) : RangoFechas.Create(fechaAlta);
+		Activo = Periodo.HaIniciado();
+	}
 
-    private void ValidarCuil(string cuil)
-    {
-        //@"^\d{2}-\d{8}-\d{1}$
-        if (!Regex.IsMatch(cuil, @"\b(20|23|24|27|30|33|34)(\D)?[0-9]{8}(\D)?[0-9]"))
-        {
-            throw new FormatException($"Verificar el CUIL del docente: { nameof(cuil) }.");
-        }
-    }
+	public Docente(string legajo, string cuil, DateTime fechaAlta, DatosPersonales datosPersonales, Domicilio domicilio, string email, string telefono)
+		: this(legajo, cuil, fechaAlta, null, datosPersonales, domicilio, email, telefono) { }
+	#endregion
 
-    #region Puesto Docente
-    private void ValidarFechaInicio(DateTime fechaInicio)
-    {
-        if (FechaAlta.Date > fechaInicio.Date)
-        {
-            throw new ArgumentException($"La fecha de inicio ({ fechaInicio.Date.ToString("D") }) en el puesto docente debe ser igual o posterior a la fecha de alta del docente en la institución ({ FechaAlta.Date.ToString("D") })");
-        }
-    }
+	private void ValidarLegajo(string legajoDocente)
+	{
+		if (!Regex.IsMatch(legajoDocente, @"^(\d{6})$"))
+		{
+			throw new FormatException($"Verificar el legajo del docente: { nameof(legajoDocente) }.");
+		}
+	}
 
-    public Puesto AgregarPuesto(Posicion nuevaPosicion, DateTime fechaInicio)
-    {
-        ValidarFechaInicio(fechaInicio);
+	private void ValidarCuil(string cuil)
+	{
+		//@"^\d{2}-\d{8}-\d{1}$
+		if (!Regex.IsMatch(cuil, @"\b(20|23|24|27|30|33|34)(\D)?[0-9]{8}(\D)?[0-9]"))
+		{
+			throw new FormatException($"Verificar el CUIL del docente: { nameof(cuil) }.");
+		}
+	}
 
-        var puesto = _puestos.Find(x => x.Posicion.Equals(nuevaPosicion) && x.FechaFin is null);
-        if (puesto is not null)
-        {
-            throw new ArgumentException($"El docente ya se encuentra en el puesto de { puesto.Posicion }, desde el { puesto.FechaInicio.ToString("D") }.");
-        }
+	#region Institucional
+	public void Desafectar()
+	{
+		if (Periodo.HaFinalizado())
+		{
+			throw new DocenteInactivoException();
+		}
 
-        var nuevoPuesto = Puesto.Create(nuevaPosicion, fechaInicio);
-        _puestos.Add(nuevoPuesto);
+		Periodo = Periodo.ActualizarFechaFin(DateTime.Today.Date);
+		Activo = Periodo.EstaVigente();
+		AgregarEvento(new DocenteDesafectadoDomainEvent(Id));
+	}
+	#endregion
 
-        return nuevoPuesto;
-    }
-    
-    public Puesto CambiarPuesto(Posicion nuevaPosicion, DateTime fechaInicio)
-    {
-        ValidarFechaInicio(fechaInicio);
+	#region PuestoDocente
+	private Puesto? BuscarPuestoDocente(Guid puestoID) =>
+		_puestos.Where(x => x.Id.Equals(puestoID))
+				.FirstOrDefault();
 
-        var puestoViejo = _puestos.Where(x => x.FechaFin is not null)
-                                         .FirstOrDefault();
-        if (puestoViejo is null)
-        {
-            throw new ArgumentException("El docente no tiene ningún puesto en la institución.");
-        }
+	private bool EsPosicionAsignada(Posicion unaPosicion) =>
+		_puestos.Any(x => x.Posicion.Equals(unaPosicion) && x.Estado.Equals(EstadoPuesto.Activo));
 
-        QuitarPuesto((int) puestoViejo.Posicion, puestoViejo.FechaInicio);
-        return AgregarPuesto(nuevaPosicion, fechaInicio);
-    }
+	public IEnumerable<Puesto> PuestoDocentesAsignados() =>
+		_puestos.Where(x => x.Periodo.EstaVigente())
+				.AsEnumerable();
 
-    public Puesto QuitarPuesto(int posicion, DateTime fechaInicio)
-    {
-        // TODO: Verificar que el docente solo pueda tener un puesto docente
-        var puesto = _puestos.Find(x => x.Posicion.Equals((Posicion) posicion) && x.FechaInicio.Date == fechaInicio.Date && x.FechaFin is null);
-        if (puesto is null)
-        {
-            throw new ArgumentNullException("Puesto docente no encontrado.");
-        }
+	public void AsignarCargoDocente(string unaPosicion, string unEstado, DateTime fechaInicio, DateTime? fechaFin)
+	{
+		var posicion = Enum.Parse<Posicion>(unaPosicion);
 
-        var puestoEliminado = puesto.QuitarPuesto();
+		if (!Activo)
+		{
+			throw new DocenteInactivoException();
+		}
 
-        var index = _puestos.IndexOf(puesto);
-        _puestos[index] = puestoEliminado;
+		if (EsPosicionAsignada(posicion))
+		{
+			throw new PuestoDocenteAsignadoException(nameof(posicion));
+		}
 
-        return puestoEliminado;
-    }
-    #endregion
+		if (Periodo.FechaInicio > fechaInicio.Date)
+		{
+			throw new ArgumentException($"La fecha de inicio en el cargo docente debe ser la misma a la fecha de alta del docente en la institución o posterior.");
+		}
 
-    #region Licencia
-    public Licencia RegistrarLicencia(int articulo, int dias, DateTime fechaInicio, string observacion)
-    {
-        var existeLicencia = _licencias.Any(x => x.Estado.Equals(Estado.Activa) || x.Estado.Equals(Estado.Pendiente));
-        if (existeLicencia)
-        {
-            throw new ArgumentException($"El docente ya posee una licencia en curso.");
-        }
 
-        var nuevaLicencia = Licencia.Crear((Articulo) articulo, dias, fechaInicio, observacion);
-        _licencias.Add(nuevaLicencia);
+		var nuevoPuesto = new Puesto(Id, unEstado, unaPosicion, fechaInicio, fechaFin);
+		_puestos.Add(nuevoPuesto);
+	}
 
-        AgregarEvento(new LicenciaSolicitadaEvent(Id));
+	public void ModificarCargoDocente(Guid puestoID, string unaPosicion, DateTime fechaInicio, DateTime? fechaFin)
+	{
+		var puesto = BuscarPuestoDocente(puestoID);
+		if (puesto is null)
+		{
+			throw new ArgumentException("Puesto docente no encontrado.", nameof(puestoID));
+		}
 
-        return nuevaLicencia;
-    }
+		var estado = puesto.Estado;
+		if (!estado.Equals(EstadoPuesto.Pendiente))
+		{
+			throw new ArgumentException("El puesto docente que desea modificar no se encuentra pendiente.");
+		}
 
-    public void AprobarLicencia(int articulo, int dias, DateTime fechaInicio)
-    {
-        Articulo articuloDocente = Enum.Parse<Articulo>(articulo.ToString());
-        var licencia = _licencias.Find(x => x.Articulo.Equals(articuloDocente) && x.Dias == dias && x.FechaInicio.Equals(fechaInicio) && x.Estado.Equals(Estado.Pendiente));
-        if (licencia is null)
-        {
-            throw new ArgumentException($"Licencia del docente no encontrada.");
-        }
+		var result = Enum.TryParse<Posicion>(unaPosicion, out var posicion);
+		if (!result)
+		{
+			throw new ArgumentException("Posición inválida.", nameof(unaPosicion));
+		}
 
-        var index = _licencias.IndexOf(licencia);
-        _licencias[index] = licencia.Activar();
-    }
+		var asignada = EsPosicionAsignada(posicion);
+		if (asignada)
+		{
+			throw new PuestoDocenteAsignadoException(nameof(posicion));
+		}
 
-    public void CancelarLicencia(int articulo, int dias, DateTime fechaInicio, string observacion)
-    {
-        Articulo articuloDocente = Enum.Parse<Articulo>(articulo.ToString());
-        var licencia = _licencias.Find(x => x.Articulo.Equals(articuloDocente) && x.Dias == dias && x.FechaInicio.Equals(fechaInicio) && x.Estado.Equals(Estado.Pendiente));
-        if (licencia is null)
-        {
-            throw new ArgumentException($"Licencia del docente no encontrada.");
-        }
+		puesto.ActualizarPuestoDocente(unaPosicion, fechaInicio, fechaFin);
+	}
 
-        var index = _licencias.IndexOf(licencia);
-        _licencias[index] = licencia.Cancelar(observacion);
-    }
+	public void CambiarEventualidadCargoDocente(Guid posicionID)
+	{
+		if (!Activo)
+		{
+			throw new DocenteInactivoException();
+		}
 
-    public Licencia ActualizarLicencia(Licencia unaLicencia, int articulo, int dias, DateTime fechaInicio, string observacion)
-    {
-        var licencia = _licencias.Find(x => x.Equals(unaLicencia));
-        if (licencia is null)
-        {
-            throw new ArgumentException($"Licencia del docente no encontrada.");
-        }
+		var puesto = BuscarPuestoDocente(posicionID);
+		puesto.EstablecerComoPuestoFijo();
+	}
 
-        var nuevaLicencia = licencia.ActualizarLicencia((Articulo) articulo, dias, fechaInicio, observacion);
-        _licencias.Remove(licencia);
-        _licencias.Add(nuevaLicencia);
+	public void RescindirCargoDocente(Guid puestoID, DateTime? fechaFinalizacion)
+	{
+		if (!Activo)
+		{
+			throw new DocenteInactivoException();
+		}
 
-        return nuevaLicencia;
-    }
-    #endregion
+		var puestoDocente = BuscarPuestoDocente(puestoID);
+		if (puestoDocente is null)
+		{
+			throw new PuestoDocenteNoEncontradoException();
+		}
+
+		if (puestoDocente.Estado.Equals(EstadoPuesto.Inactivo))
+		{
+			throw new PuestoDocenteSinAsignarException();
+		}
+
+		if (fechaFinalizacion.HasValue)
+		{
+			puestoDocente.Rescindir(fechaFinalizacion.Value);
+		}
+		else
+		{
+			puestoDocente.Rescindir();
+		}
+	}
+
+	public void EliminarCargoDocente(Guid puestoID)
+	{
+		if (!Activo)
+		{
+			throw new DocenteInactivoException();
+		}
+
+		var puestoDocente = BuscarPuestoDocente(puestoID);
+		if (puestoDocente is null)
+		{
+			throw new PuestoDocenteNoEncontradoException();
+		}
+
+		if (!puestoDocente.Estado.Equals(EstadoPuesto.Pendiente))
+		{
+			throw new ArgumentException("El puesto docente no se encuentra pendiente.");
+		}
+
+		_puestos.Remove(puestoDocente);
+	}
+	#endregion
 }

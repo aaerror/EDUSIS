@@ -1,88 +1,93 @@
 ﻿using Domain.Shared;
-using System.Text.RegularExpressions;
 
 namespace Domain.Usuarios;
 
 public class Usuario : Entity
 {
-    private List<Acceso> _accesos = new List<Acceso>();
+	private List<Rol> _roles = new();
 
-    public Guid DocenteID { get; private set; } = Guid.Empty;
-    public Rol Rol { get; private set; }
-    public string Username { get; private set; }
-    public string PasswordSalt { get; private set; }
-    public string PasswordHash { get; private set; }
-    public IReadOnlyCollection<Acceso> Accesos => _accesos.ToList();
+	public Guid DocenteID { get; private set; } = Guid.Empty;
+	public string Username { get; private set; }
+	public string PasswordSalt { get; private set; }
+	public string PasswordHash { get; private set; }
+	public IReadOnlyCollection<Rol> Roles => _roles.AsReadOnly();
 
 
-    protected Usuario(Guid usuarioID) : base(usuarioID) { }
+	#region CONSTRUCTOR
+	private Usuario() { }
 
-    protected Usuario(Guid usuarioID, Guid docenteID, string username, string passwordSalt, string passwordHash, Rol rol)
-        : this(usuarioID)
-    {
-        if (!Regex.IsMatch(username, @"^[a-zA-Z0-9](_(?!(\.|_))|\.(?!(_|\.))|[a-zA-Z0-9]){6,18}[a-zA-Z0-9]$", RegexOptions.None))
-        {
-            throw new ArgumentException(nameof(username), "El nombre de usuario no es válido");
-        }
+	private Usuario(Guid usuarioID)
+		: base(usuarioID) { }
 
-        DocenteID = docenteID;
-        Username = username;
-        PasswordSalt = passwordSalt;
-        PasswordHash = passwordHash;
+	private Usuario(Guid usuarioID, Guid docenteID, string username, string passwordSalt, string passwordHash)
+		: this(usuarioID)
+	{
+		if (Guid.Empty.Equals(docenteID))
+		{
+			throw new ArgumentNullException(nameof(docenteID), "Se debe asignar un docente.");
+		}
 
-        if (Rol.Administrador.Equals(rol))
-        {
-            _accesos.Add(Acceso.Crear(Permiso.Escribir));
-            _accesos.Add(Acceso.Crear(Permiso.Ejecutar));
-            _accesos.Add(Acceso.Crear(Permiso.Leer));
-        }
-    }
+		if (string.IsNullOrWhiteSpace(username))
+		{
+			throw new ArgumentNullException(nameof(username), "Se debe asignar un nombre de usuario.");
+		}
 
-    public Usuario(Guid docenteID, string username, string passwordSalt, string passwordHash, Rol rol)
-        : this(Guid.NewGuid(), docenteID, username, passwordSalt, passwordHash, rol)
-    {
-        if (Guid.Empty.Equals(docenteID))
-        {
-            throw new ArgumentNullException(nameof(docenteID), "Se debe asignar un docente");
-        }
+		if (passwordSalt is null || passwordHash is null)
+		{
+			throw new ArgumentNullException("Error en la contraseña.");
+		}
 
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            throw new ArgumentNullException(nameof(username), "Se debe asignar un nombre de usuario");
-        }
+		/*if (!Regex.IsMatch(username, @"^[a-zA-Z0-9](_(?!(\.|_))|\.(?!(_|\.))|[a-zA-Z0-9]){6,18}[a-zA-Z0-9]$", RegexOptions.None))
+		{
+			throw new ArgumentException("El nombre de usuario no es válido", nameof(username));
+		}*/
 
-        if (passwordSalt is null || passwordHash is null)
-        {
-            throw new ArgumentNullException("Error en la contraseña.");
-        }
-    }
+		DocenteID = docenteID;
+		Username = username;
+		PasswordSalt = passwordSalt;
+		PasswordHash = passwordHash;
+	}
 
-    public void AgregarPermiso(Permiso unPermiso)
-    {
-        bool existe = _accesos.Any(x => x.Permiso.Equals(unPermiso) && x.PermisoHabilitado());
-        if (existe)
-        {
-            throw new ArgumentException("El permiso ya se encuentra asignado al usuario.", nameof(unPermiso));
-        }
+	private Usuario(Guid usuarioID, Guid docenteID, string username, string passwordSalt, string passwordHash, List<Rol> roles)
+		: this(usuarioID, docenteID, username, passwordSalt, passwordHash)
+	{
+		_roles = roles;
+	}
 
-        var nuevoAcceso = Acceso.Crear(unPermiso);
-        _accesos.Add(nuevoAcceso);
-    }
+	public Usuario(Guid docenteID, string username, string passwordSalt, string passwordHash)
+		: this(Guid.NewGuid(), docenteID, username, passwordSalt, passwordHash) { }
 
-    public void QuitarPermiso(Permiso unPermiso)
-    {
-        var acceso = _accesos.Find(x => x.Permiso.Equals(unPermiso) && x.PermisoHabilitado());
-        if (acceso is null)
-        {
-            throw new ArgumentException("El permiso no se encuentra asignado al usuario.", nameof(unPermiso));
-        }
+	public Usuario(Guid docenteID, string username, string passwordSalt, string passwordHash, List<Rol> roles)
+		: this(Guid.NewGuid(), docenteID, username, passwordSalt, passwordHash, roles) { }
+	#endregion
 
-        int index = _accesos.IndexOf(acceso);
-        _accesos[index] = acceso.AnularPermiso();
-    }
+	public void AgregarRol(string unRol)
+	{
+		var rol = Enumeration.FromDescripcion<Rol>(unRol);
+		bool existe = _roles.Contains(rol);
+		if (existe)
+		{
+			throw new ArgumentException("El rol ya se encuentra asignado al usuario.", nameof(unRol));
+		}
 
-    public void CambiarPassword(string passwordSalt, string passwordHash)
-    {
-        // TODO: Crear metodo cambiar password
-    }
+		_roles.Add(rol);
+	}
+
+	public void QuitarRol(string unRol)
+	{
+		var rol = Enumeration.FromDescripcion<Rol>(unRol);
+		var existeRol = _roles.Contains(rol);
+		if (!existeRol)
+		{
+			throw new ArgumentException("El rol no se encuentra asignado al usuario.", nameof(unRol));
+		}
+
+		_roles.Remove(rol);
+	}
+
+	public void CambiarPassword(string passwordSalt, string passwordHash)
+	{
+		PasswordSalt = passwordSalt;
+		PasswordHash = passwordHash;
+	}
 }

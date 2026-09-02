@@ -1,233 +1,440 @@
-﻿using Core.ServicioCursos;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCursos.DTOs.Requests;
+using Core.ServicioCursos;
+using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes;
-using System;
+using Core.Shared.DTOs.Personas.Requests;
+using Microsoft.IdentityModel.Tokens;
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Data;
 using System.Windows;
+using System;
 using WPF_Desktop.Navigation;
-using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
+using WPF_Desktop.ViewModels.Docentes;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
-public class GestionDivisionesViewModel : ViewModel
+internal partial class GestionDivisionesViewModel : ObservableValidator
 {
-    private readonly IServicioCurso _servicioCursos;
-    private readonly IServicioDocente _servicioDocentes;
-    private readonly CursoStore _cursoStore;
-    private readonly DivisionStore _divisionStore;
+	#region Service
+	private readonly IServicioCurso _servicioCurso;
+	private readonly IServicioDocente _servicioDocente;
+	private readonly INavigationService _gestionCursosNavigationService;
+	private readonly INavigationService _gestionCursantesNavigationService;
+	#endregion
 
-    private readonly INavigationService _gestionCursantesNavigationService;
+	#region Stores
+	private readonly CursoStore _cursoStore;
+	#endregion
 
-    #region Request
-    private EliminarDivisionRequest _elimniarDivisionRequest;
-    #endregion
+	#region Request
+	private EliminarDivisionRequest request;
+	#endregion
 
-    private int _totalDivisiones;
-    private DivisionViewModel _division;
-    private ObservableCollection<DivisionViewModel> _divisiones;
+	#region ViewModels
+	[NotifyCanExecuteChangedFor(nameof(GuardarCommandAsync))]
+	[ObservableProperty]
+	private LegajoDocenteViewModel _docente;
+	#endregion
 
-    public string Curso => _cursoStore.Curso.GradoDescripcion;
-    public string CursoNivelEducativo => _cursoStore.Curso.NivelEducativoDescripcion;
+	[ObservableProperty]
+	private ObservableCollection<LegajoDocenteViewModel> _docentes;
 
-    #region Commands
-    public ViewModelCommand RegistrarCommand { get; }
-    public ViewModelCommand EliminarCommand { get; }
-    public ViewModelCommand NavigationCommand { get; }
-    #endregion
+	private ObservableCollection<DivisionViewModel> _divisiones;
+
+	[Required(AllowEmptyStrings=true)]
+	[DataType(DataType.Text)]
+	[RegularExpression(@"^[A-Za-zÀ-ÿ]+( [A-Za-zÀ-ÿ]+)*$", ErrorMessage="Solo debe ingresar nombre, apellido o una combinación de ambos.")]
+	[NotifyDataErrorInfo]
+	[ObservableProperty]
+	private string _query = string.Empty;
+
+	[ObservableProperty]
+	private int _totalDivisiones;
+	[ObservableProperty]
+	private string _curso;
+	[ObservableProperty]
+	private string _nivelEducativo;
+
+	#region Flags
+	[ObservableProperty]
+	private bool _habilitarDivisiones;
+
+	[ObservableProperty]
+	private bool _habilitarListaDocentes;
+
+	[NotifyCanExecuteChangedFor(nameof(CancelarCommand))]
+	[NotifyCanExecuteChangedFor(nameof(ListarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
+	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(RegistrarCommandAsync))]
+	[ObservableProperty]
+	private bool _habilitarRegistrarDocente;
+	#endregion
+
+	#region Notificaciones
+	[ObservableProperty]
+	private string _message = string.Empty;
+	[ObservableProperty]
+	private bool _habilitarNotificacion;
+	#endregion
+
+	[ObservableProperty]
+	private DivisionViewModel _division;
+	[ObservableProperty]
+	private ListCollectionView _listCollectionDocentes;
+
+	#region Commands
+	public IAsyncRelayCommand CargarDivisionesCommandAsync { get; }
+	public IAsyncRelayCommand EliminarCommandAsync { get; }
+	public IAsyncRelayCommand GuardarCommandAsync { get; }
+	public IAsyncRelayCommand ListarCommandAsync { get; }
+	public IAsyncRelayCommand RegistrarCommandAsync { get; }
+
+	public IRelayCommand CancelarCommand { get; }
+	public IRelayCommand NavigationCommand { get; }
+	#endregion
 
 
-    public GestionDivisionesViewModel(IServicioCurso servicioCursos,
-                                      IServicioDocente servicioDocentes,
-                                      INavigationService gestionCursantesNavigationService,
-                                      CursoStore cursoStore,
-                                      DivisionStore divisionStore)
-    {
-        _servicioCursos = servicioCursos;
-        _servicioDocentes = servicioDocentes;
-        _gestionCursantesNavigationService = gestionCursantesNavigationService;
-        _cursoStore = cursoStore;
-        _divisionStore = divisionStore;
+	public GestionDivisionesViewModel(IServicioCurso servicioCursos,
+									  IServicioDocente servicioDocentes,
+									  INavigationService gestionCursosNavigationService,
+									  INavigationService gestionCursantesNavigationService,
+									  CursoStore cursoStore,
+									  DivisionStore divisionStore)
+	{
+		_servicioCurso = servicioCursos;
+		_servicioDocente = servicioDocentes;
+		_gestionCursosNavigationService = gestionCursosNavigationService;
+		_gestionCursantesNavigationService = gestionCursantesNavigationService;
+		_cursoStore = cursoStore;
 
-        _divisiones = new ObservableCollection<DivisionViewModel>();
-        ActualizarDivisiones();
+		Curso = _cursoStore.Curso.Grado.ToString();
+		NivelEducativo = _cursoStore.Curso.NivelEducativo.ToString();
 
-        RegistrarCommand = new ViewModelCommand(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
-        EliminarCommand = new ViewModelCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
-        NavigationCommand = new ViewModelCommand(ExecuteNavigationCommand, CanExecuteNavigationCommand);
-    }
+		_divisiones = new ObservableCollection<DivisionViewModel>();
+		_docentes = new ObservableCollection<LegajoDocenteViewModel>();
 
-    private void ActualizarDivisiones()
-    {
-        if (CursoStore is not null)
-        {
-            var divisiones = _servicioCursos.BuscarDivisiones(_cursoStore.Curso.CursoID);
-            Divisiones = new ObservableCollection<DivisionViewModel>(divisiones.Select(x => new DivisionViewModel(x)).ToList());
-            TotalDivisiones = Divisiones.Count;
-        }
-    }
+		CargarDivisionesCommandAsync = new AsyncRelayCommand(CargarDivisionesAsync);
+		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
+		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
+		ListarCommandAsync = new AsyncRelayCommand<string>(ExecuteListarCommandAsync, CanExecuteListarCommand);
+		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, CanExecuteRegistrarCommand);
 
-    #region Properties
-    public int TotalDivisiones
-    {
-        get
-        {
-            return _totalDivisiones;
-        }
+		CancelarCommand = new RelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
+		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
-        private set
-        {
-            _totalDivisiones = value;
-            OnPropertyChanged(nameof(TotalDivisiones));
-        }
-    }
 
-    public CursoStore CursoStore
-    {
-        get
-        {
-            return _cursoStore;
-        }
-    }
+		HabilitarRegistrarDocente = false;
+	}
 
-    public DivisionViewModel Division
-    {
-        get
-        {
-            return _division;
-        }
+	private async Task CargarDivisionesAsync()
+	{
+		_divisiones.Clear();
+		try
+		{
+			var divisiones = await _servicioCurso.BuscarDivisionesAsync(_cursoStore.Curso.CursoID);
+			TotalDivisiones = divisiones.Count;
 
-        set
-        {
-            _division = value;
-            OnPropertyChanged(nameof(Division));
-        }
-    }
+			if (divisiones.Count is 0)
+			{
+				HabilitarDivisiones = false;
+				HabilitarNotificacion = true;
 
-    public ObservableCollection<DivisionViewModel> Divisiones
-    {
-        get
-        {
-            return _divisiones;
-        }
+				Message = "No existen divisiones agregadas en el curso hasta el momento. Debe registrar al menos una división en el curso para poder trabajar.";
 
-        set
-        {
-            _divisiones.Clear();
-            _divisiones = value;
-            OnPropertyChanged(nameof(Divisiones));
-        }
-    }
-    #endregion
+				return;
+			}
 
-    #region RegistrarCommand
-    private bool CanExecuteRegistrarCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Division":
-                return CursoStore is not null;
-            default: return false;
-        }
-    }
+			_divisiones = new ObservableCollection<DivisionViewModel>(divisiones.Select(x => new DivisionViewModel(x)));
+			ListCollectionDocentes = new ListCollectionView(_divisiones);
 
-    private void ExecuteRegistrarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-        MessageBoxResult result;
+			HabilitarDivisiones = true;
+			HabilitarNotificacion = false;
+		}
+		catch (Exception ex)
+		{
+			HabilitarDivisiones = false;
+			HabilitarNotificacion = true;
 
-        switch (obj)
-        {
-            case "Division":
-                messageBoxText = $"Se va a registrar una nueva división en { Curso }° Año\n\n" +
-                                 $"¿Desea continuar?";
-                caption = "Registrar División";
-                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result is MessageBoxResult.Yes)
-                {
-                    try
-                    {
-                        _servicioCursos.AgregarDivisionAlCurso(CursoStore.Curso.CursoID);
-                        MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
-                        ActualizarDivisiones();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
+			Message = $"Error al cargar las materias del curso.\nError: { ex.Message }";
+		}
+	}
 
-                break;
-        }
-    }
-    #endregion
+	#region CancelarCommand
+	private bool CanExecuteCancelarCommand(object obj) =>
+		HabilitarRegistrarDocente;
 
-    #region EliminarCommand
-    private bool CanExecuteEliminarCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Division":
-                return Division is not null;
-            default: return false;
-        }
-    }
+	private void ExecuteCancelarCommand(object obj)
+	{
+		HabilitarRegistrarDocente = false;
+		Query = string.Empty;
+		Docentes.Clear();
+	}
+	#endregion
 
-    private void ExecuteEliminarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-        MessageBoxResult result;
+	#region EliminarCommandAsync
+	private bool CanExecuteEliminarCommand(object obj) => obj switch
+	{
+		"Division" => Division is not null,
+		"Preceptor" => !HabilitarRegistrarDocente && Division is not null && Division.DocenteID is not null,
+		_ => false
+	};
 
-        switch (obj)
-        {
-            case "Division":
-                messageBoxText = $"Se va a eliminar la división { Division.Descripcion } del curso.\n\n" +
-                                 $"¿Desea continuar?";
-                caption = "Eliminar División";
-                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result is MessageBoxResult.Yes)
-                {
-                    try
-                    {
-                        _elimniarDivisionRequest = new EliminarDivisionRequest(CursoStore.Curso.CursoID, Division.DivisionID);
-                        _servicioCursos.QuitarDivisiosDelCurso(_elimniarDivisionRequest);
-                        MessageBox.Show("División eliminada correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
-                        ActualizarDivisiones();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
+	private async Task ExecuteEliminarCommandAsync(object obj)
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
 
-                break;
-        } 
-    }
-    #endregion
+		switch (obj)
+		{
+			case "Division":
+				messageBoxText = $"Se va a eliminar la división { Division.Descripcion } del curso.\n\n" +
+								 $"¿Desea continuar?";
+				caption = "Eliminar División";
+				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+				if (result is MessageBoxResult.Yes)
+				{
+					try
+					{
+						var request = new EliminarDivisionRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
+						await _servicioCurso.QuitarDivisiosDelCurso(request);
 
-    #region NavigationCommand
-    private bool CanExecuteNavigationCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Cursantes":
-                return Division is not null;
-            default: return false;
-        }
-    }
+						MessageBox.Show("División eliminada correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
 
-    private void ExecuteNavigationCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Cursantes":
-                _divisionStore.Division = Division;
-                _gestionCursantesNavigationService.Navigate();
-                break;
-        }
-    }
-    #endregion
+						CargarDivisionesAsync();
+					}
+					catch (Exception ex)
+					{
+						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+					}
+				}
+
+				break;
+
+			case "Preceptor":
+				messageBoxText = $"Se va a quitar el preceptor de la división { Division.Descripcion }.\n\n" +
+								 $"¿Desea continuar?";
+				caption = "Quitar Preceptor";
+
+				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+				if (result is MessageBoxResult.Yes)
+				{
+					try
+					{
+						var request = new EliminarPreceptorRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
+						await _servicioCurso.EliminarPreceptorDeDivision(request);
+
+						MessageBox.Show("Se dio de baja correctamente el preceptor de la división", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
+
+						CargarDivisionesAsync();
+					}
+					catch (Exception ex)
+					{
+						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+					}
+				}
+				break;
+		}
+	}
+	#endregion
+
+	#region ListarCommandAsync
+	private bool CanExecuteListarCommand(object obj) => obj switch
+	{
+		"Buscar" => !HasErrors,
+		"Listar" => HabilitarRegistrarDocente,
+		_ => false
+	};
+
+	private async Task ExecuteListarCommandAsync(object obj)
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
+
+		switch (obj)
+		{
+			case "Buscar":
+				try
+				{
+					Docentes.Clear();
+					var request = new NombreCompletoRequest(Query);
+					var response = await _servicioDocente.BuscarDocenteSegunNombreCompletoAsync(request);
+
+					if (response.Count is 0)
+					{
+						messageBoxText = $"No existen coincidencias.";
+						caption = "Buscar";
+						result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Exclamation);
+						Docentes.Clear();
+
+						HabilitarListaDocentes = false;
+
+						return;
+					}
+
+					Docentes = new ObservableCollection<LegajoDocenteViewModel>(response.Select(x => new LegajoDocenteViewModel(x)));
+					HabilitarListaDocentes = true;
+					
+					messageBoxText = $"Se encontraron { Docentes.Count } coincidencias.";
+					caption = "Operación Exitosa";
+					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+				break;
+
+			case "Listar":
+				try
+				{
+					var response = await _servicioDocente.ListarDocentesActivosAsync();
+					if (response.IsNullOrEmpty())
+					{
+						messageBoxText = $"No existen coincidencias.";
+						caption = "Buscar";
+						result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Exclamation);
+						Docentes.Clear();
+
+						HabilitarListaDocentes = false;
+
+						return;
+					}
+
+					Docentes = new ObservableCollection<LegajoDocenteViewModel>(response.Select(x => new LegajoDocenteViewModel(x)));
+					HabilitarListaDocentes = true;
+
+					messageBoxText = $"Se encontraron { Docentes.Count } coincidencias.";
+					caption = "Operación Exitosa";
+					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+				break;
+		}
+	}
+	#endregion
+
+	#region NavigationCommand
+	private bool CanExecuteNavigationCommand(object obj) => obj switch
+	{
+		"Curso" => !HabilitarRegistrarDocente,
+		"Cursantes" => Division is not null && !HabilitarRegistrarDocente,
+		_ => false
+	};
+
+	private void ExecuteNavigationCommand(object obj)
+	{
+		switch (obj)
+		{
+			case "Curso":
+				_gestionCursosNavigationService.Navigate();
+				break;
+
+			case "Cursantes":
+				//_divisionStore.Division = Division;
+				_gestionCursantesNavigationService.Navigate();
+				break;
+		}
+	}
+	#endregion
+
+	#region RegistrarCommandAsync
+	private bool CanExecuteRegistrarCommand(object obj) => obj switch
+	{
+		"Division" => _cursoStore is not null,
+		"Docente" => !HabilitarRegistrarDocente,
+		_ => false
+	};
+
+	private async Task ExecuteRegistrarCommandAsync (object obj)
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
+
+		switch (obj)
+		{
+			case "Docente":
+				HabilitarRegistrarDocente = true;
+				break;
+
+			case "Division":
+				messageBoxText = $"Se va a registrar una nueva división en { _cursoStore.Curso.Grado.ToLower() } año de { _cursoStore.Curso.NivelEducativo.ToLower() }.\n\n" +
+								 $"¿Desea continuar?";
+				caption = "Registrar División";
+				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+				if (result is MessageBoxResult.Yes)
+				{
+					try
+					{
+						await _servicioCurso.AgregarDivisionAlCurso(_cursoStore.Curso.CursoID);
+						MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
+						CargarDivisionesAsync();
+					}
+					catch (Exception ex)
+					{
+						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+					}
+				}
+
+				break;
+		}
+	}
+	#endregion
+
+	#region GuardarCommandAsync
+	private bool CanExecuteGuardarCommand(object obj) =>
+		Docente is not null;
+
+	private async Task ExecuteGuardarCommandAsync(object obj)
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
+
+		try
+		{
+			messageBoxText = $"Se va asignar al docente { Docente.NombreCompleto } como preceptor de la división { Division.Descripcion } de { Curso } año ({ NivelEducativo })\n\n¿Desea continuar?";
+			caption = "Asignar Preceptor";
+			result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+			if (result is MessageBoxResult.Yes)
+			{
+				try
+				{
+					var request = new RegistrarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
+																DivisionID: Division.DivisionID,
+																DocenteID: Docente.DocenteID);
+
+					await _servicioCurso.RegistrarPreceptorEnDivision(request);
+					
+					MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
+					await CargarDivisionesAsync();
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+			}
+
+			Docente = null;
+			Query = string.Empty;
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+		}
+	}
+	#endregion
 }

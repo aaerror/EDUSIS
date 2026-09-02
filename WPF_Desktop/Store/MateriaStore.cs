@@ -3,24 +3,24 @@ using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 
 namespace WPF_Desktop.Store;
 
-public class MateriaStore
+internal class MateriaStore
 {
-    private MateriaViewModel _materiaViewModel = null;
+	private MateriaViewModel _materiaViewModel = null;
 
-    public event Action MateriaStoreChanged;
+	public event Action MateriaStoreChanged;
 
 
-    public MateriaViewModel Materia
-    {
-        get
-        {
-            return _materiaViewModel;
-        }
+	public MateriaViewModel Materia
+	{
+		get
+		{
+			return _materiaViewModel;
+		}
 
-        set
-        {
-            _materiaViewModel = value;
-            MateriaStoreChanged?.Invoke();
-        }
-    }
+		set
+		{
+			_materiaViewModel = value;
+			MateriaStoreChanged?.Invoke();
+		}
+	}
 }

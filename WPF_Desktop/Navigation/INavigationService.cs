@@ -1,6 +1,6 @@
 ﻿namespace WPF_Desktop.Navigation;
 
-public interface INavigationService
+internal interface INavigationService
 {
-    void Navigate();
+	void Navigate();
 }

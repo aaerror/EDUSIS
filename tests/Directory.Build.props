@@ -1,0 +1,25 @@
+<Project>
+
+	<!--
+		Propiedades comunes a TODOS los proyectos bajo tests/.
+		No afecta a los .csproj de producción: están fuera de este directorio
+		y MSBuild sólo asciende hasta el primer Directory.Build.props.
+	-->
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>11</LangVersion>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+
+		<!--
+			El TFM sigue siendo net7.0 (research.md §12): no se sube ni se silencia
+			el warning NETSDK1138. Pero en esta máquina sólo está el runtime .NET 10,
+			así que el testhost necesita roll-forward EXPLÍCITO para ejecutarse
+			(el build ya rollforwardea; la ejecución no, por defecto).
+		-->
+		<RollForward>Major</RollForward>
+	</PropertyGroup>
+
+</Project>

@@ -1,322 +1,256 @@
-﻿using Core.ServicioDocentes;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Core.ServicioDocentes.DTOs.Requests;
+using Core.ServicioDocentes;
+using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+using iText.Kernel.Pdf;
+using iText.Layout.Element;
+using iText.Layout;
 using System.Windows;
-using WPF_Desktop.Shared;
+using System;
+using WPF_Desktop.ViewModels.Docentes.Puestos;
 using WPF_Desktop.ViewModels.Shared;
 
 namespace WPF_Desktop.ViewModels.Docentes;
 
-public class RegistrarDocenteViewModel : ViewModel, INotifyDataErrorInfo
+internal partial class RegistrarDocenteViewModel : ObservableValidator
 {
-    private readonly IServicioDocente _servicioDocentes;
+	private readonly IServicioDocente _servicioDocentes;
 
-    #region Requests
-    private RegistrarDocenteRequest _registrarDocenteRequest;
-    #endregion
+	#region ViewModels
+	[ObservableProperty]
+	private InformacionPersonalViewModel _informacionPersonal;
 
-    #region ViewModel
-    private InformacionPersonalViewModel _informacionPersonalViewModel;
-    private ContactoViewModel _contactoViewModel;
-    private DomicilioViewModel _domicilioViewModel;
-    private LegajoDocenteViewModel _docenteInstitucionalViewModel;
-    private PuestoDocenteViewModel _puestoDocenteViewModel;
-    #endregion
+	[ObservableProperty]
+	private ContactoViewModel _contacto;
 
-    private int _tab = 0;
+	[ObservableProperty]
+	private DomicilioViewModel _domicilio;
 
-    private Dictionary<string, List<string>> _errorsByProperty = new();
+	[ObservableProperty]
+	private LegajoDocenteViewModel _legajoDocente;
 
-    public bool HasErrors => _errorsByProperty.Any();
-    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+	[ObservableProperty]
+	private PuestoDocenteViewModel _puestoDocente;
+	#endregion
 
-    #region Commands
-    public ViewModelCommand GuardarCommand { get; }
-    public ViewModelCommand ContinuarCommand { get; }
-    public ViewModelCommand AtrasCommand { get; }
-    #endregion
+	[ObservableProperty]
+	private int _tab = 0;
+
+	#region Commands
+	public IRelayCommand GuardarCommand { get; }
+	public IRelayCommand ContinuarCommand { get; }
+	public IRelayCommand AtrasCommand { get; }
+	#endregion
 
 
-    public RegistrarDocenteViewModel(IServicioDocente servicioDocentes)
-    {
-        _servicioDocentes = servicioDocentes;
+	public RegistrarDocenteViewModel(IServicioDocente servicioDocentes)
+	{
+		_servicioDocentes = servicioDocentes;
 
-        _informacionPersonalViewModel = new(null);
-        _contactoViewModel = new(null);
-        _domicilioViewModel = new(null);
-        _docenteInstitucionalViewModel = new(null);
-        _puestoDocenteViewModel = new(null);
+		_informacionPersonal = new();
+		_contacto = new(null);
+		_domicilio = new(null);
+		_legajoDocente = new(null);
+		_puestoDocente = new();
 
-        AtrasCommand = new ViewModelCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
-        ContinuarCommand = new ViewModelCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
-        GuardarCommand = new ViewModelCommand(ExecuteGuardarCommand, CanExecuteGuardarCommand);
-    }
+		AtrasCommand = new RelayCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
+		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
+		GuardarCommand = new RelayCommand(ExecuteGuardarCommand, CanExecuteGuardarCommand);
+	}
 
-    private bool CUILInvalido(string prefijo, string documento, string posfijo)
-    {
-        string cuil = prefijo + documento + posfijo;
+	#region GuardarCommand
+	private bool CanExecuteGuardarCommand() =>
+		!HasErrors && !InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
 
-        return _servicioDocentes.EsCuilInvalido(cuil);
-    }
+	private async void ExecuteGuardarCommand()
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
 
-    public int Tab
-    {
-        get
-        {
-            return _tab;
-        }
+		if (string.IsNullOrWhiteSpace(LegajoDocente.Legajo) || string.IsNullOrWhiteSpace(LegajoDocente.PrefijoCuil) || string.IsNullOrWhiteSpace(LegajoDocente.PosfijoCuil))
+		{
+			messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
+			caption = "Error en la operación";
 
-        set
-        {
-            _tab = value;
-            OnPropertyChanged(nameof(Tab));
-        }
-    }
+			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
-    #region Properties
+			LegajoDocente.Legajo = string.Empty;
+			LegajoDocente.PrefijoCuil = string.Empty;
+			LegajoDocente.PosfijoCuil = string.Empty;
+		}
+		else
+		{
+			messageBoxText = $"¿Está seguro que desea registrar los datos del docente {InformacionPersonal.Apellido}, {InformacionPersonal.Nombre}?";
+			caption = "Registrar Docente";
 
-    public InformacionPersonalViewModel InformacionPersonalViewModel
-    {
-        get
-        {
-            return _informacionPersonalViewModel;
-        }
+			result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+			if (result is MessageBoxResult.Yes)
+			{
+				var requestDatosPersonales = new RegistrarDatosPersonalesRequest(
+					Apellido: InformacionPersonal.Apellido,
+					Nombre: InformacionPersonal.Nombre,
+					Documento: InformacionPersonal.DocumentoNacionalIdentidad,
+					Sexo: InformacionPersonal.Sexo.ToString(),
+					FechaNacimiento: InformacionPersonal.FechaNacimiento,
+					Nacionalidad: InformacionPersonal.Nacionalidad);
 
-        set
-        {
-            _informacionPersonalViewModel = value;
-            OnPropertyChanged(nameof(InformacionPersonalViewModel));
-        }
-    }
+				var requestDomicilio = new RegistrarDomicilioRequest(
+					Calle: Domicilio.Calle,
+					Altura: Domicilio.Altura,
+					Vivienda: Domicilio.Vivienda.ToString(),
+					Observacion: Domicilio.Observaciones,
+					Localidad: Domicilio.Localidad,
+					Provincia: Domicilio.Provincia,
+					Pais: Domicilio.Pais);
 
-    public DomicilioViewModel DomicilioViewModel
-    {
-        get
-        {
-            return _domicilioViewModel;
-        }
+				var requestContacto = new RegistrarContactoRequest(
+					Telefono: Contacto.Telefono,
+					Email: Contacto.Email);
 
-        set
-        {
-            _domicilioViewModel = value;
-            OnPropertyChanged(nameof(DomicilioViewModel));
-        }
-    }
+				var requestPuesto = new RegistrarPuestoDocenteRequest(
+					DocenteID: Guid.Empty,
+					Posicion: PuestoDocente.Posicion,
+					Estado: PuestoDocente.Estado,
+					FechaInicio: PuestoDocente.FechaInicio,
+					FechaFin: PuestoDocente.FechaFin);
 
-    public ContactoViewModel ContactoViewModel
-    {
-        get
-        {
-            return _contactoViewModel;
-        }
+				var request = new RegistrarDocenteRequest(
+					Legajo: LegajoDocente.Legajo,
+					CUIL: LegajoDocente.CodigoUnicoIdentificacionLaboral,
+					FechaAlta: LegajoDocente.FechaAlta,
+					DatosPersonales: requestDatosPersonales,
+					Domicilio: requestDomicilio,
+					Contacto: requestContacto,
+					Puesto: requestPuesto);
 
-        set
-        {
-            _contactoViewModel = value;
-            OnPropertyChanged(nameof(ContactoViewModel));
-        }
-    }
+				try
+				{
+					/*if (!_servicioDocentes.EsDNIValido(new VerificarDNIRequest(request.DNI)))
+					{
+						messageBoxText = $"El número de documento, {request.DNI}, ya se encuentra registrado con otro docente.";
+						caption = "Error en la operación";
+						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-    public LegajoDocenteViewModel DocenteInstitucionalViewModel
-    {
-        get
-        {
-            return _docenteInstitucionalViewModel;
-        }
+						InformacionPersonal.DNI = string.Empty;
+						Tab = 0;
 
-        set
-        {
-            _docenteInstitucionalViewModel = value;
-            OnPropertyChanged(nameof(DocenteInstitucionalViewModel));
-        }
-    }
+						return;
+					}
 
-    public PuestoDocenteViewModel PuestoDocenteViewModel
-    {
-        get
-        {
-            return _puestoDocenteViewModel;
-        }
+					if (!_servicioDocentes.EsLegajoValido(new VerificarLegajoRequest(request.Legajo)))
+					{
+						messageBoxText = $"El legajo docente, {request.Legajo}, ya se encuentra registrado con otro docente.";
+						caption = "Error en la operación";
+						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-        set
-        {
-            _puestoDocenteViewModel = value;
-            OnPropertyChanged(nameof(PuestoDocenteViewModel));
-        }
-    }
-    #endregion
+						DocenteInstitucionalViewModel.Legajo = string.Empty;
 
-    #region DataErrors
-    public IEnumerable GetErrors(string? propertyName) => _errorsByProperty.GetValueOrDefault(propertyName).AsEnumerable();
-    #endregion
+						return;
+					}
 
-    #region GuardarCommand
-    private bool CanExecuteGuardarCommand(object obj) => !HasErrors && !InformacionPersonalViewModel.HasErrors && !DomicilioViewModel.HasErrors && !ContactoViewModel.HasErrors;
+					if (!_servicioDocentes.EsCUILValido(new VerificarCuilRequest(request.CUIL)))
+					{
+						messageBoxText = $"El CUIL del docente, {request.Apellido} {request.Nombre}, ya se encuentra registrado con otro personal de la institución.";
+						caption = "Error en la operación";
+						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-    private void ExecuteGuardarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-        MessageBoxResult result;
+						DocenteInstitucionalViewModel.PrefijoCuil = string.Empty;
+						DocenteInstitucionalViewModel.PosfijoCuil = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(DocenteInstitucionalViewModel.Legajo) || string.IsNullOrWhiteSpace(DocenteInstitucionalViewModel.PrefijoCuil) || string.IsNullOrWhiteSpace(DocenteInstitucionalViewModel.PosfijoCuil))
-        {
-            messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
-            caption = "Error en la operación";
+						return;
+					}*/
 
-            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+					await _servicioDocentes.RegistrarDocenteAsync(request);
 
-            DocenteInstitucionalViewModel.Legajo = string.Empty;
-            DocenteInstitucionalViewModel.PrefijoCuil = string.Empty;
-            DocenteInstitucionalViewModel.PosfijoCuil = string.Empty;
-        }
-        else
-        {
-            messageBoxText = $"¿Está seguro que desea registrar los datos del docente {InformacionPersonalViewModel.Apellido}, {InformacionPersonalViewModel.Nombre}?";
-            caption = "Registrar Docente";
-            result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result is MessageBoxResult.Yes)
-            {
-                var requestPuesto = new RegistrarPuestoDocenteRequest(PuestoDocenteViewModel.Posicion, PuestoDocenteViewModel.FechaInicio);
+					messageBoxText = $"Se han registrado los datos de un nuevo docente.";
+					caption = "Operación Exitosa";
+					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
 
-                var request = new RegistrarDocenteRequest(
-                    Legajo: DocenteInstitucionalViewModel.Legajo,
-                    CUIL: DocenteInstitucionalViewModel.CUIL,
-                    FechaAlta: DocenteInstitucionalViewModel.FechaAlta,
-                    Puesto: requestPuesto,
-                    Apellido: InformacionPersonalViewModel.Apellido,
-                    Nombre: InformacionPersonalViewModel.Nombre,
-                    DNI: InformacionPersonalViewModel.DNI,
-                    Sexo: InformacionPersonalViewModel.Sexo,
-                    FechaNacimiento: InformacionPersonalViewModel.FechaNacimiento,
-                    Nacionalidad: InformacionPersonalViewModel.Nacionalidad,
-                    Telefono: ContactoViewModel.Telefono,
-                    Email: ContactoViewModel.Email,
-                    Calle: DomicilioViewModel.Calle,
-                    Altura: DomicilioViewModel.Altura,
-                    Vivienda: DomicilioViewModel.Vivienda,
-                    Observacion: DomicilioViewModel.Observaciones,
-                    Localidad: DomicilioViewModel.Localidad,
-                    Provincia: DomicilioViewModel.Provincia,
-                    Pais: DomicilioViewModel.Pais);
-                try
-                {
-                    if (_servicioDocentes.EsDocumentoInvalido(request.DNI))
-                    {
-                        messageBoxText = $"El número de documento, {request.DNI}, ya se encuentra registrado con otro docente.";
-                        caption = "Error en la operación";
-                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+					InformacionPersonal = new InformacionPersonalViewModel(null);
+					Domicilio = new DomicilioViewModel(null);
+					Contacto = new ContactoViewModel(null);
+					LegajoDocente = new LegajoDocenteViewModel(null);
+					PuestoDocente = new PuestoDocenteViewModel(null);
 
-                        InformacionPersonalViewModel.DNI = string.Empty;
-                        Tab = 0;
+					Tab = 0;
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+			}
+		}
+	}
+	#endregion
 
-                        return;
-                    }
+	#region ContinuarCommand
+	private bool CanExecuteContinuarCommand() =>
+		!InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
 
-                    if (_servicioDocentes.EsLegajoInvalido(request.Legajo))
-                    {
-                        messageBoxText = $"El legajo docente, {request.Legajo}, ya se encuentra registrado con otro docente.";
-                        caption = "Error en la operación";
-                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+	private void ExecuteContinuarCommand()
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
 
-                        DocenteInstitucionalViewModel.Legajo = string.Empty;
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonal.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad) || string.IsNullOrWhiteSpace(Domicilio.Calle) || string.IsNullOrWhiteSpace(Domicilio.Localidad) || string.IsNullOrWhiteSpace(Domicilio.Provincia) || string.IsNullOrWhiteSpace(Contacto.Telefono) || string.IsNullOrWhiteSpace(Contacto.Email))
+		{
+			messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
+			caption = "Error en la operación";
 
-                        return;
-                    }
+			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
-                    if (_servicioDocentes.EsCuilInvalido(request.CUIL))
-                    {
-                        messageBoxText = $"El CUIL del docente, {request.Apellido} {request.Nombre}, ya se encuentra registrado con otro personal de la institución.";
-                        caption = "Error en la operación";
-                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+			InformacionPersonal = new InformacionPersonalViewModel(
+				new DatosPersonalesResponse(
+					string.Empty,
+					string.Empty,
+					string.Empty,
+					string.Empty,
+					DateTime.Now,
+					string.Empty));
 
-                        DocenteInstitucionalViewModel.PrefijoCuil = string.Empty;
-                        DocenteInstitucionalViewModel.PosfijoCuil = string.Empty;
+			Domicilio = new DomicilioViewModel(
+				new DomicilioResponse(
+					string.Empty,
+					string.Empty,
+					string.Empty,
+					string.Empty,
+					string.Empty,
+					string.Empty,
+					string.Empty));
 
-                        return;
-                    }
+			Contacto = new ContactoViewModel(
+				new ContactoResponse(
+					string.Empty,
+					string.Empty));
 
-                    _servicioDocentes.RegistrarDocente(request);
+			return;
+		}
 
-                    messageBoxText = $"Se han registrado los datos de un nuevo docente.";
-                    caption = "Operación Exitosa";
-                    MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+		LegajoDocente.NombreCompleto = InformacionPersonal.Apellido + ", " + InformacionPersonal.Nombre;
+		LegajoDocente.DocumentoNacionalIdentidad = InformacionPersonal.DocumentoNacionalIdentidad;
+		Tab = 1;
+	}
+	#endregion
 
-                    InformacionPersonalViewModel = new InformacionPersonalViewModel(null);
-                    DomicilioViewModel = new DomicilioViewModel(null);
-                    ContactoViewModel = new ContactoViewModel(null);
-                    DocenteInstitucionalViewModel = new LegajoDocenteViewModel(null);
-                    PuestoDocenteViewModel = new PuestoDocenteViewModel(null);
+	#region AtrasCommand
+	private bool CanExecuteAtrasCommand() =>
+		!LegajoDocente.HasErrors && !PuestoDocente.HasErrors;
 
-                    Tab = 0;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-    }
-    #endregion
+	private void ExecuteAtrasCommand() =>
+		Tab = 0;
+	#endregion
 
-    #region ContinuarCommand
-    private bool CanExecuteContinuarCommand(object obj) => !InformacionPersonalViewModel.HasErrors && !DomicilioViewModel.HasErrors && !ContactoViewModel.HasErrors;
+	private void GenerateDocument(string filename)
+	{
+		var writer = new PdfWriter(filename);
+		var pdf = new PdfDocument(writer);
+		var document = new Document(pdf);
+		document.Add(new Paragraph(""));
 
-    private void ExecuteContinuarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-        MessageBoxResult result;
-
-        if (string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonalViewModel.DNI) || string.IsNullOrWhiteSpace(DomicilioViewModel.Calle) || string.IsNullOrWhiteSpace(DomicilioViewModel.Localidad) || string.IsNullOrWhiteSpace(DomicilioViewModel.Provincia) || string.IsNullOrWhiteSpace(ContactoViewModel.Telefono) || string.IsNullOrWhiteSpace(ContactoViewModel.Email))
-        {
-            messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
-            caption = "Error en la operación";
-
-            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-            InformacionPersonalViewModel = new InformacionPersonalViewModel(
-                new InformacionPersonalResponse(
-                    string.Empty,
-                    string.Empty,
-                    string.Empty,
-                    0,
-                    DateTime.Now,
-                    string.Empty));
-
-            DomicilioViewModel = new DomicilioViewModel(
-                new DomicilioResponse(
-                    string.Empty,
-                    string.Empty,
-                    0,
-                    string.Empty,
-                    string.Empty,
-                    string.Empty,
-                    string.Empty));
-
-            ContactoViewModel = new ContactoViewModel(
-                new ContactoResponse(string.Empty, string.Empty));
-
-            return;
-        }
-
-        DocenteInstitucionalViewModel.NombreCompleto = InformacionPersonalViewModel.Apellido + ", " + InformacionPersonalViewModel.Nombre;
-        DocenteInstitucionalViewModel.DNI = InformacionPersonalViewModel.DNI;
-        Tab = 1;
-    }
-    #endregion
-
-    #region AtrasCommand
-    private bool CanExecuteAtrasCommand(object obj) => !DocenteInstitucionalViewModel.HasErrors && !PuestoDocenteViewModel.HasErrors;
-
-    private void ExecuteAtrasCommand(object obj)
-    {
-        Tab = 0;
-    }
-    #endregion
+		writer.Close();
+	}
 }

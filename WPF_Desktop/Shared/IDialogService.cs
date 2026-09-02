@@ -1,6 +1,6 @@
 ﻿namespace WPF_Desktop.Shared;
 
-public interface IDialogService
+internal interface IDialogService
 {
-    void OpenDialogService();
+	void OpenDialogService();
 }

@@ -2,8 +2,8 @@
 
 public class CursoDuplicadoException : Exception
 {
-    private const string ERROR = "El curso ya se encuentra registrado.";
+	private const string ERROR = "El curso ya se encuentra registrado.";
 
 
-    public CursoDuplicadoException() : base(ERROR) { }
+	public CursoDuplicadoException() : base(ERROR) { }
 }

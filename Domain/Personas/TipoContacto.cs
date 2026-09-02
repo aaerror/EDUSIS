@@ -2,6 +2,6 @@
 
 public enum TipoContacto
 {
-    Email = 0,
-    Telefono = 1
+	Email = 0,
+	Telefono = 1
 }

@@ -10,5 +10,8 @@
 &lt;/SerializableConnectionString&gt;</DesignTimeValue>
       <Value Profile="(Default)">Data Source=localhost;Initial Catalog=EdusisDB;Integrated Security=True;Encrypt=True;TrustServerCertificate=True</Value>
     </Setting>
+    <Setting Name="DocumentFolders" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">c:\EDUSIS\docs\</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

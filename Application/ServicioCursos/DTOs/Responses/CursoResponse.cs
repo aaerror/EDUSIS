@@ -1,3 +1,5 @@
-﻿namespace Core.ServicioCursos.DTOs.Responses;
+﻿using Domain.Cursos;
 
-public record CursoResponse(Guid CursoID, int Grado, string GradoDescripcion, int NivelEducativo, string NivelEducativoDescripcion, int Divisiones, int Alumnos);
+namespace Core.ServicioCursos.DTOs.Responses;
+
+public record CursoResponse(Guid CursoID, Grado Grado, NivelEducativo NivelEducativo, int Divisiones, int Alumnos);

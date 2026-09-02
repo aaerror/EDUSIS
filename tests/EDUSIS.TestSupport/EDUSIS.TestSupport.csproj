@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		Biblioteca de soporte compartida por las cuatro suites: builders de agregados,
+		fakes (UnitOfWorkFake) e infraestructura de base de datos (SqlServerFixture).
+		No es una suite: se excluye de `dotnet test`. Los paquetes (xunit,
+		Testcontainers.MsSql, Respawn, EF Core) se agregan en las fases que los usan
+		(Foundational / US3).
+		No referencia WPF_Desktop.
+	-->
+	<PropertyGroup>
+		<IsTestProject>false</IsTestProject>
+	</PropertyGroup>
+
+	<!--
+		Paquetes que necesita la infraestructura de base de datos de US3/US4
+		(SqlServerFixture): xunit por IAsyncLifetime, Testcontainers.MsSql para el
+		SQL Server efímero y Respawn para el reset entre pruebas. EF Core llega
+		transitivamente por el ProjectReference a Infrastructure.
+	-->
+	<ItemGroup>
+		<PackageReference Include="xunit" />
+		<PackageReference Include="Testcontainers.MsSql" />
+		<PackageReference Include="Respawn" />
+		<!-- ComposicionDePruebaE2E.Construir hace AddLogging() sobre el ServiceCollection real (US4). -->
+		<PackageReference Include="Microsoft.Extensions.Logging" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Domain\Domain.csproj" />
+		<ProjectReference Include="..\..\Application\Core.csproj" />
+		<ProjectReference Include="..\..\Infrastructure\Infrastructure.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -2,5 +2,5 @@
 
 public record DireccionRequest(string Calle,
                                string Altura,
-                               int Vivienda,
+                               string Vivienda,
                                string Observacion);

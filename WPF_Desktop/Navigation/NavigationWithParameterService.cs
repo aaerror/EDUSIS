@@ -1,24 +1,22 @@
-﻿using System;
-using WPF_Desktop.Shared;
-using WPF_Desktop.Store;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
+using WPF_Desktop.Store.NavigationStore;
 
 namespace WPF_Desktop.Navigation;
 
-public class NavigationWithParameterService<TParameter, TViewModel>
-    where TViewModel : ViewModel
+internal class NavigationWithParameterService<TParameter, TViewModel>
+	where TViewModel : ObservableObject
 {
-    private Func<TParameter, TViewModel> _viewModelFactory;
-    private readonly NavigationStore _navigationStore;
+	private Func<TParameter, TViewModel> _viewModelFactory;
+	private readonly MainWindowNavigationStore _navigationStore;
 
 
-    public NavigationWithParameterService(Func<TParameter, TViewModel> viewModelFactory, NavigationStore navigationStore)
-    {
-        _viewModelFactory = viewModelFactory;
-        _navigationStore = navigationStore;
-    }
+	public NavigationWithParameterService(Func<TParameter, TViewModel> viewModelFactory, MainWindowNavigationStore navigationStore)
+	{
+		_viewModelFactory = viewModelFactory;
+		_navigationStore = navigationStore;
+	}
 
-    public void Navigation(TParameter parameter)
-    {
-        _navigationStore.ViewModelActual = _viewModelFactory(parameter);
-    }
+	public void Navigation(TParameter parameter) =>
+		_navigationStore.ViewModel = _viewModelFactory(parameter);
 }

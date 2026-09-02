@@ -1,28 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows.Controls;
 
-namespace WPF_Desktop.Views.Cursos.Divisiones
+namespace WPF_Desktop.Views.Cursos.Divisiones;
+
+public partial class CalificacionView : UserControl
 {
-    /// <summary>
-    /// Lógica de interacción para CalificacionView.xaml
-    /// </summary>
-    public partial class CalificacionView : UserControl
-    {
-        public CalificacionView()
-        {
-            InitializeComponent();
-        }
-    }
+	public CalificacionView()
+	{
+		InitializeComponent();
+	}
 }

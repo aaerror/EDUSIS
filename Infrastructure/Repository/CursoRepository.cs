@@ -1,5 +1,4 @@
 ﻿using Domain.Cursos;
-using Domain.Cursos.Divisiones;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
@@ -10,30 +9,31 @@ public class CursoRepository : Repository<Curso>, ICursoRepository
 
 
     public CursoRepository(EdusisDBContext context)
-        : base(context) { }
+        : base(context) {}
 
 
-    public Curso CursoConDivisiones(Guid cursoID) =>
+    public Curso? CursoConDivisiones(Guid unCurso) =>
         _context.Cursos
             .Include(x => x.Divisiones)
-            .Where(x => x.Id.Equals(cursoID))
+            .Where(x => x.Id.Equals(unCurso))
             .FirstOrDefault();
 
     public IEnumerable<Curso> CursosConDivisiones() =>
-       _context.Cursos
-            .Include(x => x.Divisiones)
-            .OrderByDescending(x => x.Grado)
-            .ThenBy(x => x.NivelEducativo);
+        _context.Cursos
+             .Include(x => x.Divisiones)
+             .OrderByDescending(x => x.Grado)
+             .ThenBy(x => x.NivelEducativo);
 
     public IEnumerable<Division> DivisionesDelCurso(Guid unCurso) =>
         _context.Cursos
             .AsNoTracking()
             .Include(x => x.Divisiones)
             .Where(x => x.Id.Equals(unCurso))
-            .Select(x => x.Divisiones)
-            .FirstOrDefault();
+            .SelectMany(x => x.Divisiones)
+            .AsEnumerable()
+            .ToList();
 
-    public void CambiarAlumnoDeCurso(Guid alumnoId, Guid nuevoCursoId, Guid nuevaDivisionId)
+    public void CambiarAlumnoDeCurso(Guid unAlumno, Guid nuevoCursoId, Guid nuevaDivisionId)
     {
         throw new NotImplementedException();
     }

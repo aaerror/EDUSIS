@@ -2,4 +2,4 @@
 
 namespace Domain.Cursos.DomainEvents;
 
-public record MateriaEliminadaEvent(Guid materiaID) : IDomainEvent;
+public record MateriaEliminadaEvent(Guid MateriaID) : IDomainEvent;

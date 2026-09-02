@@ -1,109 +1,31 @@
-﻿using Core.Shared.DTOs.Personas.Responses;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text.RegularExpressions;
-using WPF_Desktop.Shared;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Core.Shared.DTOs.Personas.Responses;
+using System.ComponentModel.DataAnnotations;
 
 namespace WPF_Desktop.ViewModels.Shared;
 
-public class ContactoViewModel : ViewModel, INotifyDataErrorInfo
+internal partial class ContactoViewModel : ObservableValidator
 {
-    private string _telefono = string.Empty;
-    private string _email = string.Empty;
+	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe especificar un número de telefono.")]
+	[RegularExpression(@"^(?:\+54|549)?(?:0?(\d{1,4}))?[\s\.-]?(\d{1,4})[\s\.-]?(\d{4})$", ErrorMessage="El formato del número de teléfono es inválido.", MatchTimeoutInMilliseconds=2500)]
+	[NotifyDataErrorInfo]
+	[ObservableProperty]
+	private string _telefono;
 
-    private Dictionary<string, List<string>> _errorsByProperty = new();
+	[Required(AllowEmptyStrings = false, ErrorMessage="Se debe especificar un correo electrónico.")]
+	[EmailAddress]
+	[RegularExpression(@"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$", ErrorMessage="El formato del correo electrónico es inválido.", MatchTimeoutInMilliseconds=2500)]
+	[NotifyDataErrorInfo]
+	[ObservableProperty]
+	private string _email;
 
-    public bool HasErrors => _errorsByProperty.Any();
-    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
-
-    public ContactoViewModel(ContactoResponse contactoResponse)
-    {
-        if (contactoResponse is not null)
-        {
-            Telefono = contactoResponse.Telefono;
-            Email = contactoResponse.Email;
-        }
-    }
-
-    #region Properties
-    public string Telefono
-    {
-        get
-        {
-            return _telefono;
-        }
-
-        set
-        {
-            _errorsByProperty.Remove(nameof(Telefono));
-            _telefono = value;
-            OnPropertyChanged(nameof(Telefono));
-
-            if (string.IsNullOrWhiteSpace(Telefono))
-            {
-                _errorsByProperty.Add(nameof(Telefono), new List<string>
-                {
-                    "Se debe especificar un número de telefono."
-                });
-
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Telefono)));
-            }
-            else
-            {
-                if (Regex.IsMatch(Telefono, @"[^0-9]+", RegexOptions.None, TimeSpan.FromMilliseconds(2500)))
-                {
-                    _errorsByProperty.Add(nameof(Telefono), new List<string>()
-                    {
-                        "El número de teléfono debe ser un número."
-                    });
-
-                    ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Telefono)));
-                }
-            }
-        }
-    }
-
-    public string Email
-    {
-        get
-        {
-            return _email;
-        }
-
-        set
-        {
-            _errorsByProperty.Remove(nameof(Email));
-            _email = value;
-            OnPropertyChanged(nameof(Email));
-
-            if (string.IsNullOrWhiteSpace(Email))
-            {
-                _errorsByProperty.Add(nameof(Email), new List<string>
-                {
-                    "Se debe ingresar un correo electrónico."
-                });
-
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Email)));
-            }
-            else
-            {
-                if (!Regex.IsMatch(Email, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(2500)))
-                {
-                    _errorsByProperty.Add(nameof(Email), new List<string>
-                    {
-                        "Correo electrónico inválido."
-                    });
-
-                    ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Email)));
-                }
-            }
-        }
-    }
-    #endregion
-
-    public IEnumerable GetErrors(string? propertyName) => _errorsByProperty.GetValueOrDefault(propertyName).AsEnumerable();
+	public ContactoViewModel(ContactoResponse contactoResponse)
+	{
+		if (contactoResponse is not null)
+		{
+			Telefono = contactoResponse.Telefono;
+			Email = contactoResponse.Email;
+		}
+	}
 }

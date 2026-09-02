@@ -1,6 +1,7 @@
 ﻿namespace Domain.Shared;
 
-public interface IEventHandler<T> where T : IDomainEvent
+public interface IEventHandler<T>
+	where T : IDomainEvent
 {
-    void Handle(T domainEvent);
+	void Handle(T domainEvent);
 }

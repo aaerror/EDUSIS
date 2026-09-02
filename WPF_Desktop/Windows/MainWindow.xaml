@@ -1,0 +1,170 @@
+﻿<Window x:Class="WPF_Desktop.Windows.MainWindow"
+		xmlns:local="clr-namespace:WPF_Desktop.Windows"
+		xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+		xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+		xmlns:usuarioView="clr-namespace:WPF_Desktop.Views.Usuarios"
+		xmlns:components="clr-namespace:WPF_Desktop.Components"
+		xmlns:modal="clr-namespace:WPF_Desktop.Views.Shared.Modal"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		mc:Ignorable="d"
+		Title="EDUSIS"
+		AllowsTransparency="True"
+		Background="Transparent"
+		BorderBrush="Transparent"
+		BorderThickness="0"
+		Icon="../bell-ring-icon.png"
+		Height="760"
+		Width="1280"
+		HorizontalAlignment="Center"
+		VerticalAlignment="Center"
+		ResizeMode="NoResize"
+		UseLayoutRounding="False"
+		WindowStartupLocation="CenterScreen"
+		WindowStyle="None">
+	<!--#region EVENTS-->
+	<behaviors:Interaction.Triggers>
+		<behaviors:EventTrigger EventName="Loaded">
+			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarUsuarioAsyncCommand }"/>
+		</behaviors:EventTrigger>
+	</behaviors:Interaction.Triggers>
+	<!--#endregion-->
+
+	<!--#region MAIN-->
+	<Border Background="White"
+			BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+			BorderThickness="1"
+			CornerRadius="6">
+		<Grid x:Name="Container">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="Auto"/>
+				<ColumnDefinition/>
+				<ColumnDefinition Width="1017*"/>
+			</Grid.ColumnDefinitions>
+			<!--#region LEFT SIDE-->
+			<Border Grid.Column="0"
+					Background="#F8FAFC"
+					BorderBrush="Transparent"
+					BorderThickness="0"
+					CornerRadius="6 0 0 6">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+					<!--#region LOGO-->
+					<Border Grid.Row="0"
+							BorderBrush="#F8FAFC"
+							BorderThickness="1"
+							CornerRadius="7 0 0 7"
+							Padding="20 35">
+						<StackPanel Grid.Row="0"
+									HorizontalAlignment="Center"
+									VerticalAlignment="Center">
+							<Label Content="EDUSIS"
+								   FontWeight="Black"
+								   Foreground="{ StaticResource ResourceKey=PrimaryColor }"
+								   Style="{ StaticResource ResourceKey=Display }"/>
+						</StackPanel>
+					</Border>
+					<!--#endregion-->
+
+					<!--#region MENU-->
+					<Border Grid.Row="1"
+							BorderThickness="0"
+							CornerRadius="0 40 0 7"
+							Padding="30 10">
+						<Border.Background>
+							<LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+								<GradientStop Color="#119B15" Offset=".25"/>
+								<GradientStop Color="#119C72" Offset=".75"/>
+							</LinearGradientBrush>
+						</Border.Background>
+						<Grid Margin="0 20">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+
+							<!--#region COMMANDS-->
+							<StackPanel Grid.Row="0">
+								<Button Command="{ Binding Path=GestionDocentesCommand }"
+										Content="Docentes"
+										Height="45"
+										Margin="0 0 0 20"
+										Width="200"
+										Style="{ StaticResource ResourceKey=MenuButton }"/>
+
+								<Button Command="{ Binding Path=GestionAlumnosCommand }"
+										Content="Alumnos"
+										Height="45"
+										Margin="0 20"
+										Width="200"
+										Style="{ StaticResource ResourceKey=MenuButton }"/>
+
+								<Button Command="{ Binding Path=GestionCursosCommand }"
+										Content="Cursos"
+										Height="45"
+										Margin="0 20"
+										Width="200"
+										Style="{ StaticResource ResourceKey=MenuButton }"/>
+							</StackPanel>
+							<!--#endregion-->
+
+							<!--#region USER INFO-->
+							<Border Grid.Row="1"
+									CornerRadius="8"
+									Padding="10 5"
+									VerticalAlignment="Bottom">
+								<Border.Background>
+									<LinearGradientBrush StartPoint="0,1" EndPoint="1,0">
+										<GradientStop Color="#FEFEFA" Offset=".25"/>
+										<GradientStop Color="#FEFEFB" Offset=".5"/>
+										<GradientStop Color="#FEFEFC" Offset=".75"/>
+									</LinearGradientBrush>
+								</Border.Background>
+								<usuarioView:UsuarioView DataContext="{ Binding Path=UsuarioViewModel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
+							</Border>
+							<!--#endregion-->
+						</Grid>
+					</Border>
+					<!--#endregion-->
+				</Grid>
+			</Border>
+			<!--#endregion-->
+
+			<!--#region MAIN-->
+			<Border Grid.Column="1"
+					Grid.ColumnSpan="2"
+					Background="#F8FAFC"
+					BorderBrush="Transparent"
+					BorderThickness="0"
+					CornerRadius="0 6 6 0">
+				<Grid x:Name="MainContainer"
+					  Background="Transparent"
+					  Margin="10">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="328*"/>
+						<ColumnDefinition Width="5*"/>
+					</Grid.ColumnDefinitions>
+					<!--#region MODAL-->
+					<components:ModalComponent Panel.ZIndex="10"
+											   EstaAbierto="{ Binding Path=ModalEstaAbierto, UpdateSourceTrigger=PropertyChanged }">
+						<ContentControl Content="{ Binding Path=ModalViewModelActual, UpdateSourceTrigger=PropertyChanged }"/>
+					</components:ModalComponent>
+					<!--#endregion-->
+
+					<!--#region ViewModel-->
+					<ContentControl Grid.ColumnSpan="2"
+									Content="{ Binding Path=ViewModelActual }"
+									Validation.ErrorTemplate="{ x:Null }"/>
+					<!--#endregion-->
+				</Grid>
+			</Border>
+			<!--#endregion-->
+		</Grid>
+	</Border>
+	<!--#endregion-->
+</Window>

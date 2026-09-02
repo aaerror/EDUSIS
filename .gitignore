@@ -28,6 +28,7 @@ x86/
 [Aa][Rr][Mm]64/
 bld/
 [Bb]in/
+[Bb]in/
 [Oo]bj/
 [Oo]ut/
 [Ll]og/
@@ -364,3 +365,13 @@ FodyWeavers.xsd
 
 # Entity Framework Core Migrations
 /Infrastructure/Migrations/
+
+# Reporte de cobertura de la suite de pruebas (tests/run-tests.sh --cobertura)
+/tests/CoverageReport/
+
+# Spec Kit: tooling y artefactos de especificación (no se versionan)
+/.specify/
+/specs/
+
+.claude/
+CLAUDE.md

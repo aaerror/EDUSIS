@@ -1,8 +1,7 @@
 ﻿using Domain.Alumnos;
-using Domain.Cursos.Divisiones;
-using Domain.Cursos.Divisiones.Cursantes;
+using Domain.Cursos;
 using Domain.Docentes;
-using Domain.Materias;
+using Domain.Curriculas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
