@@ -1,221 +1,165 @@
-﻿using Core.ServicioAlumnos;
-using Core.ServicioAlumnos.DTOs.Responses;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Core.ServicioAlumnos.DTOs.Requests;
+using Core.ServicioAlumnos;
+using Core.Shared.DTOs.Personas.Response;
+using System.ComponentModel.DataAnnotations;
 using System.Windows;
+using System;
 using WPF_Desktop.Navigation;
-using WPF_Desktop.Shared;
+using WPF_Desktop.Shared.Commands;
 using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels.Alumnos;
 
-public class GestionAlumnosViewModel : ViewModel, INotifyDataErrorInfo
+internal partial class GestionAlumnosViewModel : ObservableValidator
 {
-    private IServicioAlumno _servicioAlumnos;
-    private INavigationService _registrarAlumnoNavigationService;
-    private INavigationService _verPerfilNavigationService;
-    private LegajoStore _perfilBuscadoStore;
+	#region Servicio
+	private readonly IServicioAlumno _servicioAlumnos;
+	private readonly INavigationService _registrarAlumnoNavigationService;
+	private readonly INavigationService _perfilNavigationService;
+	private readonly INavigationService _inscripcionAlumnoNavigationService;
+	#endregion
 
-    private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
-    public bool HasErrors => _errorsByProperty.Any();
+	[NotifyCanExecuteChangedFor(nameof(EliminarCommand))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
+	[ObservableProperty]
+	private LegajoStore _perfilStore;
 
-    private string _documentoAlumno = string.Empty;
-    private PersonaResponse _personaResponse;
+	[Required(AllowEmptyStrings=true, ErrorMessage="Se debe ingresar el documento del alumno.")]
+	[RegularExpression(@"^\d{8}$", ErrorMessage="El documento debe ser un número.", MatchTimeoutInMilliseconds=2000)]
+	[NotifyDataErrorInfo]
+	[NotifyCanExecuteChangedFor(nameof(BuscarCommand))]
+	[ObservableProperty]
+	private string _documento;
 
-    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+	[NotifyCanExecuteChangedFor(nameof(EliminarCommand))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
+	[ObservableProperty]
+	private PersonaResponse _personaResponse;
 
-    #region Commands
-    public ViewModelCommand RegistrarAlumnoCommand { get; }
+	[ObservableProperty]
+	private string _message = string.Empty;
 
-    public ViewModelCommand BuscarAlumnoCommand { get; }
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
+	[ObservableProperty]
+	private bool _existeAlumno;
 
-    public ViewModelCommand QuitarCommand { get;  }
+	#region COMMANDs
+	public IRelayCommand EliminarCommand { get; }
+	public IRelayCommand NavigationCommand { get; }
+	public IRelayCommand BuscarCommand { get; }
 
-    public ViewModelCommand VerPerfilCommand { get; }
-    #endregion
-
-
-    public GestionAlumnosViewModel(IServicioAlumno servicioAlumnos,
-                                   INavigationService registrarAlumnoNavigationService,
-                                   INavigationService verPerfilNavigationService,
-                                   LegajoStore perfilBuscadoStore)
-    {
-        _servicioAlumnos = servicioAlumnos;
-        _registrarAlumnoNavigationService = registrarAlumnoNavigationService;
-        _verPerfilNavigationService = verPerfilNavigationService;
-        _perfilBuscadoStore = perfilBuscadoStore;
-
-        BuscarAlumnoCommand = new ViewModelCommand(ExecuteBuscarAlumnoCommand, CanExecuteBuscarAlumnoCommand);
-        RegistrarAlumnoCommand = new ViewModelCommand(command =>
-        {
-            _registrarAlumnoNavigationService.Navigate();
-        });
-        QuitarCommand = new ViewModelCommand(ExecuteQuitarCommand, CanExecuteQuitarCommand);
-        VerPerfilCommand = new ViewModelCommand(ExecuteVerPerfilCommand, CanExecuteVerPerfilCommand);
-    }
-
-    #region Properties
-    public string DocumentoAlumno
-    {
-        get
-        {
-            return _documentoAlumno;
-        }
-
-        set
-        {
-            _errorsByProperty.Remove(nameof(DocumentoAlumno));
-            _documentoAlumno = value;
-            OnPropertyChanged(nameof(DocumentoAlumno));
-
-            List<string> errors = new List<string>();
-
-            if (string.IsNullOrWhiteSpace(DocumentoAlumno))
-            {
-                errors.Add("Se debe ingresar el documento del alumno.");
-
-                _errorsByProperty.Add(nameof(DocumentoAlumno), errors);
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(DocumentoAlumno)));
-            }
-            else
-            {
-                /**
-                 * A través de una regular expression verificamos que el dato ingresado sea un número
-                 */
-                if (!Regex.IsMatch(DocumentoAlumno, @"^\d{8}$", RegexOptions.None, TimeSpan.FromMilliseconds(2000)))
-                {
-                    errors.Add("El documento debe ser un número.");
-
-                    _errorsByProperty.Add(nameof(DocumentoAlumno), errors);
-                    ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(DocumentoAlumno)));
-                }
-            }
-        }
-    }
-
-    public PersonaResponse PersonaResponse
-    {
-        get
-        {
-            return _personaResponse;
-        }
-
-        set
-        {
-            _personaResponse = value;
-            OnPropertyChanged(nameof(PersonaResponse));
-        }
-    }
-    #endregion
-
-    #region DataErrors
-    public IEnumerable GetErrors(string? propertyName)
-    {
-        return _errorsByProperty.GetValueOrDefault(propertyName, new List<string>());
-    }
-    #endregion
-
-    #region BuscarAlumnoCommand
-    private bool CanExecuteBuscarAlumnoCommand(object obj)
-    {
-        bool canExecute = false;
-        if (!string.IsNullOrWhiteSpace(DocumentoAlumno))
-        {
-            canExecute = true;
-        }
-
-        return canExecute;
-    }
-
-    private void ExecuteBuscarAlumnoCommand(object obj)
-    {
-        try
-        {
-            PersonaResponse = _servicioAlumnos.BuscarPorDNI(DocumentoAlumno);
-            _perfilBuscadoStore.Documento = PersonaResponse.Documento;
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Error al buscar el alumno", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-
-    }
-    #endregion
+	public ViewModelCommand QuitarCommand { get;  }
+	#endregion
 
 
-    #region QuitarCommand
-    private bool CanExecuteQuitarCommand(object obj)
-    {
-        bool canExecute = false;
-        if (!string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))
-        {
-            canExecute = true;
-        }
+	public GestionAlumnosViewModel(IServicioAlumno servicioAlumnos,
+								   INavigationService registrarAlumnoNavigationService,
+								   INavigationService inscripcionAlumnoNavigationService,
+								   INavigationService verPerfilNavigationService,
+								   LegajoStore perfilBuscadoStore)
+	{
+		_servicioAlumnos = servicioAlumnos;
+		_registrarAlumnoNavigationService = registrarAlumnoNavigationService;
+		_inscripcionAlumnoNavigationService = inscripcionAlumnoNavigationService;
+		_perfilNavigationService = verPerfilNavigationService;
 
-        return canExecute;
-    }
+		_perfilStore = perfilBuscadoStore;
 
-    private void ExecuteQuitarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-        MessageBoxResult result;
+		BuscarCommand = new RelayCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
+		EliminarCommand = new RelayCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
+		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
-        if (PersonaResponse is null)
-        {
-            messageBoxText = "Se debe buscar previamente el alumno para poder realizar los cambios que necesite.";
-            caption = "Quitar Alumno";
-            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-        else
-        {
-            messageBoxText = $"¿Está seguro que desea quitar el alumno {PersonaResponse.Apellido}, {PersonaResponse.Nombre}?";
-            caption = "Quitar Alumno";
-            result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    _servicioAlumnos.QuitarAlumno(PersonaResponse.PersonaId);
-                    messageBoxText = $"El alumno, {PersonaResponse.Apellido}, {PersonaResponse.Nombre}, se quitó correctamente.";
-                    caption = "Operación Exitosa";
-                    MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-    }
-    #endregion
+		Message = "Debe buscar un alumno para proceder.";
+		ExisteAlumno = false;
+	}
 
-    #region VerPerfilAlumnoCommand
-    private bool CanExecuteVerPerfilCommand(object obj)
-    {
-        bool canExecute = false;
-        if (!string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))
-        {
-            canExecute = true;
-        }
+	#region BuscarCommand
+	private bool CanExecuteBuscarCommand() =>
+		!string.IsNullOrWhiteSpace(Documento) && !HasErrors;
 
-        return canExecute;
-    }
+	private async void ExecuteBuscarCommand()
+	{
+		try
+		{
+			var response = await _servicioAlumnos.BuscarPorDNIAsync(new DocumentoRequest(Documento));
+			if (response is null)
+			{
+				ExisteAlumno = false;
+				Message = $"No se encontró el alumno con el D.N.I. { Documento }. Por favor, intente nuevamente.";
 
-    private void ExecuteVerPerfilCommand(object obj)
-    {
-        try
-        {
-            _verPerfilNavigationService.Navigate();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Error al ver el perfil", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-    #endregion
+				return;
+			}
+
+			PersonaResponse = response;
+			_perfilStore.PersonaID = PersonaResponse.PersonaID;
+			_perfilStore.Documento = PersonaResponse.Documento;
+
+			ExisteAlumno = true;
+			Message = string.Empty;
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+		}
+	}
+	#endregion
+
+	#region NavigationCommand
+	private bool CanExecuteNavigationCommand(object obj) => obj switch
+	{
+		"Asignar" => PersonaResponse is not null,
+		"Perfil" => PersonaResponse is not null,
+		"Registrar" => true,
+		_ => false
+	};
+
+	private void ExecuteNavigationCommand(object obj)
+	{
+		switch (obj)
+		{
+			case "Asignar":
+				_inscripcionAlumnoNavigationService.Navigate();
+				break;
+
+			case "Perfil":
+				_perfilNavigationService.Navigate();
+				break;
+
+			case "Registrar":
+				_registrarAlumnoNavigationService.Navigate();
+				break;
+		}
+	}
+	#endregion
+
+	#region EliminarCommand
+	private bool CanExecuteEliminarCommand() =>
+		PersonaResponse is not null;
+
+	private async void ExecuteEliminarCommand()
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
+
+		messageBoxText = $"¿Está seguro que desea quitar el alumno { PersonaResponse.Apellido }, { PersonaResponse.Nombre }?";
+		caption = "Eliminar Alumno de la Institución";
+
+		result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+		if (result is MessageBoxResult.Yes)
+		{
+			try
+			{
+				var request = new EliminarAlumnoRequest(PersonaResponse.PersonaID);
+				await _servicioAlumnos.EliminarAlumnoAsync(request);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+		}
+	}
+	#endregion
 }

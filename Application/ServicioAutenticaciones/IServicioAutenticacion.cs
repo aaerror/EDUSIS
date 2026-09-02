@@ -1,12 +1,11 @@
-﻿using Core.ServicioAutenticaciones.DTOs.Request;
-using Core.ServicioAutenticaciones.DTOs.Response;
-using Core.Shared;
+﻿using Core.ServicioAutenticaciones.DTOs.Requests;
+using Core.ServicioAutenticaciones.DTOs.Responses;
 
 namespace Core.ServicioAutenticaciones;
 
-public interface IServicioAutenticacion : IServicio
+public interface IServicioAutenticacion
 {
-    void RegistrarUsuario(RegistrarUsuarioRequest request);
+	Task<UsuarioResponse> Login(LoginRequest request);
 
-    UsuarioResponse Login(LoginRequest request);
+	void Logout(LogoutRequest request);
 }

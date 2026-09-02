@@ -1,96 +1,133 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Shared.InformacionPersonalView"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Shared"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             xmlns:domainPersonas="clr-namespace:Domain.Personas;assembly=Domain"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-    <UserControl.Resources>
-        <ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="domainPersonas:Sexo"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-    </UserControl.Resources>
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Shared"
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+			 xmlns:domainPersonas="clr-namespace:Domain.Personas;assembly=Domain"
 
-    <StackPanel>
-        <Label Content="Información Personal"
-               Style="{ StaticResource ResourceKey=Headline }"/>
-        <Separator Background="{ StaticResource ResourceKey=Gray400 }"
-                   Height=".8"
-                   Width="Auto"/>
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<UserControl.Resources>
+		<ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+			<ObjectDataProvider.MethodParameters>
+				<x:Type TypeName="domainPersonas:Sexo"/>
+			</ObjectDataProvider.MethodParameters>
+		</ObjectDataProvider>
+	</UserControl.Resources>
 
-        <!-- FORM -->
-        <!--#region InformaciónPersonal -->
-        <!-- APELLIDO -->
-        <StackPanel VerticalAlignment="Center">
-            <Label Content="Apellido"
-                   Margin="4 0 0 0"
-                   Style="{ StaticResource ResourceKey=Form }"/>
-            <TextBox Tag="ingresar el apellido&#x2026;"
-                     Text="{ Binding Path=Apellido, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource ResourceKey=TextBox }"/>
-        </StackPanel>
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+		</Grid.RowDefinitions>
 
-        <!-- NOMBRE -->
-        <StackPanel Grid.Column="0"
-                    VerticalAlignment="Center">
-            <Label Content="Nombre"
-                   Margin="4 0 0 0"
-                   Style="{ StaticResource ResourceKey=Form }"/>
-            <TextBox Tag="ingresar el nombre&#x2026;"
-                     Text="{ Binding Path=Nombre, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource ResourceKey=TextBox }"/>
-        </StackPanel>
+		<StackPanel Grid.Row="0"
+					Margin="0 0 0 5">
+			<Label Style="{ StaticResource ResourceKey=Headline }">
+				<Label.Content>
+					<WrapPanel HorizontalAlignment="Center"
+							   VerticalAlignment="Center">
+						<fa:IconBlock Icon="IdCard"
+									  Foreground="{ StaticResource ResourceKey=Neutral800 }"
+									  Margin="0 0 4 0"/>
+						<TextBlock Text="Información Personal"
+								   Margin="4 0 0 0"/>
+					</WrapPanel>
+				</Label.Content>
+			</Label>
+			<Separator Background="{ StaticResource ResourceKey=Gray400 }"
+					   Height=".8"
+					   Width="Auto"/>
+		</StackPanel>
 
-        <!-- DOCUMENTNO -->
-        <StackPanel Grid.Column="0"
-                    VerticalAlignment="Center">
-            <Label Content="Documento"
-                   Margin="4 0 0 0"
-                   Style="{ StaticResource ResourceKey=Form }"/>
-            <TextBox Tag="ingresar el documento&#x2026;"
-                     Text="{ Binding Path=DNI, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource ResourceKey=TextBox }"/>
-        </StackPanel>
+		<!--#region APELLIDO-->
+		<StackPanel Grid.Row="1"
+					Margin="0 0 0 5"
+					VerticalAlignment="Center">
+			<Label Content="Apellido"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+			<TextBox Tag="ingresar el apellido&#x2026;"
+					 Text="{ Binding Path=Apellido, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+					 Style="{StaticResource ResourceKey=TextBox }"/>
+		</StackPanel>
+		<!--#endregion-->
 
-        <!-- FECHA DE NACIMIENTO -->
-        <StackPanel Grid.Column="0"
-                    VerticalAlignment="Center">
-            <Label Content="Fecha de Nacimiento"
-                   Margin="4 0 0 0"
-                   Style="{ StaticResource ResourceKey=Form }"/>
-            <DatePicker CalendarStyle="{ StaticResource ResourceKey=Calendar }"
-                        DisplayDate="{ Binding Path=FechaNacimiento, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                        DisplayDateStart="01/01/1900"
-                        DisplayDateEnd="{ Binding Path=FechaNacimiento, Mode=OneTime }"
-                        Tag="fecha de nacimiento"
-                        Style="{ StaticResource ResourceKey=DatePicker }"/>
-        </StackPanel>
+		<!--#region NOMBRE-->
+		<StackPanel Grid.Row="2"
+					Margin="0 5"
+					VerticalAlignment="Center">
+			<Label Content="Nombre"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+			<TextBox Tag="ingresar el nombre&#x2026;"
+					 Text="{ Binding Path=Nombre, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+					 Style="{StaticResource ResourceKey=TextBox }"/>
+		</StackPanel>
+		<!--#endregion-->
 
-        <!-- SEXO -->
-        <StackPanel Grid.Column="0"
-                    VerticalAlignment="Center">
-            <Label Content="Sexo"
-                   Margin="4 0 0 0"
-                   Style="{ StaticResource ResourceKey=Form }"/>
-            <ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos }}"
-                      SelectedIndex="{ Binding Path=Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                      Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-            </ComboBox>
-        </StackPanel>
+		<!--#region DOCUMENTNO-->
+		<StackPanel Grid.Row="3"
+					Margin="0 5"
+					VerticalAlignment="Center">
+			<Label Content="Documento"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+			<TextBox Tag="ingresar el documento&#x2026;"
+					 Text="{ Binding Path=DocumentoNacionalIdentidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+					 Style="{StaticResource ResourceKey=TextBox }"/>
+		</StackPanel>
+		<!--#endregion-->
 
-        <!-- NACIONALIDAD -->
-        <StackPanel Grid.Column="0"
-                    VerticalAlignment="Center">
-            <Label Content="Nacionalidad"
-                   Margin="4 0 0 0"
-                   Style="{ StaticResource ResourceKey=Form }"/>
-            <TextBox Tag="ingresar la nacionalidad&#x2026;"
-                     Text="{ Binding Path=Nacionalidad, FallbackValue='Sin datos', TargetNullValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                     Style="{StaticResource ResourceKey=TextBox }"/>
-        </StackPanel>
-    </StackPanel>
+		<!--#region FECHA DE NACIMIENTO-->
+		<StackPanel Grid.Row="5"
+					Margin="0 5"
+					VerticalAlignment="Center">
+			<Label Content="Fecha de Nacimiento"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+			<DatePicker CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+						DisplayDate="{ Binding Path=FechaNacimiento, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+						DisplayDateStart="01/01/1900"
+						DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+						Tag="fecha de nacimiento"
+						Style="{ StaticResource ResourceKey=DatePicker }"/>
+		</StackPanel>
+		<!--#endregion-->
+
+		<!--#region SEXO-->
+		<StackPanel Grid.Row="6"
+					Margin="0 5"
+					VerticalAlignment="Center">
+			<Label Content="Sexo"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+
+			<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos } }"
+					  SelectedItem="{ Binding Path=Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+					  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
+		</StackPanel>
+		<!--#endregion-->
+
+		<!--#region NACIONALIDAD-->
+		<StackPanel Grid.Row="7"
+					Margin="0 5"
+					VerticalAlignment="Center">
+			<Label Content="Nacionalidad"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+			<TextBox Tag="ingresar la nacionalidad&#x2026;"
+					 Text="{ Binding Path=Nacionalidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+					 Style="{StaticResource ResourceKey=TextBox }"/>
+		</StackPanel>
+		<!--#endregion-->
+	</Grid>
 </UserControl>

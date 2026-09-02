@@ -1,88 +1,70 @@
-﻿using Core.ServicioAutenticaciones.DTOs.Request;
-using Core.ServicioAutenticaciones.DTOs.Response;
-using Core.ServicioSeguridades;
-using Domain.Usuarios;
-using Infrastructure.Shared;
+﻿using Core.ServicioAutenticaciones.DTOs.Requests;
+using Core.ServicioAutenticaciones.DTOs.Responses;
+using Core.ServicioSecurity;
+using Core.ServicioUsuarios.DTOs.Requests;
+using Core.ServicioUsuarios;
+using Core.Shared;
+using Domain.Shared;
+using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioAutenticaciones;
 
-public class ServicioAutenticacion : IServicioAutenticacion
+internal class ServicioAutenticacion : IServicio, IServicioAutenticacion
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IServicioSeguridad _servicioSeguridad;
+	private readonly ILogger _logger;
+	private readonly IUnitOfWork _unitOfWork;
+	private readonly IServicioSeguridad _servicioSeguridad;
+	private readonly IServicioUsuario _servicioUsuario;
 
-    public ServicioAutenticacion(IUnitOfWork unitOfWork, IServicioSeguridad servicioSeguridad)
-    {
-        _unitOfWork = unitOfWork;
-        _servicioSeguridad = servicioSeguridad;
-    }
 
-    public void RegistrarUsuario(RegistrarUsuarioRequest request)
-    {
-        if (request is null)
-        {
-            throw new NullReferenceException("Datos incompletos para registrar el usuario.");
-        }
+	public ServicioAutenticacion(ILogger<ServicioAutenticacion> logger, IUnitOfWork unitOfWork, IServicioSeguridad servicioSeguridad, IServicioUsuario servicioUsuario)
+	{
+		_logger = logger;
+		_unitOfWork = unitOfWork;
+		_servicioSeguridad = servicioSeguridad;
+		_servicioUsuario = servicioUsuario;
+	}
 
-        try
-        {
-            if (!_unitOfWork.Docentes.ExisteID(request.DocenteID))
-            {
-                throw new ArgumentException("No se encontró el docente.", nameof(request.DocenteID));
-            }
+	public async Task<UsuarioResponse> Login(LoginRequest request)
+	{
+		string salt = string.Empty;
+		string hash = string.Empty;
 
-            if (_unitOfWork.Usuarios.EsUsuarioInvalido(request.Usuario))
-            {
-                throw new ArgumentException("El nombre de usuario ya se encuentra en uso.", nameof(request.Usuario));
-            }
+		if (request is null)
+		{
+			throw new NullReferenceException("Datos incompletos para acceder al sistema.");
+		}
 
-            if (_unitOfWork.Usuarios.ExisteUsuarioDelDocente(request.DocenteID))
-            {
-                throw new ArgumentException("El docente ya cuenta con un usuario en el sistema.", nameof(request.DocenteID));
-            }
+		try
+		{
+			_logger.LogInformation($"Realizando ingreso al sistema del usuario...");
 
-            string saltAndHash = _servicioSeguridad.HashPassword(request.Clave);
-            char[] delimiter = { ':' };
-            string[] split = saltAndHash.Split(delimiter);
+			var usuario = _unitOfWork.Usuarios.BuscarPorEmail(request.credential.UserName);
+			if (usuario is null)
+			{
+				throw new ArgumentException("Datos de acceso incorrectos.");
+			}
 
-            var usuario = new Usuario(request.DocenteID, request.Usuario, split[0], split[1], request.Rol);
+			//_unitOfWork.Usuarios.RecuperarDatosAcceso(request.Email, out salt, out hash);
+			var esAccesoValido = _servicioSeguridad.ValidatePassword(request.credential.SecurePassword, usuario.PasswordSalt, usuario.PasswordHash);
+			if (!esAccesoValido)
+			{
+				throw new ArgumentException("Datos de acceso incorrectos.");
+			}
 
-            _unitOfWork.Usuarios.AgregarAsync(usuario);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+			var response = await _servicioUsuario.BuscarUsuarioPorIDAsync(new UsuarioIDRequest(usuario.Id));
 
-    public UsuarioResponse Login(LoginRequest request)
-    {
-        string salt = string.Empty;
-        string hash = string.Empty;
+			return response;
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-        if (request is null)
-        {
-            throw new NullReferenceException("Datos incompletos para acceder al sistema.");
-        }
-
-        try
-        {
-            _unitOfWork.Usuarios.RecuperarDatosAcceso(request.Usuario, out salt, out hash);
-            
-            var esAccesoValido = _servicioSeguridad.ValidatePassword(request.Clave, salt, hash);
-            if (!esAccesoValido)
-            {
-                throw new ArgumentException("Datos de acceso incorrectos", nameof(request));
-            }
-
-            var usuario = _unitOfWork.Usuarios.BuscarPorUsuario(request.Usuario) ?? throw new NullReferenceException("Usuario no registrado en el sistema");
-
-            return new UsuarioResponse(usuario.DocenteID, usuario.Rol, usuario.Accesos);
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+	public void Logout(LogoutRequest request)
+	{
+		throw new NotImplementedException();
+	}
 }

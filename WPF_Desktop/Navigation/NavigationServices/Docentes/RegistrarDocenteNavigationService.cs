@@ -1,25 +1,25 @@
-﻿using System;
-using WPF_Desktop.Shared;
-using WPF_Desktop.Store;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
+using WPF_Desktop.Store.NavigationStore;
 
 namespace WPF_Desktop.Navigation.NavigationServices.Docentes;
 
-public class RegistrarDocenteNavigationService<TViewModel> : INavigationService
-    where TViewModel : ViewModel
+internal class RegistrarDocenteNavigationService<TViewModel> : INavigationService
+	where TViewModel : ObservableObject
 {
-    private Func<TViewModel> _viewModelFactory;
-    private NavigationStore _navigationStore;
+	private Func<TViewModel> _viewModelFactory;
+	private MainWindowNavigationStore _navigationStore;
 
 
-    public RegistrarDocenteNavigationService(Func<TViewModel> viewModelFactory, NavigationStore navigationStore)
-    {
-        _viewModelFactory = viewModelFactory;
-        _navigationStore = navigationStore;
-    }
+	public RegistrarDocenteNavigationService(Func<TViewModel> viewModelFactory, MainWindowNavigationStore navigationStore)
+	{
+		_viewModelFactory = viewModelFactory;
+		_navigationStore = navigationStore;
+	}
 
 
-    public void Navigate()
-    {
-        _navigationStore.ViewModelActual = _viewModelFactory();
-    }
+	public void Navigate()
+	{
+		_navigationStore.ViewModel = _viewModelFactory();
+	}
 }

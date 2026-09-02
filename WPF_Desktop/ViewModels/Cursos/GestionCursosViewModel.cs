@@ -1,210 +1,203 @@
-﻿using Core.ServicioCursos;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos.DTOs.Responses;
-using System;
+using Core.ServicioCursos;
 using System.Collections.ObjectModel;
-using System.Windows;
+using System.Threading.Tasks;
 using System.Windows.Data;
+using System.Windows;
+using System;
 using WPF_Desktop.Navigation;
-using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels.Cursos;
 
-public class GestionCursosViewModel : ViewModel
+internal partial class GestionCursosViewModel : ObservableObject
 {
-    #region Servicios
-    private readonly IServicioCurso _servicioCursos;
-    private readonly INavigationService _registrarCursoNavigationService;
-    private readonly INavigationService _gestionDivisionesNavigationService;
-    private readonly INavigationService _registrarMateriaNavigationService;
-    #endregion
+	#region Servicios
+	private readonly IServicioCurso _servicioCursos;
+	private readonly INavigationService _registrarCursoNavigationService;
+	private readonly INavigationService _gestionDivisionesNavigationService;
+	private readonly INavigationService _registrarMateriaNavigationService;
+	#endregion
 
-    #region Commands
-    public ViewModelCommand NavigateCommand { get; }
-    public ViewModelCommand EliminarCommand { get; }
-    public ViewModelCommand ListarCommand { get; }
-    #endregion
-
-    private CursoStore _cursoStore;
-
-    private CursoViewModel _curso = null;
-
-    private ObservableCollection<CursoViewModel> _cursos = new ObservableCollection<CursoViewModel>();
-    private ListCollectionView _listCollectionView;
+	private CursoStore _cursoStore;
+	private ObservableCollection<CursoViewModel> _cursos;
 
 
-    public GestionCursosViewModel(IServicioCurso servicioCursos,
-                                  INavigationService registrarCursoNavigationService,
-                                  INavigationService gestionDivisionesNavigationService,
-                                  INavigationService registrarMateriaNavigationService,
-                                  CursoStore cursoStore)
-    {
-        _servicioCursos = servicioCursos;
-        _registrarCursoNavigationService = registrarCursoNavigationService;
-        _gestionDivisionesNavigationService = gestionDivisionesNavigationService;
-        _registrarMateriaNavigationService = registrarMateriaNavigationService;
-        _cursoStore = cursoStore;
+	[NotifyPropertyChangedFor(nameof(EliminarCommandAsync))]
+	[NotifyPropertyChangedFor(nameof(NavigationCommand))]
+	[ObservableProperty]
+	private CursoViewModel _curso;
 
-        NavigateCommand = new ViewModelCommand(ExecuteNavigateCommand, CanExecuteNavigateCommand);
-        EliminarCommand = new ViewModelCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
-        ListarCommand = new ViewModelCommand(ExecuteListarCommand);
+	[ObservableProperty]
+	private ListCollectionView _listCollection;
 
-        LoadCursos();
-    }
+	[NotifyPropertyChangedFor(nameof(EliminarCommandAsync))]
+	[NotifyPropertyChangedFor(nameof(NavigationCommand))]
+	[ObservableProperty]
+	private bool _habilitarCursos;
 
-    #region Properties
-    public CursoViewModel Curso
-    {
-        get
-        {
-            return _curso;
-        }
+	[ObservableProperty]
+	private bool _habilitarMessage = false;
 
-        set
-        {
-            _curso = value;
-            OnPropertyChanged(nameof(Curso));
-        }
-    }
+	[ObservableProperty]
+	private string _message = string.Empty;
 
-    public ListCollectionView ListCollectionView
-    {
-        get
-        {
-            return _listCollectionView;
-        }
+	#region Commands
+	public IAsyncRelayCommand CargarCursosCommandAsync { get; }
+	public IAsyncRelayCommand EliminarCommandAsync { get; }
+	public IRelayCommand ListarCommand { get; }
+	public IRelayCommand NavigationCommand { get; }
+	#endregion
 
-        set
-        {
-            _listCollectionView = value;
-            OnPropertyChanged(nameof(ListCollectionView));
-        }
-    }
-    #endregion
 
-    private void LoadCursos()
-    {
-        try
-        {
-            _cursos.Clear();
-            var lista = _servicioCursos.ListarCursos();
-            if (lista.Count is 0)
-            {
-                string messageBoxText = "No existen cursos agregados hasta el momento.";
-                string caption = "Oferta Educativa";
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-            else
-            {
-                foreach (CursoResponse response in lista)
-                {
-                    _cursos.Add(new CursoViewModel(response));
-                }
+	public GestionCursosViewModel(IServicioCurso servicioCursos,
+								  INavigationService registrarCursoNavigationService,
+								  INavigationService gestionDivisionesNavigationService,
+								  INavigationService registrarMateriaNavigationService,
+								  CursoStore cursoStore)
+	{
+		_servicioCursos = servicioCursos;
+		_registrarCursoNavigationService = registrarCursoNavigationService;
+		_gestionDivisionesNavigationService = gestionDivisionesNavigationService;
+		_registrarMateriaNavigationService = registrarMateriaNavigationService;
+		_cursoStore = cursoStore;
 
-                _listCollectionView = new ListCollectionView(_cursos);
-                ListCollectionView.GroupDescriptions.Add(new PropertyGroupDescription("NivelEducativo"));
-            }
-        }
-        catch (Exception ex)
-        {
-            string messageBoxText = $"Error al cargar las materias del curso.\nError: {ex.Message}";
-            string caption = "Error en la operación";
-            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-    }
+		_cursos = new ObservableCollection<CursoViewModel>();
 
-    #region NavigateCommand
-    private bool CanExecuteNavigateCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Curso":
-                return true;
-            case "Division":
-                return Curso is not null;
-            case "Materia":
-                return Curso is not null;
-            default: return false;
-        }
-    }
 
-    private void ExecuteNavigateCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Curso":
-                _registrarCursoNavigationService.Navigate();
-                break;
-            case "Division":
-                _cursoStore.Curso = Curso;
-                _gestionDivisionesNavigationService.Navigate();
-                break;
-            case "Materia":
-                _cursoStore.Curso = Curso;
-                _registrarMateriaNavigationService.Navigate();
-                break;
-        }
-    }
-    #endregion
+		CargarCursosCommandAsync = new AsyncRelayCommand(ExecuteCargarCursosCommandAsync);
+		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommandAsync);
+		//NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
+		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand);
+		ListarCommand = new RelayCommand<string>(ExecuteListarCommand);
 
-    #region EliminaCommand
-    private bool CanExecuteEliminarCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Curso":
-                return Curso is not null;
-            default: return false;
-        }
-    }
+		HabilitarMessage = false;
+	}
 
-    private void ExecuteEliminarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-        MessageBoxResult result;
+	#region CargarCursosCommandAsync
+	private async Task ExecuteCargarCursosCommandAsync()
+	{
+		_cursos.Clear();
+		var cursos = await _servicioCursos.ListarCursosAsync();
+		if (cursos.Count is 0)
+		{
+			Message = "No existen cursos agregados hasta el momento.";
+			HabilitarMessage = true;
+			HabilitarCursos = false;
+		}
+		else
+		{
+			foreach (CursoResponse response in cursos)
+			{
+				_cursos.Add(new CursoViewModel(response));
+			}
 
-        switch (obj)
-        {
-            case "Curso":
-                messageBoxText = $"Se va a eliminar el curso:\n" +
-                                 $"Grado: {Curso.GradoDescripcion}\n" +
-                                 $"Nivel Educativo: {Curso.NivelEducativoDescripcion}\n\n" +
-                                 $"¿Desea continuar?";
-                caption = "Eliminar Curso";
-                result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+			ListCollection = new ListCollectionView(_cursos);
+			ListCollection.GroupDescriptions.Add(new PropertyGroupDescription("NivelEducativo"));
 
-                if (result is MessageBoxResult.Yes)
-                {
-                    try
-                    {
-                        _servicioCursos.EliminarCurso(new EliminarCursoRequest(Curso.CursoID));
-                        MessageBox.Show("Curso eliminado correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
-                        LoadCursos();
-                    }
-                    catch (Exception ex)
-                    {
-                        messageBoxText = $"Error al eliminar un nuevo curso. {ex.Message}";
-                        caption = "Error en la operación";
-                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
+			HabilitarMessage = false;
+			HabilitarCursos = true;
+		}
+	}
+	#endregion
 
-                break;
-        }
-    }
-    #endregion
+	#region NavigationCommand
+	/*private bool CanExecuteNavigationCommand(object obj)
+	{
+		switch (obj)
+		{
+			case "Curso":
+				return true;
+			case "Division":
+				return HabilitarCursos;
+			case "Materia":
+				return HabilitarCursos;
+			default:
+				return true;
+		}
+	}*/
 
-    #region ListarCommand
-    private void ExecuteListarCommand(object obj)
-    {
-        switch (obj)
-        {
-            case "Curso":
-                LoadCursos();
-                break;
-        }
-    }
-    #endregion
+	private void ExecuteNavigationCommand(string obj)
+	{
+		switch (obj)
+		{
+			case "Curso":
+				_registrarCursoNavigationService.Navigate();
+				break;
+			case "Division":
+				_cursoStore.Curso = Curso;
+				_gestionDivisionesNavigationService.Navigate();
+				break;
+			case "Materia":
+				_cursoStore.Curso = Curso;
+				_registrarMateriaNavigationService.Navigate();
+				break;
+		}
+	}
+	#endregion
+
+	#region EliminarCommandAsync
+	private bool CanExecuteEliminarCommandAsync(object obj)
+	{
+		switch (obj)
+		{
+			case "Curso":
+				return Curso is not null;
+			default:
+				return false;
+		}
+	}
+
+	private async Task ExecuteEliminarCommandAsync(object obj)
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
+
+		switch (obj)
+		{
+			case "Curso":
+				messageBoxText = $"Se va a eliminar el curso:\n" +
+								 $"Grado: { Curso.Grado }\n" +
+								 $"Nivel Educativo: { Curso.NivelEducativo }\n\n" +
+								 $"¿Desea continuar?";
+				caption = "Eliminar Curso";
+
+				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+				if (result is MessageBoxResult.Yes)
+				{
+					try
+					{
+						await _servicioCursos.EliminarCurso(new EliminarCursoRequest(Curso.CursoID));
+						MessageBox.Show("Curso eliminado correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
+						
+						ExecuteCargarCursosCommandAsync();
+					}
+					catch (Exception ex)
+					{
+						messageBoxText = $"Error al eliminar un nuevo curso. {ex.Message}";
+						caption = "Error en la operación";
+						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+					}
+				}
+
+				break;
+		}
+	}
+	#endregion
+
+	#region ListarCommand
+	private void ExecuteListarCommand(object obj)
+	{
+		switch (obj)
+		{
+			case "Curso":
+				ExecuteCargarCursosCommandAsync();
+				break;
+		}
+	}
+	#endregion
 }

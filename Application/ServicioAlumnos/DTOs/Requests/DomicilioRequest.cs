@@ -2,7 +2,7 @@
 
 public record DomicilioRequest(string Calle,
                                string Altura,
-                               int Vivienda,
+                               string Vivienda,
                                string Observacion,
                                string Localidad,
                                string Provincia,

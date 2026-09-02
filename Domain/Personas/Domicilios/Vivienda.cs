@@ -2,6 +2,6 @@
 
 public enum Vivienda
 {
-    Casa = 0,
-    Departamento = 1
+	Casa = 0,
+	Departamento = 1
 }

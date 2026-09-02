@@ -1,3 +1,3 @@
 ﻿namespace Core.ServicioDocentes.DTOs.Responses;
 
-public record PuestoResponse(int Posicion, string PosicionDescripcion, DateTime FechaInicio, DateTime? FechaFin);
+public record PuestoResponse(Guid PuestoID, string Estado, string Posicion, bool EsEventual, DateTime FechaInicio, DateTime? FechaFin, bool Activo);

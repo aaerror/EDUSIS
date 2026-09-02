@@ -1,8 +1,89 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Style x:Key="TextBlock" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI"/>
-        <Setter Property="FontStyle" Value="Normal"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-    </Style>
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<!-- DISPLAY TEXT BLOCK-->
+	<Style x:Key="TextBlock_Display" TargetType="{ x:Type TypeName=TextBlock }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
+		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FontSize" Value="42"/>
+		<Setter Property="FontWeight" Value="Light"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Padding" Value="0"/>
+	</Style>
+
+	<!-- HEADER TEXT BLOCK-->
+	<Style x:Key="TextBlock_Header" TargetType="{ x:Type TypeName=TextBlock }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
+		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FontSize" Value="34"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Padding" Value="0"/>
+	</Style>
+
+	<!-- TITLE TEXT BLOCK-->
+	<Style x:Key="TextBlock_Title" TargetType="{ x:Type TypeName=TextBlock }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
+		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FontSize" Value="28"/>
+		<Setter Property="FontWeight" Value="Medium"/>
+		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Padding" Value="0"/>
+	</Style>
+
+	<!-- SUBTITLE TEXT BLOCK-->
+	<Style x:Key="TextBlock_Subtitle" TargetType="{ x:Type TypeName=TextBlock }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
+		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FontSize" Value="22"/>
+		<Setter Property="FontWeight" Value="Medium"/>
+		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Padding" Value="0"/>
+	</Style>
+
+	<!-- HEADLINE TEXT BLOCK-->
+	<Style x:Key="TextBlock_Headline" TargetType="{ x:Type TypeName=TextBlock }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
+		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FontSize" Value="20"/>
+		<Setter Property="FontWeight" Value="Regular"/>
+		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Padding" Value="0"/>
+	</Style>
+
+	<!-- FORM TEXT BLOCK-->
+	<Style x:Key="TextBlock_Form" TargetType="{ x:Type TypeName=TextBlock }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral500 }"/>
+		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FontSize" Value="16"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Padding" Value="0,5"/>
+	</Style>
+
+	<!-- BODY TEXT BLOCK-->
+	<Style x:Key="TextBlock_Body" TargetType="{ x:Type TypeName=TextBlock }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
+		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="FontWeight" Value="Regular"/>
+		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Padding" Value="0"/>
+	</Style>
+
+	<!-- CAPTION TEXT BLOCK-->
+	<Style x:Key="TextBlock_Caption" TargetType="{ x:Type TypeName=TextBlock }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
+		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="FontWeight" Value="Regular"/>
+		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Padding" Value="0"/>
+	</Style>
 </ResourceDictionary>

@@ -1,184 +1,172 @@
-﻿using Domain.Cursos.Divisiones;
-using Domain.Cursos.Divisiones.Cursantes;
+﻿using Domain.Cursos.Exceptions;
 using Domain.Shared;
 
 namespace Domain.Cursos;
 
-public class Curso : Entity
+public sealed class Curso : Entity
 {
-    private List<Division> _divisiones = new();
-    private List<Guid> _materias = new();
+	private List<Division> _divisiones = new();
 
-    // Educación Primaria - Educación Secundaria
-    public NivelEducativo NivelEducativo { get; }
-    public Grado Grado { get; private set; }
-    public int CantidadDivisiones => _divisiones.Count;
-    public int CantidadAlumnos => _divisiones.Sum(x => x.TotalAlumnos);
-    public IReadOnlyCollection<Division> Divisiones => _divisiones.ToList();
-    public IReadOnlyCollection<Guid> Materias => _materias.ToList();
+	// Educación Primaria - Educación Secundaria
+	public NivelEducativo NivelEducativo { get; }
+	public Grado Grado { get; private set; }
+	public int CantidadDivisiones => _divisiones.Count;
+	public int CantidadAlumnos => _divisiones.Sum(x => x.TotalAlumnos);
+
+	public IReadOnlyCollection<Division> Divisiones => _divisiones.ToList();
 
 
-    private Curso()
-        : base() {}
+	#region CONSTRUCTOR
+	private Curso()
+		: base() { }
 
-    private Curso(Guid cursoId)
-        : base(cursoId) {}
+	private Curso(Guid unCurso)
+		: base(unCurso) { }
 
-    protected Curso(Guid cursoId, Grado grado, NivelEducativo nivelEducativo)
-        : this(cursoId)
-    {
-        /*if (!Regex.IsMatch(grado.Trim(), @"^(\d){1}$", RegexOptions.None))
-        {
-            throw new ArgumentException("El año/grado debe ser un número.", nameof(grado));
-        }*/
+	protected Curso(Guid unCurso, string unGrado, string unNivelEducativo)
+		: this(unCurso)
+	{
+		/*if (!Regex.IsMatch(grado.Trim(), @"^(\d){1}$", RegexOptions.None))
+		{
+			throw new ArgumentException("El año/grado debe ser un número.", nameof(grado));
+		}*/
 
-        /*if (int.Parse(grado) > 7)
-        {
-            throw new ArgumentException("El curso máximo en educación es septimo ya sea en educación primaria o secundaria.", nameof(grado));
-        }*/
+		/*if (int.Parse(grado) > 7)
+		{
+			throw new ArgumentException("El curso máximo en educación es septimo ya sea en educación primaria o secundaria.", nameof(grado));
+		}*/
 
-        Grado = grado;
-        NivelEducativo = nivelEducativo;
-    }
 
-    public Curso(Grado grado, NivelEducativo nivelEducativo)
-        : this(Guid.NewGuid(), grado, nivelEducativo) {}
+		var result = Enum.TryParse<Grado>(unGrado, out Grado grado);
+		if (!result)
+		{
+			throw new ArgumentException("El grado que se especifico no existe.", nameof(unGrado));
+		}
 
-    #region Calificacion
-    public void AgregarCalificacion(Guid unaDivision, Guid unCursante, Guid unaMateria, bool asistencia, DateTime fecha, Instancia instancia, double? nota)
-    {
-        var division = BuscarDivision(unaDivision);
-        if (division is null)
-        {
-            throw new ArgumentException("No se encontró la división en este curso.", nameof(unaDivision));
-        }
+		result = Enum.TryParse<NivelEducativo>(unNivelEducativo, out NivelEducativo nivelEducativo);
+		if (!result)
+		{
+			throw new ArgumentException("El grado que se especifico no existe.", nameof(unGrado));
+		}
 
-        /*if (!ExisteMateria(unaMateria))
-        {
-            throw new ArgumentException("No se encontró la materia en este curso.", nameof(unaDivision));
-        }*/
+		Grado = grado;
+		NivelEducativo = nivelEducativo;
+	}
 
-        division.AgregarCalificacion(unCursante, unaMateria, asistencia, fecha, instancia, nota);
-    }
-    #endregion
+	public Curso(string grado, string nivelEducativo)
+		: this(Guid.NewGuid(), grado, nivelEducativo) { }
+	#endregion
 
-    #region Division
-    private bool ExisteDivision(Guid unaDivision)
-    {
-        if (Guid.Empty.Equals(unaDivision))
-        {
-            throw new ArgumentNullException(nameof(unaDivision), "Se deben especificar los datos de la división.");
-        }
+	/*
+	 * #region Calificacion
+	public void AgregarCalificacion(Guid unaDivision, Guid unCursante, Guid unaMateria, bool asistencia, DateTime fecha, Instancia instancia, double? nota)
+	{
+		var division = BuscarDivision(unaDivision);
+		if (division is null)
+		{
+			throw new ArgumentException("No se encontró la división en este curso.", nameof(unaDivision));
+		}
 
-        return _divisiones.Any(x => x.Equals(unaDivision));
-    }
+		*//*if (!ExisteMateria(unaMateria))
+		{
+			throw new ArgumentException("No se encontró la materia en este curso.", nameof(unaDivision));
+		}*//*
 
-    private Division BuscarDivision(Guid unaDivision)
-    {
-        if (!ExisteDivision(unaDivision))
-        {
-            throw new ArgumentException("La división a la que desea agregar el preceptor no pertenece a este curso.", nameof(unaDivision));
-        }
+		division.AgregarCalificacion(unCursante, unaMateria, asistencia, fecha, instancia, nota);
+	}
+	#endregion
+	*/
 
-        return _divisiones.Find(x => x.Id.Equals(unaDivision));
-    }
+	#region Preceptor
+	public void AsignarPreceptor(Guid unaDivision, Guid unPreceptor)
+	{
+		var division = BuscarDivision(unaDivision);
+		division.AsignarPreceptor(unPreceptor);
+	}
 
-    public void AgregarDivision()
-    {
-        string siguiente = string.Empty;
-        var division = _divisiones.Select(x => x.Descripcion)
-                                  .OrderDescending()
-                                  .FirstOrDefault();
-        if (division is null)
-        {
-            siguiente = "A";
-        }
-        else
-        {
-            siguiente = char.ConvertFromUtf32(char.Parse(division) + 1);
-        }
+	public void QuitarPreceptor(Guid unaDivision)
+	{
+		var division = BuscarDivision(unaDivision);
+		division.QuitarPreceptor();
+	}
+	#endregion
 
-        _divisiones.Add(new Division(siguiente));
-    }
+	#region Division
+	private bool ExisteDivision(Guid unaDivision)
+	{
+		if (Guid.Empty.Equals(unaDivision))
+		{
+			throw new ArgumentNullException("Se deben especificar los datos de la división.");
+		}
 
-    public void QuitarDivision(Guid aEliminar)
-    {
-        var division = _divisiones.Find(x => x.Id.Equals(aEliminar));
-        if (division is null)
-        {
-            throw new ArgumentException("La división que desea eliminar no pertenece a este curso.", nameof(aEliminar));
-        }
+		return _divisiones.Any(x => x.Id.Equals(unaDivision));
+	}
 
-        _divisiones.Remove(division);
-    }
+	private Division? BuscarDivision(Guid unaDivision)
+	{
+		if (!ExisteDivision(unaDivision))
+		{
+			throw new DivisionNoEncontradaException();
+		}
 
-    public IReadOnlyCollection<Guid> ListadoDefinitivoDeAlumnos(Guid unaDivision)
-    {
-        if (!ExisteDivision(unaDivision))
-        {
-            throw new ArgumentException($"No se encuentra la división en el curso { Grado.ToString().ToLower() } año.", nameof(unaDivision));
-        }
+		return _divisiones.Find(x => x.Id.Equals(unaDivision));
+	}
 
-        return _divisiones.Find(x => x.Equals(unaDivision)).ListadoAlumnoCicloLectivoEnCurso();
-    }
+	public void AgregarDivision()
+	{
+		string siguiente = string.Empty;
+		var division = _divisiones.Select(x => x.Descripcion)
+								  .OrderDescending()
+								  .FirstOrDefault();
+		if (division is null)
+		{
+			siguiente = "A";
+		}
+		else
+		{
+			siguiente = char.ConvertFromUtf32(char.Parse(division.Trim()) + 1);
+		}
 
-    public IReadOnlyCollection<Guid> CursantesPorPeriodo(Guid unaDivision, string periodo)
-    {
-        var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
-        if (division is null)
-        {
-            throw new ArgumentException($"No se encuentra la división en el curso { Grado.ToString().ToLower() } año.", nameof(unaDivision));
-        }
+		_divisiones.Add(new Division(siguiente));
+	}
 
-        return division.ListadoPorPeriodo(periodo);
-    }
-    #endregion
+	public void QuitarDivision(Guid aEliminar)
+	{
+		var division = BuscarDivision(aEliminar);
+		_divisiones.Remove(division);
+	}
+	#endregion
 
-    #region Preceptor
-    public void AsignarPreceptor(Guid unaDivision, Guid unPreceptor)
-    {
-        Division division = BuscarDivision(unaDivision);
-        division.OcuparCargoPreceptor(unPreceptor);
-    }
+	#region Cursantes
+	public bool CursanteRegistrado(Guid unCursante) =>
+		_divisiones.Any(x => x.ExisteCursante(unCursante));
 
-    public void QuitarPreceptor(Guid unaDivision)
-    {
-        Division division = BuscarDivision(unaDivision);
-        division.DesocuparCargoPreceptor();
-    }
-    #endregion
+	public void AgregarAlumnoEnDivision(Guid unaDivision, Guid unCursante)
+	{
+		if (CursanteRegistrado(unCursante))
+		{
+			throw new CursanteRegistradoException();
+		}
 
-    #region Alumnos
-    public bool ExisteAlumno(Guid unaDivision)
-    {
-        if (Guid.Empty.Equals(unaDivision))
-        {
-            throw new NullReferenceException($"Datos de la división incompletos o inexistentes. División: { unaDivision }");
-        }
+		var division = BuscarDivision(unaDivision);
+		if (division is null)
+		{
+			throw new DivisionNoEncontradaException();
+			//ArgumentException("La división del curso a la que desea agregar este alumno no existe.", nameof(unaDivision));
+		}
 
-        return _divisiones.Exists(x => x.Id.Equals(unaDivision));
-    }
+		division.AgregarCursante(unCursante);
+	}
 
-    public void AgregarAlumnoAlListadoDefinitivo(Guid unaDivision, Guid unAlumno, string unPeriodo)
-    {
-        var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
-        if (division is null)
-        {
-            throw new ArgumentException("La división del curso a la que desea agregar este alumno no existe.", nameof(unaDivision));
-        }
+	public void QuitarAlumno(Guid unaDivision, Guid unCursante)
+	{
+		var division = BuscarDivision(unaDivision);
+		if (ExisteDivision(unaDivision))
+		{
+			throw new DivisionNoEncontradaException();
+		}
 
-        division.AgregarCursante(unAlumno, unPeriodo);
-    }
-
-    public void QuitarAlumnoDelListadoDefinitivoActual(Guid unaDivision, Guid unAlumno, string unPeriodo)
-    {
-        if (ExisteDivision(unaDivision))
-        {
-            throw new ArgumentException("La división del curso a la que desea agregar este alumno no existe.", nameof(unaDivision));
-        }
-
-        var division = _divisiones.Find(x => x.Id.Equals(unaDivision));
-        division.QuitarCursante(unAlumno, unPeriodo);
-    }
-    #endregion
+		division.QuitarCursante(unCursante);
+	}
+	#endregion
 }

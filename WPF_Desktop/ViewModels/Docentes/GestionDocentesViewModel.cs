@@ -1,325 +1,237 @@
-﻿using Core.ServicioDocentes;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioDocentes.DTOs.Requests;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+using Core.ServicioDocentes;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using System.Windows;
+using System;
 using WPF_Desktop.Navigation;
-using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
+using WPF_Desktop.ViewModels.Shared.Messages;
+using Core.Shared.DTOs.Personas.Requests;
 
 namespace WPF_Desktop.ViewModels.Docentes;
 
-public class GestionDocentesViewModel : ViewModel, INotifyDataErrorInfo
+internal partial class GestionDocentesViewModel : ObservableValidator
 {
-    #region Servicios
-    private readonly IServicioDocente _servicioDocentes;
-    #endregion
+	#region Servicios
+	private readonly IServicioDocente _servicioDocentes;
+	#endregion
 
-    #region NavigationService
-    private readonly INavigationService _registrarDocenteNavigationService;
-    private readonly INavigationService _perfilDocenteNavigationService;
-    private readonly INavigationService _gestionPuestosNavigationService;
-    private readonly INavigationService _gestionLicenciasNavigationService;
-    #endregion
+	#region NavigationService
+	private readonly INavigationService _registrarDocenteNavigationService;
+	private readonly INavigationService _perfilDocenteNavigationService;
+	private readonly INavigationService _gestionPuestosNavigationService;
+	private readonly INavigationService _gestionLicenciasNavigationService;
+	#endregion
 
-    private LegajoStore _perfilBuscadoStore;
+	private LegajoStore _perfilBuscadoStore;
 
-    private LegajoDocenteViewModel _legajoDocenteViewModel;
-    private ObservableCollection<LegajoDocenteViewModel> _legajosDocentes = new ObservableCollection<LegajoDocenteViewModel>();
+	[Required(AllowEmptyStrings=false, ErrorMessage="Ingresar el nombre del docente.")]
+	[NotifyCanExecuteChangedFor(nameof(BuscarCommandAsync))]
+	[NotifyDataErrorInfo]
+	[ObservableProperty]
+	private string _searchedText;
 
-    private string _nombreCompleto = string.Empty;
-    private string _dni = string.Empty;
-    private bool _mostrarVista;
+	[ObservableProperty]
+	private string _notificacion;
 
-    private Dictionary<string, List<string>> _errorsByProperty = new Dictionary<string, List<string>>();
+	[ObservableProperty]
+	private bool _habilitarNotificacion;
 
-    public bool HasErrors => _errorsByProperty.Any();
-    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+	[ObservableProperty]
+	private string _documentoNacionalIdentidad;
 
-    #region Commands
-    public ViewModelCommand RegistrarDocenteCommand { get; }
-    public ViewModelCommand BuscarCommand { get; }
-    public ViewModelCommand EliminarCommand { get; }
-    public ViewModelCommand NavigationCommand { get; }
-    #endregion
+	[ObservableProperty]
+	private bool _mostrarVista;
+
+	[ObservableProperty]
+	private bool _habilitarListaDocentes;
+
+	[ObservableProperty]
+	[NotifyCanExecuteChangedFor(nameof(EliminarCommand))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
+	private LegajoDocenteViewModel _legajoDocenteSeleccionado;
+
+	[ObservableProperty]
+	private ObservableCollection<LegajoDocenteViewModel> _legajosDocentes = new();
+
+	#region Commands
+	public IRelayCommand RegistrarCommand { get; }
+	public IAsyncRelayCommand BuscarCommandAsync { get; }
+	public IRelayCommand EliminarCommand { get; }
+	public IRelayCommand NavigationCommand { get; }
+	#endregion
 
 
-    public GestionDocentesViewModel(IServicioDocente servicioDocentes,
-                                    INavigationService registrarDocenteNavigationService,
-                                    INavigationService perfilDocenteNavigationService,
-                                    INavigationService gestionPuestoNavigationService,
-                                    INavigationService gestionLicenciasNavigationService,
-                                    LegajoStore perfilBuscadoStore)
-    {
-        _servicioDocentes = servicioDocentes;
-        _registrarDocenteNavigationService = registrarDocenteNavigationService;
-        _perfilDocenteNavigationService = perfilDocenteNavigationService;
-        _gestionPuestosNavigationService = gestionPuestoNavigationService;
-        _gestionLicenciasNavigationService = gestionLicenciasNavigationService;
-        _perfilBuscadoStore = perfilBuscadoStore;
+	public GestionDocentesViewModel(IServicioDocente servicioDocentes,
+									INavigationService registrarDocenteNavigationService,
+									INavigationService perfilDocenteNavigationService,
+									INavigationService gestionPuestoNavigationService,
+									INavigationService gestionLicenciasNavigationService,
+									LegajoStore perfilBuscadoStore)
+	{
+		_servicioDocentes = servicioDocentes;
+		_registrarDocenteNavigationService = registrarDocenteNavigationService;
+		_perfilDocenteNavigationService = perfilDocenteNavigationService;
+		_gestionPuestosNavigationService = gestionPuestoNavigationService;
+		_gestionLicenciasNavigationService = gestionLicenciasNavigationService;
+		_perfilBuscadoStore = perfilBuscadoStore;
 
-        RegistrarDocenteCommand = new ViewModelCommand(commnad =>
-        {
-            _registrarDocenteNavigationService.Navigate();
-        });
+		RegistrarCommand = new RelayCommand<string>(commnad =>
+		{
+			_registrarDocenteNavigationService.Navigate();
+		});
+		BuscarCommandAsync = new AsyncRelayCommand(ExecuteBuscarCommandAsync, CanExecuteBuscarCommand);
+		EliminarCommand = new RelayCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
+		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
-        BuscarCommand = new ViewModelCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
-        EliminarCommand = new ViewModelCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
-        NavigationCommand = new ViewModelCommand(ExecuteNavigationCommand, CanExecuteNavigationCommand);
+		MostrarVista = false;
+		HabilitarNotificacion = false;
+		HabilitarListaDocentes = false;
+	}
 
-        MostrarVista = false;
-    }
+	#region BuscarCommand
+	private bool CanExecuteBuscarCommand() =>
+		!HasErrors;
 
-    private void LoadLegajosDocente(IEnumerable<LegajoDocenteViewModel> legajosDocentes)
-    {
-        LegajosDocentes.Clear();
-        foreach (var legajoDocente in legajosDocentes)
-        {
-            LegajosDocentes.Add(legajoDocente);
-        }
-    }
+	private async Task ExecuteBuscarCommandAsync()
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
 
-    #region Properties
-    public string NombreCompleto
-    {
-        get
-        {
-            return _nombreCompleto;
-        }
+		HabilitarNotificacion = false;
+		Notificacion = string.Empty;
+		MostrarVista = true;
 
-        set
-        {
-            _errorsByProperty.Remove(nameof(NombreCompleto));
-            _nombreCompleto = value;
-            OnPropertyChanged(nameof(NombreCompleto));
-        }
-    }
+		try
+		{
+			var response = await _servicioDocentes.BuscarDocenteSegunNombreCompletoAsync(new NombreCompletoRequest(SearchedText));
 
-    public string DNI
-    {
-        get
-        {
-            return _dni;
-        }
+			if (response.Count is 0)
+			{
+				/**
+				 * messageBoxText = $"No se ha encontrado ningún docente. Vuelva a intentarlo nuevamente.";
+				 * caption = "Resultado de la búsqueda";
+				 * MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+				 */
 
-        set
-        {
-            _errorsByProperty.Remove(nameof(DNI));
-            _dni = value;
-            OnPropertyChanged(nameof(DNI));
+				Notificacion = "No se ha encontrado docentes en la búsqueda.\nVuelva a intentarlo nuevamente.";
+				HabilitarNotificacion = true;
+				HabilitarListaDocentes = false;
 
-            if (string.IsNullOrWhiteSpace(DNI))
-            {
-                _errorsByProperty.Add(nameof(DNI), new List<string>
-                {
-                    "Se debe ingresar el DNI del docente que desea buscar."
-                });
+				return;
+			}
 
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(DNI)));
-            }
-        }
-    }
+			LegajosDocentes.Clear();
+			foreach (var legajoDocente in response)
+			{
+				LegajosDocentes.Add(new LegajoDocenteViewModel(legajoDocente));
+			}
 
-    public bool MostrarVista
-    {
-        get
-        {
-            return _mostrarVista;
-        }
+			HabilitarListaDocentes = true;
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+		}
+	}
+	#endregion
 
-        set
-        {
-            _mostrarVista = value;
-            OnPropertyChanged(nameof(MostrarVista));
-        }
-    }
+	#region EliminarCommand
+	private bool CanExecuteEliminarCommand()
+	{
+		bool canExecute = false;
+		if (LegajoDocenteSeleccionado is not null)
+		{
+			canExecute = true;
+		}
 
-    public LegajoDocenteViewModel LegajoDocenteViewModel
-    {
-        get
-        {
-            return _legajoDocenteViewModel;
-        }
+		return canExecute;
+	}
 
-        set
-        {
-            _legajoDocenteViewModel = value;
-            OnPropertyChanged(nameof(LegajoDocenteViewModel));
-        }
-    }
+	private void ExecuteEliminarCommand()
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
+		MessageBoxResult result;
 
-    public ObservableCollection<LegajoDocenteViewModel> LegajosDocentes
-    {
-        get
-        {
-            return _legajosDocentes;
-        }
+		if (LegajoDocenteSeleccionado is null)
+		{
+			messageBoxText = "Se debe buscar previamente el docente para poder realizar los cambios que necesite.";
+			caption = "Quitar Docente";
+			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-        set
-        {
-            _legajosDocentes = value;
-            OnPropertyChanged(nameof(LegajosDocentes));
-        }
-    }
-    #endregion
+			return;
+		}
 
-    #region DataErrors
-    public IEnumerable GetErrors(string? propertyName) => _errorsByProperty.GetValueOrDefault(propertyName).AsEnumerable();
-    #endregion
+		messageBoxText = $"¿Está seguro que desea quitar el docente {LegajoDocenteSeleccionado.NombreCompleto}?";
+		caption = "Quitar Docente";
+		result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
+		if (result is MessageBoxResult.Yes)
+		{
+			try
+			{
+				_servicioDocentes.QuitarDocente(new DocenteIDRequest(LegajoDocenteSeleccionado.DocenteID));
+				messageBoxText = $"El docente, {LegajoDocenteSeleccionado.NombreCompleto}, se quitó correctamente.";
+				caption = "Operación Exitosa";
 
-    #region BuscarCommand
-    private bool CanExecuteBuscarCommand(object obj) => !HasErrors;
+				MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+				LegajoDocenteSeleccionado = new LegajoDocenteViewModel(null);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+		}
+	}
+	#endregion
 
-    private void ExecuteBuscarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
+	#region NavigationCommand
+	private bool CanExecuteNavigationCommand(object obj)
+	{
+		bool canExecute = false;
+		if (LegajoDocenteSeleccionado is not null)
+		{
+			canExecute = true;
+		}
 
-        switch (obj)
-        {
-/*
-            case "DNI":
-                if (string.IsNullOrWhiteSpace(DNI))
-                {
-                    MessageBox.Show("Se deben ingresar el DNI del docente que desea consultar.", "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-                    DNI = string.Empty;
+		return canExecute;
+	}
 
-                    break;
-                }
+	private void ExecuteNavigationCommand(object obj)
+	{
+		string messageBoxText = string.Empty;
+		string caption = string.Empty;
 
-                try
-                {
-                    var legajoDocente = _servicioDocentes.BuscarLegajoDocentePorDNI(DNI);
-                    LegajoDocenteViewModel = new LegajoDocenteViewModel(legajoDocente);
-                    MostrarVista = true;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-                break;
-*/
-            case "NombreCompleto":
-                try
-                {
-                    var response = _servicioDocentes.BuscarLegajoDocentePorApellidoNombre(
-                        new BuscarDocentePorApellidoNombreRequest(NombreCompleto));
+		if (LegajoDocenteSeleccionado is null)
+		{
+			messageBoxText = "Se debe buscar previamente el docente que desea visitar el perfil.";
+			caption = "Perfil Docente";
+			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-                    if (response.Count is 0)
-                    {
-                        messageBoxText = $"No se ha encontrado ningún docente. Vuelva a intentarlo nuevamente.";
-                        caption = "Resultado de la búsqueda";
-                        MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+			return;
+		}
 
-                        break;
-                    }
+		_perfilBuscadoStore.PersonaID = LegajoDocenteSeleccionado.DocenteID;
+		_perfilBuscadoStore.Documento = LegajoDocenteSeleccionado.DocumentoNacionalIdentidad;
 
-                    MostrarVista = true;
-                    LoadLegajosDocente(response.Select(x =>
-                        new LegajoDocenteViewModel(x)));
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                break;
-        }
-    }
-    #endregion
-
-    #region EliminarCommand
-    private bool CanExecuteEliminarCommand(object obj)
-    {
-        bool canExecute = false;
-        if (LegajoDocenteViewModel is not null)
-        {
-            canExecute = true;
-        }
-
-        return canExecute;
-    }
-
-    private void ExecuteEliminarCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-        MessageBoxResult result;
-
-        if (LegajoDocenteViewModel is null)
-        {
-            messageBoxText = "Se debe buscar previamente el docente para poder realizar los cambios que necesite.";
-            caption = "Quitar Docente";
-            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
-            return;
-        }
-
-        messageBoxText = $"¿Está seguro que desea quitar el docente { LegajoDocenteViewModel.NombreCompleto }?";
-        caption = "Quitar Docente";
-        result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (result == MessageBoxResult.Yes)
-        {
-            try
-            {
-                _servicioDocentes.QuitarDocente(LegajoDocenteViewModel.DocenteID);
-                messageBoxText = $"El docente, { LegajoDocenteViewModel.NombreCompleto }, se quitó correctamente.";
-                caption = "Operación Exitosa";
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-                LegajoDocenteViewModel = new LegajoDocenteViewModel(null);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-    }
-    #endregion
-
-    #region NavigationCommand
-    private bool CanExecuteNavigationCommand(object obj)
-    {
-        bool canExecute = false;
-        if (LegajoDocenteViewModel is not null)
-        {
-            canExecute = true;
-        }
-
-        return canExecute;
-    }
-
-    private void ExecuteNavigationCommand(object obj)
-    {
-        string messageBoxText = string.Empty;
-        string caption = string.Empty;
-
-        if (LegajoDocenteViewModel is null)
-        {
-            messageBoxText = "Se debe buscar previamente el docente que desea visitar el perfil.";
-            caption = "Perfil Docente";
-            MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
-            return;
-        }
-
-        _perfilBuscadoStore.PersonaID = LegajoDocenteViewModel.DocenteID;
-        _perfilBuscadoStore.Documento = LegajoDocenteViewModel.CUIL;
-
-        switch (obj)
-        {
-            case "Licencia":
-                _gestionLicenciasNavigationService.Navigate();
-                break;
-            case "Perfil":
-                _perfilDocenteNavigationService.Navigate();
-                break;
-            case "Puesto":
-                _gestionPuestosNavigationService.Navigate();
-                break;
-        }
-    }
-    #endregion
+		switch (obj)
+		{
+			case "Licencia":
+				_gestionLicenciasNavigationService.Navigate();
+				break;
+			case "Perfil":
+				WeakReferenceMessenger.Default.Send(new DocenteSeleccionadoMessage(_perfilBuscadoStore.PersonaID));
+				_perfilDocenteNavigationService.Navigate();
+				break;
+			case "Puesto":
+				_gestionPuestosNavigationService.Navigate();
+				break;
+		}
+	}
+	#endregion
 }

@@ -2,6 +2,6 @@
 
 public enum NivelEducativo
 {
-    Primaria = 0,
-    Secundaria = 1
+	Primaria = 0,
+	Secundaria = 1
 }

@@ -4,11 +4,11 @@ namespace Domain.Usuarios;
 
 public interface IUsuarioRepository : IRepository<Usuario>
 {
-    public Usuario BuscarPorUsuario(string unUsuario);
+	public Usuario BuscarPorEmail(string unUsuario);
 
-    public bool ExisteUsuarioDelDocente(Guid docenteID);
+	public bool ExisteUsuarioDelDocente(Guid docenteID);
 
-    public bool EsUsuarioInvalido(string usuario);
+	public bool EsEmailInvalido(string usuario);
 
-    public void RecuperarDatosAcceso(string usuario, out string salt, out string hash);
+	public void RecuperarDatosAcceso(string usuario, out string salt, out string hash);
 }

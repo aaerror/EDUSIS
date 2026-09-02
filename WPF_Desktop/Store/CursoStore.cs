@@ -3,24 +3,24 @@ using WPF_Desktop.ViewModels.Cursos;
 
 namespace WPF_Desktop.Store;
 
-public class CursoStore
+internal class CursoStore
 {
-    private CursoViewModel _curso = null;
+	private CursoViewModel _curso = null;
 
-    public event Action CursoStoreChanged;
+	public event Action CursoStoreChanged;
 
 
-    public CursoViewModel Curso
-    {
-        get
-        {
-            return _curso;
-        }
+	public CursoViewModel Curso
+	{
+		get
+		{
+			return _curso;
+		}
 
-        set
-        {
-            _curso = value;
-            CursoStoreChanged?.Invoke();
-        }
-    }
+		set
+		{
+			_curso = value;
+			CursoStoreChanged?.Invoke();
+		}
+	}
 }

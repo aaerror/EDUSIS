@@ -1,232 +1,272 @@
-﻿using Core.Shared;
+﻿using Core.ServicioAlumnos.DTOs.Requests;
+using Core.Shared.DTOs.Personas.Requests;
+using Core.Shared.DTOs.Personas.Response;
+using Core.Shared;
 using Domain.Alumnos;
 using Domain.Personas.Domicilios;
 using Domain.Personas;
-using Infrastructure.Shared;
-using Core.ServicioAlumnos.DTOs.Requests;
-using Core.ServicioAlumnos.DTOs.Responses;
+using Domain.Shared;
+using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioAlumnos;
 
-public class ServicioAlumno : IServicio, IServicioAlumno
+internal class ServicioAlumno : IServicio, IServicioAlumno
 {
-    private readonly IUnitOfWork _unitOfWork;
+	private readonly ILogger<ServicioAlumno> _logger;
+	private readonly IUnitOfWork _unitOfWork;
 
 
-    public ServicioAlumno(IUnitOfWork unitOfWork)
-    {
-        _unitOfWork = unitOfWork;
-    }
+	public ServicioAlumno(ILogger<ServicioAlumno> logger, IUnitOfWork unitOfWork)
+	{
+		_logger = logger;
+		_unitOfWork = unitOfWork;
+	}
 
-    private Alumno BuscarAlumnoPorId(Guid persona_id)
-    {
-        Alumno alumno = _unitOfWork.Alumnos.BuscarPorID(persona_id);
-        if (alumno == null)
-        {
-            throw new NullReferenceException($"No se encontró el alumno con el siguiente Id: { persona_id }");
-        }
+	private async Task<Alumno> BuscarAlumnoPorIDAsync(Guid personaID)
+	{
+		var alumno = await _unitOfWork.Alumnos.BuscarPorIDAsync(personaID);
+		if (alumno is null)
+		{
+			throw new NullReferenceException($"No se encontró el alumno con el siguiente Id: { personaID }");
+		}
 
-        return alumno;
-    }
+		return alumno;
+	}
 
-    public PersonaResponse BuscarPorDNI(string documento)
-    {
-        Alumno alumno = _unitOfWork.Alumnos.Buscar(x => x.InformacionPersonal.Documento == documento).FirstOrDefault();
-        if (alumno is null)
-        {
-            throw new NullReferenceException($"No se encontró el alumno con el D.N.I. { documento }");
-        }
 
-        return new PersonaResponse(alumno.Id,
-                                   alumno.InformacionPersonal.Apellido,
-                                   alumno.InformacionPersonal.Nombre,
-                                   alumno.InformacionPersonal.Documento,
-                                   (int) alumno.InformacionPersonal.Sexo,
-                                   alumno.InformacionPersonal.FechaNacimiento.ToString("D"),
-                                   alumno.InformacionPersonal.Nacionalidad);
-    }
+	public async Task<PersonaConDetallesResponse> BuscarPorIDAsync(PersonaRequest request)
+	{
+		var response = await BuscarAlumnoPorIDAsync(request.PersonaID);
+		if (response is null)
+		{
+			throw new NullReferenceException($"No se encontró el alumno.");
+		}
 
-    public PersonaConDetallesResponse BuscarPorDNIConDetalles(string documento)
-    {
-        Alumno alumnoConDetalles = _unitOfWork.Alumnos.Buscar(x => x.InformacionPersonal.Documento == documento).FirstOrDefault();
-        if (alumnoConDetalles is null)
-        {
-            throw new NullReferenceException($"No se encontró el alumno con el D.N.I. { documento }");
-        }
+		return new PersonaConDetallesResponse(
+			PersonaID: response.Id,
+			Apellido: response.DatosPersonales.Apellido,
+			Nombre: response.DatosPersonales.Nombre,
+			Documento: response.DatosPersonales.Documento,
+			Sexo: response.DatosPersonales.Sexo.ToString(),
+			FechaNacimiento: response.DatosPersonales.FechaNacimiento.ToString("D"),
+			Nacionalidad: response.DatosPersonales.Nacionalidad,
+			Telefono: response.Telefono,
+			Email: response.Email,
+			Calle: response.Domicilio.Direccion.Calle,
+			Altura: response.Domicilio.Direccion.Altura,
+			Vivienda: response.Domicilio.Direccion.Vivienda.ToString(),
+			Observacion: response.Domicilio.Direccion.Observacion,
+			Localidad: response.Domicilio.Ubicacion.Localidad,
+			Provincia: response.Domicilio.Ubicacion.Provincia,
+			Pais: response.Domicilio.Ubicacion.Pais);
+	}
 
-        return new PersonaConDetallesResponse
-        {
-            PersonaId = alumnoConDetalles.Id,
-            Apellido = alumnoConDetalles.InformacionPersonal.Apellido,
-            Nombre = alumnoConDetalles.InformacionPersonal.Nombre,
-            Documento = alumnoConDetalles.InformacionPersonal.Documento,
-            Sexo = (int) alumnoConDetalles.InformacionPersonal.Sexo,
-            FechaNacimiento = alumnoConDetalles.InformacionPersonal.FechaNacimiento.ToString("D"),
-            Nacionalidad = alumnoConDetalles.InformacionPersonal.Nacionalidad,
-            Telefono = alumnoConDetalles.Telefono,
-            Email = alumnoConDetalles.Email,
-            Calle = alumnoConDetalles.Domicilio.Direccion.Calle,
-            Altura = alumnoConDetalles.Domicilio.Direccion.Altura,
-            Vivienda = (int)alumnoConDetalles.Domicilio.Direccion.Vivienda,
-            Observacion = alumnoConDetalles.Domicilio.Direccion.Observacion,
-            Localidad = alumnoConDetalles.Domicilio.Ubicacion.Localidad,
-            Provincia = alumnoConDetalles.Domicilio.Ubicacion.Provincia,
-            Pais = alumnoConDetalles.Domicilio.Ubicacion.Pais
-        };
-    }
+	public async Task<PersonaResponse?> BuscarPorNombreCompletoAsync(NombreCompletoRequest request)
+	{
+		var alumno = await _unitOfWork.Alumnos.BuscarPorNombreCompletoAsync(request.NombreCompleto);
 
-    public bool EsDocumentoInvalido(string documento)
-    {
-        bool esValido = false;
-        if (!string.IsNullOrWhiteSpace(documento))
-        {
-            esValido = _unitOfWork.Alumnos.EsDocumentoInvalido(documento);
-        }
+		if (alumno is not null)
+		{
+			return new PersonaResponse(
+				PersonaID: alumno.Id,
+				Apellido: alumno.DatosPersonales.Apellido,
+				Nombre: alumno.DatosPersonales.Nombre,
+				Documento: alumno.DatosPersonales.Documento,
+				Sexo: alumno.DatosPersonales.Sexo.ToString(),
+				FechaNacimiento: alumno.DatosPersonales.FechaNacimiento.ToString("D"),
+				Nacionalidad: alumno.DatosPersonales.Nacionalidad);
+		}
 
-        return esValido;
-    }
+		return null;
+	}
 
-    public async Task<Guid> RegistrarAlumnoAsync(RegistrarAlumnoRequest request)
-    {
-        try
-        {
-            if (request is null)
-            {
-                throw new ArgumentNullException("Datos incompletos para registrar un alumno.");
-            }
+	public async Task<PersonaResponse?> BuscarPorDNIAsync(DocumentoRequest request)
+	{
+		var alumno = await _unitOfWork.Alumnos.BuscarPorDocumentoAsync(request.Documento);
 
-            var informacionPersonal = InformacionPersonal.Crear(
-                request.Apellido,
-                request.Nombre,
-                request.DNI,
-                request.Sexo,
-                request.FechaNacimiento,
-                request.Nacionalidad);
+		if (alumno is not null)
+		{
+			return new PersonaResponse(
+				PersonaID: alumno.Id,
+				Apellido: alumno.DatosPersonales.Apellido,
+				Nombre: alumno.DatosPersonales.Nombre,
+				Documento: alumno.DatosPersonales.Documento,
+				Sexo: alumno.DatosPersonales.Sexo.ToString(),
+				FechaNacimiento: alumno.DatosPersonales.FechaNacimiento.ToString("D"),
+				Nacionalidad: alumno.DatosPersonales.Nacionalidad);
+		}
 
-            var domicilio = Domicilio.Crear(
-                request.Calle,
-                request.Altura,
-                request.Vivienda,
-                request.Observacion,
-                request.Localidad,
-                request.Provincia,
-                request.Pais);
-            
-            Alumno alumno = new Alumno(
-                Guid.NewGuid().ToString().GetHashCode().ToString("x"),
-                informacionPersonal,
-                domicilio,
-                request.Email,
-                request.Telefono);
+		// throw new NullReferenceException($"No se encontró el alumno con el D.N.I. { request.Documento }");
+		return null;
+	}
 
-            await _unitOfWork.Alumnos.AgregarAsync(alumno);
-            await _unitOfWork.GuardarCambiosAsync();
 
-            return alumno.Id;
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+	public async Task<Guid> RegistrarAlumnoAsync(RegistrarAlumnoRequest request)
+	{
+		try
+		{
+			if (request is null)
+			{
+				throw new ArgumentNullException("Datos incompletos para registrar un alumno.");
+			}
 
-    public void ModificarNombreCompleto(Guid alumnoId, string nuevoApellido, string nuevoNombre)
-    {
-        Alumno alumnoBuscado = BuscarAlumnoPorId(alumnoId);
+			var datosPersonales = DatosPersonales.Crear(
+				apellido: request.Apellido,
+				nombre: request.Nombre,
+				dni: request.DNI,
+				sexo: request.Sexo,
+				fechaNacimiento: request.FechaNacimiento,
+				nacionalidad: request.Nacionalidad);
 
-        try
-        {
-            alumnoBuscado.CambiarNombreCompleto(nuevoApellido, nuevoNombre);
+			var domicilio = Domicilio.Crear(
+				calle: request.Calle,
+				altura: request.Altura,
+				vivienda: request.Vivienda,
+				observacion: request.Observacion,
+				localidad: request.Localidad,
+				provincia: request.Provincia,
+				pais: request.Pais);
 
-            _unitOfWork.Alumnos.Modificar(alumnoBuscado);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+			var unAlumno = new Alumno(Guid.NewGuid().ToString().GetHashCode().ToString("x"),
+									  datosPersonales,
+									  domicilio,
+									  request.Email,
+									  request.Telefono);
 
-    public void ModificarContacto(Guid alumnoId, ContactoRequest cambiarContactoRequest)
-    {
-        Alumno alumnoBuscado = BuscarAlumnoPorId(alumnoId);
+			await _unitOfWork.Alumnos.AgregarAsync(unAlumno);
+			await _unitOfWork.GuardarCambiosAsync();
 
-        try
-        {
-            alumnoBuscado.CambiarContacto(cambiarContactoRequest.Email, cambiarContactoRequest.Telefono);
+			return unAlumno.Id;
+		}
+		catch (Exception ex)
+		{
+			throw;
+		}
+	}
 
-            _unitOfWork.Alumnos.Modificar(alumnoBuscado);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+	public async Task<bool> EsDocumentoInvalidoAsync(DocumentoRequest request)
+	{
+		bool esValido = false;
+		esValido = await _unitOfWork.Alumnos.EsDocumentoInvalidoAsync(request.Documento);
 
-    public void ModificarSexo(Guid alumnoId, CambiarSexoRequest cambiarSexoRequest)
-    {
-        Alumno alumno = BuscarAlumnoPorId(alumnoId);
+		return esValido;
+	}
 
-        try
-        {
-            alumno.CambiarSexo(cambiarSexoRequest.Apellido, cambiarSexoRequest.Nombre, cambiarSexoRequest.Sexo);
+	public async Task ModificarNombreCompleto(Guid alumnoID, string nuevoApellido, string nuevoNombre)
+	{
+		var alumno = await BuscarAlumnoPorIDAsync(alumnoID);
 
-            _unitOfWork.Alumnos.Modificar(alumno);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch(Exception ex)
-        {
-            throw;
-        }
-    }
+		try
+		{
+			alumno.CambiarNombreCompleto(nuevoApellido, nuevoNombre);
 
-    public void ModificarDomicilio(Guid alumnoId, DomicilioRequest domicilioRequest)
-    {
-        Alumno alumno = BuscarAlumnoPorId(alumnoId);
+			_unitOfWork.Alumnos.Modificar(alumno);
+			await _unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			throw;
+		}
+	}
 
-        try
-        {
-            Domicilio nuevoDomicilio = Domicilio.Crear(domicilioRequest.Calle,
-                                                       domicilioRequest.Altura,
-                                                       domicilioRequest.Vivienda,
-                                                       domicilioRequest.Observacion,
-                                                       domicilioRequest.Localidad,
-                                                       domicilioRequest.Provincia,
-                                                       domicilioRequest.Pais);
-            alumno.CambiarDomicilio(nuevoDomicilio);
+	public async Task ActualizarContacto(CambiarContactoRequest request)
+	{
+		try
+		{
+			_logger.LogInformation($"Actualizando datos de contacto del alumno...");
 
-            _unitOfWork.Alumnos.Modificar(alumno);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch(Exception ex)
-        {
-            throw;
-        }
-    }
+			var unAlumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
+			unAlumno.CambiarContacto(request.Email, request.Telefono);
 
-    public void ActualizarDireccion(Guid personaId, DireccionRequest request)
-    {
-        var alumno = BuscarAlumnoPorId(personaId);
+			_unitOfWork.Alumnos.Modificar(unAlumno);
+			await _unitOfWork.GuardarCambiosAsync();
 
-        var nuevaDireccion = Direccion.Crear(request.Calle, request.Altura, request.Vivienda, request.Observacion);
+			_logger.LogInformation($"Datos de contactos actualizados correctamente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
 
-        alumno.CambiarDireccion(nuevaDireccion);
+	public async Task ActualizarDomicilio(CambiarDomicilioRequest request)
+	{
+		try
+		{
+			_logger.LogInformation($"Actualizando domicilio del alumno...");
 
-        _unitOfWork.Alumnos.Modificar(alumno);
-        _unitOfWork.GuardarCambiosAsync();
-    }
+			var unAlumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
 
-    public void QuitarAlumno(Guid personaId)
-    {
-        try
-        {
-            _unitOfWork.Alumnos.Eliminar(personaId);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+			var nuevoDomicilio = Domicilio.Crear(request.Calle,
+												 request.Altura,
+												 request.Vivienda,
+												 request.Observacion,
+												 request.Localidad,
+												 request.Provincia,
+												 request.Pais);
+			unAlumno.CambiarDomicilio(nuevoDomicilio);
+
+			_unitOfWork.Alumnos.Modificar(unAlumno);
+			await _unitOfWork.GuardarCambiosAsync();
+
+			_logger.LogInformation($"Domicilio actualizado correctamente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
+
+	public async Task ActualizarSexo(CambiarSexoRequest request)
+	{
+		try
+		{
+			_logger.LogInformation($"Actualizando datos de sexo del alumno...");
+
+			var alumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
+			alumno.CambiarSexo(request.Apellido, request.Nombre, request.Sexo);
+
+			_unitOfWork.Alumnos.Modificar(alumno);
+			await _unitOfWork.GuardarCambiosAsync();
+
+			_logger.LogInformation($"Sexo actualizado correctamente.");
+		}
+		catch(Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+
+	public async Task ActualizarDireccion(Guid personaId, DireccionRequest request)
+	{
+		var alumno = await BuscarAlumnoPorIDAsync(personaId);
+
+		var nuevaDireccion = Direccion.Crear(request.Calle,
+											 request.Altura,
+											 request.Vivienda,
+											 request.Observacion);
+
+		alumno.CambiarDireccion(nuevaDireccion);
+
+		_unitOfWork.Alumnos.Modificar(alumno);
+		await _unitOfWork.GuardarCambiosAsync();
+	}
+
+	public async Task EliminarAlumnoAsync(EliminarAlumnoRequest request)
+	{
+		try
+		{
+			await _unitOfWork.Alumnos.Eliminar(request.AlumnoID);
+
+			await _unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			throw;
+		}
+	}
 }

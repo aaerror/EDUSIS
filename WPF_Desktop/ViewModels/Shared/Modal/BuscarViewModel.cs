@@ -1,8 +1,8 @@
-﻿using WPF_Desktop.Shared;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace WPF_Desktop.ViewModels.Shared.Modal;
 
-public class BuscarViewModel : ViewModel
+internal class BuscarViewModel : ObservableObject
 {
-    public BuscarViewModel() { }
+	public BuscarViewModel() { }
 }

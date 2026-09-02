@@ -1,3 +1,5 @@
-﻿namespace Core.ServicioDocentes.DTOs.Requests;
+﻿using Core.Shared.DTOs.Personas.Requests;
 
-public record RegistrarDocenteRequest(string Legajo, string CUIL, DateTime FechaAlta, RegistrarPuestoDocenteRequest Puesto, string Apellido, string Nombre, string DNI, int Sexo, DateTime FechaNacimiento, string Nacionalidad, string Telefono, string Email, string Calle, string Altura, int Vivienda, string Observacion, string Localidad, string Provincia, string Pais);
+namespace Core.ServicioDocentes.DTOs.Requests;
+
+public record RegistrarDocenteRequest(string Legajo, string CUIL, DateTime FechaAlta, RegistrarDatosPersonalesRequest DatosPersonales, RegistrarDomicilioRequest Domicilio, RegistrarContactoRequest Contacto, RegistrarPuestoDocenteRequest Puesto);

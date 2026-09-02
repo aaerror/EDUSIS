@@ -4,8 +4,8 @@ namespace WPF_Desktop.Views.Alumnos;
 
 public partial class PerfilAlumnoView : UserControl
 {
-    public PerfilAlumnoView()
-    {
-        InitializeComponent();
-    }
+	public PerfilAlumnoView()
+	{
+		InitializeComponent();
+	}
 }

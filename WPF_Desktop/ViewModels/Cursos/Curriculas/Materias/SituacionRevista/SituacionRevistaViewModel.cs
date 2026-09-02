@@ -1,142 +1,100 @@
-﻿using Core.ServicioMaterias.DTOs.Responses;
-using Domain.Materias.CargosDocentes;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Core.ServicioCurriculas.DTOs.Responses;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using WPF_Desktop.Shared;
+using WPF_Desktop.Validations;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
-public class SituacionRevistaViewModel : ViewModel, INotifyDataErrorInfo
+internal partial class SituacionRevistaViewModel : ObservableValidator
 {
-    private SituacionRevistaResponse _situacionRevista;
+	private readonly SituacionRevistaResponse _situacionRevista;
 
-    private Guid _docenteID;
-    private string _docente;
-    private Cargo _cargo;
-    private DateTime _fechaAlta = DateTime.Now;
-    private DateTime? _fechaBaja;
-    private bool _enFunciones;
+	[ObservableProperty]
+	private Guid _situacionRevistaID = Guid.Empty;
 
-    private Dictionary<string, List<string>> _errorsByProperty = new();
-    public bool HasErrors => _errorsByProperty.Any();
+	[ObservableProperty]
+	private Guid _materiaID = Guid.Empty;
 
-    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+	[ObservableProperty]
+	private Guid _docenteID = Guid.Empty;
+
+	[ObservableProperty]
+	private string _docente;
+
+	[ObservableProperty]
+	private string _cargo = string.Empty;
+
+	private DateTime _fechaAlta = DateTime.Today;
+
+	[DateAfterOrEqual(nameof(FechaAlta))]
+	[ObservableProperty]
+	private DateTime? _fechaBaja;
+
+	[ObservableProperty]
+	private bool _enFunciones;
+
+	[ObservableProperty]
+	private string _estado = string.Empty;
 
 
-    public SituacionRevistaViewModel(SituacionRevistaResponse situacionRevista)
-    {
-        /*FechaAlta = DateTime.Now;
-        EnFunciones = true;*/
+	public SituacionRevistaViewModel(SituacionRevistaResponse situacionRevista)
+	{
+		/*FechaAlta = DateTime.Now;
+		EnFunciones = true;*/
 
-        if (situacionRevista is not null)
-        {
-            _situacionRevista = situacionRevista;
-            DocenteID = _situacionRevista.DocenteID;
-            Docente = _situacionRevista.Docente;
-            Cargo = _situacionRevista.Cargo;
-            FechaAlta = _situacionRevista.FechaAlta;
-            FechaBaja = _situacionRevista.FechaBaja;
-            EnFunciones = _situacionRevista.EnFunciones;
-        }
-    }
+		if (situacionRevista is not null)
+		{
+			_situacionRevista = situacionRevista;
 
-    public SituacionRevistaViewModel(Guid docenteID, string docente)
-    {
-        DocenteID = docenteID;
-        Docente = docente;
-        EnFunciones = true;
-    }
+			SituacionRevistaID = _situacionRevista.SituacionRevistaID;
+			MateriaID = _situacionRevista.MateriaID;
+			DocenteID = _situacionRevista.DocenteID;
+			Docente = _situacionRevista.Docente;
+			Estado = _situacionRevista.Estado;
+			Cargo = _situacionRevista.Cargo;
+			FechaAlta = _situacionRevista.FechaAlta;
+			FechaBaja = _situacionRevista.FechaBaja;
+			EnFunciones = _situacionRevista.EnFunciones;
+		}
+	}
 
-    #region Properties
-    public Guid DocenteID
-    {
-        get
-        {
-            return _docenteID;
-        }
+	public SituacionRevistaViewModel(Guid docenteID, string docente)
+	{
+		DocenteID = docenteID;
+		Docente = docente;
+		EnFunciones = true;
+	}
 
-        set
-        {
-            _docenteID = value;
-            OnPropertyChanged(nameof(DocenteID));
-        }
-    }
+	public DateTime FechaAlta
+	{
+		get
+		{
+			return _fechaAlta;
+		}
 
-    public string Docente
-    {
-        get
-        {
-            return _docente;
-        }
+		set
+		{
+			SetProperty(ref _fechaAlta, value, nameof(FechaAlta));
 
-        set
-        {
-            _docente = value;
-            OnPropertyChanged(nameof(Docente));
-        }
-    }
+			EnFunciones = FechaAlta.Equals(DateTime.Today) ? true : false;
+			if (!string.IsNullOrWhiteSpace(Cargo) && (Cargo.Equals("Suplente") || Cargo.Equals("Interino")))
+			{
+				FechaBaja = FechaAlta;
+				ValidateProperty(FechaBaja, nameof(FechaBaja));
+			}
+		}
+	}
 
-    public Cargo Cargo
-    {
-        get
-        {
-            return _cargo;
-        }
+	partial void OnCargoChanged(string value)
+	{
+		if (string.Equals("Titular", value))
+		{
+			FechaBaja = null;
+		}
 
-        set
-        {
-            _cargo = value;
-            OnPropertyChanged(nameof(Cargo));
-        }
-    }
-
-    public DateTime FechaAlta
-    {
-        get
-        {
-            return _fechaAlta;
-        }
-
-        set
-        {
-            _fechaAlta = value;
-            OnPropertyChanged(nameof(FechaAlta));
-        }
-    }
-
-    public DateTime? FechaBaja
-    {
-        get
-        {
-            return _fechaBaja;
-        }
-
-        set
-        {
-            _fechaBaja = value;
-            OnPropertyChanged(nameof(FechaBaja));
-        }
-    }
-
-    public bool EnFunciones
-    {
-        get
-        {
-            return _enFunciones;
-        }
-
-        set
-        {
-            _enFunciones = value;
-            OnPropertyChanged(nameof(EnFunciones));
-        }
-    }
-    #endregion
-
-    #region DataErrors
-    public IEnumerable GetErrors(string? propertyName) => _errorsByProperty.GetValueOrDefault(propertyName).AsEnumerable();
-    #endregion
+		if (string.Equals("Suplente", value) || string.Equals("Interino", value))
+		{
+			FechaBaja = FechaAlta;
+		}
+	}
 }

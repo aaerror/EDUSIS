@@ -1,23 +1,23 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
 using WPF_Desktop.Navigation;
-using WPF_Desktop.Shared;
-using WPF_Desktop.Store;
+using WPF_Desktop.Store.NavigationStore;
 
-public class GestionLicenciasNavigationService<TViewModel> : INavigationService
-    where TViewModel : ViewModel
+internal class GestionLicenciasNavigationService<TViewModel> : INavigationService
+	where TViewModel : ObservableObject
 {
-    private Func<TViewModel> _viewModelFactory;
-    private NavigationStore _navigationStore;
+	private Func<TViewModel> _viewModelFactory;
+	private MainWindowNavigationStore _navigationStore;
 
 
-    public GestionLicenciasNavigationService(Func<TViewModel> viewModelFactory, NavigationStore navigationStore)
-    {
-        _viewModelFactory = viewModelFactory;
-        _navigationStore = navigationStore;
-    }
+	public GestionLicenciasNavigationService(Func<TViewModel> viewModelFactory, MainWindowNavigationStore navigationStore)
+	{
+		_viewModelFactory = viewModelFactory;
+		_navigationStore = navigationStore;
+	}
 
-    public void Navigate()
-    {
-        _navigationStore.ViewModelActual = _viewModelFactory();
-    }
+	public void Navigate()
+	{
+		_navigationStore.ViewModel = _viewModelFactory();
+	}
 }

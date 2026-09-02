@@ -1,138 +1,57 @@
-﻿using Core.ServicioMaterias.DTOs.Responses;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Core.ServicioCurriculas.DTOs.Responses;
+using System.ComponentModel.DataAnnotations;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using WPF_Desktop.Shared;
-using Core.ServicioMaterias;
-using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 using WPF_Desktop.Store;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 
-public class MateriaViewModel : ViewModel, INotifyDataErrorInfo
+internal partial class MateriaViewModel : ObservableValidator
 {
-    #region Service
-    private readonly IServicioMateria _servicioMateria;
-    #endregion
+	#region Response
+	private readonly MateriaResponse _materiaResponse;
+	#endregion
 
-    #region Response
-    private readonly MateriaResponse _materiaResponse;
-    #endregion
+	[ObservableProperty]
+	private Guid _cursoID = Guid.Empty;
 
-    private Guid _materiaID = Guid.Empty;
-    private string _descripcion = string.Empty;
-    private int _horasCatedra;
-    private int _cargosOcupados;
-    private SituacionRevistaViewModel _situacionRevista = null;
+	[ObservableProperty]
+	private Guid _curriculaID = Guid.Empty;
+
+	[ObservableProperty]
+	private Guid _materiaID = Guid.Empty;
+
+	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe especificar el nombre de la materia.")]
+	[DataType(DataType.Text)]
+	[NotifyDataErrorInfo]
+	[ObservableProperty]
+	private string _descripcion = string.Empty;
+
+	[Required]
+	[ObservableProperty]
+	private int _horasCatedra;
+
+	[ObservableProperty]
+	private int _cargosOcupados;
+
+	[ObservableProperty]
+	private SituacionRevistaViewModel _situacionRevista = null;
 
 
-    private Dictionary<string, List<string>> _errorsByProperty = new();
-    public bool HasErrors => _errorsByProperty.Any();
+	public MateriaViewModel(MateriaResponse materiaResponse)
+	{
+		if (materiaResponse is not null)
+		{
+			_materiaResponse = materiaResponse;
 
-    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
-
-
-    public MateriaViewModel(IServicioMateria servicioMateria, MateriaResponse materiaResponse, MateriaStore materiaStore)
-    {
-        _servicioMateria = servicioMateria;
-
-        if (materiaResponse is not null)
-        {
-            _materiaResponse = materiaResponse;
-
-            MateriaID = _materiaResponse.MateriaID;
-            Descripcion = _materiaResponse.Descripcion;
-            HorasCatedra = _materiaResponse.HorasCatedra;
-            CargosOcupados = _materiaResponse.CargosOcupados;
-            SituacionRevista = _materiaResponse.SituacionRevistaResponse is not null ? new SituacionRevistaViewModel(_materiaResponse.SituacionRevistaResponse) : null;
-        }
-    }
-
-    #region Properties
-    public Guid MateriaID
-    {
-        get
-        {
-            return _materiaID;
-        }
-        private set
-        {
-            _materiaID = value;
-            OnPropertyChanged(nameof(MateriaID));
-        }
-    }
-
-    public string Descripcion
-    {
-        get
-        {
-            return _descripcion;
-        }
-
-        set
-        {
-            _errorsByProperty.Remove(nameof(Descripcion));
-            _descripcion = value;
-            OnPropertyChanged(nameof(Descripcion));
-
-            if (string.IsNullOrWhiteSpace(Descripcion))
-            {
-                _errorsByProperty.Add(nameof(Descripcion), new List<string>
-                {
-                    "Se debe especificar el nombre de la materia."
-                });
-
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Descripcion)));
-            }
-        }
-    }
-
-    public int HorasCatedra
-    {
-        get
-        {
-            return _horasCatedra;
-        }
-
-        set
-        {
-            _horasCatedra = value;
-            OnPropertyChanged(nameof(HorasCatedra));
-        }
-    }
-
-    public int CargosOcupados
-    {
-        get
-        {
-            return _cargosOcupados;
-        }
-
-        set
-        {
-            _cargosOcupados = value;
-            OnPropertyChanged(nameof(CargosOcupados));
-        }
-    }
-
-    public SituacionRevistaViewModel SituacionRevista
-    {
-        get
-        {
-            return _situacionRevista;
-        }
-
-        set
-        {
-            _situacionRevista = value;
-            OnPropertyChanged(nameof(SituacionRevista));
-        }
-    }
-    #endregion
-
-    #region DataErrors
-    public IEnumerable GetErrors(string? propertyName) => _errorsByProperty.GetValueOrDefault(propertyName);
-    #endregion
+			CursoID = _materiaResponse.CursoID;
+			CurriculaID = _materiaResponse.CurriculaID;
+			MateriaID = _materiaResponse.MateriaID;
+			Descripcion = _materiaResponse.Descripcion;
+			HorasCatedra = _materiaResponse.HorasCatedra;
+			CargosOcupados = _materiaResponse.CargosOcupados;
+			SituacionRevista = _materiaResponse.SituacionRevistaResponse is not null ? new SituacionRevistaViewModel(_materiaResponse.SituacionRevistaResponse) : null;
+		}
+	}
 }

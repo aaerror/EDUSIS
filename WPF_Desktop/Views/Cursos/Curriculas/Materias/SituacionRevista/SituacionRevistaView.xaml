@@ -1,100 +1,205 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista.SituacionRevistaView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
-             xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
-             xmlns:domainMaterias="clr-namespace:Domain.Materias;assembly=Domain"
-             xmlns:domainSituacionRevista="clr-namespace:Domain.Materias.CargosDocentes;assembly=Domain"
-             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d">
-    <UserControl.Resources>
-        <converters:CargoConverter x:Key="cargoConverter"/>
-        <BooleanToVisibilityConverter x:Key="booleanConverter"/>
-        <ObjectDataProvider x:Key="cargos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="domainSituacionRevista:Cargo"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-    </UserControl.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition/>
-            <RowDefinition/>
-        </Grid.RowDefinitions>
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
 
-        <!-- DOCENTE -->
-        <Grid Grid.Row="0"
-              Margin="0 0 0 5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+			 xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
+			 xmlns:domainMaterias="clr-namespace:Domain.Curriculas;assembly=Domain"
+			 xmlns:domainSituacionRevista="clr-namespace:Domain.Curriculas.Materias.CargosDocentes;assembly=Domain"
 
-            <StackPanel Grid.Column="0"
-                        Margin="0 0 10 0">
-                <Label Content="Docente"
-                       Style="{ StaticResource ResourceKey=Form }"/>
-                <TextBox Text="{ Binding Path=Docente, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                         IsEnabled="False"
-                         Style="{ StaticResource ResourceKey=TextBox }"/>
-            </StackPanel>
+			 xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+	<!--#region RESOURCES-->
+	<UserControl.Resources>
+		<BooleanToVisibilityConverter x:Key="booleanConverter"/>
+		<converters:NullToBooleanConverter x:Key="nullToBooleanConverter"/>
+		<converters:CargoConverter x:Key="cargoConverter"/>
 
-            <!-- CARGO -->
-            <StackPanel Grid.Column="1"
-                        Margin="10 0 0 0">
-                <Label Content="Cargo en la Materia"
-                       Style="{ StaticResource Form }"/>
-                <!-- ItemsSource="{ Binding Source={ StaticResource ResourceKey=cargos } }" -->
-                <ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=cargos } }"
-                          SelectedItem="{ Binding Path=Cargo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=cargoConverter } }"
-                          Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-                </ComboBox>
-            </StackPanel>
-        </Grid>
+		<ObjectDataProvider x:Key="cargos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+			<ObjectDataProvider.MethodParameters>
+				<x:Type TypeName="domainSituacionRevista:Cargo"/>
+			</ObjectDataProvider.MethodParameters>
+		</ObjectDataProvider>
+	</UserControl.Resources>
+	<!--#endregion-->
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+			<RowDefinition/>
+		</Grid.RowDefinitions>
+		<!--#region SITUACIÓN REVISTA ID-->
+		<StackPanel Grid.Row="0"
+					Margin="0 0 0 10"
+					Visibility="Collapsed">
+			<!--#region LABEL: SituacionRevistaID-->
+			<Label Content="SituacionRevistaID"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+			<!--#endregion-->
+			<!--#region INPUT: SituacionRevistaID-->
+			<TextBox Text="{ Binding Path=SituacionRevistaID, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+					 IsReadOnly="True"
+					 Style="{ StaticResource ResourceKey=TextBox }"/>
+			<!--#endregion-->
+		</StackPanel>
+		<!--#endregion-->
 
-        <Grid Grid.Row="1"
-              Margin="0 5 0 5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+		<!--#region MATERIA ID-->
+		<StackPanel Grid.Row="1"
+					Margin="0 0 0 10"
+					Visibility="Collapsed">
+			<!--#region LABEL: MateriaID-->
+			<Label Content="MateriaID"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+			<!--#endregion-->
+			<!--#region INPUT: MateriaID-->
+			<TextBox Text="{ Binding Path=MateriaID, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+					 IsReadOnly="True"
+					 Style="{ StaticResource ResourceKey=TextBox }"/>
+			<!--#endregion-->
+		</StackPanel>
+		<!--#endregion-->
 
-            <!-- FECHA ALTA -->
-            <StackPanel Grid.Column="0"
-                        Margin="0 0 10 0">
-                <Label Content="Fecha Alta"
-                       Style="{ StaticResource ResourceKey=Form }"/>
-                <DatePicker SelectedDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                            DisplayDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-                            DisplayDateStart="01/01/2000"
-                            DisplayDateEnd="{ x:Static sys:DateTime.Now }"
-                            CalendarStyle="{ StaticResource ResourceKey=Calendar }"
-                            Style="{ StaticResource ResourceKey=DatePicker }"/>
-            </StackPanel>
+		<!--#region DOCENTE ID-->
+		<StackPanel Grid.Row="2"
+					Margin="0 0 0 10"
+					Visibility="Collapsed">
+			<!--#region LABEL: DocenteID-->
+			<Label Content="DocenteID"
+				   Margin="4 0 0 0"
+				   Style="{ StaticResource ResourceKey=Form }"/>
+			<!--#endregion-->
+			<!--#region INPUT: DocenteID-->
+			<TextBox Text="{ Binding Path=DocenteID, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+					 IsReadOnly="True"
+					 Style="{ StaticResource ResourceKey=TextBox }"/>
+			<!--#endregion-->
+		</StackPanel>
+		<!--#endregion-->
 
-            <!-- FECHA BAJA -->
-            <StackPanel Grid.Column="1"
-                        Margin="10 0 0 0"
-                        IsEnabled="{ Binding Path=IsChecked, ElementName=CB_EnFunciones, Converter={ StaticResource ResourceKey=booleanConverter } }"
-                        Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-                <Label Content="Fecha Baja"
-                       Style="{ StaticResource ResourceKey=Form }"/>
-                <TextBox Text="{ Binding Path=FechaBaja, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat='D', ConverterCulture='es_ES', FallbackValue='Sin datos', TargetNullValue='Sin datos', ValidatesOnDataErrors=True }"
-                         IsEnabled="False"
-                         Style="{ StaticResource ResourceKey=TextBox }"/>
-            </StackPanel>
-        </Grid>
+		<Grid Grid.Row="3"
+			  Margin="0 0 0 5">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<!--#region DOCENTE-->
+			<StackPanel Grid.Column="0"
+						Margin="0 0 10 0">
+				<!--#region LABEL: Docente-->
+				<Label Content="Docente"
+					   Margin="4 0 0 0"
+					   Style="{ StaticResource ResourceKey=Form }"/>
+				<!--#endregion-->
+				<!--#region INPUT: Docente-->
+				<TextBox Text="{ Binding Path=Docente, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+						 IsEnabled="False"
+						 Style="{ StaticResource ResourceKey=TextBox }"/>
+				<!--#endregion-->
+			</StackPanel>
+			<!--#endregion-->
+			<!--#region CARGO-->
+			<StackPanel Grid.Column="1"
+						Margin="10 0 0 0">
+				<!--#region LABEL: Cargo-->
+				<Label Content="Cargo en la Materia"
+					   Margin="4 0 0 0"
+					   Style="{ StaticResource Form }"/>
+				<!--#endregion-->
+				<!--#region INPUT: Cargo-->
+				<ComboBox x:Name="ComboBox_Cargo"
+						  ItemsSource="{ Binding Source={ StaticResource ResourceKey=cargos } }"
+						  SelectedItem="{ Binding Path=Cargo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=cargoConverter } }"
+						  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
+				<!--#endregion-->
+			</StackPanel>
+			<!--#endregion-->
+		</Grid>
 
-        <StackPanel Grid.Row="2"
-                    Margin="0 5 0 0">
-            <CheckBox x:Name="CB_EnFunciones"
-                      Content="Está en funciones?"
-                      IsChecked="{ Binding Path=EnFunciones, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                      IsEnabled="False"
-                      Style="{ StaticResource ResourceKey=CheckBox }"/>
-        </StackPanel>
-    </Grid>
+		<Grid Grid.Row="4"
+			  Margin="0 5 0 5">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<!--#region FECHA ALTA-->
+			<StackPanel Grid.Column="0"
+						Margin="0 0 10 0">
+				<!--#region LABEL: Fecha Alta-->
+				<Label Content="Fecha Alta"
+					   Margin="4 0 0 0"
+					   Style="{ StaticResource ResourceKey=Form }"/>
+				<!--#endregion-->
+				<!--#region INPUT: Fecha Alta-->
+				<DatePicker x:Name="DatePicker_FechaAlta"
+							SelectedDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							DisplayDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							DisplayDateStart="{ x:Static sys:DateTime.Now }"
+							CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+							Style="{ StaticResource ResourceKey=DatePicker }"/>
+				<!--#endregion-->
+			</StackPanel>
+			<!--#endregion-->
+			<!--#region FECHA BAJA-->
+			<StackPanel x:Name="StackPanel_FechaBaja"
+						Grid.Column="1"
+						Margin="10 0 0 0"
+						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
+				<StackPanel.Style>
+					<Style TargetType="StackPanel">
+						<Setter Property="IsEnabled" Value="True"/>
+						<!--#region TRIGGERs-->
+						<Style.Triggers>
+							<MultiDataTrigger>
+								<MultiDataTrigger.Conditions>
+									<Condition Binding="{ Binding Path=SelectedDate, Mode=OneWay, ElementName=DatePicker_FechaBaja }"
+											   Value="{ x:Null }"/>
+									<Condition Binding="{ Binding Path=SelectedItem, Mode=OneWay, ElementName=ComboBox_Cargo, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=cargoConverter } }"
+											   Value="Titular"/>
+								</MultiDataTrigger.Conditions>
+								<MultiDataTrigger.Setters>
+									<Setter Property="IsEnabled" Value="False"/>
+								</MultiDataTrigger.Setters>
+							</MultiDataTrigger>
+						</Style.Triggers>
+						<!--#endregion-->
+					</Style>
+				</StackPanel.Style>
+				<!--#region LABEL: Fecha Baja-->
+				<Label Content="Fecha Baja"
+					   Margin="4 0 0 0"
+					   Style="{ StaticResource ResourceKey=Form }"/>
+				<!--#endregion-->
+				<!--#region INPUT: Fecha Baja-->
+				<DatePicker x:Name="DatePicker_FechaBaja"
+							SelectedDate="{ Binding Path=FechaBaja, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							DisplayDateStart="{ Binding Path=FechaAlta, TargetNullValue={ x:Static sys:DateTime.Now }, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+							CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+							Style="{ StaticResource ResourceKey=DatePicker }"/>
+				<!--#endregion-->
+			</StackPanel>
+			<!--#endregion-->
+		</Grid>
+
+		<!--#region ¿EN FUNCIONES?-->
+		<StackPanel Grid.Row="5"
+					Margin="0 5 0 0">
+			<!--#region INPUT: ¿En funciones?-->
+			<CheckBox x:Name="CheckBox_EnFunciones"
+					  Content="¿Está en funciones?"
+					  IsChecked="{ Binding Path=EnFunciones, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+					  IsEnabled="False"
+					  Style="{ StaticResource ResourceKey=CheckBox }"/>
+			<!--#endregion-->
+		</StackPanel>
+		<!--#endregion-->
+	</Grid>
 </UserControl>

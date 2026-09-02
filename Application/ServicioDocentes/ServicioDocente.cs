@@ -1,567 +1,593 @@
 ﻿using Core.ServicioDocentes.DTOs.Requests;
+using Core.ServicioDocentes.DTOs.Responses;
+using Core.Shared.DTOs.Personas.Requests;
+using Core.Shared.DTOs.Personas.Responses;
+using Core.Shared;
+using Domain.Docentes.Puestos;
 using Domain.Docentes;
 using Domain.Personas.Domicilios;
 using Domain.Personas;
-using Infrastructure.Shared;
-using Core.ServicioDocentes.DTOs.Responses;
-using Core.Shared.DTOs.Personas.Requests;
-using Domain.Docentes.Licencias;
-using Microsoft.EntityFrameworkCore;
-using Core.Shared.DTOs.Personas.Responses;
+using Domain.Shared;
 using Microsoft.Extensions.Logging;
-using System.Linq;
 
 namespace Core.ServicioDocentes;
 
-public class ServicioDocente : IServicioDocente
+internal class ServicioDocente : IServicio, IServicioDocente
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<ServicioDocente> _logger;
+	private readonly ILogger<ServicioDocente> _logger;
+	private readonly IUnitOfWork _unitOfWork;
 
 
-    public ServicioDocente(IUnitOfWork unitOfWork, ILogger<ServicioDocente> logger)
-    {
-        _unitOfWork = unitOfWork;
-        _logger = logger;
-    }
+	public ServicioDocente(ILogger<ServicioDocente> logger, IUnitOfWork unitOfWork)
+	{
+		_logger = logger;
+		_unitOfWork = unitOfWork;
+	}
 
-    private Docente BuscarDocentePorID(Guid docenteID)
-    {
-        try
-        {
-            var docente = _unitOfWork.Docentes.BuscarPorID(docenteID);
-            if (docente is null)
-            {
-                throw new NullReferenceException($"No se encontró el docente.");
-            }
+	private async Task<Docente> BuscarDocentePorIDAsync(Guid docenteID)
+	{
+		try
+		{
+			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(docenteID);
 
-            return docente;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			if (docente is null)
+			{
+				throw new NullReferenceException($"No se encontró el docente.");
+			}
 
-    public bool EsCuilInvalido(string cuil)
-    {
-        try
-        {
-            bool esInvalido = true;
-            if (!string.IsNullOrWhiteSpace(cuil))
-            {
-                esInvalido = _unitOfWork.Docentes.EsCuilInvalido(cuil);
-            }
+			return docente;
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-            return esInvalido;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+	#region Docente: Listar, Registrar, Modificar, Eliminar
+	public async Task<PerfilDocenteResponse> VerPerfilDocenteAsync(DocenteIDRequest request)
+	{
+		try
+		{
+			var docente = await BuscarDocentePorIDAsync(request.DocenteID);
 
-    public bool EsDocumentoInvalido(string documento)
-    {
-        try
-        {
-            bool esInvalido = true;
-            if (!string.IsNullOrWhiteSpace(documento))
-            {
-                esInvalido = _unitOfWork.Docentes.EsDocumentoInvalido(documento);
-            }
+			var informacionPersonal = new DatosPersonalesResponse(Apellido: docente.DatosPersonales.Apellido,
+																  Nombre: docente.DatosPersonales.Nombre,
+																  DNI: docente.DatosPersonales.Documento,
+																  Sexo: docente.DatosPersonales.Sexo.ToString(),
+																  FechaNacimiento: docente.DatosPersonales.FechaNacimiento.Date,
+																  Nacionalidad: docente.DatosPersonales.Nacionalidad);
 
-            return esInvalido;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			var domicilio = new DomicilioResponse(Calle: docente.Domicilio.Direccion.Calle,
+												  Altura: docente.Domicilio.Direccion.Altura,
+												  Vivienda: docente.Domicilio.Direccion.Vivienda.ToString(),
+												  Observacion: docente.Domicilio.Direccion.Observacion,
+												  Localidad: docente.Domicilio.Ubicacion.Localidad,
+												  Provincia: docente.Domicilio.Ubicacion.Provincia,
+												  Pais: docente.Domicilio.Ubicacion.Pais);
 
-    public bool EsLegajoInvalido(string legajo)
-    {
-        try
-        {
-            bool esInvalido = true;
-            if (!string.IsNullOrWhiteSpace(legajo))
-            {
-                esInvalido = _unitOfWork.Docentes.EsLegajoInvalido(legajo);
-            }
+			var contacto = new ContactoResponse(Telefono: docente.Telefono,
+												Email: docente.Email);
 
-            return esInvalido;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			return new PerfilDocenteResponse(DocenteID: docente.Id,
+											InformacionPersonalDTO: informacionPersonal,
+											DomicilioDTO: domicilio,
+											ContactoDTO: contacto);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-    #region Docente: Listar, Registrar, Modificar, Eliminar
-    public PerfilPersonalDeDocenteResponse BuscarPerfilPersonalDelDocente(Guid docenteID)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(docenteID);
+	/*public LegajoDocenteResponse BuscarLegajoDocentePorDNI(string documento)
+	{
+		try
+		{
+			var docente = _unitOfWork.Docentes.Buscar(x => x.DatosPersonales.Documento == documento)
+											  .FirstOrDefault();
+			if (docente is null)
+			{
+				throw new NullReferenceException($"No se encontró ningún docente con el D.N.I. { documento }");
+			}
 
-            var informacionPersonal = new InformacionPersonalResponse(
-                Apellido: docente.InformacionPersonal.Apellido,
-                Nombre: docente.InformacionPersonal.Nombre,
-                DNI: docente.InformacionPersonal.Documento,
-                Sexo: (int) docente.InformacionPersonal.Sexo,
-                FechaNacimiento: docente.InformacionPersonal.FechaNacimiento,
-                Nacionalidad: docente.InformacionPersonal.Nacionalidad);
+			return new LegajoDocenteResponse(DocenteID: docente.Id,
+											 NombreCompleto: docente.DatosPersonales.NombreCompleto(),
+				Legajo: docente.Legajo,
+				FechaAlta: docente.FechaAlta,
+				FechaBaja: docente.FechaBaja,
+				CUIL: docente.CUIL,
+				EstaActivo: docente.EstaActivo,
+				Puestos: docente.Puestos.Select(x =>
+					new PuestoResponse(
+						Posicion: x.Posicion,
+						FechaInicio: x.FechaInicio,
+						FechaFin: x.FechaFin))
+				.ToList());
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}*/
 
-            var domicilio = new DomicilioResponse(
-                Calle: docente.Domicilio.Direccion.Calle,
-                Altura: docente.Domicilio.Direccion.Altura,
-                Vivienda: (int) docente.Domicilio.Direccion.Vivienda,
-                Observacion: docente.Domicilio.Direccion.Observacion,
-                Localidad: docente.Domicilio.Ubicacion.Localidad,
-                Provincia: docente.Domicilio.Ubicacion.Provincia,
-                Pais: docente.Domicilio.Ubicacion.Pais);
+	//TODO: ListarDocentesXCargo
 
-            var contacto = new ContactoResponse(
-                Telefono: docente.Telefono, Email: docente.Email);
+	public async Task<IReadOnlyCollection<LegajoDocenteResponse>> ListarDocentesActivosAsync()
+	{
+		try
+		{
+			// TODO: Mejorar performance de la consulta
+			var docentes = await _unitOfWork.Docentes.BuscarAsync(x => x.Activo);
 
-            return new PerfilPersonalDeDocenteResponse(
-                DocenteID: docente.Id,
-                InformacionPersonalDTO: informacionPersonal,
-                DomicilioDTO: domicilio,
-                ContactoDTO: contacto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			_logger.LogInformation($"Se encontraron { docentes.Count() } docentes activos.");
 
-    public LegajoDocenteResponse BuscarLegajoDocentePorDNI(string documento)
-    {
-        try
-        {
-            var docente = _unitOfWork.Docentes.Buscar(x => x.InformacionPersonal.Documento == documento)
-                                              .FirstOrDefault();
-            if (docente is null)
-            {
-                throw new NullReferenceException($"No se encontró ningún docente con el D.N.I. { documento }");
-            }
+			return docentes.Select(x =>
+				new LegajoDocenteResponse(
+					DocenteID: x.Id,
+					NombreCompleto: x.DatosPersonales.NombreCompleto(),
+					DNI: x.DatosPersonales.Documento,
+					CUIL: x.CUIL,
+					Legajo: x.Legajo,
+					FechaInicio: x.Periodo.FechaInicio,
+					FechaFin: x.Periodo.FechaFin,
+					Activo: x.Activo))
+				.ToList();
+				// Puestos: _unitOfWork.Docentes.PuestosPorDocente(x.Id)));
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"Excepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
 
-            return new LegajoDocenteResponse(
-                DocenteID: docente.Id,
-                NombreCompleto: docente.InformacionPersonal.NombreCompleto(),
-                Legajo: docente.Legajo,
-                FechaAlta: docente.FechaAlta,
-                FechaBaja: docente.FechaBaja,
-                CUIL: docente.CUIL,
-                EstaActivo: docente.EstaActivo,
-                Puestos: docente.Puestos.Select(x =>
-                    new PuestoResponse(
-                        Posicion: (int)x.Posicion,
-                        PosicionDescripcion: x.Posicion.ToString(),
-                        FechaInicio: x.FechaInicio,
-                        FechaFin: x.FechaFin))
-                .ToList());
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+	public async Task<IReadOnlyCollection<LegajoDocenteResponse>> BuscarDocenteSegunNombreCompletoAsync(NombreCompletoRequest request)
+	{
+		try
+		{
+			var docentes = await _unitOfWork.Docentes.BuscarSegunNombreCompletoAsync(request.NombreCompleto);
 
-    //TODO: ListarDocentesXCargo
+			_logger.LogInformation($"Se encontraron { docentes.Count() } docentes con coincidencias en el nombre completo.");
 
-    public IReadOnlyCollection<LegajoDocenteResponse> ListarDocentesActivos()
-    {
-        try
-        {
-            var docentes = _unitOfWork.Docentes.Buscar(x => !x.FechaBaja.HasValue);
+			return docentes.Select(x =>
+				new LegajoDocenteResponse(
+					DocenteID: x.Id,
+					NombreCompleto: x.DatosPersonales.NombreCompleto(),
+					DNI: x.DatosPersonales.Documento,
+					CUIL: x.CUIL,
+					Legajo: x.Legajo,
+					FechaInicio: x.Periodo.FechaInicio,
+					FechaFin: x.Periodo.FechaFin,
+					Activo: x.Activo))
+				.ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-            return docentes.Select(x =>
-                new LegajoDocenteResponse(DocenteID: x.Id,
-                                          NombreCompleto: x.InformacionPersonal.NombreCompleto(),
-                                          Legajo: x.Legajo,
-                                          FechaAlta: x.FechaAlta,
-                                          FechaBaja: x.FechaBaja,
-                                          CUIL: x.CUIL,
-                                          EstaActivo: x.EstaActivo,
-                                          Puestos: x.Puestos.Select(p =>
-                                            new PuestoResponse(Posicion: (int)p.Posicion,
-                                                               PosicionDescripcion: p.Posicion.ToString(),
-                                                               FechaInicio: p.FechaInicio.Date,
-                                                               FechaFin: p.FechaFin))
-                                            .ToList()))
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"Excepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+	public async Task<IReadOnlyCollection<LegajoDocenteResponse>> ListarPreceptoresActivosAsync()
+	{
+		try
+		{
+			var preceptores = await _unitOfWork.Docentes.BuscarAsync(x => x.Puesto.Posicion.Equals(Posicion.Preceptor) && x.Puesto.EstaActivo());
 
-    public IReadOnlyCollection<LegajoDocenteResponse> BuscarLegajoDocentePorApellidoNombre(BuscarDocentePorApellidoNombreRequest request)
-    {
-        try
-        {
-            var docentes = _unitOfWork.Docentes.Buscar(x =>
-                EF.Functions.Like(x.InformacionPersonal.Nombre.Trim().ToLower(), $"%{ request.NombreCompleto.Trim().ToLower() }%") ||
-                EF.Functions.Like(x.InformacionPersonal.Apellido.Trim().ToLower(), $"%{ request.NombreCompleto.Trim().ToLower() }%"));
+			_logger.LogInformation($"Se encontraron { preceptores.Count() } preceptores activos.");
 
-            return docentes.Select(x =>
-                new LegajoDocenteResponse(DocenteID: x.Id,
-                                          NombreCompleto: x.InformacionPersonal.NombreCompleto(),
-                                          Legajo: x.Legajo,
-                                          FechaAlta: x.FechaAlta,
-                                          FechaBaja: x.FechaBaja,
-                                          CUIL: x.CUIL,
-                                          EstaActivo: x.EstaActivo,
-                                          Puestos: x.Puestos.Select(p =>
-                                            new PuestoResponse(Posicion: (int)p.Posicion,
-                                                               PosicionDescripcion: p.Posicion.ToString(),
-                                                               FechaInicio: p.FechaInicio.Date,
-                                                               FechaFin: p.FechaFin))
-                                          .ToList()))
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			return preceptores.Select(x =>
+				new LegajoDocenteResponse(
+					DocenteID: x.Id,
+					NombreCompleto: x.DatosPersonales.NombreCompleto(),
+					DNI: x.DatosPersonales.Documento,
+					CUIL: x.CUIL,
+					Legajo: x.Legajo,
+					FechaInicio: x.Periodo.FechaInicio,
+					FechaFin: x.Periodo.FechaFin,
+					Activo: x.Activo))
+				.ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"Excepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
 
-    public DocenteConPuestosResponse BuscarDocenteConPuestos(Guid docenteID)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(docenteID);
+	public async Task<LegajoDocenteResponse> MostrarLegajoDocenteAsync(DocenteIDRequest request)
+	{
+		try
+		{
+			var docente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
 
-            var response = new DocenteConPuestosResponse(docenteID,
-                                                         docente.Legajo,
-                                                         docente.InformacionPersonal.Documento,
-                                                         docente.InformacionPersonal.NombreCompleto(),
-                                                         docente.Puestos.Select(x => new PuestoResponse((int)x.Posicion, x.Posicion.ToString(), x.FechaInicio, x.FechaFin)).ToList());
-            return response;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			return new LegajoDocenteResponse(
+				DocenteID: docente.Id,
+				NombreCompleto: docente.DatosPersonales.NombreCompleto(),
+				DNI: docente.DatosPersonales.Documento,
+				CUIL: docente.CUIL,
+				Legajo: docente.Legajo,
+				FechaInicio: docente.Periodo.FechaInicio,
+				FechaFin: docente.Periodo.FechaFin,
+				Activo: docente.Activo);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-    public void RegistrarDocente(RegistrarDocenteRequest request)
-    {
-        try
-        {
-            if (request is null)
-            {
-                throw new NullReferenceException("Datos incompletos para registrar el docente.");
-            }
+	public async Task RegistrarDocenteAsync(RegistrarDocenteRequest request)
+	{
+		try
+		{
+			if (request is null)
+			{
+				throw new NullReferenceException("Datos incompletos para registrar el docente.");
+			}
 
-            var informacionPersonal = InformacionPersonal.Crear(
-                apellido: request.Apellido,
-                nombre: request.Nombre,
-                dni: request.DNI,
-                sexo: request.Sexo,
-                fechaNacimiento: request.FechaNacimiento,
-                nacionalidad: request.Nacionalidad);
+			var esDNIInvalido = await _unitOfWork.Docentes.EsDocumentoInvalidoAsync(request.DatosPersonales.Documento);
+			if (esDNIInvalido)
+			{
+				_logger.LogInformation($"D.N.I. del docente inválido...");
+				throw new ArgumentException("El D.N.I. del docente ya se encuentra registrado.");
+			}
 
-            var domicilio = Domicilio.Crear(
-                calle: request.Calle,
-                altura: request.Altura,
-                vivienda: request.Vivienda,
-                observacion: request.Observacion,
-                localidad: request.Localidad,
-                provincia: request.Provincia,
-                pais: request.Pais);
+			var esCUILInvalido = await _unitOfWork.Docentes.EsCuilInvalidoAsync(request.CUIL);
+			if (esCUILInvalido)
+			{
+				_logger.LogInformation($"CUIL del docente inválido...");
+				throw new ArgumentException("El CUIL del docente ya se encuentra registrado.");
+			}
+			
+			var esLegajoInvalido = await _unitOfWork.Docentes.EsLegajoInvalidoAsync(request.Legajo);
+			if (esLegajoInvalido)
+			{
+				_logger.LogInformation($"Legajo del docente inválido...");
+				throw new ArgumentException("El legajo docente ya se encuentra registrado.");
+			}
 
-            var nuevoDocente = new Docente(
-                legajo: request.Legajo,
-                cuil: request.CUIL,
-                fechaAlta: request.FechaAlta,
-                informacionPersonal: informacionPersonal,
-                domicilio: domicilio,
-                email: request.Email,
-                telefono: request.Telefono);
+			var datosPersonales = DatosPersonales.Crear(apellido: request.DatosPersonales.Apellido,
+														nombre: request.DatosPersonales.Nombre,
+														dni: request.DatosPersonales.Documento,
+														sexo: request.DatosPersonales.Sexo,
+														fechaNacimiento: request.DatosPersonales.FechaNacimiento,
+														nacionalidad: request.DatosPersonales.Nacionalidad);
 
-            nuevoDocente.AgregarPuesto((Posicion) request.Puesto.Posicion, request.Puesto.FechaInicio);
+			var domicilio = Domicilio.Crear(calle: request.Domicilio.Calle,
+											altura: request.Domicilio.Altura,
+											vivienda: request.Domicilio.Vivienda,
+											observacion: request.Domicilio.Observacion,
+											localidad: request.Domicilio.Localidad,
+											provincia: request.Domicilio.Provincia,
+											pais: request.Domicilio.Pais);
 
-            _unitOfWork.Docentes.AgregarAsync(nuevoDocente);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			var nuevoDocente = new Docente(legajo: request.Legajo,
+										   cuil: request.CUIL,
+										   fechaAlta: request.FechaAlta,
+										   datosPersonales: datosPersonales,
+										   domicilio: domicilio,
+										   email: request.Contacto.Email,
+										   telefono: request.Contacto.Telefono);
 
-    public void ModificarContacto(CambiarContactoRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.PersonaID);
-            docente.CambiarContacto(request.Email, request.Telefono);
+			nuevoDocente.AsignarCargoDocente(request.Puesto.Posicion, request.Puesto.Estado, request.Puesto.FechaInicio, request.Puesto.FechaFin);
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			await _unitOfWork.Docentes.AgregarAsync(nuevoDocente);
+			await _unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-    public void ModificarDomicilio(CambiarDomicilioRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.PersonaID);
-            var nuevoDomicilio = Domicilio.Crear(request.Calle, request.Altura, request.Vivienda, request.Observacion, request.Localidad, request.Provincia, request.Pais);
-            docente.CambiarDomicilio(nuevoDomicilio);
+	public async Task ActualizarContacto(CambiarContactoRequest request)
+	{
+		try
+		{
+			_logger.LogInformation($"Actualizando datos de contacto del docente...");
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			var unDocente = await BuscarDocentePorIDAsync(request.PersonaID);
+			unDocente.CambiarContacto(request.Email, request.Telefono);
 
-    public void ModificarSexo(CambiarSexoRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.PersonaID);
-            docente.CambiarSexo(request.Apellido, request.Nombre, request.Sexo);
+			_unitOfWork.Docentes.Modificar(unDocente);
+			await _unitOfWork.GuardarCambiosAsync();
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			_logger.LogInformation($"Datos de contactos actualizados correctamente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-    public void QuitarDocente(Guid docenteID)
-    {
-        try
-        {
-            _unitOfWork.Docentes.Eliminar(docenteID);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
-    #endregion
+	public async Task ActualizarDomicilio(CambiarDomicilioRequest request)
+	{
+		try
+		{
+			_logger.LogInformation($"Actualizando domicilio del docente...");
 
-    #region Licencias
-    public IReadOnlyCollection<LicenciaResponse> BuscarLicencias(Guid docenteID)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(docenteID);
-            return docente.Licencias.Select(x => new LicenciaResponse((int) x.Articulo,
-                                                                      (int) x.Estado,
-                                                                      x.Dias,
-                                                                      x.FechaInicio,
-                                                                      x.FechaFin,
-                                                                      x.Observacion)).ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+			var unDocente = await BuscarDocentePorIDAsync(request.PersonaID);
 
-    public LicenciaResponse RegistrarLicencia(RegistrarLicenciaDocenteRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.DocenteID);
+			var nuevoDomicilio = Domicilio.Crear(
+				request.Calle,
+				request.Altura,
+				request.Vivienda,
+				request.Observacion,
+				request.Localidad,
+				request.Provincia,
+				request.Pais);
+			unDocente.CambiarDomicilio(nuevoDomicilio);
 
-            var licenciaRegistrada = docente.RegistrarLicencia(request.Articulo, request.Dias, request.FechaInicio, request.Observacion);
+			_unitOfWork.Docentes.Modificar(unDocente);
+			await _unitOfWork.GuardarCambiosAsync();
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
+			_logger.LogInformation($"Domicilio actualizado correctamente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-            return new LicenciaResponse((int) licenciaRegistrada.Articulo,
-                                        (int) licenciaRegistrada.Estado,
-                                        licenciaRegistrada.Dias,
-                                        licenciaRegistrada.FechaInicio,
-                                        licenciaRegistrada.FechaFin,
-                                        licenciaRegistrada.Observacion);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-        
-    }
+	public async Task ActualizarSexo(CambiarSexoRequest request)
+	{
+		try
+		{
+			_logger.LogInformation($"Actualizando datos de sexo del docente...");
 
-    public void AprobarLicencia(EditarEstadoLicenciaRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.DocenteID);
+			var unDocente = await BuscarDocentePorIDAsync(request.PersonaID);
+			unDocente.CambiarSexo(request.Apellido, request.Nombre, request.Sexo);
 
-            docente.AprobarLicencia(request.Articulo, request.Dias, request.FechaInicio);
+			_unitOfWork.Docentes.Modificar(unDocente);
+			await _unitOfWork.GuardarCambiosAsync();
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+			_logger.LogInformation($"Sexo actualizado correctamente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-    public void CancelarLicencia(EditarEstadoLicenciaRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.DocenteID);
+	public async void QuitarDocente(DocenteIDRequest request)
+	{
+		try
+		{
+			var unDocente = await BuscarDocentePorIDAsync(request.DocenteID);
+			unDocente.Desafectar();
 
-            docente.CancelarLicencia(request.Articulo, request.Dias, request.FechaInicio, request.Observacion);
+			// _unitOfWork.Docentes.Eliminar(docenteID);
+			_unitOfWork.Docentes.Modificar(unDocente);
+			await _unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+	#endregion
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+	/*
+	#region Licencias
 
-    public LicenciaResponse ModificarLicencia(EditarLicenciaRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.DocenteID);
+	public LicenciaResponse RegistrarLicencia(RegistrarLicenciaDocenteRequest request)
+	{
+		try
+		{
+			Docente docente = BuscarDocentePorID(request.DocenteID);
 
-            Licencia unaLicencia = Licencia.Crear((Articulo) request.Licencia.Articulo, request.Licencia.Dias, request.Licencia.FechaInicio, request.Licencia.Observacion);
-            unaLicencia = docente.ActualizarLicencia(unaLicencia, request.Articulo, request.Dias, request.FechaInicio, request.Observacion);
+			var licenciaRegistrada = docente.RegistrarLicencia(request.Articulo, request.Dias, request.FechaInicio, request.Observacion);
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
+			_unitOfWork.Docentes.Modificar(docente);
+			_unitOfWork.GuardarCambiosAsync();
 
-            return new LicenciaResponse((int) unaLicencia.Articulo,
-                                        (int) unaLicencia.Estado,
-                                        unaLicencia.Dias,
-                                        unaLicencia.FechaInicio,
-                                        unaLicencia.FechaFin,
-                                        unaLicencia.Observacion);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
-    #endregion
+			return new LicenciaResponse((int) licenciaRegistrada.Articulo,
+										(int) licenciaRegistrada.Estado,
+										licenciaRegistrada.Dias,
+										licenciaRegistrada.FechaInicio,
+										licenciaRegistrada.FechaFin,
+										licenciaRegistrada.Observacion);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+		
+	}
 
-    #region Puestos
-    public IReadOnlyCollection<PuestoResponse> BuscarPuestos(Guid docenteID)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(docenteID);
-            return docente.Puestos.Select(x => new PuestoResponse((int) x.Posicion,
-                                                                  x.Posicion.ToString(),
-                                                                  x.FechaInicio,
-                                                                  x.FechaFin)).ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+	public void AprobarLicencia(EditarEstadoLicenciaRequest request)
+	{
+		try
+		{
+			Docente docente = BuscarDocentePorID(request.DocenteID);
 
-    public PuestoResponse AsignarPuestoDocente(CrearPuestoDocenteRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.DocenteID);
-            var puestoAgregado = docente.AgregarPuesto((Posicion) request.Posicion, request.FechaInicio);
+			docente.AprobarLicencia(request.Articulo, request.Dias, request.FechaInicio);
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
+			_unitOfWork.Docentes.Modificar(docente);
+			_unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			throw;
+		}
+	}
 
-            return new PuestoResponse((int) puestoAgregado.Posicion,
-                                             puestoAgregado.Posicion.ToString(),
-                                             puestoAgregado.FechaInicio,
-                                             puestoAgregado.FechaFin);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+	public void CancelarLicencia(EditarEstadoLicenciaRequest request)
+	{
+		try
+		{
+			Docente docente = BuscarDocentePorID(request.DocenteID);
 
-    public PuestoResponse CambiarPuestoDocente(CrearPuestoDocenteRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.DocenteID);
-            var puestoModificado = docente.CambiarPuesto((Posicion) request.Posicion, request.FechaInicio);
+			docente.CancelarLicencia(request.Articulo, request.Dias, request.FechaInicio, request.Observacion);
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
+			_unitOfWork.Docentes.Modificar(docente);
+			_unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
 
-            return new PuestoResponse((int)puestoModificado.Posicion,
-                                             puestoModificado.Posicion.ToString(),
-                                             puestoModificado.FechaInicio,
-                                             puestoModificado.FechaFin);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
+	public LicenciaResponse ModificarLicencia(EditarLicenciaRequest request)
+	{
+		try
+		{
+			Docente docente = BuscarDocentePorID(request.DocenteID);
 
-    public PuestoResponse QuitarPuestoDocente(EliminarPuestoDocenteRequest request)
-    {
-        try
-        {
-            Docente docente = BuscarDocentePorID(request.DocenteID);
+			Licencia unaLicencia = Licencia.Crear((Articulo) request.Licencia.Articulo, request.Licencia.Dias, request.Licencia.FechaInicio, request.Licencia.Observacion);
+			unaLicencia = docente.ActualizarLicencia(unaLicencia, request.Articulo, request.Dias, request.FechaInicio, request.Observacion);
 
-            var puestoEliminado = docente.QuitarPuesto(request.Puesto, request.FechaInicio);
+			_unitOfWork.Docentes.Modificar(docente);
+			_unitOfWork.GuardarCambiosAsync();
 
-            _unitOfWork.Docentes.Modificar(docente);
-            _unitOfWork.GuardarCambiosAsync();
+			return new LicenciaResponse((int) unaLicencia.Articulo,
+										(int) unaLicencia.Estado,
+										unaLicencia.Dias,
+										unaLicencia.FechaInicio,
+										unaLicencia.FechaFin,
+										unaLicencia.Observacion);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
+	#endregion
+	*/
 
-            return new PuestoResponse((int) puestoEliminado.Posicion,
-                                            puestoEliminado.Posicion.ToString(),
-                                            puestoEliminado.FechaInicio,
-                                            puestoEliminado.FechaFin);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
-            throw;
-        }
-    }
-    #endregion
+	#region Puestos
+	public async Task<IReadOnlyCollection<PuestoResponse>> ListarPuestosDocentesAsync(DocenteIDRequest request)
+	{
+		try
+		{
+			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+
+			return unDocente.Puestos.Select(x =>
+				new PuestoResponse(
+					PuestoID: x.Id,
+					Estado: x.Estado.ToString(),
+					Posicion: x.Posicion.ToString(),
+					EsEventual: x.EsEventual,
+					FechaInicio: x.Periodo.FechaInicio,
+					FechaFin: x.Periodo.FechaFin,
+					Activo: x.EstaActivo())).ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
+
+	public async Task AgregarPuestoDocenteAsync(RegistrarPuestoDocenteRequest request)
+	{
+		try
+		{
+			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			unDocente.AsignarCargoDocente(request.Posicion, request.Estado, request.FechaInicio, request.FechaFin);
+
+			_unitOfWork.Docentes.Modificar(unDocente);
+			await _unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	public async Task EditarPuestoDocenteAsync(EditarPuestoDocenteRequest request)
+	{
+		try
+		{
+			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			unDocente.ModificarCargoDocente(request.PuestoID, request.Posicion, request.FechaInicio, request.FechaFin);
+
+			_unitOfWork.Docentes.Modificar(unDocente);
+			await _unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
+
+	/*public PuestoResponse CambiarPuestoDocente(NuevoPuestoDocenteRequest request)
+	{
+		try
+		{
+			Docente docente = BuscarDocentePorID(request.DocenteID);
+			var puestoModificado = docente.ModificarCargoDocente((Posicion) request.Posicion, request.FechaInicio);
+
+			_unitOfWork.Docentes.Modificar(docente);
+			_unitOfWork.GuardarCambiosAsync();
+
+			return new PuestoResponse(puestoModificado.Posicion,
+									  puestoModificado.FechaInicio,
+									  puestoModificado.FechaFin);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}*/
+
+	public async Task RevocarPuestoDocenteAsync(RevocarPuestoDocenteRequest request)
+	{
+		try
+		{
+			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			unDocente.RescindirCargoDocente(request.PuestoID, request.FechaFin);
+
+			_logger.LogInformation($"\nRevocando puesto docente...\nPuestoID: {request.PuestoID}");
+
+			_unitOfWork.Docentes.Modificar(unDocente);
+			var result = await _unitOfWork.GuardarCambiosAsync();
+
+			_logger.LogInformation($"{ result } registro modificado correctamente en el docente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	public async Task EliminarPuestoDocenteAsync(EliminarPuestoDocenteRequest request)
+	{
+		try
+		{
+			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			unDocente.EliminarCargoDocente(request.PuestoID);
+
+			_logger.LogInformation($"\nEliminando puesto docente...\nPuestoID: { request.PuestoID }");
+
+			_unitOfWork.Docentes.Modificar(unDocente);
+			var result = await _unitOfWork.GuardarCambiosAsync();
+
+			_logger.LogInformation($"{ result } registro modificado correctamente en el docente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
+	#endregion
 }

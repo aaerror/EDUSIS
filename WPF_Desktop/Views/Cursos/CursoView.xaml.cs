@@ -4,8 +4,8 @@ namespace WPF_Desktop.Views.Cursos;
 
 public partial class CursoView : UserControl
 {
-    public CursoView()
-    {
-        InitializeComponent();
-    }
+	public CursoView()
+	{
+		InitializeComponent();
+	}
 }

@@ -1,243 +1,258 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Alumnos.RegistrarAlumnoView"
-             xmlns:local="clr-namespace:WPF_Desktop.Views.Alumnos"
-             xmlns:cursoViews="clr-namespace:WPF_Desktop.Views.Cursos"
-             xmlns:divisionViews="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
-             xmlns:shared="clr-namespace:WPF_Desktop.Views.Shared"
-             xmlns:domainCursos="clr-namespace:Domain.Cursos;assembly=Domain"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             xmlns:components="clr-namespace:WPF_Desktop.Components"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" >
-    <ContentControl.Resources>
-        <ObjectDataProvider x:Key="nivelEducativo" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="domainCursos:NivelEducativo"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-    </ContentControl.Resources>
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Alumnos"
+			 xmlns:cursoViews="clr-namespace:WPF_Desktop.Views.Cursos"
+			 xmlns:divisionViews="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
+			 xmlns:shared="clr-namespace:WPF_Desktop.Views.Shared"
+			 xmlns:domainCursos="clr-namespace:Domain.Cursos;assembly=Domain"
+			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+			 xmlns:components="clr-namespace:WPF_Desktop.Components"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008" >
+	<ContentControl.Resources>
+		<ObjectDataProvider x:Key="nivelEducativo" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+			<ObjectDataProvider.MethodParameters>
+				<x:Type TypeName="domainCursos:NivelEducativo"/>
+			</ObjectDataProvider.MethodParameters>
+		</ObjectDataProvider>
+	</ContentControl.Resources>
 
-    <!-- MAIN -->
-    <Grid x:Name="MainContainer">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+	<Grid x:Name="MainContainer">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
 
-        <!-- TITTLE AND SUBTITLE -->
-        <components:Header Grid.Row="0"
-                           Title="Gestión de Alumnos"
-                           Subtitle="Registrar un alumno"/>
+		<!--#region TITTLE & SUBTITLE-->
+		<components:Header Grid.Row="0"
+						   Title="Gestión de Alumnos"
+						   Subtitle="Registrar un alumno"/>
+		<!--#endregion-->
 
-        <!-- INPUTS -->
-        <Border Grid.Row="1"
-                Background="#FFFFFF"
-                BorderBrush="{ StaticResource Gray200 }"
-                BorderThickness="1"
-                CornerRadius="4"
-                Margin="20 10"
-                Padding="10 5 10 10"
-                VerticalAlignment="Top">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="15"
-                                  Color="#373737"
-                                  ShadowDepth="5"
-                                  Opacity=".3"/>
-            </Border.Effect>
+		<Border Grid.Row="1"
+				Background="#FFFFFF"
+				BorderBrush="{ StaticResource Gray200 }"
+				BorderThickness="1"
+				CornerRadius="4"
+				Margin="20 10"
+				Padding="10 5 10 10"
+				VerticalAlignment="Top">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="15"
+								  Color="#373737"
+								  ShadowDepth="5"
+								  Opacity=".3"/>
+			</Border.Effect>
 
-            <TabControl SelectedIndex="{ Binding Path=Tab, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                        Padding="10">
-                <!-- DATOS PERSONALES -->
-                <TabItem Header="Datos Personales"
-                         FontSize="14"
-                         FontWeight="SemiBold"
-                         IsEnabled="False"
-                         Padding="10 5">
-                    <ScrollViewer Margin="0 -10 -10 -10"
-                                  VerticalScrollBarVisibility="Auto">
-                        <Grid Margin="10 5 20 10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+			<TabControl SelectedIndex="{ Binding Path=Tab, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+						Padding="10">
+				<!--#region TAB: Datos Personales-->
+				<TabItem Header="Datos Personales"
+						 FontSize="14"
+						 FontWeight="SemiBold"
+						 IsEnabled="False"
+						 Padding="10 5">
+					<ScrollViewer Margin="0 -10 -10 -10"
+								  VerticalScrollBarVisibility="Auto">
+						<Grid Margin="10 5 20 10">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
 
-                            <Grid.RowDefinitions>
-                                <RowDefinition/>
-                                <RowDefinition/>
-                                <RowDefinition/>
-                            </Grid.RowDefinitions>
+							<Grid.RowDefinitions>
+								<RowDefinition/>
+								<RowDefinition/>
+								<RowDefinition/>
+							</Grid.RowDefinitions>
 
-                            <!-- INFORMACIÓN PERSONAL -->
-                            <shared:InformacionPersonalView Grid.Column="0"
-                                                            Grid.Row="0"
-                                                            DataContext="{ Binding Path=InformacionPersonalViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                            Margin="0 5 10 10"/>
-                            <!-- DOMICILIO -->
-                            <shared:DomicilioView Grid.Column="1"
-                                                  Grid.Row="0"
-                                                  DataContext="{ Binding Path=DomicilioViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                                  Margin="10 5 0 10"/>
-                            <!-- CONTACTO -->
-                            <shared:ContactoView Grid.ColumnSpan="2"
-                                                 Grid.Row="1"
-                                                 Margin="0 10"
-                                                 DataContext="{ Binding Path=ContactoViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+							<!--#region INFORMACIÓN PERSONAL-->
+							<shared:InformacionPersonalView Grid.Column="0"
+															Grid.Row="0"
+															DataContext="{ Binding Path=InformacionPersonal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+															Margin="0 5 10 10"
+															Validation.ErrorTemplate="{ x:Null }"/>
+							<!--#endregion-->
 
-                            <StackPanel Grid.ColumnSpan="2"
-                                        Grid.Row="2"
-                                        Margin="0 10 0 0">
-                                <WrapPanel HorizontalAlignment="Right">
-                                    <Button Command="{ Binding Path=ContinuarCommand }"
-                                            Content="Continuar"
-                                            Style="{ StaticResource Tertiary }"/>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Grid>
-                    </ScrollViewer>
-                </TabItem>
+							<!--#region DOMICILIO-->
+							<shared:DomicilioView Grid.Column="1"
+												  Grid.Row="0"
+												  DataContext="{ Binding Path=Domicilio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+												  Margin="10 5 0 10"
+												  Validation.ErrorTemplate="{ x:Null }"/>
+							<!--#endregion-->
 
-                <!-- INSTITUCIÓN -->
-                <TabItem Header="Institución"
-                         FontSize="14"
-                         FontWeight="SemiBold"
-                         IsEnabled="True"
-                         Padding="10 5">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Grid.ColumnSpan="2"
-                                    Grid.Row="3">
-                            <Grid Margin="10 5 10 10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition/>
-                                    <ColumnDefinition/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                </Grid.RowDefinitions>
+							<!--#region CONTACTO-->
+							<shared:ContactoView Grid.ColumnSpan="2"
+												 Grid.Row="1"
+												 Margin="0 10"
+												 DataContext="{ Binding Path=Contacto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+												 Validation.ErrorTemplate="{ x:Null }"/>
+							<!--#endregion-->
 
-                                <!-- TITLE -->
-                                <StackPanel Grid.ColumnSpan="2"
-                                            Grid.Row="0"
-                                            Margin="0 0 0 5">
-                                    <Label Content="Inscripción en el Curso"
-                                           Style="{ StaticResource Headline }"/>
-                                    <Separator Background="{ StaticResource Gray400 }"
-                                               Height=".8"
-                                               Width="Auto"/>
-                                </StackPanel>
+							<!--#region COMMANDS-->
+							<StackPanel Grid.ColumnSpan="2"
+										Grid.Row="2"
+										Margin="0 10 0 0">
+								<WrapPanel HorizontalAlignment="Right">
+									<Button Command="{ Binding Path=ContinuarCommand }"
+											Content="Continuar"
+											Style="{ StaticResource ResourceKey=Tertiary }"/>
+								</WrapPanel>
+							</StackPanel>
+							<!--#endregion-->
+						</Grid>
+					</ScrollViewer>
+				</TabItem>
+				<!--#endregion-->
 
-                                <!-- CURSOS -->
-                                <StackPanel Grid.Column="0"
-                                            Grid.Row="1"
-                                            Margin="0 5 10 10">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition/>
-                                            <RowDefinition/>
-                                        </Grid.RowDefinitions>
+				<!--#region TAB: Institución-->
+				<TabItem Header="Institución"
+						 FontSize="14"
+						 FontWeight="SemiBold"
+						 IsEnabled="True"
+						 Padding="10 5">
+					<ScrollViewer VerticalScrollBarVisibility="Auto">
+						<StackPanel Grid.ColumnSpan="2"
+									Grid.Row="3">
+							<Grid Margin="10 5 10 10">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition/>
+									<ColumnDefinition/>
+								</Grid.ColumnDefinitions>
+								<Grid.RowDefinitions>
+									<RowDefinition/>
+									<RowDefinition/>
+									<RowDefinition/>
+								</Grid.RowDefinitions>
 
-                                        <StackPanel Grid.Row="0"
-                                                    Margin="0 0 0 5">
-                                            <Label Content="Cursos"
-                                                   Style="{ StaticResource ResourceKey=Form }"/>
-                                            <ComboBox x:Name="ComboBox_Cursos"
-                                                      ItemsSource="{ Binding Path=Cursos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                                      SelectedItem="{ Binding Path=CursoViewModel, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
-                                                      Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock Text="{ Binding Path=Descripcion, StringFormat={}{0}° Año }"
-                                                                       Margin="0 0 2 0"/>
-                                                            <TextBlock Text="{ Binding Path=NivelEducativo, StringFormat={}({0})}"
-                                                                       Margin="2 0 0 0"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
-                                        </StackPanel>
+								<StackPanel Grid.ColumnSpan="2"
+											Grid.Row="0"
+											Margin="0 0 0 5">
+									<Label Content="Inscripción en el Curso"
+										   Style="{ StaticResource Headline }"/>
+									<Separator Background="{ StaticResource Gray400 }"
+											   Height=".8"
+											   Width="Auto"/>
+								</StackPanel>
 
-                                        <StackPanel Grid.Row="1"
-                                                    Margin="0 5 0 0">
-                                            <Expander Header="Información adicional del Curso"
-                                                      Padding="0 5">
-                                                <cursoViews:CursoView DataContext="{ Binding Path=SelectedItem, ElementName=ComboBox_Cursos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                                                      Margin="10 0 10 0"
-                                                                      IsEnabled="False"/>
-                                            </Expander>
-                                        </StackPanel>
-                                    </Grid>
-                                </StackPanel>
+								<!--#region CURSOS-->
+								<StackPanel Grid.Column="0"
+											Grid.Row="1"
+											Margin="0 5 10 10">
+									<Grid>
+										<Grid.RowDefinitions>
+											<RowDefinition/>
+											<RowDefinition/>
+										</Grid.RowDefinitions>
 
-                                <!-- DIVISIONES -->
-                                <StackPanel Grid.Column="1"
-                                            Grid.Row="1"
-                                            Margin="10 5 0 10">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition/>
-                                            <RowDefinition/>
-                                        </Grid.RowDefinitions>
-                                        
-                                        <StackPanel Grid.Row="0"
-                                                    Margin="0 0 0 5">
-                                            <Label Content="Divisiones"
-                                                   Style="{ StaticResource ResourceKey=Form }"/>
-                                            <ComboBox x:Name="ComboBox_Divisiones"
-                                                      ItemsSource="{ Binding Path=Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                                      SelectedItem="{ Binding Path=DivisionViewModel, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
-                                                      Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <TextBlock Text="{ Binding Path=DivisionDescripcion }"
-                                                                   Margin="0 0 2 0"/>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
-                                        </StackPanel>
+										<StackPanel Grid.Row="0"
+													Margin="0 0 0 5">
+											<Label Content="Cursos"
+												   Style="{ StaticResource ResourceKey=Form }"/>
+											<ComboBox x:Name="ComboBox_Cursos"
+													  ItemsSource="{ Binding Path=Cursos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+													  SelectedItem="{ Binding Path=CursoViewModel, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+													  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
+												<ComboBox.ItemTemplate>
+													<DataTemplate>
+														<StackPanel Orientation="Horizontal">
+															<TextBlock Text="{ Binding Path=Descripcion, StringFormat={}{0}° Año }"
+																	   Margin="0 0 2 0"/>
+															<TextBlock Text="{ Binding Path=NivelEducativo, StringFormat={}({0})}"
+																	   Margin="2 0 0 0"/>
+														</StackPanel>
+													</DataTemplate>
+												</ComboBox.ItemTemplate>
+											</ComboBox>
+										</StackPanel>
 
-                                        <StackPanel Grid.Row="1"
-                                                    Margin="0 5 0 0">
-                                            <Expander Header="Información adicional de la División"
-                                                      Padding="0 5">
-                                                <divisionViews:DivisionView DataContext="{ Binding Path=SelectedItem, ElementName=ComboBox_Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-                                                                            Padding="10 0 10 10"
-                                                                            IsEnabled="False"/>
-                                            </Expander>
-                                        </StackPanel>
-                                    </Grid>
-                                </StackPanel>
+										<StackPanel Grid.Row="1"
+													Margin="0 5 0 0">
+											<Expander Header="Información adicional del Curso"
+													  Padding="0 5">
+												<cursoViews:CursoView DataContext="{ Binding Path=SelectedItem, ElementName=ComboBox_Cursos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+																	  Margin="10 0 10 0"
+																	  IsEnabled="False"/>
+											</Expander>
+										</StackPanel>
+									</Grid>
+								</StackPanel>
+								<!--#endregion-->
 
-                                <!-- CICLO LECTIVO -->
-                                <StackPanel Grid.Column="0"
-                                            Grid.Row="2"
-                                            Margin="0 10 0 0">
-                                    <Label Content="Ciclo Lectivo"
-                                           Style="{ StaticResource ResourceKey=Form }"/>
-                                    <TextBox Text="{ Binding Path=Periodo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-                                             Tag="####"
-                                             Style="{ StaticResource ResourceKey=TextBox }"/>
-                                </StackPanel>
-                            </Grid>
+								<!--#region DIVISIONES-->
+								<StackPanel Grid.Column="1"
+											Grid.Row="1"
+											Margin="10 5 0 10">
+									<Grid>
+										<Grid.RowDefinitions>
+											<RowDefinition/>
+											<RowDefinition/>
+										</Grid.RowDefinitions>
 
-                            <WrapPanel HorizontalAlignment="Right"
-                                       Margin="0 10 10 10">
-                                <Button Command="{ Binding Path=AtrasCommand }"
-                                        Content="Atras"
-                                        Margin="0 0 5 0"
-                                        Style="{ StaticResource Tertiary }"/>
-                                <Button Command="{ Binding Path=GuardarCommand }"
-                                        Content="Guardar"
-                                        Margin="5 0 0 0"
-                                        Style="{ StaticResource Primary }"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>
-        </Border>
-    </Grid>
+										<StackPanel Grid.Row="0"
+													Margin="0 0 0 5">
+											<Label Content="Divisiones"
+												   Style="{ StaticResource ResourceKey=Form }"/>
+											<ComboBox x:Name="ComboBox_Divisiones"
+													  ItemsSource="{ Binding Path=Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+													  SelectedItem="{ Binding Path=DivisionViewModel, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+													  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
+												<ComboBox.ItemTemplate>
+													<DataTemplate>
+														<TextBlock Text="{ Binding Path=DivisionDescripcion }"
+																   Margin="0 0 2 0"/>
+													</DataTemplate>
+												</ComboBox.ItemTemplate>
+											</ComboBox>
+										</StackPanel>
+
+										<StackPanel Grid.Row="1"
+													Margin="0 5 0 0">
+											<Expander Header="Información adicional de la División"
+													  Padding="0 5">
+												<divisionViews:DivisionView DataContext="{ Binding Path=SelectedItem, ElementName=ComboBox_Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+																			Padding="10 0 10 10"
+																			IsEnabled="False"/>
+											</Expander>
+										</StackPanel>
+									</Grid>
+								</StackPanel>
+								<!--#endregion-->
+
+								<!--#region CICLO LECTIVO-->
+								<StackPanel Grid.Column="0"
+											Grid.Row="2"
+											Margin="0 10 0 0">
+									<Label Content="Ciclo Lectivo"
+										   Style="{ StaticResource ResourceKey=Form }"/>
+									<TextBox Text="{ Binding Path=Periodo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+											 Tag="####"
+											 Style="{ StaticResource ResourceKey=TextBox }"/>
+								</StackPanel>
+								<!--#endregion-->
+							</Grid>
+
+							<!--#region COMMANDS-->
+							<WrapPanel HorizontalAlignment="Right"
+									   Margin="0 10 10 10">
+								<Button Command="{ Binding Path=AtrasCommand }"
+										Content="Atras"
+										Margin="0 0 5 0"
+										Style="{ StaticResource ResourceKey=Tertiary }"/>
+								<Button Command="{ Binding Path=GuardarCommand }"
+										Content="Guardar"
+										Margin="5 0 0 0"
+										Style="{ StaticResource ResourceKey=Primary }"/>
+							</WrapPanel>
+							<!--#endregion-->
+						</StackPanel>
+					</ScrollViewer>
+				</TabItem>
+				<!--#endregion-->
+			</TabControl>
+		</Border>
+	</Grid>
 </UserControl>

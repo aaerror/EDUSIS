@@ -2,49 +2,45 @@
 
 public abstract class Entity : IEquatable<Entity>
 {
-    private List<IDomainEvent> _eventos;
+	private List<IDomainEvent> _eventos;
 
-    public Guid Id { get; protected set; }
-    public IReadOnlyCollection<IDomainEvent> Eventos { get => _eventos?.ToList().AsReadOnly(); }
+	public Guid Id { get; protected set; }
+	public IReadOnlyCollection<IDomainEvent> Eventos { get => _eventos?.ToList().AsReadOnly(); }
 
-    protected Entity() { }
 
-    protected Entity(Guid id) : base() => Id = id;
+	#region CONSTRUCTOR
+	protected Entity() {}
 
-    #region Events
-    protected void AgregarEvento(IDomainEvent nuevoEvento)
-    {
-        _eventos = _eventos ?? new List<IDomainEvent>();
-        _eventos.Add(nuevoEvento);
-    }
+	protected Entity(Guid id)
+		: base() => Id = id;
+	#endregion
 
-    protected void QuitarEvento(IDomainEvent unEvento) => _eventos?.Remove(unEvento);
+	#region Events
+	protected void AgregarEvento(IDomainEvent nuevoEvento)
+	{
+		_eventos = _eventos ?? new List<IDomainEvent>();
+		_eventos.Add(nuevoEvento);
+	}
 
-    public void LiberarEventos() => _eventos?.Clear();
-    #endregion
+	protected void QuitarEvento(IDomainEvent unEvento) =>
+		_eventos?.Remove(unEvento);
 
-    public bool Equals(Entity? other)
-    {
-        return Equals((object?) other);
-    }
+	public void LiberarEventos() =>
+		_eventos?.Clear();
+	#endregion
 
-    public override bool Equals(object? obj)
-    {
-        return obj is Entity entity && Id.Equals(entity.Id);
-    }
+	public bool Equals(Entity? other) =>
+		Equals((object?) other);
 
-    public static bool operator ==(Entity left, Entity right)
-    {
-        return Equals(left, right);
-    }
+	public override bool Equals(object? obj) =>
+		obj is Entity entity && Id.Equals(entity.Id);
 
-    public static bool operator !=(Entity left, Entity right)
-    {
-        return !Equals(left, right);
-    }
+	public static bool operator ==(Entity left, Entity right) =>
+		Equals(left, right);
 
-    public override int GetHashCode()
-    {
-        return Id.GetHashCode();
-    }
+	public static bool operator !=(Entity left, Entity right) =>
+		!Equals(left, right);
+
+	public override int GetHashCode() =>
+		Id.GetHashCode();
 }

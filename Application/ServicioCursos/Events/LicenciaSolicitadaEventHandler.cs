@@ -1,5 +1,5 @@
 ﻿using Domain.Cursos;
-using Domain.Docentes.DomainEvents;
+using Domain.Licencias.DomainEvents;
 using MediatR;
 
 namespace Core.ServicioCursos.Events;
