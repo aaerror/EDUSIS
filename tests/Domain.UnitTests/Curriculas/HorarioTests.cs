@@ -41,13 +41,18 @@ public class HorarioTests
 	}
 
 	[Fact]
-	public void Hoy_el_turno_noche_no_admite_ningun_horario_por_su_limite_superior_en_medianoche()
+	public void El_turno_noche_acepta_una_hora_de_inicio_dentro_de_su_franja()
 	{
 		var builder = new HorarioBuilder().ConTurno(Turno.Noche).ConHoraInicio(new TimeOnly(19, 30));
 
-		// Documenta el estado actual (H-009): el límite superior del turno Noche es 00:00, y el
-		// guard es `horaInicio > _limiteHorarioFin`, así que cualquier hora posterior a la
-		// medianoche (es decir, casi cualquiera) queda rechazada.
+		Should.NotThrow(() => builder.Build());
+	}
+
+	[Fact]
+	public void El_turno_noche_rechaza_una_hora_de_inicio_posterior_a_su_franja()
+	{
+		var builder = new HorarioBuilder().ConTurno(Turno.Noche).ConHoraInicio(new TimeOnly(23, 30));
+
 		Should.Throw<ArgumentException>(() => builder.Build());
 	}
 	#endregion

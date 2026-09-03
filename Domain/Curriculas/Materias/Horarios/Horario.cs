@@ -66,7 +66,8 @@ public class Horario : ValueObject
                 break;
             case Turno.Noche:
                 _limiteHorarioInicio = new TimeOnly(18, 00);
-                _limiteHorarioFin = new TimeOnly(00, 00); break;
+                _limiteHorarioFin = new TimeOnly(23, 00);
+                break;
             default:
                 throw new ArgumentException("Error al establecer los límites del horario para el turno seleccionado.", nameof(Turno));
         }
