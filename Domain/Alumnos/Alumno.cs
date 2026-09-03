@@ -26,11 +26,11 @@ public sealed class Alumno : Persona
 
 	#region Insititucional
 	public bool EstaActivo() =>
-		Periodo.EstaVigente();
+		Periodo.HaIniciado() && !Periodo.FechaFin.HasValue;
 
 	public void Desinscribir()
 	{
-		if (Periodo.HaFinalizado())
+		if (!EstaActivo())
 		{
 			throw new AlumnoInactivoException();
 		}
