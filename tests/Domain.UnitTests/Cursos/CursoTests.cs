@@ -147,21 +147,27 @@ public class CursoTests
 		ex.GetType().Name.ShouldBe("CursanteRegistradoException");
 	}
 
-	[Fact(Skip = "H-008: Curso.QuitarAlumno tiene la condición del guard invertida y siempre lanza DivisionNoEncontradaException cuando la división existe. Ver hallazgos.md.")]
-	public void QuitarAlumno_remueve_al_cursante_de_la_division()
-	{
-	}
-
 	[Fact]
-	public void Hoy_QuitarAlumno_siempre_lanza_DivisionNoEncontradaException_aunque_la_division_exista()
+	public void QuitarAlumno_remueve_al_cursante_de_la_division()
 	{
 		var curso = new CursoBuilder().ConDivision(1).Build();
 		var division = curso.Divisiones.First();
 		var cursante = Guid.NewGuid();
 		curso.AgregarAlumnoEnDivision(division.Id, cursante);
 
-		// Documenta el estado actual (H-008): el guard es `if (ExisteDivision(...)) throw ...`.
-		var ex = Should.Throw<Exception>(() => curso.QuitarAlumno(division.Id, cursante));
+		curso.QuitarAlumno(division.Id, cursante);
+
+		curso.CursanteRegistrado(cursante).ShouldBeFalse();
+		curso.CantidadAlumnos.ShouldBe(0);
+	}
+
+	[Fact]
+	public void QuitarAlumno_sobre_una_division_inexistente_lanza_DivisionNoEncontradaException()
+	{
+		var curso = new CursoBuilder().ConDivision(1).Build();
+
+		var ex = Should.Throw<Exception>(() => curso.QuitarAlumno(Guid.NewGuid(), Guid.NewGuid()));
+
 		ex.GetType().Name.ShouldBe("DivisionNoEncontradaException");
 	}
 	#endregion

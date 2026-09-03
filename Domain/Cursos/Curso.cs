@@ -161,7 +161,7 @@ public sealed class Curso : Entity
 	public void QuitarAlumno(Guid unaDivision, Guid unCursante)
 	{
 		var division = BuscarDivision(unaDivision);
-		if (ExisteDivision(unaDivision))
+		if (division is null)
 		{
 			throw new DivisionNoEncontradaException();
 		}
