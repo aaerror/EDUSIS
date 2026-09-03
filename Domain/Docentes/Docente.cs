@@ -86,13 +86,13 @@ public sealed class Docente : Persona
 	#region Institucional
 	public void Desafectar()
 	{
-		if (Periodo.HaFinalizado())
+		if (!Activo)
 		{
 			throw new DocenteInactivoException();
 		}
 
 		Periodo = Periodo.ActualizarFechaFin(DateTime.Today.Date);
-		Activo = Periodo.EstaVigente();
+		Activo = false;
 		AgregarEvento(new DocenteDesafectadoDomainEvent(Id));
 	}
 	#endregion

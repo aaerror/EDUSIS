@@ -12,7 +12,7 @@ namespace Domain.UnitTests.Docentes;
 /// Agregado <see cref="Domain.Docentes.Docente"/>: alta con validación de edad, legajo y CUIL,
 /// baja institucional (evento <c>DocenteDesafectadoDomainEvent</c>) y ciclo de vida de los
 /// cargos docentes. Las excepciones del módulo son <c>internal</c>: se verifican por el nombre
-/// del tipo. Las inalcanzables quedan con pruebas <c>Skip</c> (H-005, H-006, H-007).
+/// del tipo. Las que ningún método cablea quedan con pruebas <c>Skip</c> (H-006, H-007).
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class DocenteTests
@@ -90,8 +90,22 @@ public class DocenteTests
 		docente.Desafectar();
 
 		docente.Periodo.FechaFin.ShouldBe(DateTime.Today);
+		docente.Activo.ShouldBeFalse();
 		var evento = docente.Eventos.ShouldHaveSingleItem().ShouldBeOfType<DocenteDesafectadoDomainEvent>();
 		evento.DocenteID.ShouldBe(docente.Id);
+	}
+
+	[Fact]
+	public void Desafectar_a_un_docente_ya_inactivo_lanza_DocenteInactivoException()
+	{
+		var docente = new DocenteBuilder().Build();
+		docente.Desafectar();
+		docente.LiberarEventos();
+
+		var ex = Should.Throw<Exception>(() => docente.Desafectar());
+
+		ex.GetType().Name.ShouldBe("DocenteInactivoException");
+		docente.Eventos.ShouldBeEmpty();
 	}
 	#endregion
 
@@ -182,12 +196,7 @@ public class DocenteTests
 	}
 	#endregion
 
-	#region Excepciones inalcanzables / sin cablear
-	[Fact(Skip = "H-005: DocenteInactivoException es inalcanzable en una prueba de un mismo día; el guard de Desafectar usa Periodo.HaFinalizado() y los chequeos !Activo requieren una abstracción de reloj. Ver hallazgos.md.")]
-	public void Desafectar_a_un_docente_ya_inactivo_lanza_DocenteInactivoException()
-	{
-	}
-
+	#region Excepciones sin cablear
 	[Fact(Skip = "H-006: DocenteConfirmadoEnCargoDocenteException no se lanza desde ningún método del dominio. Ver hallazgos.md.")]
 	public void Confirmar_un_docente_ya_confirmado_en_un_cargo_lanza_DocenteConfirmadoEnCargoDocenteException()
 	{
