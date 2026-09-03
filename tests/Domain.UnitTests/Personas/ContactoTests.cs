@@ -9,8 +9,8 @@ namespace Domain.UnitTests.Personas;
 
 /// <summary>
 /// Value object <see cref="Contacto"/> y <see cref="ContactoDuplicadoException"/>.
-/// Dos pruebas quedan <c>Skip</c> por defectos de producción registrados en
-/// <c>specs/001-automated-test-suite/hallazgos.md</c> (H-001, H-002).
+/// Una prueba queda <c>Skip</c> por un defecto de producción registrado en
+/// <c>specs/001-automated-test-suite/hallazgos.md</c> (H-001).
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ContactoTests
@@ -64,26 +64,33 @@ public class ContactoTests
 	}
 	#endregion
 
-	#region Igualdad estructural — defecto conocido (H-002)
-	[Fact(Skip = "H-002: Contacto.GetEqualityCommponents() lanza NotImplementedException. Ver hallazgos.md.")]
+	#region Igualdad estructural
+	[Fact]
 	public void Dos_contactos_con_el_mismo_tipo_y_descripcion_son_iguales()
 	{
 		var uno = Contacto.CrearEmail("maria.gonzalez@correo.com");
 		var otro = Contacto.CrearEmail("maria.gonzalez@correo.com");
 
 		uno.Equals(otro).ShouldBeTrue();
+		uno.GetHashCode().ShouldBe(otro.GetHashCode());
 	}
 
 	[Fact]
-	public void Hoy_comparar_dos_contactos_propaga_NotImplementedException()
+	public void Dos_contactos_con_distinta_descripcion_no_son_iguales()
 	{
 		var uno = Contacto.CrearEmail("maria.gonzalez@correo.com");
-		var otro = Contacto.CrearEmail("maria.gonzalez@correo.com");
+		var otro = Contacto.CrearEmail("otra.persona@correo.com");
 
-		// Documenta el estado actual (H-002): la igualdad estructural del value object no está
-		// implementada. Cuando se corrija, esta prueba debe eliminarse y quitarse el Skip de la
-		// anterior.
-		Should.Throw<NotImplementedException>(() => uno.Equals(otro));
+		uno.Equals(otro).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void Dos_contactos_con_distinto_tipo_no_son_iguales()
+	{
+		var email = new Contacto(TipoContacto.Email, "11 2345 6789");
+		var telefono = new Contacto(TipoContacto.Telefono, "11 2345 6789");
+
+		email.Equals(telefono).ShouldBeFalse();
 	}
 	#endregion
 

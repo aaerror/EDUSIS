@@ -79,6 +79,7 @@ public class Contacto : ValueObject
 
 	public override IEnumerable<object> GetEqualityCommponents()
 	{
-		throw new NotImplementedException();
+		yield return TipoContacto;
+		yield return Descripcion;
 	}
 }
