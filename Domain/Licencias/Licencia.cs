@@ -50,7 +50,7 @@ public sealed class Licencia : Entity
 		Estado.Equals(Estado.Activa) && Periodo.EstaVigente();
 
 	public bool EsIndefinida() =>
-		!Periodo.EsIndeterminado();
+		Periodo.EsIndeterminado();
 
 	#region Estado
 	public void AprobarLicencia(string? observacion)

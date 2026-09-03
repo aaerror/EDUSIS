@@ -12,10 +12,6 @@ namespace Domain.UnitTests.Licencias;
 /// solicitud, aprobación, cancelación y finalización, cada transición con su evento de dominio.
 /// Las excepciones del módulo son <c>internal</c>: se verifican por el nombre del tipo.
 /// </summary>
-/// <remarks>
-/// Ojo: <c>Licencia.EsIndefinida()</c> devuelve <c>true</c> cuando el período <b>sí</b> tiene
-/// fecha de fin (está invertido respecto del nombre), y así lo consumen los guards.
-/// </remarks>
 [Trait("Categoria", Categorias.Unidad)]
 public class LicenciaTests
 {
@@ -125,9 +121,20 @@ public class LicenciaTests
 	}
 
 	[Fact]
-	public void EstablecerLicenciaIndefinida_sobre_una_licencia_activa_con_fecha_de_fin_lanza_LicenciaIndefinidaException()
+	public void EstablecerLicenciaIndefinida_sobre_una_licencia_activa_temporal_le_quita_la_fecha_de_fin()
 	{
 		var licencia = new LicenciaBuilder().ConFechaFin(DateTime.Today.AddDays(20)).Aprobada().Build();
+
+		licencia.EstablecerLicenciaIndefinida();
+
+		licencia.Periodo.FechaFin.ShouldBeNull();
+		licencia.EsIndefinida().ShouldBeTrue();
+	}
+
+	[Fact]
+	public void EstablecerLicenciaIndefinida_sobre_una_licencia_ya_indefinida_lanza_LicenciaIndefinidaException()
+	{
+		var licencia = new LicenciaBuilder().Aprobada().Build();
 
 		var ex = Should.Throw<Exception>(() => licencia.EstablecerLicenciaIndefinida());
 
@@ -142,9 +149,25 @@ public class LicenciaTests
 		Should.Throw<ArgumentException>(() => licencia.EstablecerFechaFinalizacion(DateTime.Today));
 	}
 
-	[Fact(Skip = "H-013: Licencia.ExtenderLicencia nunca funciona: si el período es temporal EsIndefinida() es true y lanza LicenciaIndefinidaException; si es indeterminado, accede a Periodo.FechaFin.Value con FechaFin null. Ver hallazgos.md.")]
+	[Fact]
 	public void ExtenderLicencia_prolonga_la_fecha_de_fin_de_una_licencia_activa_temporal()
 	{
+		var fechaFin = DateTime.Today.AddDays(10);
+		var licencia = new LicenciaBuilder().ConFechaFin(fechaFin).Aprobada().Build();
+
+		licencia.ExtenderLicencia(5);
+
+		licencia.Periodo.FechaFin.ShouldBe(fechaFin.AddDays(5));
+	}
+
+	[Fact]
+	public void ExtenderLicencia_sobre_una_licencia_indefinida_lanza_LicenciaIndefinidaException()
+	{
+		var licencia = new LicenciaBuilder().Aprobada().Build();
+
+		var ex = Should.Throw<Exception>(() => licencia.ExtenderLicencia(5));
+
+		ex.GetType().Name.ShouldBe("LicenciaIndefinidaException");
 	}
 	#endregion
 }
