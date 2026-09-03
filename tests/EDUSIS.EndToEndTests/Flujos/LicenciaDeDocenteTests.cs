@@ -17,7 +17,7 @@ namespace EDUSIS.EndToEndTests.Flujos;
 /// <para>
 /// El <strong>efecto</strong> del evento de licencia sobre el curso/cursante del docente depende
 /// de que <c>LicenciaSolicitadaEventHandler</c> (assembly <c>Core</c>,
-/// <c>Application/ServicioCursos/Events/</c>) esté registrado en la composición real.
+/// <c>Core/ServicioCursos/Events/</c>) esté registrado en la composición real.
 /// <c>InfrastructureDI</c> sólo escanea el assembly de <c>Infrastructure</c>
 /// (<c>RegisterServicesFromAssemblyContaining&lt;EdusisDBContext&gt;()</c>), así que ese handler
 /// <strong>no</strong> queda registrado: es el defecto <c>H-022</c> de <c>hallazgos.md</c>

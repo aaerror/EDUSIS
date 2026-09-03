@@ -43,17 +43,15 @@ El dominio está modelado con **DDD táctico** (modelo rico, invariantes en las 
 Cuatro proyectos en capas con la **dependencia invertida**: `Infrastructure` referencia `Core`, no al revés. Los puertos (`IUnitOfWork`, `IRepository<T>`, `I<Agregado>Repository`) viven en `Domain.Shared`; `Infrastructure` los implementa.
 
 ```
-WPF_Desktop (net7.0-windows, UI)  ──►  Core (Application)  ──►  Domain
-        │                                     ▲                   ▲
-        └──►  Infrastructure  ────────────────┴───────────────────┘
+WPF_Desktop (net7.0-windows, UI)  ──►  Core  ──►  Domain
+        │                                 ▲             ▲
+        └──►  Infrastructure  ────────────┴─────────────┘
 ```
-
-> ⚠️ La carpeta es `Application/` pero el assembly y el namespace raíz son **`Core`**.
 
 | Proyecto | Rol |
 | :--- | :--- |
 | `Domain` | Entidades, value objects, excepciones de dominio y eventos. Solo referencia MediatR. |
-| `Application` (`Core`) | Un servicio por caso de uso (`Servicio<X>` + `IServicio<X>`), DTOs `record` y handlers de eventos. |
+| `Core` | Capa de aplicación: un servicio por caso de uso (`Servicio<X>` + `IServicio<X>`), DTOs `record` y handlers de eventos. |
 | `Infrastructure` | EF Core (`EdusisDBContext`), `UnitOfWork`, repositorios `internal` y despacho de eventos de dominio. |
 | `WPF_Desktop` | MVVM con CommunityToolkit. Composition root (`App.xaml.cs`), navegación por `NavigationStore` + `DataTemplate`. |
 
@@ -127,7 +125,7 @@ dotnet test EDUSIS.sln            # todas las categorías aplicables al entorno
 ```
 EDUSIS/
 ├─ Domain/            # Modelo de dominio (DDD táctico)
-├─ Application/       # Assembly "Core": servicios de caso de uso + DTOs
+├─ Core/              # Capa de aplicación: servicios de caso de uso + DTOs
 ├─ Infrastructure/    # EF Core, UnitOfWork, repositorios, eventos
 ├─ WPF_Desktop/       # UI WPF (MVVM + CommunityToolkit)
 ├─ tests/             # EDUSIS.TestSupport, Domain.UnitTests, Core.UnitTests, Infrastructure.IntegrationTests, EDUSIS.EndToEndTests
