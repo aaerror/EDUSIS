@@ -32,19 +32,15 @@
 
 ## Descripción
 
-**EDUSIS** es una aplicación de escritorio **WPF sobre .NET 7** con persistencia en
-**SQL Server** para la gestión administrativa de una institución educativa: legajos de
-docentes y alumnos, puestos y situación de revista, cursos y divisiones, currículas y
-materias, inscripción de cursantes, licencias y usuarios.
+**EDUSIS** es una aplicación de escritorio **WPF sobre .NET 7** con persistencia en **SQL Server** para la gestión administrativa de una institución educativa: legajos de
+docentes y alumnos, puestos y situación de revista, cursos y divisiones, currículas y materias, inscripción de cursantes, licencias y usuarios.
 
-El dominio está modelado con **DDD táctico** (modelo rico, invariantes en las entidades,
-eventos de dominio) y la aplicación se organiza en **casos de uso** por módulo.
+El dominio está modelado con **DDD táctico** (modelo rico, invariantes en las entidades, eventos de dominio) y la aplicación se organiza en **casos de uso** por módulo.
+
 
 ## Arquitectura
 
-Cuatro proyectos en capas con la **dependencia invertida**: `Infrastructure` referencia
-`Core`, no al revés. Los puertos (`IUnitOfWork`, `IRepository<T>`, `I<Agregado>Repository`)
-viven en `Domain.Shared`; `Infrastructure` los implementa.
+Cuatro proyectos en capas con la **dependencia invertida**: `Infrastructure` referencia `Core`, no al revés. Los puertos (`IUnitOfWork`, `IRepository<T>`, `I<Agregado>Repository`) viven en `Domain.Shared`; `Infrastructure` los implementa.
 
 ```
 WPF_Desktop (net7.0-windows, UI)  ──►  Core (Application)  ──►  Domain
@@ -61,7 +57,6 @@ WPF_Desktop (net7.0-windows, UI)  ──►  Core (Application)  ──►  Doma
 | `Infrastructure` | EF Core (`EdusisDBContext`), `UnitOfWork`, repositorios `internal` y despacho de eventos de dominio. |
 | `WPF_Desktop` | MVVM con CommunityToolkit. Composition root (`App.xaml.cs`), navegación por `NavigationStore` + `DataTemplate`. |
 
-Detalle ampliado de cada capa en [`CLAUDE.md`](CLAUDE.md).
 
 ## Módulos
 
@@ -81,16 +76,10 @@ Detalle ampliado de cada capa en [`CLAUDE.md`](CLAUDE.md).
 
 ## Requisitos
 
-- **SDK de .NET** (los proyectos apuntan a `net7.0`; un SDK más nuevo compila por
-  *roll-forward*, con warning `NETSDK1138` de EOL que **no** hay que silenciar cambiando el TFM).
-- **SQL Server** accesible en `localhost` con una base `EdusisDB`
-  (la cadena de conexión está **hardcodeada** en `Infrastructure/InfrastructureDI.cs`,
-  con `Integrated Security`).
-- **Ejecutar la app: solo en Windows.** El resto (build de toda la solución, incluido
-  `WPF_Desktop`, y la suite de pruebas) corre también en Linux gracias a
-  `<EnableWindowsTargeting>true</EnableWindowsTargeting>`.
-- Para pruebas de integración / E2E: **Docker** o la variable `EDUSIS_TEST_SQLSERVER`.
-  Sin eso, esas categorías se **omiten** (skip, salida 0).
+- **SDK de .NET** (los proyectos apuntan a `net7.0`; un SDK más nuevo compila por *roll-forward*, con warning `NETSDK1138` de EOL que **no** hay que silenciar cambiando el TFM).
+- **SQL Server** accesible en `localhost` con una base `EdusisDB` (la cadena de conexión está **hardcodeada** en `Infrastructure/InfrastructureDI.cs`, con `Integrated Security`).
+- **Ejecutar la app: solo en Windows.** El resto (build de toda la solución, incluido `WPF_Desktop`, y la suite de pruebas) corre también en Linux gracias a `<EnableWindowsTargeting>true</EnableWindowsTargeting>`.
+- Para pruebas de integración / E2E: **Docker** o la variable `EDUSIS_TEST_SQLSERVER`. Sin eso, esas categorías se **omiten** (skip, salida 0).
 
 ## Puesta en marcha
 
@@ -111,8 +100,9 @@ Rutas y credenciales fijas en código a tener en cuenta:
 
 ## Migraciones EF Core
 
-El proyecto de migraciones es `Infrastructure`, pero el *startup project* es `WPF_Desktop`
-(es quien registra el DI). Desde Windows:
+El proyecto de migraciones es `Infrastructure`, pero el *startup project* es `WPF_Desktop` (es quien registra el DI).
+
+Desde Windows:
 
 ```bash
 dotnet ef migrations add <Nombre> --project Infrastructure --startup-project WPF_Desktop
@@ -121,9 +111,7 @@ dotnet ef database update --project Infrastructure --startup-project WPF_Desktop
 
 ## Pruebas
 
-La suite vive en `tests/` (5 proyectos) y está segmentada por
-`[Trait("Categoria", ...)]` en `Unidad` / `Integracion` / `E2E`. `Unidad` corre siempre;
-`Integracion` y `E2E` se omiten si no hay Docker ni `EDUSIS_TEST_SQLSERVER`.
+La suite vive en `tests/` (5 proyectos) y está segmentada por `[Trait("Categoria", ...)]` en `Unidad` / `Integracion` / `E2E`. `Unidad` corre siempre; `Integracion` y `E2E` se omiten si no hay Docker ni `EDUSIS_TEST_SQLSERVER`.
 
 ```bash
 dotnet test EDUSIS.sln            # todas las categorías aplicables al entorno
@@ -132,12 +120,7 @@ dotnet test EDUSIS.sln            # todas las categorías aplicables al entorno
 ./tests/run-tests.sh --cobertura  # + reporte HTML en tests/CoverageReport/
 ```
 
-**Puertas de calidad:** `dotnet build EDUSIS.sln` **y** `dotnet test EDUSIS.sln`
-(no hay linter configurado).
-
-> La suite **no corrige código de producción** (feature `001-automated-test-suite`, FR-018):
-> cada defecto real que descubre una prueba queda `[Fact(Skip="…")]` y anotado en
-> [`specs/001-automated-test-suite/hallazgos.md`](specs/001-automated-test-suite/hallazgos.md).
+**Puertas de calidad:** `dotnet build EDUSIS.sln` **y** `dotnet test EDUSIS.sln` (no hay linter configurado).
 
 ## Estructura del repositorio
 
@@ -147,20 +130,8 @@ EDUSIS/
 ├─ Application/       # Assembly "Core": servicios de caso de uso + DTOs
 ├─ Infrastructure/    # EF Core, UnitOfWork, repositorios, eventos
 ├─ WPF_Desktop/       # UI WPF (MVVM + CommunityToolkit)
-├─ tests/             # EDUSIS.TestSupport, Domain.UnitTests, Core.UnitTests,
-│                     # Infrastructure.IntegrationTests, EDUSIS.EndToEndTests
+├─ tests/             # EDUSIS.TestSupport, Domain.UnitTests, Core.UnitTests, Infrastructure.IntegrationTests, EDUSIS.EndToEndTests
 ├─ specs/             # Especificaciones de features (spec-kit)
 ├─ docs/              # Recursos de documentación (logo, imágenes)
 └─ EDUSIS.sln
 ```
-
-## Convenciones
-
-- **Todo el dominio y la UI están en español**: clases, métodos, propiedades, mensajes
-  de error, comentarios y regiones (`BuscarDocentePorIDAsync`, `GuardarCambiosAsync`).
-- Indentación con **tabs**; llaves en línea propia (**Allman**); uso intensivo de `#region`
-  para agrupar por caso de uso.
-- Mensajes de commit en español siguiendo **Conventional Commits** (`feat:`, `fix:`,
-  `refactor:`, `test:`, `chore:`, `docs:`…).
-- Consultas con tipos de EF **siempre** en repositorios de `Infrastructure`, nunca en un
-  servicio de `Core`.
