@@ -26,8 +26,8 @@ public abstract class Persona : Entity
 		Id = personaId;
 		DatosPersonales = datosPersonales;
 		Domicilio = unDomicilio;
-		CargarEmail(email);
-		CargarTelefono(telefono);
+		RegistrarEmail(email);
+		RegistrarTelefono(telefono);
 	}
 
 	public Persona(DatosPersonales datosPersonales, Domicilio unDomicilio, string email, string telefono)
@@ -102,7 +102,7 @@ public abstract class Persona : Entity
 		return esValido;
 	}
 
-	private void CargarEmail(string unEmail)
+	private void RegistrarEmail(string unEmail)
 	{
 		if (!EsEmailValido(unEmail))
 		{
@@ -111,6 +111,8 @@ public abstract class Persona : Entity
 
 		Email = unEmail;
 	}
+
+	public void CambiarEmail(string unEmail) => RegistrarEmail(unEmail);
 
 	private bool EsTelefonoValido(string unTelefono)
 	{
@@ -139,7 +141,7 @@ public abstract class Persona : Entity
 		return esValido;
 	}
 
-	private void CargarTelefono(string unTelefono)
+	private void RegistrarTelefono(string unTelefono)
 	{
 		if (!EsTelefonoValido(unTelefono))
 		{
@@ -149,10 +151,6 @@ public abstract class Persona : Entity
 		Telefono = unTelefono;
 	}
 
-	public void CambiarContacto(string unEmail, string unTelefono)
-	{
-		CargarEmail(unEmail);
-		CargarTelefono(unTelefono);
-	}
+	public void CambiarTelefono(string unTelefono) => RegistrarTelefono(unTelefono);
 	#endregion
 }

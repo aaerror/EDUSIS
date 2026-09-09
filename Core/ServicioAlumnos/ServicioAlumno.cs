@@ -176,7 +176,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 			_logger.LogInformation($"Actualizando datos de contacto del alumno...");
 
 			var unAlumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
-			unAlumno.CambiarContacto(request.Email, request.Telefono);
+			unAlumno.CambiarEmail(request.Email);
+			unAlumno.CambiarTelefono(request.Telefono);
 
 			_unitOfWork.Alumnos.Modificar(unAlumno);
 			await _unitOfWork.GuardarCambiosAsync();

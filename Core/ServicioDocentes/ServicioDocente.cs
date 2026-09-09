@@ -293,7 +293,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 			_logger.LogInformation($"Actualizando datos de contacto del docente...");
 
 			var unDocente = await BuscarDocentePorIDAsync(request.PersonaID);
-			unDocente.CambiarContacto(request.Email, request.Telefono);
+			unDocente.CambiarEmail(request.Email);
+			unDocente.CambiarTelefono(request.Telefono);
 
 			_unitOfWork.Docentes.Modificar(unDocente);
 			await _unitOfWork.GuardarCambiosAsync();

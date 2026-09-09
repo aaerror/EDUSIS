@@ -84,13 +84,22 @@ public class PersonaTests
 	}
 
 	[Fact]
-	public void CambiarContacto_actualiza_email_y_telefono_validos()
+	public void CambiarEmail_actualiza_el_email_con_un_valor_valido()
 	{
 		var persona = CrearPersona();
 
-		persona.CambiarContacto("nuevo.correo@dominio.org", "3814999888");
+		persona.CambiarEmail("nuevo.correo@dominio.org");
 
 		persona.Email.ShouldBe("nuevo.correo@dominio.org");
+	}
+
+	[Fact]
+	public void CambiarTelefono_actualiza_el_telefono_con_un_valor_valido()
+	{
+		var persona = CrearPersona();
+
+		persona.CambiarTelefono("3814999888");
+
 		persona.Telefono.ShouldBe("3814999888");
 	}
 	#endregion
@@ -151,13 +160,33 @@ public class PersonaTests
 	}
 
 	[Fact]
-	public void CambiarContacto_con_email_invalido_lanza_FormatoEmailInvalidoException()
+	public void CambiarEmail_con_formato_invalido_lanza_FormatoEmailInvalidoException()
 	{
 		var persona = CrearPersona();
 
-		var ex = Should.Throw<Exception>(() => persona.CambiarContacto("mal", "3814123456"));
+		var ex = Should.Throw<Exception>(() => persona.CambiarEmail("mal"));
 
 		ex.GetType().Name.ShouldBe("FormatoEmailInvalidoException");
+	}
+
+	[Fact]
+	public void CambiarEmail_con_formato_invalido_no_modifica_el_email_actual()
+	{
+		var persona = CrearPersona();
+
+		Should.Throw<Exception>(() => persona.CambiarEmail("mal"));
+
+		persona.Email.ShouldBe("maria.gonzalez@correo.com");
+	}
+
+	[Fact]
+	public void CambiarTelefono_con_formato_invalido_lanza_FormatoTelefonoInvalidoException()
+	{
+		var persona = CrearPersona();
+
+		var ex = Should.Throw<Exception>(() => persona.CambiarTelefono("12345"));
+
+		ex.GetType().Name.ShouldBe("FormatoTelefonoInvalidoException");
 	}
 	#endregion
 }
