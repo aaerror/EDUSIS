@@ -1,4 +1,4 @@
-using Domain.Curriculas.Materias;
+using Domain.Materias;
 
 namespace EDUSIS.TestSupport.Builders;
 

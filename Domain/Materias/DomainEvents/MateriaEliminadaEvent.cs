@@ -1,5 +1,5 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
-namespace Domain.Cursos.DomainEvents;
+namespace Domain.Materias.DomainEvents;
 
 public record MateriaEliminadaEvent(Guid MateriaID) : IDomainEvent;
