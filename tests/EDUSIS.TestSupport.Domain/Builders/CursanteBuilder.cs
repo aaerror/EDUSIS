@@ -1,25 +1,29 @@
 using Domain.Cursantes;
-using Domain.Cursantes.Asistencias;
 
 namespace EDUSIS.TestSupport.Builders;
 
 /// <summary>
-/// Builder de <see cref="Cursante"/>. Recibe el alumno como <see cref="Guid"/> (no depende de
-/// <see cref="PersonaBuilder"/>). Estado por defecto válido: ciclo lectivo en curso, inicio hoy,
-/// no recursante, sin asistencias. <see cref="ConAsistencia"/> encola asistencias que
-/// <see cref="Build"/> registra vía <c>Cursante.RegistrarAsistencia</c>.
+/// Builder de <see cref="Cursante"/>. Recibe el alumno y la división como <see cref="Guid"/>
+/// (no depende de <see cref="PersonaBuilder"/> ni de un builder de división). Estado por
+/// defecto válido: ciclo lectivo en curso, inicio hoy, no recursante, sin calificaciones.
 /// </summary>
 public sealed class CursanteBuilder
 {
 	#region ESTADO POR DEFECTO
+	private Guid _divisionID = Guid.NewGuid();
 	private Guid _alumnoID = Guid.NewGuid();
 	private CicloLectivo _cicloLectivo = new CicloLectivoBuilder().Build();
 	private DateTime _fechaInicio = DateTime.Today;
 	private bool _esRecursante = false;
-	private readonly List<Asistencia> _asistencias = new();
 	#endregion
 
 	#region CONFIGURACIÓN
+	public CursanteBuilder ConDivision(Guid divisionID)
+	{
+		_divisionID = divisionID;
+		return this;
+	}
+
 	public CursanteBuilder ConAlumno(Guid alumnoID)
 	{
 		_alumnoID = alumnoID;
@@ -43,23 +47,12 @@ public sealed class CursanteBuilder
 		_esRecursante = esRecursante;
 		return this;
 	}
-
-	public CursanteBuilder ConAsistencia(Asistencia asistencia)
-	{
-		_asistencias.Add(asistencia);
-		return this;
-	}
 	#endregion
 
 	#region CONSTRUCCIÓN
 	public Cursante Build()
 	{
-		var cursante = new Cursante(_alumnoID, _cicloLectivo, _fechaInicio, _esRecursante);
-
-		foreach (var asistencia in _asistencias)
-		{
-			cursante.RegistrarAsistencia(asistencia.Fecha, asistencia.Falta, asistencia.Minutos, asistencia.Observacion);
-		}
+		var cursante = new Cursante(_divisionID, _alumnoID, _cicloLectivo, _fechaInicio, _esRecursante);
 
 		return cursante;
 	}
