@@ -1,4 +1,4 @@
-using Domain.Curriculas.Materias.Horarios;
+using Domain.Catedras.Horarios;
 
 namespace EDUSIS.TestSupport.Builders;
 

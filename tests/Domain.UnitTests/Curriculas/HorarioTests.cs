@@ -1,4 +1,4 @@
-using Domain.Curriculas.Materias.Horarios;
+using Domain.Catedras.Horarios;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -113,6 +113,69 @@ public class HorarioTests
 		var otro = new HorarioBuilder().ConDia(Dia.Martes).Build();
 
 		uno.Equals(otro).ShouldBeFalse();
+	}
+	#endregion
+
+	#region Duración real
+	[Fact]
+	public void La_hora_fin_respeta_la_duracion_configurada_no_los_40_minutos_por_defecto()
+	{
+		// Regresión: el turno Noche (H-009) y este cálculo compartían el mismo código; con una
+		// duración de 40 (el valor por defecto del builder) esta prueba pasaría igual contra un
+		// cálculo hardcodeado a "+40". Usar 45 prueba que HoraFin realmente usa el parámetro.
+		var horario = new HorarioBuilder()
+			.ConHoraInicio(new TimeOnly(8, 0))
+			.ConDuracionHoraCatedra((int)DuracionHoraCatedra.CuarentaCinco)
+			.Build();
+
+		horario.HoraFin.ShouldBe(new TimeOnly(8, 45));
+	}
+
+	[Fact]
+	public void DuracionHoraCatedra_devuelve_los_minutos_configurados()
+	{
+		var horario = new HorarioBuilder().ConDuracionHoraCatedra((int)DuracionHoraCatedra.Cincuenta).Build();
+
+		horario.DuracionHoraCatedra().ShouldBe(50);
+	}
+	#endregion
+
+	#region Superposición
+	[Fact]
+	public void SeSuperponeCon_en_dias_distintos_no_se_superpone()
+	{
+		var lunes = new HorarioBuilder().ConDia(Dia.Lunes).Build();
+		var martes = new HorarioBuilder().ConDia(Dia.Martes).Build();
+
+		lunes.SeSuperponeCon(martes).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void SeSuperponeCon_con_bordes_que_se_tocan_no_se_superpone()
+	{
+		var primero = new HorarioBuilder().ConHoraInicio(new TimeOnly(8, 0)).ConDuracionHoraCatedra(40).Build();
+		var segundo = new HorarioBuilder().ConHoraInicio(new TimeOnly(8, 40)).ConDuracionHoraCatedra(40).Build();
+
+		primero.SeSuperponeCon(segundo).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void SeSuperponeCon_con_contencion_total_se_superpone()
+	{
+		var contenedor = new HorarioBuilder().ConHoraInicio(new TimeOnly(8, 0)).ConDuracionHoraCatedra(50).Build();
+		var contenido = new HorarioBuilder().ConHoraInicio(new TimeOnly(8, 10)).ConDuracionHoraCatedra(30).Build();
+
+		contenedor.SeSuperponeCon(contenido).ShouldBeTrue();
+	}
+
+	[Fact]
+	public void SeSuperponeCon_con_solapamiento_parcial_se_superpone_en_ambos_sentidos()
+	{
+		var primero = new HorarioBuilder().ConHoraInicio(new TimeOnly(8, 0)).ConDuracionHoraCatedra(40).Build();
+		var segundo = new HorarioBuilder().ConHoraInicio(new TimeOnly(8, 20)).ConDuracionHoraCatedra(40).Build();
+
+		primero.SeSuperponeCon(segundo).ShouldBeTrue();
+		segundo.SeSuperponeCon(primero).ShouldBeTrue();
 	}
 	#endregion
 }

@@ -1,8 +1,8 @@
-﻿namespace Domain.Curriculas.Exceptions;
+namespace Domain.Catedras.Exceptions;
 
 internal class CargoOcupadoException : Exception
 {
-	private const string ERROR = "Ya se encuentra un docente con este cargo docente en la materia.";
+	private const string ERROR = "El cargo ya se encuentra ocupado.";
 
 
 	public CargoOcupadoException()

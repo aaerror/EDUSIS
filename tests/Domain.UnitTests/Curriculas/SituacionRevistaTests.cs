@@ -1,4 +1,6 @@
-using Domain.Curriculas.Materias.CargosDocentes;
+using System.Reflection;
+using Domain.Catedras;
+using Domain.Catedras.SituacionesRevista;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -7,25 +9,35 @@ using Xunit;
 namespace Domain.UnitTests.Curriculas;
 
 /// <summary>
-/// Entidad <see cref="SituacionRevista"/> (cargo docente sobre una materia) y el enumerado
-/// <see cref="EstadoSituacionRevista"/>: invariantes del constructor, funciones de aula y
-/// finalización. Las excepciones del módulo son <c>internal</c>: se verifican por el nombre del
-/// tipo.
+/// Entidad <see cref="SituacionRevista"/> (cargo docente sobre una cátedra) y el enumerado
+/// <see cref="EstadoSituacionRevista"/>: invariantes del constructor y finalización. El
+/// constructor y <c>Crear</c> son <c>internal</c> — sólo <c>Domain.Catedras.Catedra</c>
+/// instancia situaciones de revista —, así que <see cref="SituacionRevistaBuilder"/> designa
+/// sobre una <c>Catedra</c> auxiliar y expone el resultado. Las funciones de aula (el slot
+/// "en funciones") y los horarios pasaron a <c>Domain.Catedras.Catedra</c>: su cobertura vive en
+/// <c>CatedraTests</c>. Las excepciones del módulo son <c>internal</c>: se verifican por el
+/// nombre del tipo.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class SituacionRevistaTests
 {
 	#region Alta
 	[Fact]
-	public void Una_situacion_de_revista_titular_indeterminada_arranca_aceptada_y_sin_funciones()
+	public void El_constructor_sin_docente_lanza_ArgumentNullException()
+	{
+		Should.Throw<ArgumentNullException>(() => new SituacionRevistaBuilder().ConDocente(Guid.Empty).Build());
+	}
+
+	[Fact]
+	public void Una_situacion_de_revista_titular_indeterminada_arranca_aceptada()
 	{
 		var situacion = new SituacionRevistaBuilder().ConCargo(Cargo.Titular).Build();
 
 		situacion.Estado.ShouldBe(EstadoSituacionRevista.Aceptado);
 		situacion.Cargo.ShouldBe(Cargo.Titular);
-		situacion.EnFunciones.ShouldBeFalse();
 		situacion.EsTemporal().ShouldBeFalse();
 		situacion.EsCargoVigente().ShouldBeTrue();
+		situacion.ReemplazaA.ShouldBeNull();
 	}
 
 	[Theory]
@@ -39,68 +51,16 @@ public class SituacionRevistaTests
 
 		ex.GetType().Name.ShouldBe("CargoTemporalSinFechaFinalizacionException");
 	}
-
-	[Fact]
-	public void Poner_en_funciones_un_cargo_temporal_desde_el_constructor_lanza_CargoNoVigenteException()
-	{
-		var builder = new SituacionRevistaBuilder()
-			.ConCargo(Cargo.Titular)
-			.ConFechaFin(DateTime.Today.AddMonths(3))
-			.EnFunciones();
-
-		var ex = Should.Throw<Exception>(() => builder.Build());
-
-		ex.GetType().Name.ShouldBe("CargoNoVigenteException");
-	}
-	#endregion
-
-	#region Funciones de aula
-	[Fact]
-	public void EstablecerEnFuncionesDeAula_marca_al_docente_al_frente_del_curso()
-	{
-		var situacion = new SituacionRevistaBuilder().Build();
-
-		situacion.EstablecerEnFuncionesDeAula();
-
-		situacion.EnFunciones.ShouldBeTrue();
-	}
-
-	[Fact]
-	public void RelevarFuncionesDeAula_lo_quita_del_frente_del_curso()
-	{
-		var situacion = new SituacionRevistaBuilder().Build();
-		situacion.EstablecerEnFuncionesDeAula();
-
-		situacion.RelevarFuncionesDeAula();
-
-		situacion.EnFunciones.ShouldBeFalse();
-	}
-
-	[Fact]
-	public void EstablecerEnFuncionesDeAula_sobre_un_cargo_no_vigente_lanza_CargoNoVigenteException()
-	{
-		var situacion = new SituacionRevistaBuilder()
-			.ConCargo(Cargo.Titular)
-			.ConFechaInicio(new DateTime(2020, 1, 1))
-			.ConFechaFin(new DateTime(2020, 6, 1))
-			.Build();
-
-		var ex = Should.Throw<Exception>(() => situacion.EstablecerEnFuncionesDeAula());
-
-		ex.GetType().Name.ShouldBe("CargoNoVigenteException");
-	}
 	#endregion
 
 	#region Finalización
 	[Fact]
 	public void EstablecerFechaFinalizacion_sobre_un_cargo_temporal_lanza_CargoConFechaFinalizacionException()
 	{
-		var situacion = new SituacionRevistaBuilder()
-			.ConCargo(Cargo.Titular)
-			.ConFechaFin(DateTime.Today.AddMonths(3))
-			.Build();
+		var catedra = new CatedraBuilder().Build();
+		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today, DateTime.Today.AddMonths(3));
 
-		var ex = Should.Throw<Exception>(() => situacion.EstablecerFechaFinalizacion(DateTime.Today.AddMonths(6)));
+		var ex = Should.Throw<Exception>(() => catedra.EstablecerFinDeDesignacion(designacion, DateTime.Today.AddMonths(6)));
 
 		ex.GetType().Name.ShouldBe("CargoConFechaFinalizacionException");
 	}
@@ -108,26 +68,38 @@ public class SituacionRevistaTests
 	[Fact]
 	public void Finalizar_un_cargo_vigente_lo_deja_finalizado_y_cerrado_hoy()
 	{
-		var situacion = new SituacionRevistaBuilder().ConCargo(Cargo.Titular).Build();
+		var catedra = new CatedraBuilder().Build();
+		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today, null);
 
-		situacion.Finalizar();
+		catedra.FinalizarDesignacion(designacion);
 
+		var situacion = catedra.SituacionesRevista.Single(x => x.Id.Equals(designacion));
 		situacion.Estado.ShouldBe(EstadoSituacionRevista.Finalizado);
 		situacion.Periodo.FechaFin.ShouldBe(DateTime.Today);
-		situacion.EnFunciones.ShouldBeFalse();
 	}
 
 	[Fact]
 	public void Finalizar_un_cargo_que_todavia_no_inicio_lanza_CargoNoIniciadoException()
 	{
-		var situacion = new SituacionRevistaBuilder()
-			.ConCargo(Cargo.Titular)
-			.ConFechaInicio(DateTime.Today.AddDays(5))
-			.Build();
+		var catedra = new CatedraBuilder().Build();
+		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddDays(5), null);
 
-		var ex = Should.Throw<Exception>(() => situacion.Finalizar());
+		var ex = Should.Throw<Exception>(() => catedra.FinalizarDesignacion(designacion));
 
 		ex.GetType().Name.ShouldBe("CargoNoIniciadoException");
+	}
+
+	[Fact]
+	public void Los_mutadores_de_la_designacion_no_son_alcanzables_sin_pasar_por_la_catedra()
+	{
+		// La raíz es el único punto de entrada: los mutadores son internal.
+		var publicos = typeof(SituacionRevista)
+			.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+			.Select(metodo => metodo.Name)
+			.ToList();
+
+		publicos.ShouldNotContain("Finalizar");
+		publicos.ShouldNotContain("EstablecerFechaFinalizacion");
 	}
 	#endregion
 

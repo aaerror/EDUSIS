@@ -1,8 +1,8 @@
-﻿namespace Domain.Curriculas.Exceptions;
+namespace Domain.Catedras.Exceptions;
 
 internal class DocenteRegistradoException : Exception
 {
-	private const string ERROR = "El docente ya se encuentra con un cargo docente en la asignatura el cuál todavía no ha finalizado.";
+	private const string ERROR = "El docente ya tiene un cargo vigente en la cátedra.";
 
 
 	public DocenteRegistradoException()
