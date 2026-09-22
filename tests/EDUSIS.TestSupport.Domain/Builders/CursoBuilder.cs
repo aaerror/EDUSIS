@@ -1,19 +1,19 @@
 using Domain.Cursos;
+using Domain.Shared;
 
 namespace EDUSIS.TestSupport.Builders;
 
 /// <summary>
 /// Builder de <see cref="Curso"/>. Estado por defecto válido: <c>Primero</c> de
-/// <c>Secundaria</c>, sin divisiones. <see cref="ConDivision"/> agrega divisiones que
-/// <see cref="Build"/> crea vía <c>Curso.AgregarDivision()</c> (la descripción la asigna el
-/// dominio: A, B, C…).
+/// <c>Secundaria</c>. Las divisiones ya no son responsabilidad de <c>Curso</c> (agregado propio
+/// <c>Domain.Divisiones.Division</c>): este builder no las crea; usar el builder de división
+/// correspondiente y asociarlo por <c>CursoID</c>.
 /// </summary>
 public sealed class CursoBuilder
 {
 	#region ESTADO POR DEFECTO
 	private string _grado = "Primero";
 	private string _nivelEducativo = "Secundaria";
-	private int _cantidadDivisiones = 0;
 	#endregion
 
 	#region CONFIGURACIÓN
@@ -28,25 +28,10 @@ public sealed class CursoBuilder
 		_nivelEducativo = nivelEducativo;
 		return this;
 	}
-
-	public CursoBuilder ConDivision(int cantidad = 1)
-	{
-		_cantidadDivisiones += cantidad;
-		return this;
-	}
 	#endregion
 
 	#region CONSTRUCCIÓN
-	public Curso Build()
-	{
-		var curso = new Curso(_grado, _nivelEducativo);
-
-		for (var i = 0; i < _cantidadDivisiones; i++)
-		{
-			curso.AgregarDivision();
-		}
-
-		return curso;
-	}
+	public Curso Build() =>
+		new(_grado, _nivelEducativo);
 	#endregion
 }

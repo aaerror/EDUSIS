@@ -1,4 +1,4 @@
-﻿namespace Domain.Cursos;
+namespace Domain.Shared;
 
 public enum NivelEducativo
 {

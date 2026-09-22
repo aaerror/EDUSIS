@@ -1,5 +1,6 @@
 using Domain.Cursos;
-using Domain.Cursos.DomainEvents;
+using Domain.Materias.DomainEvents;
+using Domain.Shared;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -9,23 +10,23 @@ namespace Domain.UnitTests.Cursos;
 
 /// <summary>
 /// Agregado <see cref="Curso"/> con sus enumerados <see cref="Grado"/> y
-/// <see cref="NivelEducativo"/>, la gestión de divisiones, preceptores y cursantes, y el evento
-/// <see cref="MateriaEliminadaEvent"/>. Las excepciones del módulo son <c>internal</c>: se
-/// verifican por el nombre del tipo.
+/// <see cref="NivelEducativo"/>, y el evento <see cref="MateriaEliminadaEvent"/> (movido a
+/// <c>Domain.Materias.DomainEvents</c>: lo emite <c>Materia</c>, no <c>Curso</c>). Las
+/// divisiones, los preceptores y los cursantes pasaron al agregado propio
+/// <see cref="Domain.Divisiones.Division"/> (ver <c>Domain.UnitTests.Divisiones.DivisionTests</c>):
+/// <c>Curso</c> hoy sólo guarda grado y nivel educativo.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class CursoTests
 {
 	#region Alta
 	[Fact]
-	public void Un_curso_nuevo_guarda_grado_y_nivel_educativo_sin_divisiones()
+	public void Un_curso_nuevo_guarda_grado_y_nivel_educativo()
 	{
 		var curso = new CursoBuilder().ConGrado(nameof(Grado.Primero)).ConNivelEducativo(nameof(NivelEducativo.Secundaria)).Build();
 
 		curso.Grado.ShouldBe(Grado.Primero);
 		curso.NivelEducativo.ShouldBe(NivelEducativo.Secundaria);
-		curso.CantidadDivisiones.ShouldBe(0);
-		curso.CantidadAlumnos.ShouldBe(0);
 	}
 
 	[Fact]
@@ -38,137 +39,6 @@ public class CursoTests
 	public void Un_nivel_educativo_que_no_esta_en_el_enum_lanza_ArgumentException()
 	{
 		Should.Throw<ArgumentException>(() => new Curso(nameof(Grado.Primero), "Terciario"));
-	}
-	#endregion
-
-	#region Divisiones
-	[Fact]
-	public void AgregarDivision_nombra_las_divisiones_en_orden_alfabetico()
-	{
-		var curso = new CursoBuilder().Build();
-
-		curso.AgregarDivision();
-		curso.AgregarDivision();
-
-		curso.CantidadDivisiones.ShouldBe(2);
-		curso.Divisiones.Select(d => d.Descripcion).ShouldBe(new[] { "A", "B" });
-	}
-
-	[Fact]
-	public void QuitarDivision_elimina_la_division_indicada()
-	{
-		var curso = new CursoBuilder().ConDivision(2).Build();
-		var aEliminar = curso.Divisiones.First().Id;
-
-		curso.QuitarDivision(aEliminar);
-
-		curso.CantidadDivisiones.ShouldBe(1);
-	}
-
-	[Fact]
-	public void QuitarDivision_con_un_id_desconocido_lanza_DivisionNoEncontradaException()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-
-		var ex = Should.Throw<Exception>(() => curso.QuitarDivision(Guid.NewGuid()));
-
-		ex.GetType().Name.ShouldBe("DivisionNoEncontradaException");
-	}
-
-	[Fact]
-	public void QuitarDivision_con_Guid_vacio_lanza_ArgumentNullException()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-
-		Should.Throw<ArgumentNullException>(() => curso.QuitarDivision(Guid.Empty));
-	}
-	#endregion
-
-	#region Preceptores
-	[Fact]
-	public void AsignarPreceptor_ocupa_el_cargo_en_la_division()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-		var division = curso.Divisiones.First();
-		var preceptor = Guid.NewGuid();
-
-		curso.AsignarPreceptor(division.Id, preceptor);
-
-		division.Preceptor.ShouldBe(preceptor);
-	}
-
-	[Fact]
-	public void AsignarPreceptor_sobre_una_division_inexistente_lanza_DivisionNoEncontradaException()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-
-		var ex = Should.Throw<Exception>(() => curso.AsignarPreceptor(Guid.NewGuid(), Guid.NewGuid()));
-
-		ex.GetType().Name.ShouldBe("DivisionNoEncontradaException");
-	}
-
-	[Fact]
-	public void QuitarPreceptor_libera_el_cargo()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-		var division = curso.Divisiones.First();
-		curso.AsignarPreceptor(division.Id, Guid.NewGuid());
-
-		curso.QuitarPreceptor(division.Id);
-
-		division.Preceptor.ShouldBeNull();
-	}
-	#endregion
-
-	#region Cursantes
-	[Fact]
-	public void AgregarAlumnoEnDivision_registra_al_cursante()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-		var division = curso.Divisiones.First();
-		var cursante = Guid.NewGuid();
-
-		curso.AgregarAlumnoEnDivision(division.Id, cursante);
-
-		curso.CursanteRegistrado(cursante).ShouldBeTrue();
-		curso.CantidadAlumnos.ShouldBe(1);
-	}
-
-	[Fact]
-	public void AgregarAlumnoEnDivision_a_un_cursante_ya_registrado_lanza_CursanteRegistradoException()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-		var division = curso.Divisiones.First();
-		var cursante = Guid.NewGuid();
-		curso.AgregarAlumnoEnDivision(division.Id, cursante);
-
-		var ex = Should.Throw<Exception>(() => curso.AgregarAlumnoEnDivision(division.Id, cursante));
-
-		ex.GetType().Name.ShouldBe("CursanteRegistradoException");
-	}
-
-	[Fact]
-	public void QuitarAlumno_remueve_al_cursante_de_la_division()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-		var division = curso.Divisiones.First();
-		var cursante = Guid.NewGuid();
-		curso.AgregarAlumnoEnDivision(division.Id, cursante);
-
-		curso.QuitarAlumno(division.Id, cursante);
-
-		curso.CursanteRegistrado(cursante).ShouldBeFalse();
-		curso.CantidadAlumnos.ShouldBe(0);
-	}
-
-	[Fact]
-	public void QuitarAlumno_sobre_una_division_inexistente_lanza_DivisionNoEncontradaException()
-	{
-		var curso = new CursoBuilder().ConDivision(1).Build();
-
-		var ex = Should.Throw<Exception>(() => curso.QuitarAlumno(Guid.NewGuid(), Guid.NewGuid()));
-
-		ex.GetType().Name.ShouldBe("DivisionNoEncontradaException");
 	}
 	#endregion
 
