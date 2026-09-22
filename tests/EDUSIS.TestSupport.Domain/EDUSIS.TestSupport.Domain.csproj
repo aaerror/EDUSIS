@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		Builders de agregados de Domain (namespace EDUSIS.TestSupport.Builders) y las
+		constantes de Categoria (namespace EDUSIS.TestSupport), separados de
+		EDUSIS.TestSupport para que Domain.UnitTests no arrastre Core/Infrastructure.
+		No es una suite: se excluye de `dotnet test`. Sólo depende de Domain.
+	-->
+	<PropertyGroup>
+		<IsTestProject>false</IsTestProject>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Domain\Domain.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -16,7 +16,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Domain\Domain.csproj" />
-		<ProjectReference Include="..\EDUSIS.TestSupport\EDUSIS.TestSupport.csproj" />
+		<ProjectReference Include="..\EDUSIS.TestSupport.Domain\EDUSIS.TestSupport.Domain.csproj" />
 	</ItemGroup>
 
 </Project>
