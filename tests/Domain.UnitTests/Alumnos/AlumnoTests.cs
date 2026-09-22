@@ -18,9 +18,9 @@ public class AlumnoTests
 	[Fact]
 	public void Un_alumno_nuevo_guarda_legajo_y_arranca_con_periodo_vigente()
 	{
-		var alumno = new AlumnoBuilder().ConLegajo("A-000123").Build();
+		var alumno = new AlumnoBuilder().ConLegajo("AL0001").Build();
 
-		alumno.Legajo.ShouldBe("A-000123");
+		alumno.Legajo.ShouldBe("AL0001");
 		alumno.EstaActivo().ShouldBeTrue();
 		alumno.Periodo.FechaInicio.ShouldBe(DateTime.Today);
 		alumno.Periodo.FechaFin.ShouldBeNull();
@@ -33,6 +33,12 @@ public class AlumnoTests
 
 		var evento = alumno.Eventos.ShouldHaveSingleItem().ShouldBeOfType<AlumnoInscriptoDomainEvent>();
 		evento.AlumnoID.ShouldBe(alumno.Id);
+	}
+
+	[Fact]
+	public void Un_alumno_con_legajo_de_formato_invalido_lanza_FormatException()
+	{
+		Should.Throw<FormatException>(() => new AlumnoBuilder().ConLegajo("A-000123").Build());
 	}
 	#endregion
 

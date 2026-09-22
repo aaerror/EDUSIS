@@ -12,7 +12,7 @@ public sealed class AlumnoBuilder
 	#region ESTADO POR DEFECTO
 	private PersonaBuilder _persona = new PersonaBuilder()
 		.ConDatosPersonales(new DatosPersonalesBuilder().ConEdad(16));
-	private string _legajo = "A-000123";
+	private string _legajo = "AL0001";
 	#endregion
 
 	#region CONFIGURACIÓN

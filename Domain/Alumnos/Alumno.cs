@@ -1,4 +1,5 @@
-﻿using Domain.Alumnos.DomainEvents;
+using System.Text.RegularExpressions;
+using Domain.Alumnos.DomainEvents;
 using Domain.Alumnos.Exceptions;
 using Domain.Personas;
 using Domain.Personas.Domicilios;
@@ -15,9 +16,19 @@ public sealed class Alumno : Persona
 	private Alumno()
 		: base() {}
 
-	public Alumno(string legajo, DatosPersonales datosPersonales, Domicilio unDomicilio, string email, string telefono)
-		: base(datosPersonales, unDomicilio, email, telefono)
+	public Alumno(
+		string legajo,
+		DatosPersonales datosPersonales,
+		Domicilio unDomicilio,
+		string email,
+		string telefono)
+			: base(datosPersonales, unDomicilio, email, telefono)
 	{
+		if (!Regex.IsMatch(legajo, @"^([A-Z]{2}\d{4})$"))
+		{
+			throw new FormatException($"Verificar el legajo del docente: {nameof(legajo)}.");
+		}
+
 		Legajo = legajo;
 		Periodo = RangoFechas.Create(DateTime.Today.Date);
 
@@ -39,4 +50,4 @@ public sealed class Alumno : Persona
 		AgregarEvento(new AlumnoDesinscriptoDomainEvent(Id));
 	}
 	#endregion
-}
+}
