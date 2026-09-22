@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
 namespace Domain.Docentes.Puestos;
 
@@ -101,4 +101,4 @@ public class Puesto : Entity
 
 	public bool EstaActivo() =>
 		Periodo.EstaVigente();
-}
+}

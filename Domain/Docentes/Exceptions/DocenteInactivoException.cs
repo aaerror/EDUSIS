@@ -10,4 +10,4 @@ internal class DocenteInactivoException : Exception
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
 	public DocenteInactivoException(string parametro, Exception exception)
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}"), exception) { }
-}
+}

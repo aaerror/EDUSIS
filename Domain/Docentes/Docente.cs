@@ -1,4 +1,4 @@
-﻿using Domain.Docentes.DomainEvents;
+using Domain.Docentes.DomainEvents;
 using Domain.Docentes.Exceptions;
 using Domain.Docentes.Puestos;
 using Domain.Licencias;
@@ -222,4 +222,4 @@ public sealed class Docente : Persona
 		_puestos.Remove(puestoDocente);
 	}
 	#endregion
-}
+}

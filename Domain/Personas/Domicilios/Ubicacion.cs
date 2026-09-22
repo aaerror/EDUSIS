@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
 namespace Domain.Personas.Domicilios;
 
@@ -73,4 +73,4 @@ public class Ubicacion : ValueObject
 		yield return Provincia;
 		yield return Pais;
 	}
-}
+}

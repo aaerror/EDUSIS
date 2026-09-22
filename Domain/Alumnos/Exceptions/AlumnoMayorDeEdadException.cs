@@ -1,4 +1,4 @@
-﻿namespace Domain.Alumnos.Exceptions;
+namespace Domain.Alumnos.Exceptions;
 
 internal class AlumnoMayorDeEdadException : Exception
 {
@@ -11,4 +11,4 @@ internal class AlumnoMayorDeEdadException : Exception
         : base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
     public AlumnoMayorDeEdadException(string parametro, Exception exception)
         : base(string.Format($"{ERROR}. Parámetro: {parametro}"), exception) { }
-}
+}

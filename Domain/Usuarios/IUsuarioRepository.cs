@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
 namespace Domain.Usuarios;
 
@@ -11,4 +11,4 @@ public interface IUsuarioRepository : IRepository<Usuario>
 	public bool EsEmailInvalido(string usuario);
 
 	public void RecuperarDatosAcceso(string usuario, out string salt, out string hash);
-}
+}

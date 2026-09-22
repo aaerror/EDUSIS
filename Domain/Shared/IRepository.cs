@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace Domain.Shared;
 
@@ -14,4 +14,4 @@ public interface IRepository<TEntity>
 	void ModificarRango(IEnumerable<TEntity> entities);
 	Task Eliminar(params object[] ids);
 	void EliminarRango(IEnumerable<TEntity> entities);
-}
+}

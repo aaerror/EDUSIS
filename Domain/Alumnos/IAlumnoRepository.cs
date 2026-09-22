@@ -1,4 +1,4 @@
-﻿using Domain.Personas;
+using Domain.Personas;
 
 namespace Domain.Alumnos;
 

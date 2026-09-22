@@ -1,4 +1,4 @@
-﻿namespace Domain.Shared.Exceptions;
+namespace Domain.Shared.Exceptions;
 
 public class ExcesoCaracteresException : Exception
 {
@@ -8,4 +8,4 @@ public class ExcesoCaracteresException : Exception
     public ExcesoCaracteresException() : base() { }
     public ExcesoCaracteresException(string mensaje) : base(string.Format($"{ERROR}\n{mensaje}")) { }
     public ExcesoCaracteresException(string mensaje, Exception exception) : base(string.Format($"{ERROR}\n{mensaje}"), exception) { }
-}
+}

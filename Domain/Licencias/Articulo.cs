@@ -1,4 +1,4 @@
-﻿namespace Domain.Licencias;
+namespace Domain.Licencias;
 
 public enum Articulo
 {
@@ -7,4 +7,4 @@ public enum Articulo
 	Enfermedad,
 	Maternidad,
 	Matrimonio
-}
+}

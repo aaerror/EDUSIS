@@ -1,4 +1,4 @@
-﻿namespace Domain.Docentes.Puestos;
+namespace Domain.Docentes.Puestos;
 
 public enum Posicion
 {
@@ -9,4 +9,4 @@ public enum Posicion
 	Psicologo,
 	Psicopedagogo,
 	Secretaria
-}
+}

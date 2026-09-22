@@ -1,5 +1,5 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
 namespace Domain.Alumnos.DomainEvents;
 
-public record AlumnoInscriptoDomainEvent(Guid AlumnoID) : IDomainEvent;
+public record AlumnoInscriptoDomainEvent(Guid AlumnoID) : IDomainEvent;

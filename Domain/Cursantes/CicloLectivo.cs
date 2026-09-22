@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 using System.Text.RegularExpressions;
 
 namespace Domain.Cursantes;
@@ -36,4 +36,4 @@ public class CicloLectivo : ValueObject
 	{
 		yield return Periodo;
 	}
-}
+}

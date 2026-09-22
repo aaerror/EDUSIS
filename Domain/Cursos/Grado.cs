@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 namespace Domain.Cursos;
 
@@ -18,4 +18,4 @@ public enum Grado
 	Sexto,
 	[Description("7° Año")]
 	Septimo,
-}
+}

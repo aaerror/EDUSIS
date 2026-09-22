@@ -1,4 +1,4 @@
-﻿namespace Domain.Personas.Exceptions;
+namespace Domain.Personas.Exceptions;
 
 internal class FechaNacimientoInvalidaException : Exception
 {

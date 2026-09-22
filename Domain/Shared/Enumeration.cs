@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 
 namespace Domain.Shared;
 
@@ -76,4 +76,4 @@ public abstract class Enumeration : IComparable
 
 	public override string ToString() =>
 		Descripcion;
-}
+}

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 namespace Domain.Docentes.Puestos;
 
@@ -12,4 +12,4 @@ public enum EstadoPuesto
 	Inactivo,
 	[Description("Pendiente")]
 	Pendiente
-}
+}

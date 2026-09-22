@@ -1,4 +1,4 @@
-﻿namespace Domain.Shared;
+namespace Domain.Shared;
 
 public abstract class ValueObject : IEquatable<ValueObject>
 {
@@ -29,4 +29,4 @@ public abstract class ValueObject : IEquatable<ValueObject>
 			.Aggregate((x, y) => x^y);
 
 	public abstract IEnumerable<object> GetEqualityCommponents();
-}
+}

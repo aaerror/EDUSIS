@@ -1,4 +1,4 @@
-﻿using Domain.Docentes.Puestos;
+using Domain.Docentes.Puestos;
 using Domain.Personas;
 
 namespace Domain.Docentes;
@@ -14,4 +14,4 @@ public interface IDocenteRepository : IPersonaRepository<Docente>
 	Task<bool> EsLegajoInvalidoAsync(string legajo);
 
 	Task<IReadOnlyCollection<Puesto>> PuestosPorDocenteAsync(Guid docenteID);
-}
+}

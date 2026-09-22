@@ -1,4 +1,4 @@
-﻿namespace Domain.Curriculas.Exceptions;
+namespace Domain.Curriculas.Exceptions;
 
 internal class CurriculaNoVigenteException : Exception
 {
@@ -11,4 +11,4 @@ internal class CurriculaNoVigenteException : Exception
 		: base(string.Format($"{ ERROR }. Parámetro: { parametro }")) {}
 	public CurriculaNoVigenteException(string parametro, Exception exception)
 		: base(string.Format($"{ ERROR }. Parámetro: { parametro }"), exception) {}
-}
+}

@@ -10,4 +10,4 @@ internal class AlumnoInactivoException : Exception
         : base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
     public AlumnoInactivoException(string parametro, Exception exception)
         : base(string.Format($"{ERROR}. Parámetro: {parametro}"), exception) { }
-}
+}

@@ -1,4 +1,4 @@
-﻿namespace Domain.Docentes.Exceptions;
+namespace Domain.Docentes.Exceptions;
 
 internal class DocenteSinCargoDocenteException : Exception
 {
@@ -10,4 +10,4 @@ internal class DocenteSinCargoDocenteException : Exception
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
 	public DocenteSinCargoDocenteException(string parametro, Exception exception)
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}"), exception) { }
-}
+}

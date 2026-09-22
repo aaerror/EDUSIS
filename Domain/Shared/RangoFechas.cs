@@ -1,4 +1,4 @@
-﻿using Domain.Shared.Exceptions;
+using Domain.Shared.Exceptions;
 
 namespace Domain.Shared;
 
@@ -66,4 +66,4 @@ public class RangoFechas : ValueObject
 		yield return FechaInicio;
 		yield return FechaFin;
 	}
-}
+}

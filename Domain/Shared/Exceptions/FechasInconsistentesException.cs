@@ -1,4 +1,4 @@
-﻿namespace Domain.Shared.Exceptions;
+namespace Domain.Shared.Exceptions;
 
 internal class FechasInconsistentesException : Exception
 {
@@ -10,4 +10,4 @@ internal class FechasInconsistentesException : Exception
         : base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
     public FechasInconsistentesException(string parametro, Exception exception)
         : base(string.Format($"{ERROR}. Parámetro: {parametro}"), exception) { }
-}
+}

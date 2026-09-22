@@ -1,4 +1,4 @@
-﻿namespace Domain.Licencias.Exceptions;
+namespace Domain.Licencias.Exceptions;
 
 internal class LicenciaInactivaException : Exception
 {
@@ -12,4 +12,4 @@ internal class LicenciaInactivaException : Exception
 
 	public LicenciaInactivaException(string parametro, Exception exception)
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}"), exception) { }
-}
+}

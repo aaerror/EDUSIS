@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
 namespace Domain.Personas;
 
@@ -7,4 +7,4 @@ public interface IPersonaRepository<TEntity> : IRepository<TEntity>
 {
 	Task<bool> EsDocumentoInvalidoAsync(string documento);
 	Task<bool> ExisteIDAsync(Guid id);
-}
+}

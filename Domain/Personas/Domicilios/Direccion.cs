@@ -1,4 +1,4 @@
-﻿using Domain.Shared.Exceptions;
+using Domain.Shared.Exceptions;
 using Domain.Shared;
 
 namespace Domain.Personas.Domicilios;
@@ -42,4 +42,4 @@ public class Direccion : ValueObject
 		yield return Vivienda;
 		yield return Observacion;
 	}
-}
+}

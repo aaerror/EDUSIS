@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
 namespace Domain.Usuarios;
 
@@ -15,4 +15,4 @@ public class Rol : Enumeration
 
 	private Rol(int value, string displayName)
 		: base(value, displayName) { }
-}
+}

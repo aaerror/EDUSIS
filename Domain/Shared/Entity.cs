@@ -1,4 +1,4 @@
-﻿namespace Domain.Shared;
+namespace Domain.Shared;
 
 public abstract class Entity : IEquatable<Entity>
 {
@@ -43,4 +43,4 @@ public abstract class Entity : IEquatable<Entity>
 
 	public override int GetHashCode() =>
 		Id.GetHashCode();
-}
+}

@@ -10,4 +10,4 @@ internal class DocenteMenorDeEdadException : Exception
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
 	public DocenteMenorDeEdadException(string parametro, Exception exception)
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}"), exception) { }
-}
+}

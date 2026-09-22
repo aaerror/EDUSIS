@@ -1,4 +1,4 @@
-﻿namespace Domain.Licencias;
+namespace Domain.Licencias;
 
 public enum Estado
 {
@@ -6,4 +6,4 @@ public enum Estado
 	Cancelada,
 	Finalizada,
 	Pendiente
-}
+}

@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
 namespace Domain.Personas.Domicilios;
 
@@ -47,4 +47,4 @@ public class Domicilio : ValueObject
 		yield return Direccion;
 		yield return Ubicacion;
 	}
-}
+}

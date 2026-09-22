@@ -1,4 +1,4 @@
-﻿using Domain.Personas.Domicilios;
+using Domain.Personas.Domicilios;
 using Domain.Personas.Exceptions;
 using Domain.Shared;
 using System.Text.RegularExpressions;
@@ -153,4 +153,4 @@ public abstract class Persona : Entity
 
 	public void CambiarTelefono(string unTelefono) => RegistrarTelefono(unTelefono);
 	#endregion
-}
+}

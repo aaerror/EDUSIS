@@ -1,4 +1,4 @@
-﻿namespace Domain.Personas.Exceptions;
+namespace Domain.Personas.Exceptions;
 
 internal class FormatoEmailInvalidoException : Exception
 {
@@ -9,4 +9,4 @@ internal class FormatoEmailInvalidoException : Exception
         : base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
     public FormatoEmailInvalidoException(string parametro, Exception exception)
         : base(string.Format($"{ERROR}. Parámetro: {parametro}"), exception) { }
-}
+}

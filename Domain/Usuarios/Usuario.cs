@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 
 namespace Domain.Usuarios;
 
@@ -90,4 +90,4 @@ public class Usuario : Entity
 		PasswordSalt = passwordSalt;
 		PasswordHash = passwordHash;
 	}
-}
+}
