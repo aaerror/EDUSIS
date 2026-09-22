@@ -1,4 +1,4 @@
-﻿using Domain.Licencias.DomainEvents;
+using Domain.Licencias.DomainEvents;
 using Domain.Licencias.Exceptions;
 using Domain.Shared.Exceptions;
 using Domain.Shared;
@@ -21,8 +21,14 @@ public sealed class Licencia : Entity
 	private Licencia(Guid licenciaID)
 		: base(licenciaID) { }
 
-	private Licencia(Guid licenciaID, Guid docenteID, Articulo articulo, Estado estado, RangoFechas intervalo, string? observacion)
-		: this(licenciaID)
+	private Licencia(
+		Guid licenciaID,
+		Guid docenteID,
+		Articulo articulo,
+		Estado estado,
+		RangoFechas intervalo,
+		string? observacion)
+			: this(licenciaID)
 	{
 		DocenteID = docenteID;
 		Articulo = articulo;
@@ -34,7 +40,13 @@ public sealed class Licencia : Entity
 	}
 
 	public Licencia(Guid docenteID, string articulo, DateTime fechaInicio, string? observacion)
-		: this(Guid.NewGuid(), docenteID, Enum.Parse<Articulo>(articulo), Estado.Pendiente, RangoFechas.Create(fechaInicio), observacion)
+		: this(
+			Guid.NewGuid(),
+			docenteID,
+			Enum.Parse<Articulo>(articulo),
+			Estado.Pendiente,
+			RangoFechas.Create(fechaInicio),
+			observacion)
 	{
 		if (fechaInicio.Date > DateTime.Today.Date)
 		{
@@ -42,8 +54,20 @@ public sealed class Licencia : Entity
 		}
 	}
 	
-	public Licencia(Guid docenteID, string articulo, DateTime fechaInicio, DateTime fechaFin, string? observacion)
-		: this(Guid.NewGuid(), docenteID, Enum.Parse<Articulo>(articulo), Estado.Pendiente, RangoFechas.Create(fechaInicio, fechaFin), observacion) { }
+	public Licencia(
+		Guid docenteID,
+		string articulo,
+		DateTime fechaInicio,
+		DateTime fechaFin,
+		string? observacion)
+			: this(
+				Guid.NewGuid(),
+				docenteID,
+				Enum.Parse<Articulo>(articulo),
+				Estado.Pendiente,
+				RangoFechas.Create(fechaInicio,
+				fechaFin),
+				observacion) { }
 	#endregion
 
 	public bool EstaActiva() =>
@@ -100,7 +124,8 @@ public sealed class Licencia : Entity
 	{
 		if (fechaFin.Date <= DateTime.Today.Date)
 		{
-			throw new ArgumentException("La fecha de finalización debe ser posterior al día de hoy.");
+			var msg = "La fecha de finalización debe ser posterior al día de hoy.";
+			throw new ArgumentException(msg);
 		}
 
 		if (!EstaActiva())
@@ -110,7 +135,8 @@ public sealed class Licencia : Entity
 
 		if (!EsIndefinida())
 		{
-			throw new ArgumentException("La licencia ya posee una fecha de finalizacion.");
+			var msg = "La licencia ya posee una fecha de finalizacion.";
+			throw new ArgumentException(msg);
 		}
 
 		Periodo = Periodo.ActualizarFechaFin(fechaFin);
@@ -145,7 +171,8 @@ public sealed class Licencia : Entity
 	{
 		if (cantidadDias <= 0)
 		{
-			throw new ArgumentException("Se debe especificar la cantidad de días que quiere extender la licencia.");
+			var msg = "Se debe especificar la cantidad de días que quiere extender la licencia.";
+			throw new ArgumentException(msg);
 		}
 
 		if (!EstaActiva())
@@ -168,10 +195,11 @@ public sealed class Licencia : Entity
 		{
 			if (observacion.Trim().Length > 250)
 			{
-				throw new ExcesoCaracteresException("La observación no debe superar los 250 caracteres.");
+				var msg = "La observación no debe superar los 250 caracteres.";
+				throw new ExcesoCaracteresException();
 			}
 		}
 
 		Observacion = observacion;
 	}
-}
+}
