@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 using System.Text.RegularExpressions;
 
 namespace Domain.Personas;
@@ -14,7 +14,13 @@ public class DatosPersonales : ValueObject
 
 
 	#region CONSTRUCTOR
-	private DatosPersonales(string apellido, string nombre, string documento, Sexo sexo, DateTime fechaNacimiento, string nacionalidad)
+	private DatosPersonales(
+		string apellido,
+		string nombre,
+		string documento,
+		Sexo sexo,
+		DateTime fechaNacimiento,
+		string nacionalidad)
 	{
 		var mensajeError = "La información personal posee datos incompletos.";
 		// Corroboramos los datos que se ingresa
@@ -37,7 +43,8 @@ public class DatosPersonales : ValueObject
 		Regex re = new Regex(@"^(\d{7,8})$");
 		if (!re.IsMatch(documento))
 		{
-			throw new FormatException($"El formato del DNI, { documento }, es inválido. Formatos habilitados: xxxxxxxx");
+			var msg = $"El formato del DNI, {documento}, es inválido. Formatos habilitados: xxxxxxxx";
+			throw new FormatException(msg);
 		}
 
 		/*
@@ -51,7 +58,8 @@ public class DatosPersonales : ValueObject
 
 		if (fechaNacimiento.Date > DateTime.Today.Date)
 		{
-			throw new ArgumentException($"La fecha de nacimiento no puede ser mayor a la fecha actual ({DateTime.Today.Date}).", nameof(fechaNacimiento));
+			var msg = $"La fecha de nacimiento no puede ser mayor a la fecha actual ({DateTime.Today.Date}).";
+			throw new ArgumentException(msg, nameof(fechaNacimiento));
 		}
 
 		if (string.IsNullOrWhiteSpace(nacionalidad.Trim()))
@@ -67,15 +75,27 @@ public class DatosPersonales : ValueObject
 		Nacionalidad = nacionalidad;
 	}
 
-	public static DatosPersonales Crear(string apellido, string nombre, string dni, string sexo, DateTime fechaNacimiento, string nacionalidad) =>
-		new(apellido, nombre, dni, Enum.Parse<Sexo>(sexo), fechaNacimiento, nacionalidad);
+	public static DatosPersonales Crear(
+		string apellido,
+		string nombre,
+		string dni,
+		string sexo,
+		DateTime fechaNacimiento,
+		string nacionalidad) =>
+			new(apellido,
+				nombre,
+				dni,
+				Enum.Parse<Sexo>(sexo),
+				fechaNacimiento,
+				nacionalidad);
 	#endregion
 
 	private void EstablecerFechaNacimiento(DateTime fechaNacimiento)
 	{
 		if (fechaNacimiento.Date > DateTime.Today.Date)
 		{
-			throw new ArgumentException($"La fecha de nacimiento no puede ser mayor a la fecha actual ({DateTime.Today.Date}).", nameof(fechaNacimiento));
+			var msg = $"La fecha de nacimiento no puede ser mayor a la fecha actual ({DateTime.Today.Date}).";
+			throw new ArgumentException(msg, nameof(fechaNacimiento));
 		}
 
 		FechaNacimiento = fechaNacimiento.Date;
@@ -91,7 +111,8 @@ public class DatosPersonales : ValueObject
 		var nuevoSexo = Enum.Parse<Sexo>(sexo);
 		if (Sexo.Equals(nuevoSexo))
 		{
-			throw new ArgumentException("Error al hacer el cambio de sexo: El sexo registrado y el nuevo son iguales.", nameof(nuevoSexo));
+			var msg = "Error al hacer el cambio de sexo: El sexo registrado y el nuevo son iguales.";
+			throw new ArgumentException(msg, nameof(nuevoSexo));
 		}
 
 		return new(apellido, nombre, Documento, nuevoSexo, FechaNacimiento, Nacionalidad);
@@ -99,7 +120,9 @@ public class DatosPersonales : ValueObject
 
 	public string NombreCompleto() => $"{Apellido}, {Nombre}";
 	
-	public int Edad() => DateTime.Today.Year - FechaNacimiento.Date.Year;
+	public int Edad() => DateTime.Today.Subtract(FechaNacimiento.Date).Days / 365;
+
+	public bool EsMayorDeEdad() => Edad() >= 18;
 
 	public override IEnumerable<object> GetEqualityCommponents()
 	{
@@ -109,4 +132,4 @@ public class DatosPersonales : ValueObject
 		yield return FechaNacimiento;
 		yield return Nacionalidad;
 	}
-}
+}
