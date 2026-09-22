@@ -1,6 +1,11 @@
-﻿using Domain.Alumnos;
+using Domain.Alumnos;
+using Domain.Asistencias;
+using Domain.Catedras;
 using Domain.Curriculas;
+using Domain.Materias;
+using Domain.Cursantes;
 using Domain.Cursos;
+using Domain.Divisiones;
 using Domain.Docentes;
 using Domain.Licencias;
 using Domain.Usuarios;
@@ -17,9 +22,19 @@ public interface IUnitOfWork : IDisposable
 
 	ICursoRepository Cursos { get; }
 
+	IDivisionRepository Divisiones { get; }
+
+	ICursanteRepository Cursantes { get; }
+
 	ICurriculaRepository Curriculas { get; }
 
+	IMateriaRepository Materias { get; }
+
+	ICatedraRepository Catedras { get; }
+
 	IUsuarioRepository Usuarios { get; }
+
+	IPlanillaAsistenciaRepository PlanillasAsistencia { get; }
 
 	Task<int> GuardarCambiosAsync();
 
@@ -36,4 +51,4 @@ public interface IUnitOfWork : IDisposable
 
 	Task RollbackTransactionAsync();
 	#endregion
-}
+}
