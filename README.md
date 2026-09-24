@@ -32,8 +32,7 @@
 
 ## Descripción
 
-**EDUSIS** es una aplicación de escritorio **WPF sobre .NET 7** con persistencia en **SQL Server** para la gestión administrativa de una institución educativa: legajos de
-docentes y alumnos, puestos y situación de revista, cursos y divisiones, currículas y materias, inscripción de cursantes, licencias y usuarios.
+**EDUSIS** es una aplicación de escritorio **WPF sobre .NET 7** con persistencia en **SQL Server** para la gestión administrativa de una institución educativa: legajos de docentes y alumnos, puestos y situación de revista, cursos y divisiones, currículas, materias y cátedras, inscripción de cursantes con sus calificaciones, asistencia diaria por división, licencias y usuarios.
 
 El dominio está modelado con **DDD táctico** (modelo rico, invariantes en las entidades, eventos de dominio) y la aplicación se organiza en **casos de uso** por módulo.
 
@@ -58,8 +57,9 @@ WPF_Desktop (net7.0-windows, UI)  ──►  Core  ──►  Domain
 
 ## Módulos
 
-`Alumnos` · `Docentes` (+ `Puestos`) · `Cursos` (con sus divisiones) · `Curriculas` (+ `Materias`) ·
-`Cursantes` · `Licencias` · `Personas` · `Usuarios`
+`Alumnos` · `Docentes` (+ `Puestos`) · `Cursos` · `Divisiones` · `Curriculas` · `Materias` · `Catedras` (+ `SituacionesRevista`, `Horarios`) · `Cursantes` (+ `Calificaciones`) · `Asistencias` · `Licencias` · `Personas` · `Usuarios`
+
+Cada módulo de primer nivel es una raíz de agregado con su repositorio. Los agregados se referencian sólo por identificador.
 
 `Persona` es la base de `Alumno` y `Docente` (jerarquía mapeada con TPT).
 
@@ -109,7 +109,7 @@ dotnet ef database update --project Infrastructure --startup-project WPF_Desktop
 
 ## Pruebas
 
-La suite vive en `tests/` (5 proyectos) y está segmentada por `[Trait("Categoria", ...)]` en `Unidad` / `Integracion` / `E2E`. `Unidad` corre siempre; `Integracion` y `E2E` se omiten si no hay Docker ni `EDUSIS_TEST_SQLSERVER`.
+La suite vive en `tests/` (6 proyectos) y está segmentada por `[Trait("Categoria", ...)]` en `Unidad` / `Integracion` / `E2E`. `Unidad` corre siempre; `Integracion` y `E2E` se omiten si no hay Docker ni `EDUSIS_TEST_SQLSERVER`.
 
 ```bash
 dotnet test EDUSIS.sln            # todas las categorías aplicables al entorno
@@ -128,7 +128,7 @@ EDUSIS/
 ├─ Core/              # Capa de aplicación: servicios de caso de uso + DTOs
 ├─ Infrastructure/    # EF Core, UnitOfWork, repositorios, eventos
 ├─ WPF_Desktop/       # UI WPF (MVVM + CommunityToolkit)
-├─ tests/             # EDUSIS.TestSupport, Domain.UnitTests, Core.UnitTests, Infrastructure.IntegrationTests, EDUSIS.EndToEndTests
+├─ tests/             # EDUSIS.TestSupport.Domain, EDUSIS.TestSupport, Domain.UnitTests, Core.UnitTests, Infrastructure.IntegrationTests, EDUSIS.EndToEndTests
 ├─ specs/             # Especificaciones de features (spec-kit)
 ├─ docs/              # Recursos de documentación (logo, imágenes)
 └─ EDUSIS.sln
