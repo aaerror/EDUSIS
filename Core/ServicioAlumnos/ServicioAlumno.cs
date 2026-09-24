@@ -27,7 +27,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 		var alumno = await _unitOfWork.Alumnos.BuscarPorIDAsync(personaID);
 		if (alumno is null)
 		{
-			throw new NullReferenceException($"No se encontró el alumno con el siguiente Id: { personaID }");
+			var msg = $"No se encontró el alumno con el siguiente Id: { personaID }";
+			throw new NullReferenceException(msg);
 		}
 
 		return alumno;
@@ -127,11 +128,12 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 				provincia: request.Provincia,
 				pais: request.Pais);
 
-			var unAlumno = new Alumno(Guid.NewGuid().ToString().GetHashCode().ToString("x"),
-									  datosPersonales,
-									  domicilio,
-									  request.Email,
-									  request.Telefono);
+			var unAlumno = new Alumno(
+				Guid.NewGuid().ToString().GetHashCode().ToString("x"),
+				datosPersonales,
+				domicilio,
+				request.Email,
+				request.Telefono);
 
 			await _unitOfWork.Alumnos.AgregarAsync(unAlumno);
 			await _unitOfWork.GuardarCambiosAsync();
@@ -161,6 +163,7 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 			alumno.CambiarNombreCompleto(nuevoApellido, nuevoNombre);
 
 			_unitOfWork.Alumnos.Modificar(alumno);
+
 			await _unitOfWork.GuardarCambiosAsync();
 		}
 		catch (Exception ex)
@@ -199,13 +202,14 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 
 			var unAlumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
 
-			var nuevoDomicilio = Domicilio.Crear(request.Calle,
-												 request.Altura,
-												 request.Vivienda,
-												 request.Observacion,
-												 request.Localidad,
-												 request.Provincia,
-												 request.Pais);
+			var nuevoDomicilio = Domicilio.Crear(
+				request.Calle,
+				request.Altura,
+				request.Vivienda,
+				request.Observacion,
+				request.Localidad,
+				request.Provincia,
+				request.Pais);
 			unAlumno.CambiarDomicilio(nuevoDomicilio);
 
 			_unitOfWork.Alumnos.Modificar(unAlumno);
@@ -246,10 +250,11 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	{
 		var alumno = await BuscarAlumnoPorIDAsync(personaId);
 
-		var nuevaDireccion = Direccion.Crear(request.Calle,
-											 request.Altura,
-											 request.Vivienda,
-											 request.Observacion);
+		var nuevaDireccion = Direccion.Crear(
+			request.Calle,
+			request.Altura,
+			request.Vivienda,
+			request.Observacion);
 
 		alumno.CambiarDireccion(nuevaDireccion);
 

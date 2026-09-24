@@ -51,28 +51,32 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		{
 			var docente = await BuscarDocentePorIDAsync(request.DocenteID);
 
-			var informacionPersonal = new DatosPersonalesResponse(Apellido: docente.DatosPersonales.Apellido,
-																  Nombre: docente.DatosPersonales.Nombre,
-																  DNI: docente.DatosPersonales.Documento,
-																  Sexo: docente.DatosPersonales.Sexo.ToString(),
-																  FechaNacimiento: docente.DatosPersonales.FechaNacimiento.Date,
-																  Nacionalidad: docente.DatosPersonales.Nacionalidad);
+			var informacionPersonal = new DatosPersonalesResponse(
+				Apellido: docente.DatosPersonales.Apellido,
+				Nombre: docente.DatosPersonales.Nombre,
+				DNI: docente.DatosPersonales.Documento,
+				Sexo: docente.DatosPersonales.Sexo.ToString(),
+				FechaNacimiento: docente.DatosPersonales.FechaNacimiento.Date,
+				Nacionalidad: docente.DatosPersonales.Nacionalidad);
 
-			var domicilio = new DomicilioResponse(Calle: docente.Domicilio.Direccion.Calle,
-												  Altura: docente.Domicilio.Direccion.Altura,
-												  Vivienda: docente.Domicilio.Direccion.Vivienda.ToString(),
-												  Observacion: docente.Domicilio.Direccion.Observacion,
-												  Localidad: docente.Domicilio.Ubicacion.Localidad,
-												  Provincia: docente.Domicilio.Ubicacion.Provincia,
-												  Pais: docente.Domicilio.Ubicacion.Pais);
+			var domicilio = new DomicilioResponse(
+				Calle: docente.Domicilio.Direccion.Calle,
+				Altura: docente.Domicilio.Direccion.Altura,
+				Vivienda: docente.Domicilio.Direccion.Vivienda.ToString(),
+				Observacion: docente.Domicilio.Direccion.Observacion,
+				Localidad: docente.Domicilio.Ubicacion.Localidad,
+				Provincia: docente.Domicilio.Ubicacion.Provincia,
+				Pais: docente.Domicilio.Ubicacion.Pais);
 
-			var contacto = new ContactoResponse(Telefono: docente.Telefono,
-												Email: docente.Email);
+			var contacto = new ContactoResponse(
+				Telefono: docente.Telefono,
+				Email: docente.Email);
 
-			return new PerfilDocenteResponse(DocenteID: docente.Id,
-											InformacionPersonalDTO: informacionPersonal,
-											DomicilioDTO: domicilio,
-											ContactoDTO: contacto);
+			return new PerfilDocenteResponse(
+				DocenteID: docente.Id,
+				InformacionPersonalDTO: informacionPersonal,
+				DomicilioDTO: domicilio,
+				ContactoDTO: contacto);
 		}
 		catch (Exception ex)
 		{
@@ -124,16 +128,17 @@ internal class ServicioDocente : IServicio, IServicioDocente
 
 			_logger.LogInformation($"Se encontraron { docentes.Count() } docentes activos.");
 
-			return docentes.Select(x =>
-				new LegajoDocenteResponse(
-					DocenteID: x.Id,
-					NombreCompleto: x.DatosPersonales.NombreCompleto(),
-					DNI: x.DatosPersonales.Documento,
-					CUIL: x.CUIL,
-					Legajo: x.Legajo,
-					FechaInicio: x.Periodo.FechaInicio,
-					FechaFin: x.Periodo.FechaFin,
-					Activo: x.Activo))
+			return docentes
+				.Select(x =>
+					new LegajoDocenteResponse(
+						DocenteID: x.Id,
+						NombreCompleto: x.DatosPersonales.NombreCompleto(),
+						DNI: x.DatosPersonales.Documento,
+						CUIL: x.CUIL,
+						Legajo: x.Legajo,
+						FechaInicio: x.Periodo.FechaInicio,
+						FechaFin: x.Periodo.FechaFin,
+						Activo: x.Activo))
 				.ToList();
 				// Puestos: _unitOfWork.Docentes.PuestosPorDocente(x.Id)));
 		}
@@ -148,20 +153,23 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			var docentes = await _unitOfWork.Docentes.BuscarSegunNombreCompletoAsync(request.NombreCompleto);
+			var docentes = await _unitOfWork.Docentes
+				.BuscarSegunNombreCompletoAsync(request.NombreCompleto);
 
-			_logger.LogInformation($"Se encontraron { docentes.Count() } docentes con coincidencias en el nombre completo.");
+			var log = $"Se encontraron {docentes.Count()} docentes con coincidencias en el nombre completo.";	
+			_logger.LogInformation(log);
 
-			return docentes.Select(x =>
-				new LegajoDocenteResponse(
-					DocenteID: x.Id,
-					NombreCompleto: x.DatosPersonales.NombreCompleto(),
-					DNI: x.DatosPersonales.Documento,
-					CUIL: x.CUIL,
-					Legajo: x.Legajo,
-					FechaInicio: x.Periodo.FechaInicio,
-					FechaFin: x.Periodo.FechaFin,
-					Activo: x.Activo))
+			return docentes
+				.Select(x =>
+					new LegajoDocenteResponse(
+						DocenteID: x.Id,
+						NombreCompleto: x.DatosPersonales.NombreCompleto(),
+						DNI: x.DatosPersonales.Documento,
+						CUIL: x.CUIL,
+						Legajo: x.Legajo,
+						FechaInicio: x.Periodo.FechaInicio,
+						FechaFin: x.Periodo.FechaFin,
+						Activo: x.Activo))
 				.ToList();
 		}
 		catch (Exception ex)
@@ -175,20 +183,23 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			var preceptores = await _unitOfWork.Docentes.BuscarAsync(x => x.Puesto.Posicion.Equals(Posicion.Preceptor) && x.Puesto.EstaActivo());
+			var preceptores = await _unitOfWork.Docentes
+				.BuscarAsync(x =>
+					x.Puesto.Posicion.Equals(Posicion.Preceptor) && x.Puesto.EstaActivo());
 
 			_logger.LogInformation($"Se encontraron { preceptores.Count() } preceptores activos.");
 
-			return preceptores.Select(x =>
-				new LegajoDocenteResponse(
-					DocenteID: x.Id,
-					NombreCompleto: x.DatosPersonales.NombreCompleto(),
-					DNI: x.DatosPersonales.Documento,
-					CUIL: x.CUIL,
-					Legajo: x.Legajo,
-					FechaInicio: x.Periodo.FechaInicio,
-					FechaFin: x.Periodo.FechaFin,
-					Activo: x.Activo))
+			return preceptores
+				.Select(x =>
+					new LegajoDocenteResponse(
+						DocenteID: x.Id,
+						NombreCompleto: x.DatosPersonales.NombreCompleto(),
+						DNI: x.DatosPersonales.Documento,
+						CUIL: x.CUIL,
+						Legajo: x.Legajo,
+						FechaInicio: x.Periodo.FechaInicio,
+						FechaFin: x.Periodo.FechaFin,
+						Activo: x.Activo))
 				.ToList();
 		}
 		catch (Exception ex)
@@ -202,7 +213,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			var docente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			var docente = await _unitOfWork.Docentes
+				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
 
 			return new LegajoDocenteResponse(
 				DocenteID: docente.Id,
@@ -230,51 +242,61 @@ internal class ServicioDocente : IServicio, IServicioDocente
 				throw new NullReferenceException("Datos incompletos para registrar el docente.");
 			}
 
-			var esDNIInvalido = await _unitOfWork.Docentes.EsDocumentoInvalidoAsync(request.DatosPersonales.Documento);
+			var esDNIInvalido = await _unitOfWork.Docentes
+				.EsDocumentoInvalidoAsync(request.DatosPersonales.Documento);
 			if (esDNIInvalido)
 			{
 				_logger.LogInformation($"D.N.I. del docente inválido...");
 				throw new ArgumentException("El D.N.I. del docente ya se encuentra registrado.");
 			}
 
-			var esCUILInvalido = await _unitOfWork.Docentes.EsCuilInvalidoAsync(request.CUIL);
+			var esCUILInvalido = await _unitOfWork.Docentes
+				.EsCuilInvalidoAsync(request.CUIL);
 			if (esCUILInvalido)
 			{
 				_logger.LogInformation($"CUIL del docente inválido...");
 				throw new ArgumentException("El CUIL del docente ya se encuentra registrado.");
 			}
 			
-			var esLegajoInvalido = await _unitOfWork.Docentes.EsLegajoInvalidoAsync(request.Legajo);
+			var esLegajoInvalido = await _unitOfWork.Docentes
+				.EsLegajoInvalidoAsync(request.Legajo);
 			if (esLegajoInvalido)
 			{
 				_logger.LogInformation($"Legajo del docente inválido...");
 				throw new ArgumentException("El legajo docente ya se encuentra registrado.");
 			}
 
-			var datosPersonales = DatosPersonales.Crear(apellido: request.DatosPersonales.Apellido,
-														nombre: request.DatosPersonales.Nombre,
-														dni: request.DatosPersonales.Documento,
-														sexo: request.DatosPersonales.Sexo,
-														fechaNacimiento: request.DatosPersonales.FechaNacimiento,
-														nacionalidad: request.DatosPersonales.Nacionalidad);
+			var datosPersonales = DatosPersonales.Crear(
+				apellido: request.DatosPersonales.Apellido,
+				nombre: request.DatosPersonales.Nombre,
+				dni: request.DatosPersonales.Documento,
+				sexo: request.DatosPersonales.Sexo,
+				fechaNacimiento: request.DatosPersonales.FechaNacimiento,
+				nacionalidad: request.DatosPersonales.Nacionalidad);
 
-			var domicilio = Domicilio.Crear(calle: request.Domicilio.Calle,
-											altura: request.Domicilio.Altura,
-											vivienda: request.Domicilio.Vivienda,
-											observacion: request.Domicilio.Observacion,
-											localidad: request.Domicilio.Localidad,
-											provincia: request.Domicilio.Provincia,
-											pais: request.Domicilio.Pais);
+			var domicilio = Domicilio.Crear(
+				calle: request.Domicilio.Calle,
+				altura: request.Domicilio.Altura,
+				vivienda: request.Domicilio.Vivienda,
+				observacion: request.Domicilio.Observacion,
+				localidad: request.Domicilio.Localidad,
+				provincia: request.Domicilio.Provincia,
+				pais: request.Domicilio.Pais);
 
-			var nuevoDocente = new Docente(legajo: request.Legajo,
-										   cuil: request.CUIL,
-										   fechaAlta: request.FechaAlta,
-										   datosPersonales: datosPersonales,
-										   domicilio: domicilio,
-										   email: request.Contacto.Email,
-										   telefono: request.Contacto.Telefono);
+			var nuevoDocente = new Docente(
+				legajo: request.Legajo,
+				cuil: request.CUIL,
+				fechaAlta: request.FechaAlta,
+				datosPersonales: datosPersonales,
+				domicilio: domicilio,
+				email: request.Contacto.Email,
+				telefono: request.Contacto.Telefono);
 
-			nuevoDocente.AsignarCargoDocente(request.Puesto.Posicion, request.Puesto.Estado, request.Puesto.FechaInicio, request.Puesto.FechaFin);
+			nuevoDocente.AsignarCargoDocente(
+				request.Puesto.Posicion,
+				request.Puesto.Estado,
+				request.Puesto.FechaInicio,
+				request.Puesto.FechaFin);
 
 			await _unitOfWork.Docentes.AgregarAsync(nuevoDocente);
 			await _unitOfWork.GuardarCambiosAsync();
@@ -475,17 +497,20 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			var unDocente = await _unitOfWork.Docentes
+				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
 
-			return unDocente.Puestos.Select(x =>
-				new PuestoResponse(
-					PuestoID: x.Id,
-					Estado: x.Estado.ToString(),
-					Posicion: x.Posicion.ToString(),
-					EsEventual: x.EsEventual,
-					FechaInicio: x.Periodo.FechaInicio,
-					FechaFin: x.Periodo.FechaFin,
-					Activo: x.EstaActivo())).ToList();
+			return unDocente.Puestos
+				.Select(x =>
+					new PuestoResponse(
+						PuestoID: x.Id,
+						Estado: x.Estado.ToString(),
+						Posicion: x.Posicion.ToString(),
+						EsEventual: x.EsEventual,
+						FechaInicio: x.Periodo.FechaInicio,
+						FechaFin: x.Periodo.FechaFin,
+						Activo: x.EstaActivo()))
+				.ToList();
 		}
 		catch (Exception ex)
 		{
@@ -498,10 +523,16 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
-			unDocente.AsignarCargoDocente(request.Posicion, request.Estado, request.FechaInicio, request.FechaFin);
+			var unDocente = await _unitOfWork.Docentes
+				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			unDocente.AsignarCargoDocente(
+				request.Posicion,
+				request.Estado,
+				request.FechaInicio,
+				request.FechaFin);
 
 			_unitOfWork.Docentes.Modificar(unDocente);
+
 			await _unitOfWork.GuardarCambiosAsync();
 		}
 		catch (Exception ex)
@@ -515,10 +546,16 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
-			unDocente.ModificarCargoDocente(request.PuestoID, request.Posicion, request.FechaInicio, request.FechaFin);
+			var unDocente = await _unitOfWork.Docentes
+				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			unDocente.ModificarCargoDocente(
+				request.PuestoID,
+				request.Posicion,
+				request.FechaInicio,
+				request.FechaFin);
 
 			_unitOfWork.Docentes.Modificar(unDocente);
+
 			await _unitOfWork.GuardarCambiosAsync();
 		}
 		catch (Exception ex)
@@ -553,7 +590,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			var unDocente = await _unitOfWork.Docentes
+				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
 			unDocente.RescindirCargoDocente(request.PuestoID, request.FechaFin);
 
 			_logger.LogInformation($"\nRevocando puesto docente...\nPuestoID: {request.PuestoID}");
@@ -574,15 +612,17 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			var unDocente = await _unitOfWork.Docentes.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+			var unDocente = await _unitOfWork.Docentes
+				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
 			unDocente.EliminarCargoDocente(request.PuestoID);
 
-			_logger.LogInformation($"\nEliminando puesto docente...\nPuestoID: { request.PuestoID }");
+			var log = $"\nEliminando puesto docente...\nPuestoID: {request.PuestoID}";
+			_logger.LogInformation(log);
 
 			_unitOfWork.Docentes.Modificar(unDocente);
 			var result = await _unitOfWork.GuardarCambiosAsync();
 
-			_logger.LogInformation($"{ result } registro modificado correctamente en el docente.");
+			_logger.LogInformation($"{result} registro modificado correctamente en el docente.");
 		}
 		catch (Exception ex)
 		{
