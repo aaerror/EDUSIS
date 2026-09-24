@@ -1,10 +1,16 @@
-﻿using Domain.Alumnos;
+using Domain.Alumnos;
+using Domain.Asistencias;
+using Domain.Catedras;
 using Domain.Curriculas;
+using Domain.Cursantes;
 using Domain.Cursos;
+using Domain.Divisiones;
 using Domain.Docentes;
 using Domain.Licencias;
+using Domain.Materias;
 using Domain.Personas;
 using Domain.Usuarios;
+using Infrastructure.EntityConfigurations;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure;
@@ -19,6 +25,11 @@ public class EdusisDBContext : DbContext
 	public DbSet<Curricula> Curriculas { get; set; }
 	public DbSet<Rol> Rol { get; set; }
 	public DbSet<Usuario> Usuarios { get; set; }
+	public DbSet<Division> Divisiones { get; set; }
+	public DbSet<Cursante> Cursantes { get; set; }
+	public DbSet<Materia> Materias { get; set; }
+	public DbSet<Catedra> Catedras { get; set; }
+	public DbSet<PlanillaAsistencia> PlanillasAsistencia { get; set; }
 
 
 	public EdusisDBContext(DbContextOptions options)
@@ -54,6 +65,9 @@ public class EdusisDBContext : DbContext
 		modelBuilder.ApplyConfiguration(new MateriasConfiguration());
 		modelBuilder.ApplyConfiguration(new DivisionesConfigurations());
 		modelBuilder.ApplyConfiguration(new UsuariosConfiguration());*/
+
+		// Catálogo shared-type: CicloLectivo es VO de Cursante, no entidad de dominio (ver CicloLectivoConfiguration).
+		modelBuilder.ConfigurarCatalogoCicloLectivo();
 
 		modelBuilder.ApplyConfigurationsFromAssembly(typeof(EdusisDBContext).Assembly);
 	}

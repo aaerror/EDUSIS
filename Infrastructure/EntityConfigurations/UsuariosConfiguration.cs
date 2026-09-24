@@ -1,4 +1,5 @@
-﻿using Domain.Usuarios;
+using Domain.Docentes;
+using Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,6 +27,14 @@ internal class UsuariosConfiguration : IEntityTypeConfiguration<Usuario>
 		builder.Property(x => x.DocenteID)
 			   .HasColumnName("docente_id")
 			   .IsRequired();
+
+		// FK_USUARIO_DOCENTE
+		builder.HasOne<Docente>()
+			   .WithOne()
+			   .HasForeignKey<Usuario>(x => x.DocenteID)
+			   .HasConstraintName("FK_USUARIO_DOCENTE")
+			   .IsRequired()
+			   .OnDelete(DeleteBehavior.Restrict);
 /*
 		builder.HasOne<Docente>()
 			   .WithOne()
@@ -35,34 +44,46 @@ internal class UsuariosConfiguration : IEntityTypeConfiguration<Usuario>
 
 		builder.Property(x => x.Username)
 			   .HasColumnName("usuario")
-			   .HasColumnType("varchar(18)")
+			   .HasMaxLength(18)
+			   .IsUnicode(false)
 			   .IsRequired();
 
 		builder.Property(x => x.PasswordSalt)
 			   .HasColumnName("password_salt")
-			   .HasColumnType("varchar(256)")
+			   .HasMaxLength(256)
+			   .IsUnicode(false)
 			   .IsRequired();
 
 		builder.Property(x => x.PasswordHash)
 			   .HasColumnName("password_hash")
-			   .HasColumnType("varchar(256)")
+			   .HasMaxLength(256)
+			   .IsUnicode(false)
 			   .IsRequired();
 
 		builder.HasMany(x => x.Roles)
 			   .WithMany()
-			   .UsingEntity(manyToMany =>
-			   {
-				   manyToMany.ToTable("usuario_rol");
+			   .UsingEntity(
+					right => right.HasOne(typeof(Rol))
+								  .WithMany()
+								  .HasForeignKey("RolesId")
+								  .HasConstraintName("FK_USUARIO_ROL_ROL"),
+					left => left.HasOne(typeof(Usuario))
+								.WithMany()
+								.HasForeignKey("UsuarioId")
+								.HasConstraintName("FK_USUARIO_ROL_USUARIO"),
+					manyToMany =>
+					{
+						manyToMany.ToTable("usuario_rol");
 
-				   manyToMany.Property("RolesId")
-							 .HasColumnName("rol_id");
+						manyToMany.Property("RolesId")
+								  .HasColumnName("rol_id");
 
-				   manyToMany.Property("UsuarioId")
-							 .HasColumnName("usuario_id");
+						manyToMany.Property("UsuarioId")
+								  .HasColumnName("usuario_id");
 
-				   manyToMany.HasKey("RolesId", "UsuarioId")
-							 .HasName("PK_USUARIO-ROL");
-			   })
+						manyToMany.HasKey("RolesId", "UsuarioId")
+								  .HasName("PK_USUARIO_ROL");
+					})
 			   .UsePropertyAccessMode(PropertyAccessMode.Field);
 		/*
 		builder.Property(x => x.Rol)

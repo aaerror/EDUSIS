@@ -1,5 +1,5 @@
-﻿using Domain.Cursos;
-using Domain.Docentes;
+using Domain.Cursos;
+using Domain.Shared;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +10,7 @@ internal class CursosConfiguration : IEntityTypeConfiguration<Curso>
 	public void Configure(EntityTypeBuilder<Curso> builder)
 	{
 		ConfigureTableCursos(builder);
-		ConfigureTableDivisiones(builder);
+		//ConfigureTableDivisiones(builder);
 	}
 
 	private void ConfigureTableCursos(EntityTypeBuilder<Curso> builder)
@@ -51,16 +51,13 @@ internal class CursosConfiguration : IEntityTypeConfiguration<Curso>
 			   .HasConstraintName("FK_CURSO_DIVISION");
 		*/
 
-		// IGNORE
-		builder.Ignore(x => x.CantidadDivisiones);
-		builder.Ignore(x => x.CantidadAlumnos);
-
 		/*
 		builder.Metadata.FindNavigation(nameof(Curso.Divisiones))
 						.SetPropertyAccessMode(PropertyAccessMode.Field);
 		*/
 	}
 
+#if false
 	private void ConfigureTableDivisiones(EntityTypeBuilder<Curso> builder)
 	{
 		builder.OwnsMany(x => x.Divisiones, divisionBuilder =>
@@ -208,4 +205,5 @@ internal class CursosConfiguration : IEntityTypeConfiguration<Curso>
 			   .Navigation(nameof(Curso.Divisiones))
 			   .UsePropertyAccessMode(PropertyAccessMode.Field);
 	}
+#endif
 }

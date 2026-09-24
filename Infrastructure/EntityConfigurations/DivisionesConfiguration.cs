@@ -1,11 +1,53 @@
-﻿using Domain.Alumnos;
 using Domain.Cursos;
+using Domain.Divisiones;
 using Domain.Docentes;
-using Domain.Curriculas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.EntityConfigurations;
+
+internal class DivisionesConfiguration : IEntityTypeConfiguration<Division>
+{
+	public void Configure(EntityTypeBuilder<Division> builder)
+	{
+		builder.ToTable("division");
+
+		builder.Property(x => x.Id)
+			   .HasColumnName("division_id")
+			   .ValueGeneratedNever();
+
+		// PK_DIVISION
+		builder.HasKey(x => x.Id)
+			   .HasName("PK_DIVISION");
+
+		builder.Property(x => x.CursoID)
+			   .HasColumnName("curso_id");
+
+		// FK_DIVISION_CURSO
+		builder.HasOne<Curso>()
+			   .WithMany()
+			   .HasForeignKey(x => x.CursoID)
+			   .OnDelete(DeleteBehavior.Restrict)
+			   .HasConstraintName("FK_DIVISION_CURSO");
+
+		builder.Property(x => x.Descripcion)
+			   .HasColumnName("descripcion")
+			   .HasMaxLength(1)
+			   .IsUnicode(false)
+			   .IsRequired();
+
+		builder.Property(x => x.Preceptor)
+			   .HasColumnName("preceptor_id")
+			   .IsRequired(false);
+
+		// FK_DIVISION_DOCENTE
+		builder.HasOne<Docente>()
+			   .WithMany()
+			   .HasForeignKey(x => x.Preceptor)
+			   .OnDelete(DeleteBehavior.Restrict)
+			   .HasConstraintName("FK_DIVISION_DOCENTE");
+	}
+}
 
 /*public class DivisionesConfiguration : IEntityTypeConfiguration<Division>
 {

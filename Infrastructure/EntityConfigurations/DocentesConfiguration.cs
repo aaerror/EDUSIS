@@ -1,8 +1,5 @@
-﻿using Domain.Docentes;
-using Domain.Docentes.Puestos;
-using Domain.Licencias;
+using Domain.Docentes;
 using Domain.Personas;
-using Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -23,59 +20,42 @@ internal class DocentesConfiguration : IEntityTypeConfiguration<Docente>
 
 		builder.ToTable("docente");
 
+		// PK/FK de herencia TPT: ver nota en PersonasConfiguration.ConfigureTablePersonas.
+		// No se puede nombrar la PK por tabla (HasKey no admite llamarse en un tipo
+		// derivado: EF lanza InvalidOperationException) ni la FK de herencia
+		// docente->persona (no existe como IMutableForeignKey durante Configure();
+		// EF la crea recién al finalizar el modelo). Quedan con el nombre de EF
+		// por convención (PK_docente / FK_docente_persona_persona_id).
 		builder.Property(x => x.Legajo)
 			   .HasColumnName("legajo")
-			   .HasColumnType("varchar(6)")
+			   .HasMaxLength(6)
+			   .IsUnicode(false)
 			   .IsRequired();
 
 		builder.Property(x => x.CUIL)
 			   .HasColumnName("cuil")
-			   .HasColumnType("varchar(11)")
+			   .HasMaxLength(11)
+			   .IsUnicode(false)
 			   .IsRequired();
 
-		builder.OwnsOne(x => x.Periodo, periodoBuilder =>
-		{
-			periodoBuilder.Property(a => a.FechaInicio)
-						  .HasColumnName("fecha_inicio")
-						  .HasColumnType("date")
-						  .IsRequired();
-
-			periodoBuilder.Property(a => a.FechaFin)
-						  .HasColumnName("fecha_fin")
-						  .HasColumnType("date")
-						  .IsRequired(false);
-		});
+		builder.OwnsOne(x => x.Periodo, periodoBuilder => periodoBuilder.ConfigurarPeriodo());
 
 		builder.Property(x => x.Activo)
 			   .HasColumnName("activo")
 			   .HasColumnType("bit");
 
-		builder.HasOne<Usuario>()
+		// FK_PUESTO_DOCENTE
+		builder.HasMany(x => x.Puestos)
 			   .WithOne()
-			   .HasForeignKey<Usuario>(x => x.DocenteID)
-			   .HasConstraintName("FK_USUARIO_DOCENTE")
-			   .IsRequired(false);
-
-		builder.HasMany<Licencia>(x => x.Licencias)
-			   .WithOne()
-			   .HasPrincipalKey(x => x.Id)
 			   .HasForeignKey(x => x.DocenteID)
-			   .HasConstraintName("FK_LICENCIA_DOCENTE");
-
-		builder.HasMany<Puesto>(x => x.Puestos)
-			   .WithOne()
-			   .HasPrincipalKey(x => x.Id)
-			   .HasForeignKey(x => x.DocenteID)
-			   .HasConstraintName("FK_PUESTO_DOCENTE");
+			   .HasConstraintName("FK_PUESTO_DOCENTE")
+			   .OnDelete(DeleteBehavior.Cascade);
 
 		//builder.Ignore(x => x.EstaActivo());
 		builder.Ignore(x => x.Puesto);
 
-		builder.Metadata.FindNavigation(nameof(Docente.Licencias))
-						.SetPropertyAccessMode(PropertyAccessMode.Field);
-
-		builder.Metadata.FindNavigation(nameof(Docente.Puestos))
-						.SetPropertyAccessMode(PropertyAccessMode.Field);
+		builder.Navigation(x => x.Puestos)
+			   .UsePropertyAccessMode(PropertyAccessMode.Field);
 	}
 
 	/*

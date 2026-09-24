@@ -1,4 +1,4 @@
-﻿using Domain.Docentes.Puestos;
+using Domain.Docentes.Puestos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -36,17 +36,6 @@ internal class PuestosDocenteConfiguration : IEntityTypeConfiguration<Puesto>
 			   .HasColumnName("es_eventual")
 			   .HasColumnType("bit");
 
-		builder.OwnsOne(x => x.Periodo, periodoBuilder =>
-		{
-			periodoBuilder.Property(a => a.FechaInicio)
-						  .HasColumnName("fecha_inicio")
-						  .HasColumnType("date")
-						  .IsRequired();
-
-			periodoBuilder.Property(a => a.FechaFin)
-						  .HasColumnName("fecha_fin")
-						  .HasColumnType("date")
-						  .IsRequired(false);
-		});
+		builder.OwnsOne(x => x.Periodo, periodoBuilder => periodoBuilder.ConfigurarPeriodo());
 	}
 }

@@ -1,5 +1,6 @@
-﻿using Domain.Alumnos;
+using Domain.Alumnos;
 using Domain.Cursantes;
+using Domain.Divisiones;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,35 +11,40 @@ internal class CursantesConfiguration : IEntityTypeConfiguration<Cursante>
 	public void Configure(EntityTypeBuilder<Cursante> builder)
 	{
 		ConfigureTableCursantes(builder);
-		ConfigureTableAsistencias(builder);
 	}
 
 	public void ConfigureTableCursantes(EntityTypeBuilder<Cursante> builder)
 	{
-		builder.ToTable("cursantes");
+		builder.ToTable("cursante");
 
 		builder.HasKey(x => x.Id)
-			   .HasName("PK_CURSANTES");
+			   .HasName("PK_CURSANTE");
 
 		builder.Property(x => x.Id)
 			   .HasColumnName("cursante_id")
 			   .ValueGeneratedNever();
 
-		// FK_CICLO-LECTIVO_CURSANTES
-		builder.HasOne<CicloLectivo>(x => x.CicloLectivo)
-			   .WithMany()
-			   .HasForeignKey("ciclo_lectivo_id")
-			   .HasConstraintName("FK_CICLO-LECTIVO_CURSANTES");
-
-		// FK_ALUMNOS_CURSANTES
-		builder.HasOne<Alumno>()
-			   .WithOne()
-			   .HasForeignKey<Cursante>(x => x.AlumnoID)
-			   .HasConstraintName("FK_ALUMNOS_CURSANTES");
-
 		builder.Property(x => x.AlumnoID)
 			   .HasColumnName("alumno_id")
 			   .IsRequired();
+
+		// FK_CURSANTE_ALUMNO
+		builder.HasOne<Alumno>()
+			   .WithMany()
+			   .HasForeignKey(x => x.AlumnoID)
+			   .HasConstraintName("FK_CURSANTE_ALUMNO")
+			   .OnDelete(DeleteBehavior.Restrict);
+
+		builder.Property(x => x.DivisionID)
+			   .HasColumnName("division_id")
+			   .IsRequired();
+
+		// FK_CURSANTE_DIVISION
+		builder.HasOne<Division>()
+			   .WithMany()
+			   .HasForeignKey(x => x.DivisionID)
+			   .HasConstraintName("FK_CURSANTE_DIVISION")
+			   .OnDelete(DeleteBehavior.Restrict);
 
 		builder.Property(x => x.FechaInicio)
 			   .HasColumnName("fecha_inicio")
@@ -50,11 +56,45 @@ internal class CursantesConfiguration : IEntityTypeConfiguration<Cursante>
 			   .HasColumnType("date")
 			   .IsRequired(false);
 
-		builder.Ignore(x => x.Ausencias);
-		builder.Ignore(x => x.Inasistencias);
-		builder.Ignore(x => x.Tardanzas);
+		builder.Property(x => x.EsRecursante)
+			   .HasColumnName("es_recursante")
+			   .HasColumnType("bit")
+			   .IsRequired();
+
+		// CicloLectivo es VO: se mapea con OwnsOne, y su Periodo dobla como columna propia
+		// y como FK hacia el catálogo ciclo_lectivo (ver CicloLectivoConfiguration).
+		builder.OwnsOne(x => x.CicloLectivo, ciclo =>
+		{
+			ciclo.Property(x => x.Periodo)
+				 .HasColumnName("ciclo_lectivo")
+				 .HasColumnType("smallint")
+				 .HasConversion(
+					 toProvider => short.Parse(toProvider),
+					 fromProvider => fromProvider.ToString())
+				 .IsRequired();
+
+			// FK_CURSANTE_CICLO_LECTIVO. Sobrecarga (relatedTypeName, navigationName): CicloLectivo
+			// no tiene una navegación de dominio hacia el catálogo, por eso navigationName va en null.
+			ciclo.HasOne(CicloLectivoConfiguration.CATALOGO, navigationName: null)
+				 .WithMany()
+				 .HasForeignKey(nameof(CicloLectivo.Periodo))
+				 .HasPrincipalKey("periodo")
+				 .HasConstraintName("FK_CURSANTE_CICLO_LECTIVO")
+				 .OnDelete(DeleteBehavior.Restrict);
+		});
+
+		// FK_CALIFICACION_CURSANTE (FK sombra "CursanteID", ver CalificacionesConfiguration)
+		builder.HasMany(x => x.Calificaciones)
+			   .WithOne()
+			   .HasForeignKey("CursanteID")
+			   .HasConstraintName("FK_CALIFICACION_CURSANTE")
+			   .OnDelete(DeleteBehavior.Cascade);
+
+		builder.Navigation(x => x.Calificaciones)
+			   .UsePropertyAccessMode(PropertyAccessMode.Field);
 	}
 
+	/*
 	public void ConfigureTableAsistencias(EntityTypeBuilder<Cursante> builder)
 	{
 		builder.OwnsMany(x => x.Asistencias, asistenciasBuilder =>
@@ -75,4 +115,5 @@ internal class CursantesConfiguration : IEntityTypeConfiguration<Cursante>
 			   .Navigation(nameof(Cursante.Asistencias))
 			   .UsePropertyAccessMode(PropertyAccessMode.Field);
 	}
+	*/
 }

@@ -1,4 +1,4 @@
-﻿using Domain.Curriculas;
+using Domain.Curriculas;
 using Domain.Cursos;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
@@ -18,47 +18,32 @@ internal class CurriculasConfiguration : IEntityTypeConfiguration<Curricula>
 		builder.ToTable("diseno_curricular");
 
 		//builder.HasKey(x => new { x.CursoID, x.Id });
-		builder.HasKey(x => x.Id);
+		builder.HasKey(x => x.Id)
+			   .HasName("PK_DISENO_CURRICULAR");
 
 		builder.Property(x => x.Id)
 			   .HasColumnName("diseno_curricular_id")
 			   .ValueGeneratedNever();
 
-		// FK_CURSO_CURRICULA
+		// FK_DISENO_CURRICULAR_CURSO
 		builder.HasOne<Curso>()
 			   .WithMany()
 			   .HasPrincipalKey(x => x.Id)
 			   .HasForeignKey(x => x.CursoID)
-			   .HasConstraintName("FK_CURSO_DISEÑO-CURRICULAR");
+			   .HasConstraintName("FK_DISENO_CURRICULAR_CURSO")
+			   .OnDelete(DeleteBehavior.Restrict);
 
 		builder.Property(x => x.CursoID)
 			   .HasColumnName("curso_id");
 
 		// PERÍODO
-		builder.OwnsOne(x => x.Periodo, static periodoBuilder =>
-		{
-			periodoBuilder.Property(x => x.FechaInicio)
-						  .HasColumnName("fecha_inicio")
-						  .HasColumnType("date");
-
-			periodoBuilder.Property(x => x.FechaFin)
-						  .HasColumnName("fecha_fin")
-						  .HasColumnType("date")
-						  .IsRequired(false);
-		});
+		builder.OwnsOne(x => x.Periodo, periodoBuilder => periodoBuilder.ConfigurarPeriodo());
 
 		// FK_MATERIA_CURRICULA
 		/*builder.HasMany<Materia>()
 			   .WithOne()
 			   .HasPrincipalKey(x => x.Id)
 			   .HasForeignKey(x => x.CurriculaID);*/
-
-		builder.Navigation(nameof(Curricula.Materias))
-			   .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-		// IGNORE
-		builder.Ignore(x => x.TotalEspacios);
-		builder.Ignore(x => x.TotalHorasSemanales);
 
 		/*
 		builder.OwnsMany(m => m.Materias, materiaBuilder =>

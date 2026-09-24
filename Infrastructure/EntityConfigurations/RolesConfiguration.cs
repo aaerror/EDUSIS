@@ -1,4 +1,4 @@
-﻿using Domain.Usuarios;
+using Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -8,7 +8,7 @@ internal class RolesConfiguration : IEntityTypeConfiguration<Rol>
 {
 	public void Configure(EntityTypeBuilder<Rol> builder)
 	{
-		builder.ToTable("roles");
+		builder.ToTable("rol");
 
 		builder.HasKey(x => x.Id)
 			   .HasName("PK_ROL");
@@ -18,7 +18,8 @@ internal class RolesConfiguration : IEntityTypeConfiguration<Rol>
 			   .ValueGeneratedNever();
 
 		builder.Property(x => x.Descripcion)
-			   .HasColumnType("varchar(15)")
-			   .HasColumnName("descripcion");
+			   .HasColumnName("descripcion")
+			   .HasMaxLength(15)
+			   .IsUnicode(false);
 	}
 }

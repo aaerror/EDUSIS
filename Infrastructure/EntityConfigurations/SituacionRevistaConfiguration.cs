@@ -1,5 +1,5 @@
-﻿using Domain.Curriculas.Materias.CargosDocentes;
-using Domain.Curriculas.Materias;
+using Domain.Catedras;
+using Domain.Catedras.SituacionesRevista;
 using Domain.Docentes;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
@@ -22,28 +22,39 @@ internal class SituacionRevistaConfiguration : IEntityTypeConfiguration<Situacio
 			   .HasColumnName("situacion_revista_id")
 			   .ValueGeneratedNever();
 
-		// PK_SITUACIÓN-REVISTA
+		// PK_SITUACION_REVISTA
 		builder.HasKey(x => x.Id)
-			   .HasName("PK_SITUACION-REVISTA");
+			   .HasName("PK_SITUACION_REVISTA");
 
-		builder.Property(x => x.MateriaID)
-			   .HasColumnName("materia_id");
+		// SHADOW PROPERTY: dueña de la relación con Catedra (FK_SITUACION_REVISTA_CATEDRA en CatedrasConfiguration).
+		builder.Property<Guid>("CatedraID")
+			   .HasColumnName("catedra_id");
 
-		// FK_MATERIAS_SITUACION-REVISTA
-		builder.HasOne<Materia>()
-			   .WithMany(x => x.Docentes)
-			   .HasPrincipalKey(x => x.Id)
-			   .HasForeignKey(x => x.MateriaID)
-			   .HasConstraintName("FK_MATERIA_SITUACION-REVISTA");
+		// AK_SITUACION_REVISTA_CATEDRA: sostiene la FK compuesta de Catedra.SituacionEnFuncionesID.
+		builder.HasAlternateKey("CatedraID", nameof(SituacionRevista.Id))
+			   .HasName("AK_SITUACION_REVISTA_CATEDRA");
+
+		// FK_CATEDRA_SITUACION_REVISTA: FK compuesta (catedra_id, situacion_en_funciones_id) → clave alterna
+		// (catedra_id, situacion_revista_id) de esta tabla, para garantizar en BD que la situación "en
+		// funciones" pertenezca a la misma cátedra. Declarada acá (y no en CatedrasConfiguration) porque
+		// depende de la propiedad sombra "CatedraID" y la clave alterna, definidas arriba en este archivo:
+		// ApplyConfigurationsFromAssembly no garantiza el orden de aplicación de las configs.
+		builder.HasOne<Catedra>()
+			   .WithOne()
+			   .HasForeignKey<Catedra>(nameof(Catedra.Id), nameof(Catedra.SituacionEnFuncionesID))
+			   .HasPrincipalKey<SituacionRevista>("CatedraID", nameof(SituacionRevista.Id))
+			   .OnDelete(DeleteBehavior.NoAction)
+			   .HasConstraintName("FK_CATEDRA_SITUACION_REVISTA");
 
 		builder.Property(x => x.DocenteID)
 			   .HasColumnName("docente_id");
 
-		// FK_PROFESORES_SITUACION-REVISTA
+		// FK_SITUACION_REVISTA_DOCENTE
 		builder.HasOne<Docente>()
 			   .WithMany()
 			   .HasForeignKey(x => x.DocenteID)
-			   .HasConstraintName("FK_DOCENTE_SITUACION-REVISTA");
+			   .OnDelete(DeleteBehavior.Restrict)
+			   .HasConstraintName("FK_SITUACION_REVISTA_DOCENTE");
 
 		builder.Property(x => x.Estado)
 			   .HasColumnName("estado")
@@ -57,21 +68,17 @@ internal class SituacionRevistaConfiguration : IEntityTypeConfiguration<Situacio
 			   .HasConversion(toProvider => toProvider.ToString(),
 							  fromProvider => (Cargo) Enum.Parse(typeof(Cargo), fromProvider));
 
-		builder.OwnsOne(x => x.Periodo, static builder =>
-		{
-			builder.Property(x => x.FechaInicio)
-				   .HasColumnName("fecha_inicio")
-				   .HasColumnType("date");
+		builder.OwnsOne(x => x.Periodo, periodoBuilder => periodoBuilder.ConfigurarPeriodo());
 
-			builder.Property(x => x.FechaFin)
-				   .HasColumnName("fecha_fin")
-				   .HasColumnType("date")
-				   .IsRequired(false);
-		});
+		builder.Property(x => x.ReemplazaA)
+			   .HasColumnName("reemplaza_a")
+			   .IsRequired(false);
 
-		builder.Property(x => x.EnFunciones)
-			   .HasColumnName("en_funciones")
-			   .HasColumnType("bit")
-			   .HasDefaultValue(false);
+		// FK_SITUACION_REVISTA_REEMPLAZA_A: auto-referencial, cadena lineal de suplencias.
+		builder.HasOne<SituacionRevista>()
+			   .WithMany()
+			   .HasForeignKey(x => x.ReemplazaA)
+			   .OnDelete(DeleteBehavior.NoAction)
+			   .HasConstraintName("FK_SITUACION_REVISTA_REEMPLAZA_A");
 	}
 }

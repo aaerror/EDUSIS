@@ -1,4 +1,4 @@
-﻿using Domain.Personas;
+using Domain.Personas;
 using Domain.Personas.Domicilios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -18,6 +18,14 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 		builder.ToTable("persona");
 
 		// PK_PERSONA
+		// NOTA (ronda 2): EF Core 7.0.9 no permite nombrar la PK por tabla en una
+		// jerarquía TPT (HasKey/HasName sólo puede llamarse una vez, en la raíz, y
+		// aplica el mismo nombre a las 3 tablas -> "PK_PERSONA" duplicada en SQL
+		// Server). No hay overload de HasName/SetName con StoreObjectIdentifier
+		// para Key en esta versión (validado por reflection sobre
+		// RelationalKeyBuilderExtensions/RelationalKeyExtensions). Fallback del
+		// plan: se deja sin HasName y EF genera un nombre por tabla basado en
+		// convención (PK_persona / PK_alumno / PK_docente).
 		builder.HasKey(x => x.Id);
 
 		builder.Property(x => x.Id)
@@ -29,12 +37,14 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 		{
 			informacionPersonalBuilder.Property(x => x.Apellido)
 									  .HasColumnName("apellido")
-									  .HasColumnType("varchar(50)")
+									  .HasMaxLength(50)
+									  .IsUnicode(false)
 									  .IsRequired();
 
 			informacionPersonalBuilder.Property(x => x.Nombre)
 									  .HasColumnName("nombre")
-									  .HasColumnType("varchar(50)")
+									  .HasMaxLength(50)
+									  .IsUnicode(false)
 									  .IsRequired();
 
 			informacionPersonalBuilder.Property(x => x.Documento)
@@ -60,7 +70,8 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 
 			informacionPersonalBuilder.Property(x => x.Nacionalidad)
 									  .HasColumnName("nacionalidad")
-									  .HasColumnType("varchar(20)")
+									  .HasMaxLength(20)
+									  .IsUnicode(false)
 									  .IsRequired();
 
 			informacionPersonalBuilder.HasIndex(x => x.Documento)
@@ -71,11 +82,13 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 		#region Contacto
 		builder.Property(x => x.Telefono)
 			   .HasColumnName("telefono")
-			   .HasColumnType("varchar(15)");
+			   .HasMaxLength(15)
+			   .IsUnicode(false);
 
 		builder.Property(x => x.Email)
 			   .HasColumnName("email")
-			   .HasColumnType("varchar(50)");
+			   .HasMaxLength(50)
+			   .IsUnicode(false);
 
 		builder.HasIndex(x => x.Email)
 			   .IsUnique();
@@ -88,10 +101,10 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 		{
 			domiciliosBuilder.ToTable("domicilio");
 
-			// FK_PERSONA_DOMICILIO
+			// FK_DOMICILIO_PERSONA
 			domiciliosBuilder.WithOwner()
 							 .HasForeignKey("persona_id")
-							 .HasConstraintName("FK_PERSONA_DOMICILIO");
+							 .HasConstraintName("FK_DOMICILIO_PERSONA");
 
 			// PK_DOMICILIO
 			domiciliosBuilder.HasKey("persona_id")
@@ -100,26 +113,29 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 			#region Dirección
 			domiciliosBuilder.OwnsOne(x => x.Direccion, direccionBuilder =>
 			{
-				direccionBuilder.Property("Calle")
+				direccionBuilder.Property(x => x.Calle)
 								.HasColumnName("calle")
-								.HasColumnType("varchar(50)")
+								.HasMaxLength(50)
+								.IsUnicode(false)
 								.IsRequired();
 
-				direccionBuilder.Property("Altura")
+				direccionBuilder.Property(x => x.Altura)
 								.HasColumnName("altura")
-								.HasColumnType("varchar(6)")
+								.HasMaxLength(6)
+								.IsUnicode(false)
 								.IsRequired(false);
 
-				direccionBuilder.Property<Vivienda>("Vivienda")
+				direccionBuilder.Property(x => x.Vivienda)
 								.HasColumnName("vivienda")
 								.HasColumnType("varchar(20)")
 								.HasConversion(toProvider => toProvider.ToString(),
 											   fromProvider => (Vivienda) Enum.Parse(typeof(Vivienda), fromProvider))
 								.IsRequired();
 
-				direccionBuilder.Property("Observacion")
+				direccionBuilder.Property(x => x.Observacion)
 								.HasColumnName("observaciones")
-								.HasColumnType("varchar(120)")
+								.HasMaxLength(120)
+								.IsUnicode(false)
 								.IsRequired(false);
 			});
 			#endregion
@@ -129,9 +145,10 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 			{
 				ubicacionBuilder.WithOwner();
 
-				ubicacionBuilder.Property("Localidad")
+				ubicacionBuilder.Property(x => x.Localidad)
 								.HasColumnName("localidad")
-								.HasColumnType("varchar(50)")
+								.HasMaxLength(50)
+								.IsUnicode(false)
 								.IsRequired();
 
 				/**
@@ -141,14 +158,16 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 				 *  .IsRequired();
 				 **/
 
-				ubicacionBuilder.Property("Provincia")
+				ubicacionBuilder.Property(x => x.Provincia)
 								.HasColumnName("provincia")
-								.HasColumnType("varchar(50)")
+								.HasMaxLength(50)
+								.IsUnicode(false)
 								.IsRequired();
 
-				ubicacionBuilder.Property("Pais")
+				ubicacionBuilder.Property(x => x.Pais)
 								.HasColumnName("pais")
-								.HasColumnType("varchar(50)")
+								.HasMaxLength(50)
+								.IsUnicode(false)
 								.IsRequired();
 			});
 			#endregion

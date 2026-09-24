@@ -1,8 +1,5 @@
-﻿using Domain.Curriculas.Materias.CargosDocentes;
-using Domain.Curriculas.Materias;
+using Domain.Materias;
 using Domain.Curriculas;
-using Domain.Cursantes;
-using Domain.Docentes;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +11,7 @@ internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 	{
 		ConfigureTableMaterias(builder);
 		// ConfigureTableSituacionRevista(builder);
-		ConfigureTableCalificaciones(builder);
+		// ConfigureTableCalificaciones(builder);
 		// ConfigureTableHorarios(builder);
 	}
 
@@ -40,19 +37,21 @@ internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 		builder.Property(x => x.CursoID)
 			   .HasColumnName("curso_id");*/
 
-		// FK_CURRICULA _MATERIA
+		// FK_MATERIA_DISENO_CURRICULAR
 		builder.Property(x => x.CurriculaID)
 			   .HasColumnName("diseno_curricular_id");
 
 		builder.HasOne<Curricula>()
-			   .WithMany(x => x.Materias)
+			   .WithMany()
 			   .HasPrincipalKey(x => x.Id)
 			   .HasForeignKey(x => x.CurriculaID)
-			   .HasConstraintName("FK_DISEÑO-CURRICULAR_MATERIA");
+			   .HasConstraintName("FK_MATERIA_DISENO_CURRICULAR")
+			   .OnDelete(DeleteBehavior.Restrict);
 
 		builder.Property(x => x.Descripcion)
 			   .HasColumnName("descripcion")
-			   .HasColumnType("varchar(50)")
+			   .HasMaxLength(50)
+			   .IsUnicode(false)
 			   .IsRequired();
 
 		builder.Property(x => x.HorasCatedra)
@@ -60,9 +59,9 @@ internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 			   .HasColumnType("tinyint")
 			   .IsRequired();
 
-		// IGNORE
-		builder.Ignore(x => x.DocenteID);
-		builder.Ignore(x => x.Docente);
+		// ÍNDICE ÚNICO
+		builder.HasIndex(x => new { x.CurriculaID, x.Descripcion })
+			   .IsUnique();
 	}
 
 	/*
@@ -126,6 +125,7 @@ internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 	}
 	*/
 
+	/*
 	private void ConfigureTableCalificaciones(EntityTypeBuilder<Materia> builder)
 	{
 		builder.OwnsMany(x => x.Calificaciones, builder =>
@@ -181,6 +181,7 @@ internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 			   .Navigation(nameof(Materia.Calificaciones))
 			   .UsePropertyAccessMode(PropertyAccessMode.Field);
 	}
+	*/
 
 	/*
 	private void ConfigureTableHorarios(EntityTypeBuilder<Materia> builder)
