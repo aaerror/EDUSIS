@@ -11,17 +11,19 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "Infrastru
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", "{8906ED1A-8CBD-4C7B-A01B-3C9DB956FEF0}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EDUSIS.TestSupport", "tests\EDUSIS.TestSupport\EDUSIS.TestSupport.csproj", "{7391D385-38CC-4A89-B249-EAD6F80D383B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EDUSIS.TestSupport", "Tests\EDUSIS.TestSupport\EDUSIS.TestSupport.csproj", "{7391D385-38CC-4A89-B249-EAD6F80D383B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain.UnitTests", "tests\Domain.UnitTests\Domain.UnitTests.csproj", "{29570AEC-C68D-4C6C-A3F7-F89A64045F25}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain.UnitTests", "Tests\Domain.UnitTests\Domain.UnitTests.csproj", "{29570AEC-C68D-4C6C-A3F7-F89A64045F25}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.UnitTests", "tests\Core.UnitTests\Core.UnitTests.csproj", "{81F101CA-F33D-45AE-8A40-FE6E4F2289B3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.UnitTests", "Tests\Core.UnitTests\Core.UnitTests.csproj", "{81F101CA-F33D-45AE-8A40-FE6E4F2289B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.IntegrationTests", "tests\Infrastructure.IntegrationTests\Infrastructure.IntegrationTests.csproj", "{FBA9DC07-E8A5-4B13-8A0B-4ED115FA5EFB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.IntegrationTests", "Tests\Infrastructure.IntegrationTests\Infrastructure.IntegrationTests.csproj", "{FBA9DC07-E8A5-4B13-8A0B-4ED115FA5EFB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EDUSIS.EndToEndTests", "tests\EDUSIS.EndToEndTests\EDUSIS.EndToEndTests.csproj", "{0E6AEBD2-568D-4C0E-B5E8-5F9A8D5732B1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EDUSIS.EndToEndTests", "Tests\EDUSIS.EndToEndTests\EDUSIS.EndToEndTests.csproj", "{0E6AEBD2-568D-4C0E-B5E8-5F9A8D5732B1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EDUSIS.TestSupport.Domain", "Tests\EDUSIS.TestSupport.Domain\EDUSIS.TestSupport.Domain.csproj", "{E11A328B-41ED-4DEA-A471-C25D03E80DF6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -141,6 +143,18 @@ Global
 		{0E6AEBD2-568D-4C0E-B5E8-5F9A8D5732B1}.Release|x64.Build.0 = Release|Any CPU
 		{0E6AEBD2-568D-4C0E-B5E8-5F9A8D5732B1}.Release|x86.ActiveCfg = Release|Any CPU
 		{0E6AEBD2-568D-4C0E-B5E8-5F9A8D5732B1}.Release|x86.Build.0 = Release|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Debug|x64.Build.0 = Debug|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Debug|x86.Build.0 = Debug|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Release|x64.ActiveCfg = Release|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Release|x64.Build.0 = Release|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Release|x86.ActiveCfg = Release|Any CPU
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -151,6 +165,7 @@ Global
 		{81F101CA-F33D-45AE-8A40-FE6E4F2289B3} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{FBA9DC07-E8A5-4B13-8A0B-4ED115FA5EFB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{0E6AEBD2-568D-4C0E-B5E8-5F9A8D5732B1} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{E11A328B-41ED-4DEA-A471-C25D03E80DF6} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D0EB87A5-373C-4909-9048-3A44A3ACA782}

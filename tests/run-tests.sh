@@ -4,10 +4,10 @@
 # Contrato: specs/001-automated-test-suite/contracts/test-execution.md (§2, §3).
 #
 # Uso:
-#   ./tests/run-tests.sh --rapidas     # sólo Categoria=Unidad (dominio + aplicación, sin BD)
-#   ./tests/run-tests.sh --todas       # todas las categorías aplicables al entorno
-#   ./tests/run-tests.sh --cobertura   # --todas + reporte HTML de cobertura
-#   ./tests/run-tests.sh               # = --todas
+#   ./Tests/run-tests.sh --rapidas     # sólo Categoria=Unidad (dominio + aplicación, sin BD)
+#   ./Tests/run-tests.sh --todas       # todas las categorías aplicables al entorno
+#   ./Tests/run-tests.sh --cobertura   # --todas + reporte HTML de cobertura
+#   ./Tests/run-tests.sh               # = --todas
 #
 # - Se puede ejecutar desde cualquier directorio: resuelve la raíz por git.
 # - Propaga tal cual el código de salida de `dotnet test` (0 = ok, 1 = falló algo).

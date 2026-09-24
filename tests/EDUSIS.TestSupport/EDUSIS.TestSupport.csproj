@@ -1,8 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<!--
-		Biblioteca de soporte compartida por las cuatro suites: builders de agregados,
-		fakes (UnitOfWorkFake) e infraestructura de base de datos (SqlServerFixture).
+		Biblioteca de soporte compartida por Core.UnitTests, Infrastructure.IntegrationTests
+		y EDUSIS.EndToEndTests: fakes (UnitOfWorkFake) e infraestructura de base de datos
+		(SqlServerFixture). Los builders de agregados y Categorias viven en
+		EDUSIS.TestSupport.Domain (referenciado abajo) para que Domain.UnitTests no
+		dependa de Core/Infrastructure; este proyecto los expone transitivamente sin
+		cambiar sus namespaces (EDUSIS.TestSupport / EDUSIS.TestSupport.Builders).
 		No es una suite: se excluye de `dotnet test`. Los paquetes (xunit,
 		Testcontainers.MsSql, Respawn, EF Core) se agregan en las fases que los usan
 		(Foundational / US3).
@@ -30,6 +34,7 @@
 		<ProjectReference Include="..\..\Domain\Domain.csproj" />
 		<ProjectReference Include="..\..\Core\Core.csproj" />
 		<ProjectReference Include="..\..\Infrastructure\Infrastructure.csproj" />
+		<ProjectReference Include="..\EDUSIS.TestSupport.Domain\EDUSIS.TestSupport.Domain.csproj" />
 	</ItemGroup>
 
 </Project>
