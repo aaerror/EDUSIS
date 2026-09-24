@@ -6,7 +6,6 @@ namespace Domain.Docentes;
 public interface IDocenteRepository : IPersonaRepository<Docente>
 {
 	Task<Docente?> BuscarDocentePorIDConPuestosAsync(Guid docenteID);
-	Task<Docente?> BuscarDocentePorIDConLicenciasAsync(Guid docenteID);
 
 	Task<IReadOnlyCollection<Docente>> BuscarSegunNombreCompletoAsync(string nombreCompleto);
 

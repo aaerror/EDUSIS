@@ -1,7 +1,6 @@
 using Domain.Docentes.DomainEvents;
 using Domain.Docentes.Exceptions;
 using Domain.Docentes.Puestos;
-using Domain.Licencias;
 using Domain.Personas;
 using Domain.Personas.Domicilios;
 using Domain.Shared;
@@ -12,7 +11,6 @@ namespace Domain.Docentes;
 public sealed class Docente : Persona
 {
 	private List<Puesto> _puestos = new();
-	private List<Licencia> _licencias = new();
 
 	public string Legajo { get; private set; }
 	public string CUIL { get; private set; }
@@ -21,7 +19,6 @@ public sealed class Docente : Persona
 	public bool Activo { get; private set; }
 
 	public IReadOnlyCollection<Puesto> Puestos => _puestos.AsReadOnly();
-	public IReadOnlyCollection<Licencia> Licencias => _licencias.AsReadOnly();
 
 
 	#region CONSTRUCTOR
