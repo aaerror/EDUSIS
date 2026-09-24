@@ -120,7 +120,20 @@ public class DatosPersonales : ValueObject
 
 	public string NombreCompleto() => $"{Apellido}, {Nombre}";
 	
-	public int Edad() => DateTime.Today.Subtract(FechaNacimiento.Date).Days / 365;
+	public int Edad()
+	{
+		var hoy = DateTime.Today;
+		var edad = hoy.Year - FechaNacimiento.Year;
+
+		// Si el cumpleaños de este año todavía no llegó, no cumplió años.
+		// Un nacido el 29/02 cumple el 28/02 en años no bisiestos (AddYears).
+		if (FechaNacimiento.Date.AddYears(edad) > hoy)
+		{
+			edad--;
+		}
+
+		return edad;
+	}
 
 	public bool EsMayorDeEdad() => Edad() >= 18;
 

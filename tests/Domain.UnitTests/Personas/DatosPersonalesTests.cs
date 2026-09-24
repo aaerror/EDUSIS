@@ -49,6 +49,30 @@ public class DatosPersonalesTests
 		datos.Edad().ShouldBe(31);
 	}
 
+	[Theory]
+	[InlineData(0, 18)]
+	[InlineData(-1, 18)]
+	[InlineData(1, 17)]
+	[InlineData(4, 17)]
+	public void Edad_cuenta_el_año_recien_desde_el_dia_del_cumpleaños(int diasHastaElCumpleaños, int edadEsperada)
+	{
+		var nacimiento = DateTime.Today.AddYears(-18).AddDays(diasHastaElCumpleaños);
+
+		var datos = new DatosPersonalesBuilder().ConFechaNacimiento(nacimiento).Build();
+
+		datos.Edad().ShouldBe(edadEsperada);
+	}
+
+	[Fact]
+	public void EsMayorDeEdad_es_false_el_dia_anterior_a_cumplir_18()
+	{
+		var datos = new DatosPersonalesBuilder()
+			.ConFechaNacimiento(DateTime.Today.AddYears(-18).AddDays(1))
+			.Build();
+
+		datos.EsMayorDeEdad().ShouldBeFalse();
+	}
+
 	[Fact]
 	public void La_fecha_de_nacimiento_se_normaliza_a_medianoche()
 	{
