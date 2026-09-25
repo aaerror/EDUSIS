@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 using MediatR;
 
 namespace Infrastructure.Extensions;
@@ -7,23 +7,24 @@ internal static class MediatrExtension
 {
 	public static async Task DispatchDomainEventsAsync(this IMediator mediator, EdusisDBContext context)
 	{
-		var domainEvents = context.ChangeTracker.Entries<Entity>()
-			.Where(x => x.Entity.Eventos is not null && x.Entity.Eventos.Any())
-			.Select(x => x.Entity)
-			.SelectMany(x =>
-				{
-					var domainEvents = x.Eventos.ToList();
-					x.LiberarEventos();
-
-					return domainEvents;
-				})
-			.ToList();
-
-		if (domainEvents.Any())
+		while (true)
 		{
-			foreach (var domainEvent in domainEvents)
+			var entidades = context.ChangeTracker.Entries<Entity>()
+				.Select(x => x.Entity)
+				.Where(x => x.Eventos is not null && x.Eventos.Any())
+				.ToList();
+
+			if (!entidades.Any())
 			{
-				await mediator.Publish(domainEvent);
+				break;
+			}
+
+			var eventos = entidades.SelectMany(x => x.Eventos).ToList();
+			entidades.ForEach(x => x.LiberarEventos());
+
+			foreach (var evento in eventos)
+			{
+				await mediator.Publish(evento);
 			}
 		}
 	}

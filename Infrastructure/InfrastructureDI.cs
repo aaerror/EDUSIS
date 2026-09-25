@@ -1,4 +1,4 @@
-﻿using Core.Shared.Documentos;
+using Core.Shared.Documentos;
 using Infrastructure.Documentos;
 using Domain.Shared;
 using MediatR;
@@ -23,8 +23,8 @@ public static class InfrastructureDI
 
 		// MEDIATOR
 		//services.AddScoped<IMediator, Mediator>();
-		services.AddMediatR(x => 
-			x.RegisterServicesFromAssemblyContaining<EdusisDBContext>());
+		services.AddMediatR(x =>
+			x.RegisterServicesFromAssemblies(typeof(EdusisDBContext).Assembly, typeof(IGeneradorDocumentos).Assembly));
 
 		// UNIT OF WORK
 		services.AddScoped<IUnitOfWork>(provider =>
