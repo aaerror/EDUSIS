@@ -13,4 +13,7 @@ public sealed class LicenciaRepositorioFake : RepositorioEnMemoria<Licencia>, IL
 
 		return Task.FromResult(licencias);
 	}
+
+	public Task<Licencia?> BuscarPorIDYDocenteAsync(Guid licenciaID, Guid docenteID) =>
+		Task.FromResult(_entidades.FirstOrDefault(x => x.Id.Equals(licenciaID) && x.DocenteID.Equals(docenteID)));
 }

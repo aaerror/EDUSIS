@@ -9,6 +9,6 @@ public sealed class CurriculaRepositorioFake : RepositorioEnMemoria<Curricula>, 
 		Task.FromResult(_entidades.FirstOrDefault(x =>
 			x.Id.Equals(unaCurricula) && x.CursoID.Equals(unCurso)));
 
-	public Task<IEnumerable<Curricula>> CurriculasSegunCursoAsync(Guid unCurso) =>
-		Task.FromResult(_entidades.Where(x => x.CursoID.Equals(unCurso)));
+	public Task<IReadOnlyCollection<Curricula>> CurriculasSegunCursoAsync(Guid unCurso) =>
+		Task.FromResult((IReadOnlyCollection<Curricula>)_entidades.Where(x => x.CursoID.Equals(unCurso)).ToList());
 }

@@ -8,15 +8,12 @@ public sealed class AlumnoRepositorioFake : RepositorioDePersonasEnMemoria<Alumn
 	/// <summary>Legajos que la prueba fuerza como inválidos. Por defecto todo legajo libre es válido.</summary>
 	public HashSet<string> LegajosInvalidos { get; } = new();
 
-	public bool EsLegajoValido(string legajo) =>
-		!LegajosInvalidos.Contains(legajo) && _entidades.All(x => x.Legajo != legajo);
+	public Task<bool> EsLegajoInvalidoAsync(string legajo) =>
+		Task.FromResult(LegajosInvalidos.Contains(legajo) || _entidades.Any(x => x.Legajo == legajo));
 
 	public Task<Alumno?> BuscarPorNombreCompletoAsync(string nombreCompleto) =>
 		Task.FromResult(_entidades.FirstOrDefault(x =>
-			string.Equals(
-				$"{x.DatosPersonales.Apellido} {x.DatosPersonales.Nombre}",
-				nombreCompleto,
-				StringComparison.OrdinalIgnoreCase)));
+			string.Equals(x.DatosPersonales.NombreCompleto(), nombreCompleto.Trim(), StringComparison.OrdinalIgnoreCase)));
 
 	public Task<Alumno?> BuscarPorDocumentoAsync(string documento) =>
 		Task.FromResult(_entidades.FirstOrDefault(x => x.DatosPersonales.Documento == documento));

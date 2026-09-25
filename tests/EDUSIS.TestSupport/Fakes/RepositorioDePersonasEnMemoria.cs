@@ -1,4 +1,5 @@
 using Domain.Personas;
+using Domain.Shared;
 
 namespace EDUSIS.TestSupport.Fakes;
 

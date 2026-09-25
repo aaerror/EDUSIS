@@ -82,7 +82,7 @@ public class ServicioAlumnoTests
 	public async Task BuscarPorNombreCompletoAsync_encuentra_al_alumno_por_apellido_y_nombre()
 	{
 		var alumno = SembrarAlumno();
-		var nombreCompleto = $"{alumno.DatosPersonales.Apellido} {alumno.DatosPersonales.Nombre}";
+		var nombreCompleto = alumno.DatosPersonales.NombreCompleto();
 
 		var response = await _servicio.BuscarPorNombreCompletoAsync(new NombreCompletoRequest(nombreCompleto));
 

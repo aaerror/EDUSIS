@@ -5,22 +5,18 @@ namespace EDUSIS.TestSupport.Fakes;
 /// <summary>Repo fake de <see cref="Usuario"/> (<see cref="IUsuarioRepository"/>) sobre <c>List&lt;Usuario&gt;</c>.</summary>
 public sealed class UsuarioRepositorioFake : RepositorioEnMemoria<Usuario>, IUsuarioRepository
 {
-	/// <summary>Emails/usernames que la prueba fuerza como inválidos, además de los ya presentes.</summary>
-	public HashSet<string> EmailsInvalidos { get; } = new();
+	/// <summary>Usernames que la prueba fuerza como inválidos, además de los ya presentes.</summary>
+	public HashSet<string> UsernamesInvalidos { get; } = new();
 
-	public Usuario BuscarPorEmail(string unUsuario) =>
-		_entidades.FirstOrDefault(x => x.Username == unUsuario)!;
+	public Task<Usuario?> BuscarPorUsernameAsync(string username) =>
+		Task.FromResult(_entidades.FirstOrDefault(x => x.Username.ToLower() == username.Trim().ToLower()));
 
-	public bool ExisteUsuarioDelDocente(Guid docenteID) =>
-		_entidades.Any(x => x.DocenteID.Equals(docenteID));
+	public Task<Usuario?> BuscarPorDocenteAsync(Guid docenteID) =>
+		Task.FromResult(_entidades.FirstOrDefault(x => x.DocenteID.Equals(docenteID)));
 
-	public bool EsEmailInvalido(string usuario) =>
-		EmailsInvalidos.Contains(usuario) || _entidades.Any(x => x.Username == usuario);
+	public Task<bool> ExisteUsuarioDelDocenteAsync(Guid docenteID) =>
+		Task.FromResult(_entidades.Any(x => x.DocenteID.Equals(docenteID)));
 
-	public void RecuperarDatosAcceso(string usuario, out string salt, out string hash)
-	{
-		var encontrado = _entidades.FirstOrDefault(x => x.Username == usuario);
-		salt = encontrado?.PasswordSalt ?? string.Empty;
-		hash = encontrado?.PasswordHash ?? string.Empty;
-	}
+	public Task<bool> EsUsernameInvalidoAsync(string username) =>
+		Task.FromResult(UsernamesInvalidos.Contains(username) || _entidades.Any(x => x.Username.ToLower() == username.Trim().ToLower()));
 }

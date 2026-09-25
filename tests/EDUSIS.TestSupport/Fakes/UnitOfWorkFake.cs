@@ -1,4 +1,15 @@
+using Domain.Alumnos;
+using Domain.Asistencias;
+using Domain.Catedras;
+using Domain.Curriculas;
+using Domain.Cursantes;
+using Domain.Cursos;
+using Domain.Divisiones;
+using Domain.Docentes;
+using Domain.Licencias;
+using Domain.Materias;
 using Domain.Shared;
+using Domain.Usuarios;
 
 namespace EDUSIS.TestSupport.Fakes;
 
@@ -16,6 +27,7 @@ public sealed class UnitOfWorkFake : IUnitOfWork
 {
 	private readonly List<IDomainEvent> _eventosPublicados = new();
 	private readonly List<string> _llamadasDeTransaccion = new();
+	private readonly IRepositorioEnMemoria[] _todosLosRepos;
 
 	/// <summary>
 	/// Cuando es <see langword="true"/> (por defecto), <see cref="GuardarCambiosAsync"/> recorre
@@ -35,24 +47,42 @@ public sealed class UnitOfWorkFake : IUnitOfWork
 	public DocenteRepositorioFake DocentesFake { get; } = new();
 	public LicenciaRepositorioFake LicenciasFake { get; } = new();
 	public CursoRepositorioFake CursosFake { get; } = new();
+	public DivisionRepositorioFake DivisionesFake { get; } = new();
+	public CursanteRepositorioFake CursantesFake { get; } = new();
 	public CurriculaRepositorioFake CurriculasFake { get; } = new();
+	public MateriaRepositorioFake MateriasFake { get; } = new();
+	public CatedraRepositorioFake CatedrasFake { get; } = new();
 	public UsuarioRepositorioFake UsuariosFake { get; } = new();
+	public PlanillaAsistenciaRepositorioFake PlanillasAsistenciaFake { get; } = new();
 
-	public Domain.Alumnos.IAlumnoRepository Alumnos => AlumnosFake;
-	public Domain.Docentes.IDocenteRepository Docentes => DocentesFake;
-	public Domain.Licencias.ILicenciaRepository Licencias => LicenciasFake;
-	public Domain.Cursos.ICursoRepository Cursos => CursosFake;
-	public Domain.Curriculas.ICurriculaRepository Curriculas => CurriculasFake;
-	public Domain.Usuarios.IUsuarioRepository Usuarios => UsuariosFake;
+	public IAlumnoRepository Alumnos => AlumnosFake;
+	public IDocenteRepository Docentes => DocentesFake;
+	public ILicenciaRepository Licencias => LicenciasFake;
+	public ICursoRepository Cursos => CursosFake;
+	public IDivisionRepository Divisiones => DivisionesFake;
+	public ICursanteRepository Cursantes => CursantesFake;
+	public ICurriculaRepository Curriculas => CurriculasFake;
+	public IMateriaRepository Materias => MateriasFake;
+	public ICatedraRepository Catedras => CatedrasFake;
+	public IUsuarioRepository Usuarios => UsuariosFake;
+	public IPlanillaAsistenciaRepository PlanillasAsistencia => PlanillasAsistenciaFake;
 
-	private IEnumerable<Entity> TodasLasEntidades()
+	public UnitOfWorkFake()
 	{
-		foreach (var alumno in AlumnosFake.Elementos) yield return alumno;
-		foreach (var docente in DocentesFake.Elementos) yield return docente;
-		foreach (var licencia in LicenciasFake.Elementos) yield return licencia;
-		foreach (var curso in CursosFake.Elementos) yield return curso;
-		foreach (var curricula in CurriculasFake.Elementos) yield return curricula;
-		foreach (var usuario in UsuariosFake.Elementos) yield return usuario;
+		_todosLosRepos = new IRepositorioEnMemoria[]
+		{
+			AlumnosFake,
+			DocentesFake,
+			LicenciasFake,
+			CursosFake,
+			DivisionesFake,
+			CursantesFake,
+			CurriculasFake,
+			MateriasFake,
+			CatedrasFake,
+			UsuariosFake,
+			PlanillasAsistenciaFake
+		};
 	}
 	#endregion
 
@@ -61,34 +91,20 @@ public sealed class UnitOfWorkFake : IUnitOfWork
 	{
 		CantidadDeGuardados++;
 
+		// Una sola pasada basta: el fake no ejecuta handlers, así que nadie puede encolar eventos
+		// nuevos durante el drenado (la cascada real se prueba en DespachoDeEventosTests).
 		if (PublicarEventos)
 		{
-			foreach (var entidad in TodasLasEntidades().ToList())
-			{
-				var eventos = entidad.Eventos;
-				if (eventos is null || eventos.Count == 0)
-				{
-					continue;
-				}
+			var entidades = _todosLosRepos
+				.SelectMany(repo => repo.Entidades)
+				.Where(x => x.Eventos is not null && x.Eventos.Any())
+				.ToList();
 
-				_eventosPublicados.AddRange(eventos);
-				entidad.LiberarEventos();
-			}
+			_eventosPublicados.AddRange(entidades.SelectMany(x => x.Eventos));
+			entidades.ForEach(x => x.LiberarEventos());
 		}
 
-		var afectadas = AlumnosFake.Afectadas
-			+ DocentesFake.Afectadas
-			+ LicenciasFake.Afectadas
-			+ CursosFake.Afectadas
-			+ CurriculasFake.Afectadas
-			+ UsuariosFake.Afectadas;
-
-		AlumnosFake.Afectadas = 0;
-		DocentesFake.Afectadas = 0;
-		LicenciasFake.Afectadas = 0;
-		CursosFake.Afectadas = 0;
-		CurriculasFake.Afectadas = 0;
-		UsuariosFake.Afectadas = 0;
+		var afectadas = _todosLosRepos.Sum(repo => repo.ConsumirAfectadas());
 
 		return Task.FromResult(afectadas);
 	}
