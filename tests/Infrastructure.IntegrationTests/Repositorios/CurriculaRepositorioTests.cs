@@ -1,16 +1,13 @@
-using Domain.Curriculas;
-using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Infraestructura;
 using Infrastructure.IntegrationTests.Infraestructura;
-using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Xunit;
 
 namespace Infrastructure.IntegrationTests.Repositorios;
 
 /// <summary>
-/// US3-2: consultas de <c>CurriculaRepository</c> (<c>Include</c> de <c>Materias</c>) sobre
-/// datos sembrados.
+/// <c>CurriculaRepository</c>: consultas por curso. Las materias son un agregado propio y se
+/// verifican en <see cref="MateriaRepositorioTests"/>.
 /// </summary>
 public sealed class CurriculaRepositorioTests : BaseIntegracion
 {
@@ -19,57 +16,48 @@ public sealed class CurriculaRepositorioTests : BaseIntegracion
 	{
 	}
 
-	private async Task<Curricula> SembrarCurriculaAsync(Guid cursoID, params (string Descripcion, int Horas)[] materias)
+	[RequiereSqlServerFact]
+	public async Task BuscarCurriculaAsync_devuelve_la_curricula_del_curso_especificado()
 	{
-		var builder = new CurriculaBuilder().ConCurso(cursoID);
-		foreach (var (descripcion, horas) in materias)
-		{
-			builder.ConMateria(descripcion, horas);
-		}
-
-		var curricula = builder.Build();
-
-		await using var contexto = Fixture.CrearContexto();
-		contexto.Add(curricula);
-		await contexto.SaveChangesAsync();
-		return curricula;
-	}
-
-	/// <summary>
-	/// Defecto H-021: <c>CurriculaRepository.CurriculasSegunCursoAsync</c> encadena
-	/// <c>.Include(x =&gt; x.Materias).ThenInclude(x =&gt; x.Docentes).ThenInclude(x =&gt; x.Periodo)</c>,
-	/// pero <c>Materia.Docentes</c> (<c>SituacionRevista</c>) no está mapeado — su
-	/// configuración en <c>MateriasConfiguration</c> está comentada. La consulta revienta en
-	/// tiempo de ejecución. Ver <c>hallazgos.md</c>.
-	/// </summary>
-	[Fact(Skip = "Defecto H-021: CurriculasSegunCursoAsync incluye Materia.Docentes (SituacionRevista) sin mapear; ver hallazgos.md")]
-	public async Task CurriculasSegunCursoAsync_devuelve_las_curriculas_del_curso_con_sus_materias()
-	{
-		var cursoID = await CrearCursoPersistidoAsync();
-		await SembrarCurriculaAsync(cursoID, ("Matemática", 4), ("Lengua", 3));
+		var cursoID = await SembrarCursoAsync();
+		var curriculaID = await SembrarCurriculaAsync(cursoID);
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		var curriculas = (await uow.Curriculas.CurriculasSegunCursoAsync(cursoID)).ToList();
+		var curricula = await uow.Curriculas.BuscarCurriculaAsync(cursoID, curriculaID);
 
-		curriculas.Count.ShouldBe(1);
-		curriculas.Single().Materias.Count.ShouldBe(2);
+		curricula.ShouldNotBeNull();
+		curricula.Id.ShouldBe(curriculaID);
+		curricula.CursoID.ShouldBe(cursoID);
 	}
 
 	[RequiereSqlServerFact]
-	public async Task Una_curricula_con_materias_se_relee_por_su_id_con_las_materias_cargadas()
+	public async Task BuscarCurriculaAsync_devuelve_null_si_la_curricula_es_de_otro_curso()
 	{
-		var cursoID = await CrearCursoPersistidoAsync();
-		var sembrada = await SembrarCurriculaAsync(cursoID, ("Física", 5));
+		var cursoID = await SembrarCursoAsync("Primero");
+		var otroCursoID = await SembrarCursoAsync("Segundo");
+		var curriculaID = await SembrarCurriculaAsync(cursoID);
 
-		await using var contexto = Fixture.CrearContexto();
-		var releida = await contexto.Curriculas
-			.Include(x => x.Materias)
-			.FirstAsync(x => x.Id == sembrada.Id);
+		using var uow = CrearUnidadDeTrabajo();
 
-		releida.CursoID.ShouldBe(cursoID);
-		releida.Materias.Count.ShouldBe(1);
-		releida.Materias.Single().Descripcion.ShouldBe("Física");
-		releida.Materias.Single().HorasCatedra.ShouldBe(5);
+		var curricula = await uow.Curriculas.BuscarCurriculaAsync(otroCursoID, curriculaID);
+
+		curricula.ShouldBeNull();
+	}
+
+	[RequiereSqlServerFact]
+	public async Task CurriculasSegunCursoAsync_devuelve_solo_las_curriculas_del_curso()
+	{
+		var cursoID = await SembrarCursoAsync("Primero");
+		var otroCursoID = await SembrarCursoAsync("Segundo");
+		var primeraID = await SembrarCurriculaAsync(cursoID);
+		var segundaID = await SembrarCurriculaAsync(cursoID);
+		await SembrarCurriculaAsync(otroCursoID);
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var curriculas = await uow.Curriculas.CurriculasSegunCursoAsync(cursoID);
+
+		curriculas.Select(x => x.Id).ShouldBe(new[] { primeraID, segundaID }, ignoreOrder: true);
 	}
 }

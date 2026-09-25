@@ -1,5 +1,7 @@
-using Domain.Cursos.DomainEvents;
+using Domain.Docentes;
+using Domain.Docentes.DomainEvents;
 using Domain.Licencias.DomainEvents;
+using Domain.Materias.DomainEvents;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Infraestructura;
 using Infrastructure;
@@ -81,14 +83,9 @@ public sealed class DespachoDeEventosTests : BaseIntegracion
 	#region (c) Handlers de Core en la composición real (FR-018)
 
 	/// <summary>
-	/// Defecto H-022: <c>InfrastructureDI.AddInfrastructure</c> registra MediatR con
-	/// <c>RegisterServicesFromAssemblyContaining&lt;EdusisDBContext&gt;()</c>, es decir sólo
-	/// escanea el assembly de <c>Infrastructure</c>. Los <c>INotificationHandler</c> de dominio
-	/// viven en <c>Core</c> (<c>Core.ServicioCursos.Events.LicenciaSolicitadaEventHandler</c>,
-	/// <c>Core.ServicioCurriculas.Events.MateriaEliminadaEventHandler</c>) y <strong>no</strong>
-	/// quedan registrados: los eventos se publican al vacío. Ver <c>hallazgos.md</c>.
+	/// La composición real de infraestructura registra los handlers de eventos de Core.
 	/// </summary>
-	[Fact(Skip = "Defecto H-022: InfrastructureDI no escanea el assembly Core; sus handlers de eventos no se registran. Ver hallazgos.md")]
+	[Fact]
 	public void La_composicion_real_registra_los_handlers_de_eventos_definidos_en_Core()
 	{
 		using var provider = ComposicionRealDeInfraestructura();
@@ -97,26 +94,59 @@ public sealed class DespachoDeEventosTests : BaseIntegracion
 		provider.GetServices<INotificationHandler<MateriaEliminadaEvent>>().ShouldNotBeEmpty();
 	}
 
-	[RequiereSqlServerFact]
-	public void Hoy_la_composicion_real_no_registra_ningun_handler_de_los_eventos_de_dominio_de_Core()
-	{
-		using var provider = ComposicionRealDeInfraestructura();
+	#endregion
 
-		provider.GetServices<INotificationHandler<LicenciaSolicitadaEvent>>().ShouldBeEmpty();
-		provider.GetServices<INotificationHandler<MateriaEliminadaEvent>>().ShouldBeEmpty();
+	#region (d) Despacho en cascada de eventos
+
+	/// <summary>
+	/// Un handler puede encolar eventos nuevos en otra entidad trackeada mientras se despacha:
+	/// el handler de <see cref="LicenciaSolicitadaEvent"/> desafecta al docente, lo que encola
+	/// <see cref="DocenteDesafectadoDomainEvent"/>, y ese segundo evento también se publica en
+	/// el mismo <c>GuardarCambiosAsync</c>, una sola vez.
+	/// </summary>
+	[RequiereSqlServerFact]
+	public async Task GuardarCambiosAsync_publica_los_eventos_que_los_handlers_encolan_en_cascada()
+	{
+		var docenteID = await SembrarDocenteAsync();
+		await using var contexto = Fixture.CrearContexto();
+
+		var docente = await contexto.Set<Docente>().SingleAsync(x => x.Id == docenteID);
+		var licencia = new LicenciaBuilder().ConDocente(docenteID).Build();
+
+		var espiaDeLicencia = new EspiaDeEvento<LicenciaSolicitadaEvent>(_ => docente.Desafectar());
+		var espiaDeDocente = new EspiaDeEvento<DocenteDesafectadoDomainEvent>();
+
+		var mediator = CrearMediator(servicios => servicios
+			.AddSingleton<INotificationHandler<LicenciaSolicitadaEvent>>(espiaDeLicencia)
+			.AddSingleton<INotificationHandler<DocenteDesafectadoDomainEvent>>(espiaDeDocente));
+		var unidad = new UnitOfWork(contexto, mediator);
+
+		contexto.Add(licencia);
+		await unidad.GuardarCambiosAsync();
+
+		espiaDeLicencia.Recibidos.ShouldBe(1);
+		espiaDeDocente.Recibidos.ShouldBe(1);
+		docente.Eventos.ShouldBeEmpty();
 	}
 
 	#endregion
 
 	#region HELPERS
 
-	private static IMediator CrearMediatorCon<TEvento>(EspiaDeEvento<TEvento> espia)
-		where TEvento : INotification =>
-		new ServiceCollection()
-			.AddMediatR(configuracion => configuracion.RegisterServicesFromAssemblyContaining<EdusisDBContext>())
-			.AddSingleton<INotificationHandler<TEvento>>(espia)
+	private static IMediator CrearMediator(Action<IServiceCollection> registrarHandlers)
+	{
+		var servicios = new ServiceCollection()
+			.AddMediatR(configuracion => configuracion.RegisterServicesFromAssemblyContaining<EdusisDBContext>());
+		registrarHandlers(servicios);
+
+		return servicios
 			.BuildServiceProvider()
 			.GetRequiredService<IMediator>();
+	}
+
+	private static IMediator CrearMediatorCon<TEvento>(EspiaDeEvento<TEvento> espia)
+		where TEvento : INotification =>
+		CrearMediator(servicios => servicios.AddSingleton<INotificationHandler<TEvento>>(espia));
 
 	private static ServiceProvider ComposicionRealDeInfraestructura() =>
 		new ServiceCollection()
@@ -124,7 +154,7 @@ public sealed class DespachoDeEventosTests : BaseIntegracion
 			.AddInfrastructure()
 			.BuildServiceProvider();
 
-	/// <summary>Handler espía: registra que se ejecutó y ejecuta un callback opcional.</summary>
+	/// <summary>Handler espía: cuenta cuántas veces se ejecutó y ejecuta un callback opcional.</summary>
 	private sealed class EspiaDeEvento<TEvento> : INotificationHandler<TEvento>
 		where TEvento : INotification
 	{
@@ -133,11 +163,13 @@ public sealed class DespachoDeEventosTests : BaseIntegracion
 		public EspiaDeEvento(Action<TEvento>? alRecibir = null) =>
 			_alRecibir = alRecibir ?? (_ => { });
 
-		public bool Ejecutado { get; private set; }
+		public int Recibidos { get; private set; }
+
+		public bool Ejecutado => Recibidos > 0;
 
 		public Task Handle(TEvento notification, CancellationToken cancellationToken)
 		{
-			Ejecutado = true;
+			Recibidos++;
 			_alRecibir(notification);
 			return Task.CompletedTask;
 		}

@@ -42,4 +42,28 @@ public sealed class LicenciaRepositorioTests : BaseIntegracion
 		deA.ShouldAllBe(x => x.DocenteID == docenteA);
 		deB.Count.ShouldBe(1);
 	}
+
+	[RequiereSqlServerFact]
+	public async Task BuscarPorIDYDocenteAsync_devuelve_la_licencia_solo_si_el_docente_coincide()
+	{
+		var docenteA = await SembrarDocenteAsync();
+		var docenteB = await SembrarDocenteAsync();
+
+		var licencia = new LicenciaBuilder().ConDocente(docenteA).ConArticulo("Enfermedad").Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.Add(licencia);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var encontrada = await uow.Licencias.BuscarPorIDYDocenteAsync(licencia.Id, docenteA);
+		var noEncontrada = await uow.Licencias.BuscarPorIDYDocenteAsync(licencia.Id, docenteB);
+
+		encontrada.ShouldNotBeNull();
+		encontrada!.Id.ShouldBe(licencia.Id);
+		noEncontrada.ShouldBeNull();
+	}
 }

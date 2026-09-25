@@ -1,5 +1,8 @@
 using System.Threading;
+using Domain.Alumnos;
+using Domain.Curriculas;
 using Domain.Cursos;
+using Domain.Divisiones;
 using Domain.Docentes;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
@@ -122,19 +125,80 @@ public abstract class BaseIntegracion : IAsyncLifetime
 		return docente.Id;
 	}
 
-	/// <summary>Persiste un <see cref="Curso"/> con la cantidad de divisiones indicada y devuelve su <c>Id</c>.</summary>
-	protected async Task<Guid> CrearCursoPersistidoAsync(string grado = "Primero", int divisiones = 0)
+	/// <summary>Persiste un <see cref="Curso"/> válido y devuelve su <c>Id</c>. Las divisiones son agregados propios: usar <see cref="SembrarDivisionAsync"/> para crearlas.</summary>
+	protected async Task<Guid> SembrarCursoAsync(string grado = "Primero")
 	{
 		var curso = new CursoBuilder()
 			.ConGrado(grado)
 			.ConNivelEducativo("Secundaria")
-			.ConDivision(divisiones)
 			.Build();
 
 		await using var contexto = Fixture.CrearContexto();
 		contexto.Add(curso);
 		await contexto.SaveChangesAsync();
 		return curso.Id;
+	}
+
+	/// <summary>Persiste un <see cref="Alumno"/> válido y devuelve su <c>Id</c>.</summary>
+	protected async Task<Guid> SembrarAlumnoAsync()
+	{
+		var numero = SiguienteNumero();
+
+		var alumno = new AlumnoBuilder()
+			.ConLegajo("AL" + numero[..4])
+			.ConEmail($"alumno.{numero}@correo.com")
+			.ConDatosPersonales(new DatosPersonalesBuilder()
+				.ConDocumento("2" + numero + "0")
+				.ConEdad(15))
+			.Build();
+
+		await using var contexto = Fixture.CrearContexto();
+		contexto.Add(alumno);
+		await contexto.SaveChangesAsync();
+		return alumno.Id;
+	}
+
+	/// <summary>Persiste una <see cref="Division"/> válida con el curso indicado y devuelve su <c>Id</c>.</summary>
+	protected async Task<Guid> SembrarDivisionAsync(Guid cursoID, string descripcion = "A")
+	{
+		var division = new DivisionBuilder()
+			.ConCurso(cursoID)
+			.ConDescripcion(descripcion)
+			.Build();
+
+		await using var contexto = Fixture.CrearContexto();
+		contexto.Add(division);
+		await contexto.SaveChangesAsync();
+		return division.Id;
+	}
+
+	/// <summary>Persiste una <see cref="Curricula"/> válida con el curso indicado y devuelve su <c>Id</c>.</summary>
+	protected async Task<Guid> SembrarCurriculaAsync(Guid cursoID)
+	{
+		var curricula = new CurriculaBuilder()
+			.ConCurso(cursoID)
+			.ConFechaInicio(DateTime.Today.AddDays(-30))
+			.Build();
+
+		await using var contexto = Fixture.CrearContexto();
+		contexto.Add(curricula);
+		await contexto.SaveChangesAsync();
+		return curricula.Id;
+	}
+
+	/// <summary>Persiste una <see cref="Materia"/> válida con la currícula indicada y devuelve su <c>Id</c>.</summary>
+	protected async Task<Guid> SembrarMateriaAsync(Guid curriculaID, string descripcion = "Matemática", int horasCatedra = 4)
+	{
+		var materia = new MateriaBuilder()
+			.ConCurricula(curriculaID)
+			.ConDescripcion(descripcion)
+			.ConHorasCatedra(horasCatedra)
+			.Build();
+
+		await using var contexto = Fixture.CrearContexto();
+		contexto.Add(materia);
+		await contexto.SaveChangesAsync();
+		return materia.Id;
 	}
 
 	#endregion
