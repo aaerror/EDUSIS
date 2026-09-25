@@ -4,11 +4,8 @@ namespace Domain.Usuarios;
 
 public interface IUsuarioRepository : IRepository<Usuario>
 {
-	public Usuario BuscarPorEmail(string unUsuario);
-
-	public bool ExisteUsuarioDelDocente(Guid docenteID);
-
-	public bool EsEmailInvalido(string usuario);
-
-	public void RecuperarDatosAcceso(string usuario, out string salt, out string hash);
+	Task<Usuario?> BuscarPorUsernameAsync(string username);
+	Task<Usuario?> BuscarPorDocenteAsync(Guid docenteID);
+	Task<bool> ExisteUsuarioDelDocenteAsync(Guid docenteID);
+	Task<bool> EsUsernameInvalidoAsync(string username);
 }

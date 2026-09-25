@@ -1,16 +1,13 @@
-using Domain.Docentes.Puestos;
 using Domain.Personas;
+using Domain.Shared;
 
 namespace Domain.Docentes;
 
 public interface IDocenteRepository : IPersonaRepository<Docente>
 {
-	Task<Docente?> BuscarDocentePorIDConPuestosAsync(Guid docenteID);
-
 	Task<IReadOnlyCollection<Docente>> BuscarSegunNombreCompletoAsync(string nombreCompleto);
-
+	Task<IReadOnlyCollection<Docente>> BuscarActivosAsync();
+	Task<bool> ExisteDocenteConLegajoAsync(Guid docenteID, string legajo);
 	Task<bool> EsCuilInvalidoAsync(string cuil);
 	Task<bool> EsLegajoInvalidoAsync(string legajo);
-
-	Task<IReadOnlyCollection<Puesto>> PuestosPorDocenteAsync(Guid docenteID);
 }
