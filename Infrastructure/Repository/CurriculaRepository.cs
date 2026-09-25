@@ -1,30 +1,18 @@
-﻿using Domain.Curriculas;
-using Domain.Cursos;
+using Domain.Curriculas;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public class CurriculaRepository : Repository<Curricula>, ICurriculaRepository
+internal class CurriculaRepository : Repository<Curricula>, ICurriculaRepository
 {
-	private EdusisDBContext _context => Context as EdusisDBContext;
-
+	private EdusisDBContext _context => (EdusisDBContext)Context;
 
 	public CurriculaRepository(EdusisDBContext context)
-		: base(context) {}
+		: base(context) { }
 
 	public async Task<Curricula?> BuscarCurriculaAsync(Guid unCurso, Guid unaCurricula) =>
-		await _context.Curriculas
-			.Include(x => x.Materias)
-				.ThenInclude(x => x.Docentes)
-				.ThenInclude(x => x.Periodo)
-			.Where(x => x.CursoID.Equals(unCurso) && x.Id.Equals(unaCurricula))
-			.FirstOrDefaultAsync();
+		await Consulta().FirstOrDefaultAsync(x => x.CursoID == unCurso && x.Id == unaCurricula);
 
-	public async Task<IEnumerable<Curricula>> CurriculasSegunCursoAsync(Guid unCurso) =>
-		await _context.Curriculas
-			.Include(x => x.Materias)
-				.ThenInclude(x => x.Docentes)
-				.ThenInclude(x => x.Periodo)
-			.Where(x => x.CursoID.Equals(unCurso))
-			.ToListAsync();
+	public async Task<IReadOnlyCollection<Curricula>> CurriculasSegunCursoAsync(Guid unCurso) =>
+		await Consulta().Where(x => x.CursoID == unCurso).ToListAsync();
 }

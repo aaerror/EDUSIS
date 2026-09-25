@@ -1,31 +1,27 @@
-﻿using Domain.Alumnos;
+using Domain.Alumnos;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public class AlumnoRepository : Repository<Alumno>, IAlumnoRepository
+internal class AlumnoRepository : PersonaRepository<Alumno>, IAlumnoRepository
 {
-	private EdusisDBContext _context => Context as EdusisDBContext;
-
+	private EdusisDBContext _context => (EdusisDBContext)Context;
 
 	public AlumnoRepository(EdusisDBContext context)
 		: base(context) { }
 
-	public async Task<bool> EsDocumentoInvalidoAsync(string documento) =>
-		await _context.Alumnos.AnyAsync(x => EF.Functions.Like(x.DatosPersonales.Documento, documento));
-		//await _context.Alumnos.AnyAsync(x => string.Equals(x.DatosPersonales.Documento, documento, StringComparison.InvariantCultureIgnoreCase));
+	public async Task<bool> EsLegajoInvalidoAsync(string legajo) =>
+		await _context.Alumnos.AnyAsync(x => EF.Functions.Like(x.Legajo, legajo));
 
-	public async Task<bool> ExisteIDAsync(Guid id) =>
-		await _context.Alumnos.AnyAsync(x => x.Id == id);
-
-	public bool EsLegajoValido(string legajo) =>
-		throw new NotImplementedException();
-
+	// Replica DatosPersonales.NombreCompleto() ("Apellido, Nombre") sobre columnas mapeadas:
+	// el método del dominio no es traducible a SQL (H-020).
 	public async Task<Alumno?> BuscarPorNombreCompletoAsync(string nombreCompleto) =>
-		await _context.Alumnos
-			.FirstOrDefaultAsync(x => EF.Functions.Like(x.DatosPersonales.NombreCompleto(), nombreCompleto));
+		await Consulta()
+			.FirstOrDefaultAsync(x => EF.Functions.Like(
+				x.DatosPersonales.Apellido + ", " + x.DatosPersonales.Nombre,
+				nombreCompleto.Trim()));
 
 	public async Task<Alumno?> BuscarPorDocumentoAsync(string documento) =>
-		await _context.Alumnos
+		await Consulta()
 			.FirstOrDefaultAsync(x => EF.Functions.Like(x.DatosPersonales.Documento, documento));
 }

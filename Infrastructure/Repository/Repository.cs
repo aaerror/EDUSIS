@@ -1,54 +1,49 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace Infrastructure.Repository;
 
-public class Repository<TEntity> : IRepository<TEntity>
+public abstract class Repository<TEntity> : IRepository<TEntity>
 	where TEntity : Entity
 {
 	protected readonly DbContext Context;
 
-
 	#region CONSTRUCTOR
-	public Repository(DbContext context)
+	protected Repository(DbContext context)
 	{
 		Context = context;
 	}
 	#endregion
 
-	public async Task AgregarAsync(TEntity entity) =>
-		await Context.AddAsync<TEntity>(entity);
+	protected virtual IQueryable<TEntity> Consulta() => Context.Set<TEntity>();
 
-	public async Task AgregarRangoAsync(IEnumerable<TEntity> entities) =>
-		await Context.AddRangeAsync(entities);
+	public async Task AgregarAsync(TEntity entidad) =>
+		await Context.AddAsync<TEntity>(entidad);
 
-	public async virtual Task<TEntity?> BuscarPorIDAsync(params object[] ids) =>
-		await Context.Set<TEntity>().FindAsync(ids);
+	public async Task AgregarRangoAsync(IEnumerable<TEntity> entidades) =>
+		await Context.AddRangeAsync(entidades);
 
-	public async Task<IEnumerable<TEntity>> BuscarTodosAsync() =>
-		await Context.Set<TEntity>().ToListAsync();
+	public async Task<TEntity?> BuscarPorIDAsync(Guid id) =>
+		await Consulta().FirstOrDefaultAsync(x => x.Id == id);
 
-	public async Task<IEnumerable<TEntity>> BuscarAsync(Expression<Func<TEntity, bool>> predicate) =>
-		await Context.Set<TEntity>()
-			.Where(predicate)
-			.ToListAsync();
+	public async Task<IReadOnlyCollection<TEntity>> BuscarTodosAsync() =>
+		await Consulta().ToListAsync();
 
-	public virtual void Modificar(TEntity entity) => 
-		Context.Update(entity);
+	public virtual void Modificar(TEntity entidad) =>
+		Context.Update(entidad);
 
-	public void ModificarRango(IEnumerable<TEntity> entities) =>
-		Context.UpdateRange(entities);
+	public void ModificarRango(IEnumerable<TEntity> entidades) =>
+		Context.UpdateRange(entidades);
 
-	public async Task Eliminar(params object[] ids)
+	public async Task EliminarAsync(Guid id)
 	{
-		var entity = await BuscarPorIDAsync(ids);
-		if (entity is not null)
+		var entidad = await BuscarPorIDAsync(id);
+		if (entidad is not null)
 		{
-			Context.Remove(entity);
+			Context.Remove(entidad);
 		}
 	}
 
-	public void EliminarRango(IEnumerable<TEntity> entities) =>
-		Context.RemoveRange(entities);
+	public void EliminarRango(IEnumerable<TEntity> entidades) =>
+		Context.RemoveRange(entidades);
 }

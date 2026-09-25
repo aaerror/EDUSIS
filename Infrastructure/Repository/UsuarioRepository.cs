@@ -1,33 +1,36 @@
-﻿using Domain.Usuarios;
+using Domain.Usuarios;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public class UsuarioRepository : Repository<Usuario>, IUsuarioRepository
+internal class UsuarioRepository : Repository<Usuario>, IUsuarioRepository
 {
-	private EdusisDBContext _context => Context as EdusisDBContext;
-
+	private EdusisDBContext _context => (EdusisDBContext)Context;
 
 	public UsuarioRepository(EdusisDBContext context)
 		: base(context) { }
 
-	public Usuario BuscarPorEmail(string unEmail) =>
-		_context.Usuarios.Where(x => string.Equals(x.Username.ToLower(), unEmail.ToLower())).FirstOrDefault();
+	protected override IQueryable<Usuario> Consulta() =>
+		_context.Usuarios.Include(x => x.Roles);
 
-	public bool ExisteUsuarioDelDocente(Guid docenteID) =>
-		_context.Usuarios.Any(x => x.DocenteID.Equals(docenteID));
+	private static string NormalizarUsername(string username) =>
+		username.Trim().ToLower();
 
-	public bool EsEmailInvalido(string unEmail) =>
-		_context.Usuarios.Any(x => x.Username.Equals(unEmail));
-
-	public void RecuperarDatosAcceso(string usuario, out string salt, out string hash)
+	public async Task<Usuario?> BuscarPorUsernameAsync(string username)
 	{
-		var usuarioDocente = _context.Usuarios.Find(usuario);
-		if (usuarioDocente is null)
-		{
-			throw new ArgumentException("Usuario docente no registrado en el sistema.", nameof(usuario));
-		}
+		var normalizado = NormalizarUsername(username);
+		return await Consulta().FirstOrDefaultAsync(x => x.Username.ToLower() == normalizado);
+	}
 
-		salt = usuarioDocente.PasswordSalt;
-		hash = usuarioDocente.PasswordHash;
+	public async Task<Usuario?> BuscarPorDocenteAsync(Guid docenteID) =>
+		await Consulta().FirstOrDefaultAsync(x => x.DocenteID == docenteID);
+
+	public async Task<bool> ExisteUsuarioDelDocenteAsync(Guid docenteID) =>
+		await _context.Usuarios.AnyAsync(x => x.DocenteID == docenteID);
+
+	public async Task<bool> EsUsernameInvalidoAsync(string username)
+	{
+		var normalizado = NormalizarUsername(username);
+		return await _context.Usuarios.AnyAsync(x => x.Username.ToLower() == normalizado);
 	}
 }
