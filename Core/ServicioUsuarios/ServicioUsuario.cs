@@ -63,7 +63,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 		try
 		{
 			_logger.LogInformation($"Generando usuario para el docente {request.DocenteID}...");
-			var existeUsuario = _unitOfWork.Usuarios.ExisteUsuarioDelDocente(request.DocenteID);
+			var existeUsuario = await _unitOfWork.Usuarios.ExisteUsuarioDelDocenteAsync(request.DocenteID);
 			if (existeUsuario)
 			{
 				throw new ArgumentException("El docente ya cuenta con un usuario en el sistema.", nameof(request.DocenteID));
@@ -108,8 +108,8 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 	{
 		try
 		{
-			var esValido = await _unitOfWork.Docentes.BuscarAsync(x => x.Id.Equals(request.DocenteID) && x.Legajo.Equals(request.Legajo));
-			if (!esValido.Any())
+			var esValido = await _unitOfWork.Docentes.ExisteDocenteConLegajoAsync(request.DocenteID, request.Legajo);
+			if (!esValido)
 			{
 				throw new ArgumentException("Datos del docente incorrectos.");
 			}
@@ -125,13 +125,11 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			_logger.LogInformation($"SALT: {salt}");
 			_logger.LogInformation($"HASH: {hash}");
 
-			var existeUsuario = _unitOfWork.Usuarios.ExisteUsuarioDelDocente(request.DocenteID);
+			var existeUsuario = await _unitOfWork.Usuarios.ExisteUsuarioDelDocenteAsync(request.DocenteID);
 			if (existeUsuario)
 			{
 				_logger.LogInformation($"Reestableciendo acceso para el docente {request.DocenteID}...");
-				var usuario = (await _unitOfWork.Usuarios
-					.BuscarAsync(x => x.DocenteID.Equals(request.DocenteID)))
-					.FirstOrDefault();
+				var usuario = await _unitOfWork.Usuarios.BuscarPorDocenteAsync(request.DocenteID);
 
 				usuario.CambiarPassword(salt, hash);
 
@@ -166,7 +164,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 		try
 		{
 			_logger.LogInformation($"Recuperando acceso del usuario...");
-			var usuario = _unitOfWork.Usuarios.BuscarPorEmail(request.Email);
+			var usuario = await _unitOfWork.Usuarios.BuscarPorUsernameAsync(request.Email);
 			if (usuario is null)
 			{
 				throw new ArgumentException("Datos de acceso incorrectos.");
@@ -194,8 +192,47 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 		}
 	}
 
-	public void ActualizarRol(ActualizarRolRequest request)
+	public async Task AsignarRolAsync(ActualizarRolRequest request)
 	{
-		throw new NotImplementedException();
+		try
+		{
+			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
+			if (usuario is null)
+			{
+				throw new NullReferenceException("No se encontró el usuario.");
+			}
+
+			usuario.AgregarRol(request.Rol);
+
+			_unitOfWork.Usuarios.Modificar(usuario);
+			await _unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
+
+	public async Task QuitarRolAsync(ActualizarRolRequest request)
+	{
+		try
+		{
+			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
+			if (usuario is null)
+			{
+				throw new NullReferenceException("No se encontró el usuario.");
+			}
+
+			usuario.QuitarRol(request.Rol);
+
+			_unitOfWork.Usuarios.Modificar(usuario);
+			await _unitOfWork.GuardarCambiosAsync();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
 	}
 }

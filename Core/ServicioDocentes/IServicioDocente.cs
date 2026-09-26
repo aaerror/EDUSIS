@@ -11,13 +11,14 @@ public interface IServicioDocente
 	//LegajoDocenteResponse BuscarLegajoDocentePorDNI(string documento);
 	Task<IReadOnlyCollection<LegajoDocenteResponse>> ListarDocentesActivosAsync();
 	Task<IReadOnlyCollection<LegajoDocenteResponse>> BuscarDocenteSegunNombreCompletoAsync(NombreCompletoRequest request);
+	Task<IReadOnlyCollection<LegajoDocenteResponse>> ListarPreceptoresActivosAsync();
 
 	Task<LegajoDocenteResponse> MostrarLegajoDocenteAsync(DocenteIDRequest request);
 	Task RegistrarDocenteAsync(RegistrarDocenteRequest request);
 	Task ActualizarContacto(CambiarContactoRequest request);
 	Task ActualizarDomicilio(CambiarDomicilioRequest request);
 	Task ActualizarSexo(CambiarSexoRequest request);
-	void QuitarDocente(DocenteIDRequest request);
+	Task QuitarDocenteAsync(DocenteIDRequest request);
 
 	/*
 	IReadOnlyCollection<LicenciaResponse> BuscarLicencias(DocenteIDRequest request);

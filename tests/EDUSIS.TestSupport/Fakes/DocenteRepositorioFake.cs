@@ -1,4 +1,5 @@
 using Domain.Docentes;
+using Domain.Docentes.Puestos;
 
 namespace EDUSIS.TestSupport.Fakes;
 
@@ -29,6 +30,15 @@ public sealed class DocenteRepositorioFake : RepositorioDePersonasEnMemoria<Doce
 			.ToList();
 
 		return Task.FromResult(activos);
+	}
+
+	public Task<IReadOnlyCollection<Docente>> BuscarSegunPosicionAsync(Posicion posicion)
+	{
+		IReadOnlyCollection<Docente> coincidencias = _entidades
+			.Where(x => x.Puestos.Any(p => p.Posicion == posicion && p.Estado == EstadoPuesto.Activo))
+			.ToList();
+
+		return Task.FromResult(coincidencias);
 	}
 
 	public Task<bool> ExisteDocenteConLegajoAsync(Guid docenteID, string legajo) =>

@@ -82,9 +82,18 @@ public class ServicioLicenciaTests
 			new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 0, "Reposo")));
 	}
 
-	[Fact(Skip = "H-016: SolicitarLicencia con Dias > 0 llama EstablecerFechaFinalizacion sobre una licencia recién creada (estado Pendiente); el guard !EstaActiva() lanza LicenciaInactivaException y la solicitud con plazo nunca se completa. Ver hallazgos.md.")]
-	public void SolicitarLicencia_con_dias_fija_la_fecha_de_fin_de_la_licencia()
+	[Fact]
+	public async Task SolicitarLicencia_con_dias_fija_la_fecha_de_fin_de_la_licencia()
 	{
+		var docente = new DocenteBuilder().Build();
+		_host.UnidadDeTrabajo.DocentesFake.Sembrar(docente);
+
+		var fechaInicio = DateTime.Today;
+		await _servicio.SolicitarLicencia(new NuevaSolicitudLicenciaRequest(
+			docente.Id, "Enfermedad", fechaInicio, Dias: 5, "Reposo"));
+
+		var licencia = _host.UnidadDeTrabajo.LicenciasFake.Elementos.ShouldHaveSingleItem();
+		licencia.Periodo.FechaFin.ShouldBe(fechaInicio.AddDays(5));
 	}
 	#endregion
 

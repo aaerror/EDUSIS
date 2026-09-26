@@ -39,7 +39,7 @@ internal class ServicioAutenticacion : IServicio, IServicioAutenticacion
 		{
 			_logger.LogInformation($"Realizando ingreso al sistema del usuario...");
 
-			var usuario = _unitOfWork.Usuarios.BuscarPorEmail(request.credential.UserName);
+			var usuario = await _unitOfWork.Usuarios.BuscarPorUsernameAsync(request.credential.UserName);
 			if (usuario is null)
 			{
 				throw new ArgumentException("Datos de acceso incorrectos.");
@@ -61,10 +61,5 @@ internal class ServicioAutenticacion : IServicio, IServicioAutenticacion
 			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
 			throw;
 		}
-	}
-
-	public void Logout(LogoutRequest request)
-	{
-		throw new NotImplementedException();
 	}
 }

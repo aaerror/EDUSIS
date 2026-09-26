@@ -48,7 +48,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
-			var licencia = await _unitOfWork.Licencias.BuscarPorIDAsync(request.LicenciaID, request.DocenteID);
+			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
 				throw new NullReferenceException("Licencia no encontrada.");
@@ -72,7 +72,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
-			var licencia = await _unitOfWork.Licencias.BuscarPorIDAsync(request.LicenciaID, request.DocenteID);
+			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
 				throw new NullReferenceException("Licencia no encontrada.");
@@ -96,7 +96,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
-			var licencia = await _unitOfWork.Licencias.BuscarPorIDAsync(request.LicenciaID, request.DocenteID);
+			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
 				throw new NullReferenceException("Licencia no encontrada.");
@@ -121,7 +121,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
-			var licencia = await _unitOfWork.Licencias.BuscarPorIDAsync(request.LicenciaID, request.DocenteID);
+			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
 				throw new NullReferenceException("Licencia no encontrada.");
@@ -133,7 +133,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 				throw new ArgumentException("Sólo se pueden eliminar licencias que se encuentran pendientes de aprobar.");
 			}
 
-			await _unitOfWork.Licencias.Eliminar(licencia.Id, licencia.DocenteID);
+			await _unitOfWork.Licencias.EliminarAsync(licencia.Id);
 			var result = await _unitOfWork.GuardarCambiosAsync();
 
 			_logger.LogInformation($"{ result } licencia eliminada correctamente.");
@@ -155,11 +155,15 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 				throw new NullReferenceException("Datos incompletos para registrar la licencia.");
 			}
 
-			var licencia = new Licencia(request.DocenteID, request.Articulo, request.FechaInicio, request.Observacion);
+			Licencia licencia;
 			if (request.Dias > 0)
 			{
 				var fechaFin = request.FechaInicio.AddDays(request.Dias);
-				licencia.EstablecerFechaFinalizacion(fechaFin);
+				licencia = new Licencia(request.DocenteID, request.Articulo, request.FechaInicio, fechaFin, request.Observacion);
+			}
+			else
+			{
+				licencia = new Licencia(request.DocenteID, request.Articulo, request.FechaInicio, request.Observacion);
 			}
 
 			await _unitOfWork.Licencias.AgregarAsync(licencia);

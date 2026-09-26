@@ -123,8 +123,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
-			// TODO: Mejorar performance de la consulta
-			var docentes = await _unitOfWork.Docentes.BuscarAsync(x => x.Activo);
+			var docentes = await _unitOfWork.Docentes.BuscarActivosAsync();
 
 			_logger.LogInformation($"Se encontraron { docentes.Count() } docentes activos.");
 
@@ -184,8 +183,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		try
 		{
 			var preceptores = await _unitOfWork.Docentes
-				.BuscarAsync(x =>
-					x.Puesto.Posicion.Equals(Posicion.Preceptor) && x.Puesto.EstaActivo());
+				.BuscarSegunPosicionAsync(Posicion.Preceptor);
 
 			_logger.LogInformation($"Se encontraron { preceptores.Count() } preceptores activos.");
 
@@ -214,7 +212,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		try
 		{
 			var docente = await _unitOfWork.Docentes
-				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+				.BuscarPorIDAsync(request.DocenteID);
 
 			return new LegajoDocenteResponse(
 				DocenteID: docente.Id,
@@ -381,7 +379,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		}
 	}
 
-	public async void QuitarDocente(DocenteIDRequest request)
+	public async Task QuitarDocenteAsync(DocenteIDRequest request)
 	{
 		try
 		{
@@ -498,7 +496,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		try
 		{
 			var unDocente = await _unitOfWork.Docentes
-				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+				.BuscarPorIDAsync(request.DocenteID);
 
 			return unDocente.Puestos
 				.Select(x =>
@@ -524,7 +522,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		try
 		{
 			var unDocente = await _unitOfWork.Docentes
-				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+				.BuscarPorIDAsync(request.DocenteID);
 			unDocente.AsignarCargoDocente(
 				request.Posicion,
 				request.Estado,
@@ -547,7 +545,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		try
 		{
 			var unDocente = await _unitOfWork.Docentes
-				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+				.BuscarPorIDAsync(request.DocenteID);
 			unDocente.ModificarCargoDocente(
 				request.PuestoID,
 				request.Posicion,
@@ -591,7 +589,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		try
 		{
 			var unDocente = await _unitOfWork.Docentes
-				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+				.BuscarPorIDAsync(request.DocenteID);
 			unDocente.RescindirCargoDocente(request.PuestoID, request.FechaFin);
 
 			_logger.LogInformation($"\nRevocando puesto docente...\nPuestoID: {request.PuestoID}");
@@ -613,7 +611,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		try
 		{
 			var unDocente = await _unitOfWork.Docentes
-				.BuscarDocentePorIDConPuestosAsync(request.DocenteID);
+				.BuscarPorIDAsync(request.DocenteID);
 			unDocente.EliminarCargoDocente(request.PuestoID);
 
 			var log = $"\nEliminando puesto docente...\nPuestoID: {request.PuestoID}";

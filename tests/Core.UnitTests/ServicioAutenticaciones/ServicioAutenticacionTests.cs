@@ -12,7 +12,7 @@ namespace Core.UnitTests.ServicioAutenticaciones;
 /// <summary>
 /// <see cref="IServicioAutenticacion"/>: <c>Login</c> valida credenciales contra el hash guardado
 /// del usuario y delega el armado del perfil en <see cref="Core.ServicioUsuarios.IServicioUsuario"/>.
-/// <c>Logout</c> no está implementado (H-014).
+/// <c>Logout</c> se eliminó de <c>Core</c> (H-014): la sesión es responsabilidad de la presentación.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioAutenticacionTests
@@ -69,21 +69,6 @@ public class ServicioAutenticacionTests
 
 		await Should.ThrowAsync<ArgumentException>(
 			() => _servicio.Login(new LoginRequest(new NetworkCredential("maria.gonzalez", "clave-incorrecta"))));
-	}
-	#endregion
-
-	#region Logout
-	[Fact]
-	public void Logout_no_esta_implementado_y_lanza_NotImplementedException()
-	{
-		// Documenta el estado actual (H-014): el método está declarado en la interfaz pero su
-		// cuerpo es `throw new NotImplementedException()`.
-		Should.Throw<NotImplementedException>(() => _servicio.Logout(new LogoutRequest(Guid.NewGuid())));
-	}
-
-	[Fact(Skip = "H-014: ServicioAutenticacion.Logout no tiene implementación (throw new NotImplementedException). Ver hallazgos.md.")]
-	public void Logout_cierra_la_sesion_del_usuario()
-	{
 	}
 	#endregion
 }

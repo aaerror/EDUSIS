@@ -1,4 +1,5 @@
 using Domain.Docentes;
+using Domain.Docentes.Puestos;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
@@ -22,6 +23,11 @@ internal class DocenteRepository : PersonaRepository<Docente>, IDocenteRepositor
 
 	public async Task<IReadOnlyCollection<Docente>> BuscarActivosAsync() =>
 		await Consulta().Where(x => x.Activo).ToListAsync();
+
+	public async Task<IReadOnlyCollection<Docente>> BuscarSegunPosicionAsync(Posicion posicion) =>
+		await Consulta()
+			.Where(x => x.Puestos.Any(p => p.Posicion == posicion && p.Estado == EstadoPuesto.Activo))
+			.ToListAsync();
 
 	public async Task<bool> ExisteDocenteConLegajoAsync(Guid docenteID, string legajo) =>
 		await _context.Docentes.AnyAsync(x => x.Id == docenteID && x.Legajo == legajo);

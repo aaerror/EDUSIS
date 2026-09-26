@@ -266,7 +266,7 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	{
 		try
 		{
-			await _unitOfWork.Alumnos.Eliminar(request.AlumnoID);
+			await _unitOfWork.Alumnos.EliminarAsync(request.AlumnoID);
 
 			await _unitOfWork.GuardarCambiosAsync();
 		}

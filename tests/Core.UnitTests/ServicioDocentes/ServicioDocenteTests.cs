@@ -11,9 +11,9 @@ using Xunit;
 namespace Core.UnitTests.ServicioDocentes;
 
 /// <summary>
-/// <see cref="IServicioDocente"/>: los 14 métodos públicos (los de licencias quedan comentados
-/// en la interfaz, FR-013) con camino feliz y de error. <c>QuitarDocente</c> es <c>async void</c>
-/// y no se puede esperar ni capturar su excepción (H-018).
+/// <see cref="IServicioDocente"/>: los métodos públicos (los de licencias quedan comentados
+/// en la interfaz, FR-013) con camino feliz y de error. <c>QuitarDocenteAsync</c> devuelve
+/// <see cref="Task"/> desde H-018 y propaga sus excepciones con normalidad.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioDocenteTests
@@ -126,6 +126,20 @@ public class ServicioDocenteTests
 		await Should.ThrowAsync<NullReferenceException>(
 			() => _servicio.MostrarLegajoDocenteAsync(new DocenteIDRequest(Guid.NewGuid())));
 	}
+
+	[Fact]
+	public async Task ListarPreceptoresActivosAsync_devuelve_solo_los_docentes_con_puesto_de_preceptor_activo()
+	{
+		var preceptor = new DocenteBuilder().ConPuesto("Preceptor", "Activo").Build();
+		var profesor = new DocenteBuilder().ConPuesto("Profesor", "Activo").Build();
+		_host.UnidadDeTrabajo.DocentesFake.Sembrar(preceptor);
+		_host.UnidadDeTrabajo.DocentesFake.Sembrar(profesor);
+
+		var preceptores = await _servicio.ListarPreceptoresActivosAsync();
+
+		preceptores.ShouldHaveSingleItem();
+		preceptores.First().DocenteID.ShouldBe(preceptor.Id);
+	}
 	#endregion
 
 	#region Alta
@@ -212,19 +226,21 @@ public class ServicioDocenteTests
 
 	#region Baja institucional
 	[Fact]
-	public void QuitarDocente_es_async_void_y_completa_la_baja_del_docente_sembrado()
+	public async Task QuitarDocenteAsync_completa_la_baja_del_docente_sembrado()
 	{
 		var docente = SembrarDocente();
 
-		// H-018: el método es `async void`; no se puede await ni capturar excepciones. Con el
-		// fake (tareas ya completadas) corre de forma síncrona hasta el final: desafecta y guarda.
-		Should.NotThrow(() => _servicio.QuitarDocente(new DocenteIDRequest(docente.Id)));
+		await _servicio.QuitarDocenteAsync(new DocenteIDRequest(docente.Id));
+
+		docente.Activo.ShouldBeFalse();
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
 	}
 
-	[Fact(Skip = "H-018: ServicioDocente.QuitarDocente es `async void` — no devuelve Task, no se puede esperar y una excepción interna queda sin observar / tira el proceso. Ver hallazgos.md.")]
-	public void QuitarDocente_con_un_docente_inexistente_propaga_NullReferenceException()
+	[Fact]
+	public async Task QuitarDocenteAsync_con_un_docente_inexistente_propaga_NullReferenceException()
 	{
+		await Should.ThrowAsync<NullReferenceException>(
+			() => _servicio.QuitarDocenteAsync(new DocenteIDRequest(Guid.NewGuid())));
 	}
 	#endregion
 

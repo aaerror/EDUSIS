@@ -9,8 +9,8 @@ using Xunit;
 namespace Core.UnitTests.ServicioUsuarios;
 
 /// <summary>
-/// <see cref="IServicioUsuario"/>: los 5 métodos públicos con camino feliz y de error.
-/// <c>ActualizarRol</c> no está implementado (H-015).
+/// <see cref="IServicioUsuario"/>: los métodos públicos con camino feliz y de error.
+/// <c>ActualizarRol</c> se reemplazó por <c>AsignarRolAsync</c> / <c>QuitarRolAsync</c> (H-015).
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioUsuarioTests
@@ -120,18 +120,35 @@ public class ServicioUsuarioTests
 	}
 	#endregion
 
-	#region ActualizarRol
+	#region AsignarRolAsync / QuitarRolAsync
 	[Fact]
-	public void ActualizarRol_no_esta_implementado_y_lanza_NotImplementedException()
+	public async Task ActualizarRol_asigna_el_rol_indicado_al_usuario()
 	{
-		// Documenta el estado actual (H-015): cuerpo `throw new NotImplementedException()`.
-		Should.Throw<NotImplementedException>(
-			() => _servicio.ActualizarRol(new ActualizarRolRequest(Guid.NewGuid(), "Docente")));
+		var (_, usuario) = SembrarDocenteConUsuario();
+
+		await _servicio.AsignarRolAsync(new ActualizarRolRequest(usuario.Id, "Docente"));
+
+		usuario.Roles.ShouldContain(Domain.Usuarios.Rol.Docente);
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
 	}
 
-	[Fact(Skip = "H-015: ServicioUsuario.ActualizarRol no tiene implementación (throw new NotImplementedException). Ver hallazgos.md.")]
-	public void ActualizarRol_asigna_el_rol_indicado_al_usuario()
+	[Fact]
+	public async Task AsignarRolAsync_con_un_usuario_inexistente_lanza_NullReferenceException()
 	{
+		await Should.ThrowAsync<NullReferenceException>(
+			() => _servicio.AsignarRolAsync(new ActualizarRolRequest(Guid.NewGuid(), "Docente")));
+	}
+
+	[Fact]
+	public async Task QuitarRolAsync_quita_el_rol_indicado_al_usuario()
+	{
+		var (_, usuario) = SembrarDocenteConUsuario();
+		usuario.AgregarRol("Docente");
+
+		await _servicio.QuitarRolAsync(new ActualizarRolRequest(usuario.Id, "Docente"));
+
+		usuario.Roles.ShouldNotContain(Domain.Usuarios.Rol.Docente);
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
 	}
 	#endregion
 }

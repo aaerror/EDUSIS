@@ -10,8 +10,9 @@ using Xunit;
 namespace Core.UnitTests.ServicioCursos;
 
 /// <summary>
-/// <see cref="IServicioCurso"/>: los 9 métodos públicos (los 2 métodos de inscripción de
-/// cursantes están comentados en la interfaz, FR-013) con camino feliz y de error.
+/// <see cref="IServicioCurso"/>: <c>ListarCursosAsync</c>, <c>RegistrarCurso</c> y
+/// <c>EliminarCurso</c> son los únicos casos de uso que quedan en este servicio; divisiones,
+/// preceptores, cursantes y calificaciones se reimplementan en servicios nuevos por agregado.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioCursoTests
@@ -24,9 +25,9 @@ public class ServicioCursoTests
 		_servicio = _host.Resolver<IServicioCurso>();
 	}
 
-	private Domain.Cursos.Curso SembrarCurso(int divisiones = 0, string grado = "Primero", string nivel = "Secundaria")
+	private Domain.Cursos.Curso SembrarCurso(string grado = "Primero", string nivel = "Secundaria")
 	{
-		var curso = new CursoBuilder().ConGrado(grado).ConNivelEducativo(nivel).ConDivision(divisiones).Build();
+		var curso = new CursoBuilder().ConGrado(grado).ConNivelEducativo(nivel).Build();
 		_host.UnidadDeTrabajo.CursosFake.Sembrar(curso);
 		return curso;
 	}
@@ -86,131 +87,6 @@ public class ServicioCursoTests
 
 		await Should.NotThrowAsync(() => _servicio.EliminarCurso(new EliminarCursoRequest(Guid.NewGuid())));
 		_host.UnidadDeTrabajo.CursosFake.Elementos.ShouldHaveSingleItem();
-	}
-	#endregion
-
-	#region Divisiones
-	[Fact]
-	public async Task BuscarDivisionesAsync_devuelve_las_divisiones_del_curso()
-	{
-		var curso = SembrarCurso(divisiones: 2);
-
-		var divisiones = await _servicio.BuscarDivisionesAsync(curso.Id);
-
-		divisiones.Count.ShouldBe(2);
-	}
-
-	[Fact]
-	public async Task BuscarDivisionesAsync_con_un_curso_inexistente_lanza_InvalidOperationException()
-	{
-		await Should.ThrowAsync<InvalidOperationException>(
-			() => _servicio.BuscarDivisionesAsync(Guid.NewGuid()));
-	}
-
-	[Fact]
-	public async Task AgregarDivisionAlCurso_suma_una_division_al_curso_y_guarda()
-	{
-		var curso = SembrarCurso(divisiones: 0);
-
-		await _servicio.AgregarDivisionAlCurso(curso.Id);
-
-		curso.Divisiones.Count.ShouldBe(1);
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
-	}
-
-	[Fact]
-	public async Task AgregarDivisionAlCurso_con_un_curso_inexistente_lanza_InvalidOperationException()
-	{
-		await Should.ThrowAsync<InvalidOperationException>(
-			() => _servicio.AgregarDivisionAlCurso(Guid.NewGuid()));
-	}
-
-	[Fact]
-	public async Task QuitarDivisiosDelCurso_elimina_la_division_indicada_y_guarda()
-	{
-		var curso = SembrarCurso(divisiones: 1);
-		var divisionID = curso.Divisiones.First().Id;
-
-		await _servicio.QuitarDivisiosDelCurso(new EliminarDivisionRequest(curso.Id, divisionID));
-
-		curso.Divisiones.ShouldBeEmpty();
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
-	}
-
-	[Fact]
-	public async Task QuitarDivisiosDelCurso_con_un_curso_inexistente_lanza_InvalidOperationException()
-	{
-		await Should.ThrowAsync<InvalidOperationException>(
-			() => _servicio.QuitarDivisiosDelCurso(new EliminarDivisionRequest(Guid.NewGuid(), Guid.NewGuid())));
-	}
-	#endregion
-
-	#region Preceptor
-	[Fact]
-	public async Task RegistrarPreceptorEnDivision_asigna_el_docente_como_preceptor_de_la_division()
-	{
-		var curso = SembrarCurso(divisiones: 1);
-		var divisionID = curso.Divisiones.First().Id;
-		var docenteID = Guid.NewGuid();
-
-		await _servicio.RegistrarPreceptorEnDivision(new RegistrarPreceptorRequest(curso.Id, divisionID, docenteID));
-
-		curso.Divisiones.First().Preceptor.ShouldBe(docenteID);
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
-	}
-
-	[Fact]
-	public async Task RegistrarPreceptorEnDivision_con_un_curso_inexistente_lanza_NullReferenceException()
-	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.RegistrarPreceptorEnDivision(
-			new RegistrarPreceptorRequest(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())));
-	}
-
-	[Fact]
-	public async Task EliminarPreceptorDeDivision_deja_vacante_el_cargo_de_preceptor()
-	{
-		var curso = SembrarCurso(divisiones: 1);
-		var divisionID = curso.Divisiones.First().Id;
-		curso.AsignarPreceptor(divisionID, Guid.NewGuid());
-
-		await _servicio.EliminarPreceptorDeDivision(new EliminarPreceptorRequest(curso.Id, divisionID));
-
-		curso.Divisiones.First().Preceptor.ShouldBeNull();
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
-	}
-
-	[Fact]
-	public async Task EliminarPreceptorDeDivision_con_un_curso_inexistente_lanza_NullReferenceException()
-	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.EliminarPreceptorDeDivision(
-			new EliminarPreceptorRequest(Guid.NewGuid(), Guid.NewGuid())));
-	}
-	#endregion
-
-	#region Calificación
-	[Fact]
-	public async Task RegistrarCalificacion_con_un_curso_existente_no_falla()
-	{
-		var curso = SembrarCurso(divisiones: 1);
-		var divisionID = curso.Divisiones.First().Id;
-
-		// Documenta el estado actual (H-017): el cuerpo del método sólo carga el curso y no
-		// registra ninguna calificación ni guarda cambios.
-		await Should.NotThrowAsync(() => _servicio.RegistrarCalificacion(
-			new CrearCalificationRequest(curso.Id, divisionID, Guid.NewGuid(), Guid.NewGuid(), instancia: 1, nota: 8)));
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
-	}
-
-	[Fact]
-	public async Task RegistrarCalificacion_con_un_curso_vacio_lanza_NullReferenceException()
-	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.RegistrarCalificacion(
-			new CrearCalificationRequest(Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty, instancia: 1, nota: 8)));
-	}
-
-	[Fact(Skip = "H-017: ServicioCurso.RegistrarCalificacion sólo carga el curso; no crea la calificación, no modifica el agregado y no llama GuardarCambiosAsync. Ver hallazgos.md.")]
-	public void RegistrarCalificacion_persiste_la_nota_del_cursante_en_la_materia()
-	{
 	}
 	#endregion
 }

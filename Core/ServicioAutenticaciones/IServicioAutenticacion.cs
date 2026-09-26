@@ -6,6 +6,4 @@ namespace Core.ServicioAutenticaciones;
 public interface IServicioAutenticacion
 {
 	Task<UsuarioResponse> Login(LoginRequest request);
-
-	void Logout(LogoutRequest request);
 }

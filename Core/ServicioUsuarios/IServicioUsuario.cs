@@ -6,7 +6,8 @@ namespace Core.ServicioUsuarios;
 public interface IServicioUsuario
 {
 	Task<UsuarioResponse> BuscarUsuarioPorIDAsync(UsuarioIDRequest request);
-	void ActualizarRol(ActualizarRolRequest request);
+	Task AsignarRolAsync(ActualizarRolRequest request);
+	Task QuitarRolAsync(ActualizarRolRequest request);
 	Task RegistrarUsuarioAsync(RegistrarUsuarioRequest request);
 	Task RestablecerAccesoAsync(RestablecerAccesoRequest request);
 	Task SolicitarAccesoAsync(SolicitarAccesoRequest request);

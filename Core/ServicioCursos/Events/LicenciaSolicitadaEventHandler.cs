@@ -1,23 +1,23 @@
-﻿using Domain.Cursos;
-using Domain.Licencias.DomainEvents;
+﻿using Domain.Licencias.DomainEvents;
+using Domain.Shared;
 using MediatR;
 
 namespace Core.ServicioCursos.Events;
 
 internal class LicenciaSolicitadaEventHandler : INotificationHandler<LicenciaSolicitadaEvent>
 {
-    private readonly ICursoRepository _cursoRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
 
-    public LicenciaSolicitadaEventHandler(ICursoRepository cursoRepository)
+    public LicenciaSolicitadaEventHandler(IUnitOfWork unitOfWork)
     {
-        _cursoRepository = cursoRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public Task Handle(LicenciaSolicitadaEvent notification, CancellationToken cancellationToken)
     {
         // TODO: COMPLETAR EVENTO DE LICENCIAS SOLICITADAS
-        //var docentes = _cursoRepository.
+        //var docentes = _unitOfWork.Cursos.
         return Task.CompletedTask;
     }
 }
