@@ -26,8 +26,4 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
 	</ItemGroup>
-
-	<ItemGroup>
-		<Folder Include="ServicioUsuarios\DTOs\Responses\" />
-	</ItemGroup>
 </Project>
