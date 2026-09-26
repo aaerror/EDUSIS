@@ -1,3 +1,3 @@
-﻿namespace Core.ServicioCatedras.DTOs.Responses;
+namespace Core.ServicioCatedras.DTOs.Responses;
 
 public record HorarioResponse(string Turno, string Dia, TimeOnly HoraInicio, TimeOnly HoraFin);
