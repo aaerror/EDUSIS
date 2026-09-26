@@ -1,4 +1,5 @@
 ﻿using Core.ServicioAlumnos;
+using Core.ServicioAsistencias;
 using Core.ServicioAutenticaciones;
 using Core.ServicioCurriculas;
 using Core.ServicioCursos;
@@ -16,6 +17,7 @@ public static class CoreDI
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddScoped<IServicioAlumno, ServicioAlumno>();
+        services.AddScoped<IServicioAsistencia, ServicioAsistencia>();
         services.AddScoped<IServicioAutenticacion, ServicioAutenticacion>();
         services.AddScoped<IServicioCurricula, ServicioCurricula>();
         services.AddScoped<IServicioCurso, ServicioCurso>();
