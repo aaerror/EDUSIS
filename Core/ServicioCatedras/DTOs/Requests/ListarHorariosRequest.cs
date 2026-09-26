@@ -1,3 +1,3 @@
-﻿namespace Core.ServicioCatedras.DTOs.Requests;
+namespace Core.ServicioCatedras.DTOs.Requests;
 
-public record ListarHorariosRequest(Guid CursoID, Guid MateriaID);
+public record ListarHorariosRequest(Guid CatedraID);
