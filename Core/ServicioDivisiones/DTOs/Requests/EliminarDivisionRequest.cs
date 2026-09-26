@@ -1,14 +1,3 @@
-﻿namespace Core.ServicioDivisiones.DTOs.Requests;
+namespace Core.ServicioDivisiones.DTOs.Requests;
 
-public record EliminarDivisionRequest
-{
-    public Guid CursoID { get; init; }
-    public Guid DivisionID {  get; init; }
-
-
-    public EliminarDivisionRequest(Guid cursoID, Guid divisionID)
-    {
-        CursoID = cursoID;
-        DivisionID = divisionID;
-    }
-}
+public record EliminarDivisionRequest(Guid CursoID, Guid DivisionID, string CicloLectivo);

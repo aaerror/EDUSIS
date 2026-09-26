@@ -1,7 +1,9 @@
 ﻿using Core.ServicioAlumnos;
 using Core.ServicioAutenticaciones;
 using Core.ServicioCurriculas;
+using Core.ServicioCursantes;
 using Core.ServicioCursos;
+using Core.ServicioDivisiones;
 using Core.ServicioDocentes;
 using Core.ServicioDocumentos;
 using Core.ServicioLicencias;
@@ -18,7 +20,9 @@ public static class CoreDI
         services.AddScoped<IServicioAlumno, ServicioAlumno>();
         services.AddScoped<IServicioAutenticacion, ServicioAutenticacion>();
         services.AddScoped<IServicioCurricula, ServicioCurricula>();
+        services.AddScoped<IServicioCursante, ServicioCursante>();
         services.AddScoped<IServicioCurso, ServicioCurso>();
+        services.AddScoped<IServicioDivision, ServicioDivision>();
         services.AddScoped<IServicioDocente, ServicioDocente>();
         services.AddScoped<IServicioLicencia, ServicioLicencia>();
         services.AddScoped<IServicioSeguridad, ServicioSeguridad>();

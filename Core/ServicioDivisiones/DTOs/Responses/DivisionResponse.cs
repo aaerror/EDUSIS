@@ -1,3 +1,3 @@
 ﻿namespace Core.ServicioDivisiones.DTOs.Responses;
 
-public record DivisionResponse(Guid DivisionID, string Descripcion, Guid? DocenteID, string? Docente, int Alumnos);
+public record DivisionResponse(Guid DivisionID, string Descripcion, Guid? PreceptorID, string? Preceptor, int Cursantes);

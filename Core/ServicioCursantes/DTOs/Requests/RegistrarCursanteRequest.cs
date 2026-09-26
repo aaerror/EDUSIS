@@ -1,3 +1,3 @@
-﻿namespace Core.ServicioCursantes.DTOs.Requests;
+namespace Core.ServicioCursantes.DTOs.Requests;
 
-public record RegistrarCursanteRequest(Guid CursoID, Guid DivisionID, Guid AlumnoID, string Periodo);
+public record RegistrarCursanteRequest(Guid CursoID, Guid DivisionID, Guid AlumnoID, string Periodo, bool EsRecursante = false);
