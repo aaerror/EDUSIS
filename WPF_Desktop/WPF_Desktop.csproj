@@ -32,6 +32,8 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="WPF_Desktop.UnitTests" />
+		<!-- Castle DynamicProxy genera los dobles de NSubstitute en este ensamblado: sin esta línea no se puede doblar una interfaz internal como IDialogService. -->
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 
 	<ItemGroup>
