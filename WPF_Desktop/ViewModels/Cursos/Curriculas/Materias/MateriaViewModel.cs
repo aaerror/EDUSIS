@@ -1,5 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Core.ServicioCurriculas.DTOs.Responses;
+using Core.ServicioMaterias.DTOs.Responses;
 using System.ComponentModel.DataAnnotations;
 using System;
 using WPF_Desktop.Store;

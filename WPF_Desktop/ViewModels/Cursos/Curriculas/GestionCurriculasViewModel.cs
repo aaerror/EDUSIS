@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCurriculas.DTOs.Requests;
+using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioCurriculas;
 using Core.ServicioDocentes;
 using System.Collections.ObjectModel;

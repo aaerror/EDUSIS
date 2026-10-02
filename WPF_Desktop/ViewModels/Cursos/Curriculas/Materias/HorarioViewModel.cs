@@ -1,5 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Core.ServicioCurriculas.DTOs.Responses;
+using Core.ServicioCatedras.DTOs.Responses;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 

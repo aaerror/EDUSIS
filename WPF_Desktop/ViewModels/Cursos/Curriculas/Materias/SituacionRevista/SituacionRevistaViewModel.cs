@@ -1,5 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Core.ServicioCurriculas.DTOs.Responses;
+using Core.ServicioCatedras.DTOs.Responses;
 using System;
 using WPF_Desktop.Validations;
 
