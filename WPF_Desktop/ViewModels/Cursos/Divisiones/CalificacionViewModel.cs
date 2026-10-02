@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Core.ServicioCurriculas.DTOs.Responses;
-using Core.ServicioCursos.DTOs.Responses;
+using Core.ServicioMaterias.DTOs.Responses;
+using Core.ServicioCursantes.DTOs.Responses;
 using Core.ServicioCursos;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

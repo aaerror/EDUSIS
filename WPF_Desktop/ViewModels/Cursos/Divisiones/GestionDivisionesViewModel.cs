@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Core.ServicioCursos.DTOs.Requests;
+using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioCursos;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes;

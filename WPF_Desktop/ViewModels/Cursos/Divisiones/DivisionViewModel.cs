@@ -1,5 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Core.ServicioCursos.DTOs.Responses;
+using Core.ServicioDivisiones.DTOs.Responses;
 using System;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
