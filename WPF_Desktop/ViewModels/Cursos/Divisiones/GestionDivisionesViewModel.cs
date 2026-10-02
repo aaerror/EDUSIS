@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioDivisiones.DTOs.Requests;
-using Core.ServicioCursos;
+using Core.ServicioDivisiones;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes;
 using Core.Shared.DTOs.Personas.Requests;
@@ -11,9 +11,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
-using System.Windows;
 using System;
 using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Docentes;
 
@@ -22,7 +22,7 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 internal partial class GestionDivisionesViewModel : ObservableValidator
 {
 	#region Service
-	private readonly IServicioCurso _servicioCurso;
+	private readonly IServicioDivision _servicioDivision;
 	private readonly IServicioDocente _servicioDocente;
 	private readonly INavigationService _gestionCursosNavigationService;
 	private readonly INavigationService _gestionCursantesNavigationService;
@@ -30,6 +30,12 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 
 	#region Stores
 	private readonly CursoStore _cursoStore;
+	private readonly DivisionStore _divisionStore;
+	private readonly CicloLectivoStore _cicloLectivoStore;
+	#endregion
+
+	#region Dialogos
+	private readonly IDialogService _dialogService;
 	#endregion
 
 	#region Request
@@ -101,18 +107,23 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	#endregion
 
 
-	public GestionDivisionesViewModel(IServicioCurso servicioCursos,
+	public GestionDivisionesViewModel(IServicioDivision servicioDivisiones,
 									  IServicioDocente servicioDocentes,
 									  INavigationService gestionCursosNavigationService,
 									  INavigationService gestionCursantesNavigationService,
 									  CursoStore cursoStore,
-									  DivisionStore divisionStore)
+									  DivisionStore divisionStore,
+									  CicloLectivoStore cicloLectivoStore,
+									  IDialogService dialogService)
 	{
-		_servicioCurso = servicioCursos;
+		_servicioDivision = servicioDivisiones;
 		_servicioDocente = servicioDocentes;
 		_gestionCursosNavigationService = gestionCursosNavigationService;
 		_gestionCursantesNavigationService = gestionCursantesNavigationService;
 		_cursoStore = cursoStore;
+		_divisionStore = divisionStore;
+		_cicloLectivoStore = cicloLectivoStore;
+		_dialogService = dialogService;
 
 		Curso = _cursoStore.Curso.Grado.ToString();
 		NivelEducativo = _cursoStore.Curso.NivelEducativo.ToString();
@@ -138,7 +149,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		_divisiones.Clear();
 		try
 		{
-			var divisiones = await _servicioCurso.BuscarDivisionesAsync(_cursoStore.Curso.CursoID);
+			var divisiones = await _servicioDivision.ListarDivisionesAsync(new ListarDivisionesRequest(_cursoStore.Curso.CursoID, _cicloLectivoStore.CicloLectivo));
 			TotalDivisiones = divisiones.Count;
 
 			if (divisiones.Count is 0)
@@ -182,7 +193,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	private bool CanExecuteEliminarCommand(object obj) => obj switch
 	{
 		"Division" => Division is not null,
-		"Preceptor" => !HabilitarRegistrarDocente && Division is not null && Division.DocenteID is not null,
+		"Preceptor" => !HabilitarRegistrarDocente && Division is not null && Division.PreceptorID is not null,
 		_ => false
 	};
 
@@ -190,7 +201,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		switch (obj)
 		{
@@ -198,21 +208,20 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 				messageBoxText = $"Se va a eliminar la división { Division.Descripcion } del curso.\n\n" +
 								 $"¿Desea continuar?";
 				caption = "Eliminar División";
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						var request = new EliminarDivisionRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
-						await _servicioCurso.QuitarDivisiosDelCurso(request);
+						var request = new EliminarDivisionRequest(_cursoStore.Curso.CursoID, Division.DivisionID, _cicloLectivoStore.CicloLectivo);
+						await _servicioDivision.EliminarDivisionAsync(request);
 
-						MessageBox.Show("División eliminada correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion("División eliminada correctamente", "Operación exitosa");
 
-						CargarDivisionesAsync();
+						await CargarDivisionesAsync();
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 
@@ -223,21 +232,20 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 								 $"¿Desea continuar?";
 				caption = "Quitar Preceptor";
 
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
 						var request = new EliminarPreceptorRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
-						await _servicioCurso.EliminarPreceptorDeDivision(request);
+						await _servicioDivision.QuitarPreceptorAsync(request);
 
-						MessageBox.Show("Se dio de baja correctamente el preceptor de la división", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion("Se dio de baja correctamente el preceptor de la división", "Operación exitosa");
 
-						CargarDivisionesAsync();
+						await CargarDivisionesAsync();
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 				break;
@@ -257,7 +265,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		switch (obj)
 		{
@@ -272,7 +279,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 					{
 						messageBoxText = $"No existen coincidencias.";
 						caption = "Buscar";
-						result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Exclamation);
+						_dialogService.MostrarAdvertencia(messageBoxText, caption);
 						Docentes.Clear();
 
 						HabilitarListaDocentes = false;
@@ -285,11 +292,11 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 					
 					messageBoxText = $"Se encontraron { Docentes.Count } coincidencias.";
 					caption = "Operación Exitosa";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+					_dialogService.MostrarInformacion(messageBoxText, caption);
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+					_dialogService.MostrarError(ex.Message, "Error en la operación");
 				}
 				break;
 
@@ -301,7 +308,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 					{
 						messageBoxText = $"No existen coincidencias.";
 						caption = "Buscar";
-						result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Exclamation);
+						_dialogService.MostrarAdvertencia(messageBoxText, caption);
 						Docentes.Clear();
 
 						HabilitarListaDocentes = false;
@@ -314,11 +321,11 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 
 					messageBoxText = $"Se encontraron { Docentes.Count } coincidencias.";
 					caption = "Operación Exitosa";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+					_dialogService.MostrarInformacion(messageBoxText, caption);
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+					_dialogService.MostrarError(ex.Message, "Error en la operación");
 				}
 				break;
 		}
@@ -342,7 +349,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 				break;
 
 			case "Cursantes":
-				//_divisionStore.Division = Division;
+				_divisionStore.Division = Division;
 				_gestionCursantesNavigationService.Navigate();
 				break;
 		}
@@ -361,7 +368,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		switch (obj)
 		{
@@ -373,18 +379,17 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 				messageBoxText = $"Se va a registrar una nueva división en { _cursoStore.Curso.Grado.ToLower() } año de { _cursoStore.Curso.NivelEducativo.ToLower() }.\n\n" +
 								 $"¿Desea continuar?";
 				caption = "Registrar División";
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						await _servicioCurso.AgregarDivisionAlCurso(_cursoStore.Curso.CursoID);
-						MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
-						CargarDivisionesAsync();
+						await _servicioDivision.AgregarDivisionAsync(new AgregarDivisionRequest(_cursoStore.Curso.CursoID));
+						_dialogService.MostrarInformacion("Datos guardados correctamente", "Operación exitosa");
+						await CargarDivisionesAsync();
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 
@@ -401,15 +406,12 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		try
 		{
 			messageBoxText = $"Se va asignar al docente { Docente.NombreCompleto } como preceptor de la división { Division.Descripcion } de { Curso } año ({ NivelEducativo })\n\n¿Desea continuar?";
 			caption = "Asignar Preceptor";
-			result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-			if (result is MessageBoxResult.Yes)
+			if (_dialogService.Confirmar(messageBoxText, caption))
 			{
 				try
 				{
@@ -417,14 +419,14 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 																DivisionID: Division.DivisionID,
 																DocenteID: Docente.DocenteID);
 
-					await _servicioCurso.RegistrarPreceptorEnDivision(request);
+					await _servicioDivision.AsignarPreceptorAsync(request);
 					
-					MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
+					_dialogService.MostrarInformacion("Datos guardados correctamente", "Operación exitosa");
 					await CargarDivisionesAsync();
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+					_dialogService.MostrarError(ex.Message, "Error en la operación");
 				}
 			}
 
@@ -433,7 +435,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "Error en la operación");
 		}
 	}
 	#endregion

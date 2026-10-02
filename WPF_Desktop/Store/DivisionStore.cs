@@ -10,20 +10,6 @@ internal class DivisionStore
 
 	public event Action DivisionStoreChanged;
 
- 
-	public CursoStore Curso
-	{
-		get
-		{
-			return _cursoStore;
-		}
-
-		set
-		{
-			_cursoStore = value;
-			DivisionStoreChanged?.Invoke();
-		}
-	}
 
 	public DivisionViewModel Division
 	{

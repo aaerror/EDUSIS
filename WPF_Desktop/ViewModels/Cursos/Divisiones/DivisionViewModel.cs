@@ -17,7 +17,7 @@ internal partial class DivisionViewModel : ObservableObject
 	private string _descripcion;
 
 	[ObservableProperty]
-	private Guid? _preceptorID = Guid.Empty;
+	private Guid? _preceptorID;
 
 	[ObservableProperty]
 	private string? _preceptor;

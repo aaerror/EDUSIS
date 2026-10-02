@@ -226,10 +226,10 @@
 													Binding="{ Binding Path=Descripcion, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
 													Width="*"/>
 								<DataGridTextColumn Header="Preceptor"
-													Binding="{ Binding Path=Docente, FallbackValue='Sin datos', TargetNullValue='Preceptor sin asignar' }"
+													Binding="{ Binding Path=Preceptor, FallbackValue='Sin datos', TargetNullValue='Preceptor sin asignar' }"
 													Width="2*"/>
 								<DataGridTextColumn Header="Alumnos Inscriptos"
-													Binding="{ Binding Path=Alumnos, FallbackValue='Sin datos', TargetNullValue='Sin datos', StringFormat={}{0} Alumnos }"
+													Binding="{ Binding Path=Cursantes, FallbackValue='Sin datos', TargetNullValue='Sin datos', StringFormat={}{0} Alumnos }"
 													Width="2*"/>
 								<DataGridTemplateColumn Header="Acciones"
 														Width="*">
