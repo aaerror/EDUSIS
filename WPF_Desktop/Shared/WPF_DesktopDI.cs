@@ -6,7 +6,9 @@ using Core.ServicioCurriculas;
 using Core.ServicioCursos;
 using Core.ServicioDivisiones;
 using Core.ServicioDocentes;
+using Core.ServicioCursantes;
 using Core.ServicioDocumentos;
+using Core.ServicioMaterias;
 using Core.ServicioUsuarios;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -123,10 +125,13 @@ internal static class WPF_DesktopDI
 										 CreateGestionCursosNavigationService(provider)));
 										 
 		services.AddTransient<GestionCursantesViewModel>(provider =>
-			new GestionCursantesViewModel(provider.GetRequiredService<IServicioCurso>(),
+			new GestionCursantesViewModel(provider.GetRequiredService<IServicioCursante>(),
+										  provider.GetRequiredService<IServicioMateria>(),
 										  provider.GetRequiredService<IServicioCurricula>(),
+										  provider.GetRequiredService<IDialogService>(),
 										  provider.GetRequiredService<CursoStore>(),
-										  provider.GetRequiredService<DivisionStore>()));
+										  provider.GetRequiredService<DivisionStore>(),
+										  provider.GetRequiredService<CicloLectivoStore>()));
 		services.AddTransient<GestionCursosViewModel>(provider =>
 			new GestionCursosViewModel(provider.GetRequiredService<IServicioCurso>(),
 									   CreateRegistrarCursoNavigationService(provider),
@@ -147,9 +152,10 @@ internal static class WPF_DesktopDI
 		#region Materias
 		services.AddTransient<GestionCurriculasViewModel>(provider =>
 			new GestionCurriculasViewModel(CreateGestionCursosNavigationService(provider),
-										 CreateGestionSituacionRevistaNavigationService(provider),
+										 CreateGestionCatedrasNavigationService(provider),
 										 provider.GetRequiredService<IServicioCurricula>(),
-										 provider.GetRequiredService<IServicioDocente>(),
+										 provider.GetRequiredService<IServicioMateria>(),
+										 provider.GetRequiredService<IDialogService>(),
 										 provider.GetRequiredService<CursoStore>(),
 										 provider.GetRequiredService<MateriaStore>()));
 		#endregion
