@@ -1,8 +1,10 @@
-﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Divisiones.GestionCursantesView"
+<UserControl x:Class="WPF_Desktop.Views.Cursos.Divisiones.GestionCursantesView"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
 			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
 			 xmlns:domainCursantes="clr-namespace:Domain.Cursantes;assembly=Domain"
+			 xmlns:domainCalificaciones="clr-namespace:Domain.Cursantes.Calificaciones;assembly=Domain"
+			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -10,81 +12,50 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
 	<UserControl.Resources>
 		<BooleanToVisibilityConverter x:Key="Converter"/>
+
+		<ObjectDataProvider x:Key="instancias" MethodName="GetNames" ObjectType="{ x:Type sys:Enum }">
+			<ObjectDataProvider.MethodParameters>
+				<x:Type TypeName="domainCalificaciones:Instancia"/>
+			</ObjectDataProvider.MethodParameters>
+		</ObjectDataProvider>
 	</UserControl.Resources>
-	<Grid>
-		<Grid.RowDefinitions>
-			<RowDefinition Height="100"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="*"/>
-		</Grid.RowDefinitions>
 
-		<!-- TITTLE AND SUBTITLE -->
-		<components:Header Grid.Row="0"
-						   Title="Gestión de Divisiones"
-						   Subtitle="Listado de Alumnos"/>
+	<behaviors:Interaction.Triggers>
+		<behaviors:EventTrigger EventName="Loaded">
+			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarCommandAsync }"/>
+		</behaviors:EventTrigger>
+	</behaviors:Interaction.Triggers>
 
-		<!-- INPUTs -->
-		<Grid Grid.Row="1">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition/>
-				<ColumnDefinition/>
-			</Grid.ColumnDefinitions>
+	<ScrollViewer VerticalScrollBarVisibility="Auto">
+		<Grid>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="100"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
 
-			<StackPanel Grid.Column="0">
-				<WrapPanel HorizontalAlignment="Left"
-						   Margin="25 10">
-					<Button Command="{ Binding Path=ABMCommand }"
-							CommandParameter="Nueva"
-							Content="Registrar División"
-							Margin="0 0 5 0"
-							Style="{ StaticResource ResourceKey=Secondary }"/>
-					<Button Command="{ Binding Path=ABMCommand }"
-							CommandParameter="Eliminar"
-							Content="Quitar División"
-							Margin="5 0 0 0"
-							Style="{ StaticResource ResourceKey=Secondary }"/>
-				</WrapPanel>
-			</StackPanel>
-			<StackPanel Grid.Column="1">
-				<WrapPanel HorizontalAlignment="Right"
-						   Margin="25 10">
-					<Button Command="{ Binding Path=NavigationCommand }"
-							CommandParameter="Alumnos"
-							Content="Alumnos"
-							Margin="5 0 0 0"
-							Style="{ StaticResource ResourceKey=Secondary }"/>
-				</WrapPanel>
-			</StackPanel>
-		</Grid>
+			<!-- TITTLE AND SUBTITLE -->
+			<components:Header Grid.Row="0"
+							   Title="Gestión de Divisiones"
+							   Subtitle="Listado de Alumnos"/>
 
-		<!-- MAIN -->
-		<Border Grid.Row="2"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10"
-				Padding="10 10">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
+			<!-- MAIN -->
+			<Border Grid.Row="1"
+					Background="#FFFFFF"
+					BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+					BorderThickness="1"
+					CornerRadius="4"
+					Margin="20 10"
+					Padding="10 10">
+				<Border.Effect>
+					<DropShadowEffect BlurRadius="15"
+									  Color="#373737"
+									  ShadowDepth="5"
+									  Opacity=".3"/>
+				</Border.Effect>
 
-			<ScrollViewer VerticalScrollBarVisibility="Auto"
-						  Padding="5 0">
-				<Grid Margin="20 10">
-					<Grid.RowDefinitions>
-						<RowDefinition/>
-						<RowDefinition/>
-						<RowDefinition/>
-						<RowDefinition/>
-					</Grid.RowDefinitions>
-
-					<StackPanel Grid.Row="0"
-								Margin="0 10">
+				<StackPanel Margin="20 10">
+					<StackPanel Margin="0 10">
 						<Label Content="LISTADO DE ALUMNOS"
 							   Style="{ StaticResource ResourceKey=Headline }"/>
 						<Separator Background="{ StaticResource ResourceKey=Gray400 }"
@@ -93,87 +64,186 @@
 					</StackPanel>
 
 					<!-- SEARCH BAR -->
-					<StackPanel Grid.Row="1"
-								Margin="0 0 0 10">
-						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="Auto"/>
-							</Grid.ColumnDefinitions>
-							<WrapPanel Margin="0 5">
-								<TextBox Text="{ Binding Path=Periodo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-										 Margin="0 0 5 0"
-										 Tag="ingresar el ciclo lectivo..."
-										 Width="200"
-										 Style="{ StaticResource ResourceKey=TextBox }"/>
-								<Button Command="{ Binding Path=BuscarCommand }"
-										CommandParameter="Listado"
-										Content="Buscar"
-										Margin="5 0 0 0"
-										Style="{ StaticResource ResourceKey=Primary }"/>
-							</WrapPanel>
-						</Grid>
-					</StackPanel>
+					<WrapPanel Margin="0 5 0 10">
+						<TextBox Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+								 Margin="0 0 5 0"
+								 Tag="ingresar el ciclo lectivo..."
+								 Width="200"
+								 Style="{ StaticResource ResourceKey=TextBox }"/>
+						<Button Command="{ Binding Path=BuscarCommandAsync }"
+								Content="Buscar"
+								Margin="5 0 0 0"
+								Style="{ StaticResource ResourceKey=Primary }"/>
+					</WrapPanel>
 
-					<StackPanel Grid.Row="2"
-								Margin="0 0 0 10">
-						<DataGrid x:Name="DataGrid_Cursantes"
-								  ItemsSource="{ Binding Path=Cursantes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-								  SelectedItem="{ Binding Path=Cursante, UpdateSourceTrigger=PropertyChanged }"
-								  AutoGenerateColumns="False"
-								  HorizontalContentAlignment="Center"
-								  IsSynchronizedWithCurrentItem="True"
-								  Margin="0 0 0 10"
-								  Style="{ StaticResource ResourceKey=DataGrid }">
-							<DataGrid.Columns>
-								<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
-													Header="Alumno"/>
-								<DataGridTextColumn Binding="{ Binding Path=Documento, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
-													Header="Documento"/>
-								<DataGridTextColumn Binding="{ Binding Path=Edad, Mode=OneTime, UpdateSourceTrigger=PropertyChanged }"
-													Header="Edad"/>
-							</DataGrid.Columns>
-						</DataGrid>
+					<!-- CURSANTES -->
+					<DataGrid x:Name="DataGrid_Cursantes"
+							  ItemsSource="{ Binding Path=Cursantes, Mode=OneWay }"
+							  SelectedItem="{ Binding Path=Cursante, Mode=TwoWay }"
+							  AutoGenerateColumns="False"
+							  HorizontalContentAlignment="Center"
+							  Margin="0 0 0 10"
+							  Style="{ StaticResource ResourceKey=DataGrid }">
+						<DataGrid.Columns>
+							<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime }"
+												Header="Alumno"/>
+							<DataGridTextColumn Binding="{ Binding Path=Documento, Mode=OneTime }"
+												Header="Documento"/>
+							<DataGridTextColumn Binding="{ Binding Path=Edad, Mode=OneTime }"
+												Header="Edad"/>
+						</DataGrid.Columns>
+					</DataGrid>
 
-						<StackPanel>
-							<WrapPanel HorizontalAlignment="Right">
-								<Button Command="{ Binding Path=ABMCommand }"
-										CommandParameter="Calificacion"
-										Content="Cargar Nota"
-										Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Secondary }"/>
-							</WrapPanel>
+					<!-- CALIFICACIONES DEL CURSANTE SELECCIONADO -->
+					<Label Content="CALIFICACIONES"
+						   Style="{ StaticResource ResourceKey=Headline }"/>
+					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
+							   Height=".8"
+							   Width="Auto"/>
+
+					<DataGrid x:Name="DataGrid_Calificaciones"
+							  ItemsSource="{ Binding Path=Calificaciones, Mode=OneWay }"
+							  SelectedItem="{ Binding Path=CalificacionSeleccionada, Mode=TwoWay }"
+							  AutoGenerateColumns="False"
+							  HorizontalContentAlignment="Center"
+							  Margin="0 10"
+							  Style="{ StaticResource ResourceKey=DataGrid }">
+						<DataGrid.Columns>
+							<DataGridTextColumn Binding="{ Binding Path=Materia, Mode=OneTime }"
+												Header="Materia"/>
+							<DataGridTextColumn Binding="{ Binding Path=Fecha, Mode=OneTime, StringFormat=d }"
+												Header="Fecha"/>
+							<DataGridTextColumn Binding="{ Binding Path=Instancia, Mode=OneTime }"
+												Header="Instancia"/>
+							<DataGridCheckBoxColumn Binding="{ Binding Path=Rindio, Mode=OneWay }"
+													Header="Rindió"
+													IsReadOnly="True"/>
+							<DataGridTextColumn Binding="{ Binding Path=Nota, Mode=OneTime }"
+												Header="Nota"/>
+							<DataGridCheckBoxColumn Binding="{ Binding Path=Aprobado, Mode=OneWay }"
+													Header="Aprobado"
+													IsReadOnly="True"/>
+							<DataGridTextColumn Binding="{ Binding Path=Observacion, Mode=OneTime }"
+												Header="Observación"/>
+						</DataGrid.Columns>
+					</DataGrid>
+
+					<!-- La nota no se corrige: se quita y se vuelve a cargar. Sólo la observación es editable. -->
+					<Label Content="Observación de la calificación seleccionada"
+						   Style="{ StaticResource ResourceKey=Form }"/>
+					<TextBox Text="{ Binding Path=ObservacionEdicion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+							 Style="{ StaticResource ResourceKey=TextBox }"/>
+
+					<WrapPanel HorizontalAlignment="Right"
+							   Margin="0 10 0 0">
+						<Button Command="{ Binding Path=NuevaCalificacionCommand }"
+								Content="Cargar Nota"
+								Margin="0 0 5 0"
+								Style="{ StaticResource ResourceKey=Secondary }"/>
+						<Button Command="{ Binding Path=ModificarObservacionCommandAsync }"
+								Content="Editar Observación"
+								Margin="5 0"
+								Style="{ StaticResource ResourceKey=Secondary }"/>
+						<Button Command="{ Binding Path=QuitarCalificacionCommandAsync }"
+								Content="Quitar Calificación"
+								Margin="5 0 0 0"
+								Style="{ StaticResource ResourceKey=Secondary }"/>
+					</WrapPanel>
+				</StackPanel>
+			</Border>
+
+			<!-- REGISTRAR CALIFICACIÓN -->
+			<Border Grid.Row="2"
+					Background="#FFFFFF"
+					BorderBrush="{ StaticResource ResourceKey=Gray200 }"
+					BorderThickness="1"
+					CornerRadius="4"
+					Margin="20 10"
+					Padding="10"
+					Visibility="{ Binding Path=MostrarCalificacionView, Mode=OneWay, Converter={ StaticResource ResourceKey=Converter } }">
+				<Border.Effect>
+					<DropShadowEffect BlurRadius="15"
+									  Color="#373737"
+									  ShadowDepth="5"
+									  Opacity=".3"/>
+				</Border.Effect>
+
+				<StackPanel Margin="30 20">
+					<Label Content="Calificación"
+						   Style="{ StaticResource ResourceKey=Headline }"/>
+					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
+							   Height=".8"
+							   Width="Auto"/>
+
+					<Grid Margin="0 10">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition/>
+							<ColumnDefinition/>
+							<ColumnDefinition/>
+							<ColumnDefinition/>
+						</Grid.ColumnDefinitions>
+
+						<StackPanel Grid.Column="0"
+									Margin="0 0 10 0">
+							<Label Content="Materia"
+								   Style="{ StaticResource ResourceKey=Form }"/>
+							<ComboBox ItemsSource="{ Binding Path=Materias, Mode=OneWay }"
+									  SelectedItem="{ Binding Path=Materia, Mode=TwoWay }"
+									  DisplayMemberPath="Descripcion"
+									  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
 						</StackPanel>
-					</StackPanel>
-				</Grid>
-			</ScrollViewer>
-		</Border>
 
-		<!-- REGISTRAR CALIFICACIÓN -->
-		<Border Grid.Row="3"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10"
-				Padding="10"
-				Visibility="{ Binding Path=MostrarCalificacionView, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=Converter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-						  Color="#373737"
-						  ShadowDepth="5"
-						  Opacity=".3"/>
-			</Border.Effect>
+						<StackPanel Grid.Column="1"
+									Margin="10 0">
+							<Label Content="Instancia"
+								   Style="{ StaticResource ResourceKey=Form }"/>
+							<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=instancias } }"
+									  SelectedItem="{ Binding Path=Calificacion.Instancia, Mode=TwoWay }"
+									  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
+						</StackPanel>
 
-			<ScrollViewer Margin="0 -10 -10 -10"
-						  Padding="30 20"
-						  VerticalScrollBarVisibility="Auto">
-				<!--
-				<local:CalificacionView Grid.Row="3"
-										DataContext="{ Binding Path=Calificacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-										Margin="0 10 0 0"/>
-				-->
-			</ScrollViewer>
-		</Border>
-	</Grid>
+						<StackPanel Grid.Column="2"
+									Margin="10 0">
+							<Label Content="Fecha"
+								   Style="{ StaticResource ResourceKey=Form }"/>
+							<DatePicker CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+										SelectedDate="{ Binding Path=Calificacion.Fecha, Mode=TwoWay }"
+										DisplayDateStart="01/01/2000"
+										DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+										Style="{ StaticResource ResourceKey=DatePicker }"/>
+						</StackPanel>
+
+						<StackPanel Grid.Column="3"
+									Margin="10 0 0 0">
+							<Label Content="Nota"
+								   Style="{ StaticResource ResourceKey=Form }"/>
+							<TextBox Text="{ Binding Path=Calificacion.Nota, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue='' }"
+									 Style="{ StaticResource ResourceKey=TextBox }"/>
+						</StackPanel>
+					</Grid>
+
+					<Label Content="Observación"
+						   Style="{ StaticResource ResourceKey=Form }"/>
+					<TextBox Text="{ Binding Path=Calificacion.Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+							 Style="{ StaticResource ResourceKey=TextBox }"/>
+
+					<WrapPanel HorizontalAlignment="Right"
+							   Margin="0 10 0 0">
+						<Button Command="{ Binding Path=GuardarCalificacionCommandAsync }"
+								Content="Guardar Nota"
+								Margin="0 0 5 0"
+								Style="{ StaticResource ResourceKey=Primary }"/>
+						<Button Command="{ Binding Path=RegistrarInasistenciaCommandAsync }"
+								Content="Registrar Inasistencia"
+								Margin="5 0"
+								Style="{ StaticResource ResourceKey=Secondary }"/>
+						<Button Command="{ Binding Path=CancelarCalificacionCommand }"
+								Content="Cancelar"
+								Margin="5 0 0 0"
+								Style="{ StaticResource ResourceKey=Secondary }"/>
+					</WrapPanel>
+				</StackPanel>
+			</Border>
+		</Grid>
+	</ScrollViewer>
 </UserControl>

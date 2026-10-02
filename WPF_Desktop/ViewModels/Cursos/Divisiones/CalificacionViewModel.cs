@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioCursantes.DTOs.Responses;
-using Core.ServicioCursos;
 using System.Collections.ObjectModel;
 using System;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
@@ -10,7 +9,6 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 internal partial class CalificacionViewModel : ObservableValidator
 {
 	#region Response
-	private readonly IServicioCurso _servicioCursos;
 	private readonly CalificacionResponse? _calificacionResponse;
 	#endregion
 
@@ -48,10 +46,8 @@ internal partial class CalificacionViewModel : ObservableValidator
 	private ObservableCollection<MateriaViewModel> _materias = new();
 
 
-	public CalificacionViewModel(IServicioCurso servicioCursos, CalificacionResponse? calificacionResponse)
+	public CalificacionViewModel(CalificacionResponse? calificacionResponse)
 	{
-		_servicioCursos = servicioCursos;
-
 		if (calificacionResponse is not null)
 		{
 			_calificacionResponse = calificacionResponse;
