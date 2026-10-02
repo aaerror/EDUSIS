@@ -1,7 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioCursantes.DTOs.Responses;
-using Core.ServicioCursos;
-using NSubstitute;
 using Shouldly;
 using System.Collections.ObjectModel;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
@@ -28,7 +26,7 @@ public class CalificacionViewModelTests
 
 	private static CalificacionViewModel Crear(CalificacionResponse? response)
 	{
-		return new CalificacionViewModel(Substitute.For<IServicioCurso>(), response);
+		return new CalificacionViewModel(response);
 	}
 
 	[Fact]
