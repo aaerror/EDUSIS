@@ -1,4 +1,4 @@
-﻿using Domain.Curriculas.Materias.CargosDocentes;
+﻿using Domain.Catedras.SituacionesRevista;
 using System.Globalization;
 using System.Windows.Data;
 using System;

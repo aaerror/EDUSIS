@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Windows.Data;
 using System;
-using Domain.Personas;
 
 namespace WPF_Desktop.Shared.Converters;
 

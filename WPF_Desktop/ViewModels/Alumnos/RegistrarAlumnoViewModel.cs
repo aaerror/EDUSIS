@@ -4,6 +4,7 @@ using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos;
 using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos;
+using Core.ServicioCursantes.DTOs.Requests;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
 using System.Collections.ObjectModel;
