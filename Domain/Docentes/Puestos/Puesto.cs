@@ -2,7 +2,7 @@ using Domain.Shared;
 
 namespace Domain.Docentes.Puestos;
 
-public class Puesto : Entity
+public sealed class Puesto : Entity
 {
 	public Guid DocenteID { get; private set; }
 	public Posicion Posicion { get; private set; }
@@ -38,7 +38,7 @@ public class Puesto : Entity
 		EstablecerPeriodo(desde, hasta);
 	}
 
-	public Puesto(Guid docenteID, string estado, string posicion, DateTime desde, DateTime? hasta)
+	internal Puesto(Guid docenteID, string estado, string posicion, DateTime desde, DateTime? hasta)
 		: this(Guid.NewGuid(), docenteID, estado, posicion, desde, hasta) { }
 
 	private void EstablecerPosicion(string nuevaPosicion)
@@ -63,13 +63,13 @@ public class Puesto : Entity
 		EsEventual = hasta.HasValue;
 	}
 
-	public void ActualizarPuestoDocente(string posicion, DateTime desde, DateTime? hasta)
+	internal void ActualizarPuestoDocente(string posicion, DateTime desde, DateTime? hasta)
 	{
 		EstablecerPosicion(posicion);
 		EstablecerPeriodo(desde, hasta);
 	}
 
-	public void EstablecerComoPuestoFijo()
+	internal void EstablecerComoPuestoFijo()
 	{
 		if (!EstaActivo())
 		{
@@ -84,7 +84,7 @@ public class Puesto : Entity
 		EstablecerPeriodo(Periodo.FechaInicio, null);
 	}
 
-	public void Rescindir()
+	internal void Rescindir()
 	{
 		if (EstaActivo())
 		{
@@ -93,7 +93,7 @@ public class Puesto : Entity
 		}
 	}
 
-	public void Rescindir(DateTime fechaFin)
+	internal void Rescindir(DateTime fechaFin)
 	{
 		Estado = EstadoPuesto.Inactivo;
 		Periodo = Periodo.ActualizarFechaFin(fechaFin);

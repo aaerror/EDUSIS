@@ -1,16 +1,19 @@
+using System.Linq;
+using Domain.Docentes;
 using Domain.Docentes.Puestos;
 
 namespace EDUSIS.TestSupport.Builders;
 
 /// <summary>
-/// Builder de <see cref="Puesto"/> suelto (sin pasar por <see cref="Domain.Docentes.Docente"/>),
-/// para pruebas que sólo ejercitan el ciclo de vida del puesto. Estado por defecto válido:
-/// posición <c>Profesor</c>, estado <c>Pendiente</c>, inicio hoy, sin fecha de fin.
+/// Builder de <see cref="Puesto"/> (cargo docente). El constructor y los mutadores de
+/// <see cref="Puesto"/> son <c>internal</c> — sólo <see cref="Docente"/> instancia y modifica
+/// sus puestos —, así que este builder arma un <see cref="Docente"/> auxiliar con
+/// <see cref="DocenteBuilder"/> y le asigna el cargo. Estado por defecto válido: posición
+/// <c>Profesor</c>, estado <c>Pendiente</c>, inicio hoy, sin fecha de fin.
 /// </summary>
 public sealed class PuestoBuilder
 {
 	#region ESTADO POR DEFECTO
-	private Guid _docenteID = Guid.NewGuid();
 	private string _estado = "Pendiente";
 	private string _posicion = "Profesor";
 	private DateTime _desde = DateTime.Today;
@@ -18,12 +21,6 @@ public sealed class PuestoBuilder
 	#endregion
 
 	#region CONFIGURACIÓN
-	public PuestoBuilder ConDocente(Guid docenteID)
-	{
-		_docenteID = docenteID;
-		return this;
-	}
-
 	public PuestoBuilder ConEstado(string estado)
 	{
 		_estado = estado;
@@ -50,7 +47,14 @@ public sealed class PuestoBuilder
 	#endregion
 
 	#region CONSTRUCCIÓN
+	/// <summary>
+	/// Docente auxiliar con el puesto configurado como único cargo. Para ejercitar el ciclo de
+	/// vida del puesto a través de la raíz.
+	/// </summary>
+	public Docente BuildDocente() =>
+		new DocenteBuilder().ConPuesto(_posicion, _estado, _desde, _hasta).Build();
+
 	public Puesto Build() =>
-		new(_docenteID, _estado, _posicion, _desde, _hasta);
+		BuildDocente().Puestos.Single();
 	#endregion
 }
