@@ -50,17 +50,17 @@
 		</StackPanel>
 		<!--#endregion-->
 
-		<!--#region MATERIA ID-->
+		<!--#region CATEDRA ID-->
 		<StackPanel Grid.Row="1"
 					Margin="0 0 0 10"
 					Visibility="Collapsed">
-			<!--#region LABEL: MateriaID-->
-			<Label Content="MateriaID"
+			<!--#region LABEL: CatedraID-->
+			<Label Content="CatedraID"
 				   Margin="4 0 0 0"
 				   Style="{ StaticResource ResourceKey=Form }"/>
 			<!--#endregion-->
-			<!--#region INPUT: MateriaID-->
-			<TextBox Text="{ Binding Path=MateriaID, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+			<!--#region INPUT: CatedraID-->
+			<TextBox Text="{ Binding Path=CatedraID, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 					 IsReadOnly="True"
 					 Style="{ StaticResource ResourceKey=TextBox }"/>
 			<!--#endregion-->
@@ -129,26 +129,26 @@
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="*"/>
 			</Grid.ColumnDefinitions>
-			<!--#region FECHA ALTA-->
+			<!--#region FECHA INICIO-->
 			<StackPanel Grid.Column="0"
 						Margin="0 0 10 0">
-				<!--#region LABEL: Fecha Alta-->
-				<Label Content="Fecha Alta"
+				<!--#region LABEL: Fecha Inicio-->
+				<Label Content="Fecha Inicio"
 					   Margin="4 0 0 0"
 					   Style="{ StaticResource ResourceKey=Form }"/>
 				<!--#endregion-->
-				<!--#region INPUT: Fecha Alta-->
-				<DatePicker x:Name="DatePicker_FechaAlta"
-							SelectedDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-							DisplayDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<!--#region INPUT: Fecha Inicio-->
+				<DatePicker x:Name="DatePicker_FechaInicio"
+							SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
 							DisplayDateStart="{ x:Static sys:DateTime.Now }"
 							CalendarStyle="{ StaticResource ResourceKey=Calendar }"
 							Style="{ StaticResource ResourceKey=DatePicker }"/>
 				<!--#endregion-->
 			</StackPanel>
 			<!--#endregion-->
-			<!--#region FECHA BAJA-->
-			<StackPanel x:Name="StackPanel_FechaBaja"
+			<!--#region FECHA FIN-->
+			<StackPanel x:Name="StackPanel_FechaFin"
 						Grid.Column="1"
 						Margin="10 0 0 0"
 						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
@@ -159,7 +159,7 @@
 						<Style.Triggers>
 							<MultiDataTrigger>
 								<MultiDataTrigger.Conditions>
-									<Condition Binding="{ Binding Path=SelectedDate, Mode=OneWay, ElementName=DatePicker_FechaBaja }"
+									<Condition Binding="{ Binding Path=SelectedDate, Mode=OneWay, ElementName=DatePicker_FechaFin }"
 											   Value="{ x:Null }"/>
 									<Condition Binding="{ Binding Path=SelectedItem, Mode=OneWay, ElementName=ComboBox_Cargo, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=cargoConverter } }"
 											   Value="Titular"/>
@@ -172,15 +172,15 @@
 						<!--#endregion-->
 					</Style>
 				</StackPanel.Style>
-				<!--#region LABEL: Fecha Baja-->
-				<Label Content="Fecha Baja"
+				<!--#region LABEL: Fecha Fin-->
+				<Label Content="Fecha Fin"
 					   Margin="4 0 0 0"
 					   Style="{ StaticResource ResourceKey=Form }"/>
 				<!--#endregion-->
-				<!--#region INPUT: Fecha Baja-->
-				<DatePicker x:Name="DatePicker_FechaBaja"
-							SelectedDate="{ Binding Path=FechaBaja, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-							DisplayDateStart="{ Binding Path=FechaAlta, TargetNullValue={ x:Static sys:DateTime.Now }, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+				<!--#region INPUT: Fecha Fin-->
+				<DatePicker x:Name="DatePicker_FechaFin"
+							SelectedDate="{ Binding Path=FechaFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							DisplayDateStart="{ Binding Path=FechaInicio, TargetNullValue={ x:Static sys:DateTime.Now }, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 							CalendarStyle="{ StaticResource ResourceKey=Calendar }"
 							Style="{ StaticResource ResourceKey=DatePicker }"/>
 				<!--#endregion-->

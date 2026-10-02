@@ -13,7 +13,7 @@ internal partial class SituacionRevistaViewModel : ObservableValidator
 	private Guid _situacionRevistaID = Guid.Empty;
 
 	[ObservableProperty]
-	private Guid _materiaID = Guid.Empty;
+	private Guid _catedraID = Guid.Empty;
 
 	[ObservableProperty]
 	private Guid _docenteID = Guid.Empty;
@@ -24,14 +24,17 @@ internal partial class SituacionRevistaViewModel : ObservableValidator
 	[ObservableProperty]
 	private string _cargo = string.Empty;
 
-	private DateTime _fechaAlta = DateTime.Today;
+	private DateTime _fechaInicio = DateTime.Today;
 
-	[DateAfterOrEqual(nameof(FechaAlta))]
+	[DateAfterOrEqual(nameof(FechaInicio))]
 	[ObservableProperty]
-	private DateTime? _fechaBaja;
+	private DateTime? _fechaFin;
 
 	[ObservableProperty]
 	private bool _enFunciones;
+
+	[ObservableProperty]
+	private Guid? _reemplazaA;
 
 	[ObservableProperty]
 	private string _estado = string.Empty;
@@ -47,13 +50,13 @@ internal partial class SituacionRevistaViewModel : ObservableValidator
 			_situacionRevista = situacionRevista;
 
 			SituacionRevistaID = _situacionRevista.SituacionRevistaID;
-			MateriaID = _situacionRevista.MateriaID;
+			CatedraID = _situacionRevista.CatedraID;
 			DocenteID = _situacionRevista.DocenteID;
-			Docente = _situacionRevista.Docente;
 			Estado = _situacionRevista.Estado;
 			Cargo = _situacionRevista.Cargo;
-			FechaAlta = _situacionRevista.FechaAlta;
-			FechaBaja = _situacionRevista.FechaBaja;
+			FechaInicio = _situacionRevista.FechaInicio;
+			FechaFin = _situacionRevista.FechaFin;
+			ReemplazaA = _situacionRevista.ReemplazaA;
 			EnFunciones = _situacionRevista.EnFunciones;
 		}
 	}
@@ -65,22 +68,22 @@ internal partial class SituacionRevistaViewModel : ObservableValidator
 		EnFunciones = true;
 	}
 
-	public DateTime FechaAlta
+	public DateTime FechaInicio
 	{
 		get
 		{
-			return _fechaAlta;
+			return _fechaInicio;
 		}
 
 		set
 		{
-			SetProperty(ref _fechaAlta, value, nameof(FechaAlta));
+			SetProperty(ref _fechaInicio, value, nameof(FechaInicio));
 
-			EnFunciones = FechaAlta.Equals(DateTime.Today) ? true : false;
+			EnFunciones = FechaInicio.Equals(DateTime.Today) ? true : false;
 			if (!string.IsNullOrWhiteSpace(Cargo) && (Cargo.Equals("Suplente") || Cargo.Equals("Interino")))
 			{
-				FechaBaja = FechaAlta;
-				ValidateProperty(FechaBaja, nameof(FechaBaja));
+				FechaFin = FechaInicio;
+				ValidateProperty(FechaFin, nameof(FechaFin));
 			}
 		}
 	}
@@ -89,12 +92,12 @@ internal partial class SituacionRevistaViewModel : ObservableValidator
 	{
 		if (string.Equals("Titular", value))
 		{
-			FechaBaja = null;
+			FechaFin = null;
 		}
 
 		if (string.Equals("Suplente", value) || string.Equals("Interino", value))
 		{
-			FechaBaja = FechaAlta;
+			FechaFin = FechaInicio;
 		}
 	}
 }
