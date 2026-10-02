@@ -5,8 +5,7 @@
 
 			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
 			 xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
-			 xmlns:domainMaterias="clr-namespace:Domain.Curriculas;assembly=Domain"
-			 xmlns:domainSituacionRevista="clr-namespace:Domain.Curriculas.Materias.CargosDocentes;assembly=Domain"
+			 xmlns:domainSituacionRevista="clr-namespace:Domain.Catedras.SituacionesRevista;assembly=Domain"
 
 			 xmlns:sys="clr-namespace:System;assembly=System.Runtime"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"

@@ -7,6 +7,7 @@
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
 			 xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
 			 xmlns:cursoDomain="clr-namespace:Domain.Cursos;assembly=Domain"
+			 xmlns:domainShared="clr-namespace:Domain.Shared;assembly=Domain"
 			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
 			 
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -25,7 +26,7 @@
 		
 		<ObjectDataProvider x:Key="nivelEducativo" ObjectType="{ x:Type sys:Enum }" MethodName="GetValues">
 			<ObjectDataProvider.MethodParameters>
-				<x:Type TypeName="cursoDomain:NivelEducativo"/>
+				<x:Type TypeName="domainShared:NivelEducativo"/>
 			</ObjectDataProvider.MethodParameters>
 		</ObjectDataProvider>
 	</ContentControl.Resources>

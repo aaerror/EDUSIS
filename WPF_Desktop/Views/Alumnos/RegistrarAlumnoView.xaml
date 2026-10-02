@@ -3,7 +3,7 @@
 			 xmlns:cursoViews="clr-namespace:WPF_Desktop.Views.Cursos"
 			 xmlns:divisionViews="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
 			 xmlns:shared="clr-namespace:WPF_Desktop.Views.Shared"
-			 xmlns:domainCursos="clr-namespace:Domain.Cursos;assembly=Domain"
+			 xmlns:domainShared="clr-namespace:Domain.Shared;assembly=Domain"
 			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -14,7 +14,7 @@
 	<ContentControl.Resources>
 		<ObjectDataProvider x:Key="nivelEducativo" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
 			<ObjectDataProvider.MethodParameters>
-				<x:Type TypeName="domainCursos:NivelEducativo"/>
+				<x:Type TypeName="domainShared:NivelEducativo"/>
 			</ObjectDataProvider.MethodParameters>
 		</ObjectDataProvider>
 	</ContentControl.Resources>

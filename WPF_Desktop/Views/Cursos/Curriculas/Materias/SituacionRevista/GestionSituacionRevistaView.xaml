@@ -6,7 +6,7 @@
 			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
 			 xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
-			 xmlns:domainCargosDocentes="clr-namespace:Domain.Curriculas.Materias.CargosDocentes;assembly=Domain"
+			 xmlns:domainCargosDocentes="clr-namespace:Domain.Catedras.SituacionesRevista;assembly=Domain"
 			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 
 			 xmlns:sys="clr-namespace:System;assembly=System.Runtime"
