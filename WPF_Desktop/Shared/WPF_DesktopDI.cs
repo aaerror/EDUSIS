@@ -55,6 +55,8 @@ internal static class WPF_DesktopDI
 		services.AddSingleton<CursoStore>();
 		services.AddSingleton<DivisionStore>();
 		services.AddSingleton<MateriaStore>();
+		services.AddSingleton<CicloLectivoStore>();
+		services.AddSingleton<CatedraStore>();
 
 		return services;
 	}
