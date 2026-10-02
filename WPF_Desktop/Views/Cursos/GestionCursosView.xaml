@@ -217,12 +217,6 @@
 							<DataGridTextColumn Header="Nivel Educativo"
 												Binding="{ Binding Path=NivelEducativo, FallbackValue='Sin datos', TargetNullValue='Sin datos', Converter={ StaticResource ResourceKey=nivelEducativoConverter } }"
 												Width="*"/>
-							<DataGridTextColumn Header="Cant. Divisiones"
-												Binding="{ Binding Path=Divisiones, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-												Width="*"/>
-							<DataGridTextColumn Header="Cant. Alumnos"
-												Binding="{ Binding Path=Alumnos, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-												Width="*"/>
 						</DataGrid.Columns>
 						<DataGrid.GroupStyle>
 							<GroupStyle>

@@ -19,12 +19,7 @@ internal partial class CursoViewModel : ObservableObject
 	[ObservableProperty]
 	private string _nivelEducativo;
 
-	[ObservableProperty]
-	private string _divisiones;
-
-	[ObservableProperty]
-	private string _alumnos;
-
+	//TODO: Recuperar contadores de divisiones (Divisiones) y alumnos (Alumnos) como feature (decisión #5, ID a registrarse en docs/todos.md)
 
 	public CursoViewModel(CursoResponse cursoResponses)
 	{
@@ -35,8 +30,6 @@ internal partial class CursoViewModel : ObservableObject
 			CursoID = _cursoResponse.CursoID;
 			Grado = _cursoResponse.Grado.ToString();
 			NivelEducativo = _cursoResponse.NivelEducativo.ToString();
-			Divisiones = _cursoResponse.Divisiones.ToString();
-			Alumnos = _cursoResponse.Alumnos.ToString();
 		}
 	}
 }
