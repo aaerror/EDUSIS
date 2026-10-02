@@ -8,6 +8,16 @@
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+	<UserControl.Resources>
+		<!-- Horas cátedra válidas (1 a 5): el combo expone el valor de dominio, no su índice. -->
+		<x:Array x:Key="horasCatedra" Type="{ x:Type TypeName=sys:Int32 }">
+			<sys:Int32>1</sys:Int32>
+			<sys:Int32>2</sys:Int32>
+			<sys:Int32>3</sys:Int32>
+			<sys:Int32>4</sys:Int32>
+			<sys:Int32>5</sys:Int32>
+		</x:Array>
+	</UserControl.Resources>
 	<Grid>
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="240*"/>
@@ -105,14 +115,9 @@
 					   Style="{ StaticResource ResourceKey=Form }"/>
 				<!--#endregion-->
 				<!--#region INPUT: HORAS CÁTEDRA-->
-				<ComboBox SelectedIndex="{ Binding Path=HorasCatedra, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-						  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-					<ComboBoxItem Content="1" IsSelected="True"/>
-					<ComboBoxItem Content="2"/>
-					<ComboBoxItem Content="3"/>
-					<ComboBoxItem Content="4"/>
-					<ComboBoxItem Content="5"/>
-				</ComboBox>
+				<ComboBox ItemsSource="{ StaticResource ResourceKey=horasCatedra }"
+				          SelectedItem="{ Binding Path=HorasCatedra, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+				          Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
 				<!--#endregion-->
 			</StackPanel>
 			<!--#endregion-->
