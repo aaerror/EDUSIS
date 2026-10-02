@@ -47,6 +47,9 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 	private string _cicloLectivo = string.Empty;
 
 	[NotifyCanExecuteChangedFor(nameof(NuevaCalificacionCommand))]
+	[NotifyCanExecuteChangedFor(nameof(GuardarCalificacionCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(QuitarCalificacionCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(ModificarObservacionCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarInasistenciaCommandAsync))]
 	[ObservableProperty]
 	private CursanteViewModel? _cursante;
@@ -114,8 +117,6 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 		_divisionStore = divisionStore;
 		_cicloLectivoStore = cicloLectivoStore;
 
-		CicloLectivo = _cicloLectivoStore.CicloLectivo;
-
 		CargarCommandAsync = new AsyncRelayCommand(CargarAsync);
 		BuscarCommandAsync = new AsyncRelayCommand(BuscarCursantesAsync, CanExecuteBuscar);
 		CargarCalificacionesCommandAsync = new AsyncRelayCommand(CargarCalificacionesAsync);
@@ -126,6 +127,10 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 
 		NuevaCalificacionCommand = new RelayCommand(ExecuteNuevaCalificacion, CanExecuteNuevaCalificacion);
 		CancelarCalificacionCommand = new RelayCommand(ExecuteCancelarCalificacion, CanExecuteCancelarCalificacion);
+
+		// Va después de crear los comandos: el setter de CicloLectivo notifica a BuscarCommandAsync (NotifyCanExecuteChangedFor)
+		// sin comprobar null, y siempre entra al bloque de cambio porque el campo arranca vacío.
+		CicloLectivo = _cicloLectivoStore.CicloLectivo;
 	}
 
 	#region Cambios de propiedad
