@@ -109,7 +109,7 @@
 									<Label Style="{ StaticResource ResourceKey=Headline }"
 										   Content="{ Binding Path=Division }"
 										   ContentStringFormat="División {0}"/>
-									<TextBlock Style="{ StaticResource ResourceKey=Body }">
+									<TextBlock Style="{ StaticResource ResourceKey=TextBlock_Body }">
 										<Run Text="Carga horaria: "/><Run Text="{ Binding Path=CargaHoraria, Mode=OneWay }"/>
 										<Run Text=" | Asignadas: "/><Run Text="{ Binding Path=HorasAsignadas, Mode=OneWay }"/>
 										<Run Text=" | Sin asignar: "/><Run Text="{ Binding Path=HorasSinAsignar, Mode=OneWay }"/>

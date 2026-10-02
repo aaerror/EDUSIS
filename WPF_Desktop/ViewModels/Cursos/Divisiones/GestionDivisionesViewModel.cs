@@ -90,6 +90,8 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	private bool _habilitarNotificacion;
 	#endregion
 
+	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[ObservableProperty]
 	private DivisionViewModel _division;
 	[ObservableProperty]

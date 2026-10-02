@@ -384,7 +384,7 @@
 										  Header="Docentes"
 										  ExpandDirection="Down"
 										  Margin="0 5 0 0"
-										  IsEnabled="{ Binding Path=HabilitarListaDocente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+										  IsEnabled="{ Binding Path=HabilitarListaDocentes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 										  Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
 									<!--#region DATAGRID-->
 									<StackPanel Margin="10 10 10 0">

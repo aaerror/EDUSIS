@@ -5,7 +5,6 @@ namespace WPF_Desktop.Store;
 
 internal class DivisionStore
 {
-	private CursoStore _cursoStore = null;
 	private DivisionViewModel _division = null;
 
 	public event Action DivisionStoreChanged;
