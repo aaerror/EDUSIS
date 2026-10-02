@@ -8,30 +8,49 @@ internal class CursanteViewModel : ObservableObject
 {
 	private CursanteResponse _cursanteResponse;
 
+	private Guid _cursanteID;
 	private Guid _alumnoID;
 	private string _nombreCompleto;
 	private string _documento;
-	private string _edad;
+	private int _edad;
+	private bool _esRecursante;
 
 
 	public CursanteViewModel(CursanteResponse cursanteResponse)
 	{
+		CursanteID = Guid.Empty;
 		AlumnoID = Guid.Empty;
 		NombreCompleto = string.Empty;
 		Documento = string.Empty;
-		Edad = string.Empty;
+		Edad = 0;
 
 		if (cursanteResponse is not null)
 		{
 			_cursanteResponse = cursanteResponse;
+			CursanteID = _cursanteResponse.CursanteID;
 			AlumnoID = _cursanteResponse.AlumnoID;
 			NombreCompleto = _cursanteResponse.NombreCompleto;
 			Documento = _cursanteResponse.Documento;
 			Edad = _cursanteResponse.Edad;
+			EsRecursante = _cursanteResponse.EsRecursante;
 		}
 	}
 
 	#region Properties
+	public Guid CursanteID
+	{
+		get
+		{
+			return _cursanteID;
+		}
+
+		set
+		{
+			_cursanteID = value;
+			OnPropertyChanged(nameof(CursanteID));
+		}
+	}
+
 	public Guid AlumnoID
 	{
 		get
@@ -74,7 +93,7 @@ internal class CursanteViewModel : ObservableObject
 		}
 	}
 
-	public string Edad
+	public int Edad
 	{
 		get
 		{
@@ -85,6 +104,20 @@ internal class CursanteViewModel : ObservableObject
 		{
 			_edad = value;
 			OnPropertyChanged(nameof(Edad));
+		}
+	}
+
+	public bool EsRecursante
+	{
+		get
+		{
+			return _esRecursante;
+		}
+
+		set
+		{
+			_esRecursante = value;
+			OnPropertyChanged(nameof(EsRecursante));
 		}
 	}
 	#endregion

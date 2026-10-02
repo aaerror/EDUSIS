@@ -17,13 +17,13 @@ internal partial class DivisionViewModel : ObservableObject
 	private string _descripcion;
 
 	[ObservableProperty]
-	private Guid? _docenteID = Guid.Empty;
+	private Guid? _preceptorID = Guid.Empty;
 
 	[ObservableProperty]
-	private string? _docente;
+	private string? _preceptor;
 
 	[ObservableProperty]
-	private int _alumnos;
+	private int _cursantes;
 
 
 	public DivisionViewModel(DivisionResponse divisionResponse)
@@ -34,9 +34,9 @@ internal partial class DivisionViewModel : ObservableObject
 
 			DivisionID = _divisionResponse.DivisionID;
 			Descripcion = _divisionResponse.Descripcion;
-			DocenteID = _divisionResponse.DocenteID;
-			Docente = _divisionResponse.Docente;
-			Alumnos = _divisionResponse.Alumnos;
+			PreceptorID = _divisionResponse.PreceptorID;
+			Preceptor = _divisionResponse.Preceptor;
+			Cursantes = _divisionResponse.Cursantes;
 		}
 	}
 }

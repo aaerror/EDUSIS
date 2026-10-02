@@ -50,7 +50,7 @@
 				<Label Content="Preceptor"
 					   Margin="4 0 0 0"
 					   Style="{ StaticResource ResourceKey=Form }"/>
-				<TextBox Text="{ Binding Path=Docente, FallbackValue='Preceptor sin asignar', TargetNullValue='Preceptor sin asignar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+				<TextBox Text="{ Binding Path=Preceptor, FallbackValue='Preceptor sin asignar', TargetNullValue='Preceptor sin asignar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 						 Style="{ StaticResource ResourceKey=TextBox }"/>
 			</StackPanel>
 			<!--#endregion-->
@@ -69,7 +69,7 @@
 				<Label Content="Cantidad de Alumnos"
 					   Margin="4 0 0 0"
 					   Style="{ StaticResource ResourceKey=Form }"/>
-				<TextBox Text="{ Binding Path=Alumnos, FallbackValue='Listado de alumnos sin detalles', TargetNullValue='Sin datos del listado de alumnos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+				<TextBox Text="{ Binding Path=Cursantes, FallbackValue='Listado de alumnos sin detalles', TargetNullValue='Sin datos del listado de alumnos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 						 Style="{ StaticResource ResourceKey=TextBox }"/>
 			</StackPanel>
 			<!--#endregion-->

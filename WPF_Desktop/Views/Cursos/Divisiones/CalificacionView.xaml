@@ -10,7 +10,7 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="Converter"/>
 
-        <ObjectDataProvider x:Key="instancias" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
+        <ObjectDataProvider x:Key="instancias" MethodName="GetNames" ObjectType="{ x:Type sys:Enum }">
             <ObjectDataProvider.MethodParameters>
                 <x:Type TypeName="domainClasificaciones:Instancia"/>
             </ObjectDataProvider.MethodParameters>
@@ -56,7 +56,7 @@
                 <Label Content="Instancia"
                        Style="{ StaticResource ResourceKey=Form }"/>
                 <ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=instancias } }"
-                          SelectedIndex="{ Binding Path=Instancia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                          SelectedItem="{ Binding Path=Instancia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                           Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
             </StackPanel>
 
@@ -65,7 +65,7 @@
                 <Label Content="Fecha"
                        Style="{ StaticResource ResourceKey=Form }"/>
                 <DatePicker CalendarStyle="{ StaticResource ResourceKey=Calendar }"
-                            DisplayDate="{ Binding Path=Fecha, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+                            SelectedDate="{ Binding Path=Fecha, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
                             DisplayDateStart="01/01/2000"
                             DisplayDateEnd="{ x:Static sys:DateTime.Today }"
                             Style="{ StaticResource ResourceKey=DatePicker }"/>
@@ -74,10 +74,10 @@
 
         <StackPanel Grid.Row="2"
                     Margin="0 10">
-            <Label Content="Asistencia"
+            <Label Content="Rindió"
                    Style="{ StaticResource ResourceKey=Form }"/>
-            <CheckBox Content="¿Estuvo presente el alumno?"
-                      IsChecked="{ Binding Path=Asistencia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+            <CheckBox Content="¿Rindió el alumno?"
+                      IsChecked="{ Binding Path=Rindio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                       Style="{ StaticResource ResourceKey=CheckBox }"/>
         </StackPanel>
 

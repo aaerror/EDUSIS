@@ -1,182 +1,75 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Core.ServicioMaterias.DTOs.Responses;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioCursantes.DTOs.Responses;
 using Core.ServicioCursos;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections;
-using System.ComponentModel;
-using System.Linq;
 using System;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
-internal class CalificacionViewModel : ObservableObject, INotifyDataErrorInfo
+internal partial class CalificacionViewModel : ObservableValidator
 {
+	#region Response
 	private readonly IServicioCurso _servicioCursos;
-	private CalificacionResponse _calificacionResponse;
+	private readonly CalificacionResponse? _calificacionResponse;
+	#endregion
 
-	private Guid _materiaID;
-	private string _materia;
-	private bool _asistencia;
-	private DateTime? _fecha;
-	private int _instancia;
+	[ObservableProperty]
+	private Guid _calificacionID = Guid.Empty;
+
+	[ObservableProperty]
+	private Guid _materiaID = Guid.Empty;
+
+	[ObservableProperty]
+	private string _materia = string.Empty;
+
+	[ObservableProperty]
+	private bool _rindio;
+
+	[ObservableProperty]
+	private DateTime _fecha = DateTime.Today;
+
+	[ObservableProperty]
+	private string _instancia = string.Empty;
+
+	[ObservableProperty]
 	private double? _nota;
 
+	[ObservableProperty]
+	private bool _aprobado;
+
+	[ObservableProperty]
+	private string? _observacion;
+
+	[ObservableProperty]
 	private bool _mostrarNota;
 
-	private ObservableCollection<MateriaResponse> _materias;
-
-	private Dictionary<string, List<string>> _errorsByProperty = new();
-	public bool HasErrors => _errorsByProperty.Any();
-
-	public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+	[ObservableProperty]
+	private ObservableCollection<MateriaViewModel> _materias = new();
 
 
-	public CalificacionViewModel(IServicioCurso servicioCursos, CalificacionResponse calificacionResponse)
+	public CalificacionViewModel(IServicioCurso servicioCursos, CalificacionResponse? calificacionResponse)
 	{
 		_servicioCursos = servicioCursos;
-		Materia = string.Empty;
-		Asistencia = false;
-		Fecha = DateTime.Today;
-		Instancia = 0;
 
 		if (calificacionResponse is not null)
 		{
 			_calificacionResponse = calificacionResponse;
+
+			CalificacionID = _calificacionResponse.CalificacionID;
 			MateriaID = _calificacionResponse.MateriaID;
 			Materia = _calificacionResponse.Materia;
-			Asistencia = _calificacionResponse.Asistencia;
 			Fecha = _calificacionResponse.Fecha;
 			Instancia = _calificacionResponse.Instancia;
+			Rindio = _calificacionResponse.Rindio;
 			Nota = _calificacionResponse.Nota;
+			Aprobado = _calificacionResponse.Aprobado;
+			Observacion = _calificacionResponse.Observacion;
 		}
 	}
 
-	#region Properties
-	public Guid MateriaID
+	partial void OnRindioChanged(bool value)
 	{
-		get
-		{
-			return _materiaID;
-		}
-
-		set
-		{
-			_materiaID = value;
-			OnPropertyChanged(nameof(MateriaID));
-		}
+		MostrarNota = value;
 	}
-
-	public string Materia
-	{
-		get
-		{
-			return _materia;
-		}
-
-		set
-		{
-			_materia = value;
-			OnPropertyChanged(nameof(Materia));
-		}
-	}
-
-	public bool Asistencia
-	{
-		get
-		{
-			return _asistencia;
-		}
-
-		set
-		{
-			_asistencia = value;
-			OnPropertyChanged(nameof(Asistencia));
-
-			if (Asistencia)
-			{
-				MostrarNota = true;
-			}
-			else
-			{
-				MostrarNota = false;
-			}
-		}
-	}
-
-	public DateTime? Fecha
-	{
-		get
-		{
-			return _fecha;
-		}
-
-		set
-		{
-			_fecha = value;
-			OnPropertyChanged(nameof(Fecha));
-		}
-	}
-
-	public int Instancia
-	{
-		get
-		{
-			return _instancia;
-		}
-
-		set
-		{
-			_instancia = value;
-			OnPropertyChanged(nameof(Instancia));
-		}
-	}
-
-	public double? Nota
-	{
-		get
-		{
-			return _nota;
-		}
-
-		set
-		{
-			_nota = value;
-			OnPropertyChanged(nameof(Nota));
-		}
-	}
-
-	public bool MostrarNota
-	{
-		get
-		{
-			return _mostrarNota;
-		}
-
-		set
-		{
-			_mostrarNota = value;
-			OnPropertyChanged(nameof(MostrarNota));
-		}
-	}
-
-	public ObservableCollection<MateriaResponse> Materias
-	{
-		get
-		{
-			return _materias;
-		}
-
-		set
-		{
-			_materias = value;
-			OnPropertyChanged(nameof(Materias));
-		}
-	}
-	#endregion
-
-	#region DataErrors
-	public IEnumerable GetErrors(string? propertyName) => _errorsByProperty.GetValueOrDefault(propertyName);
-	#endregion
 }
