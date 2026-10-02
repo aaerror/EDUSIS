@@ -118,43 +118,5 @@
 			<!--#endregion-->
 		</Grid>
 
-		<Grid Grid.ColumnSpan="2"
-			  Grid.Row="4"
-			  Margin="0 5 0 0">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
-			</Grid.ColumnDefinitions>
-			<!--#region PROFESOR-->
-			<StackPanel Grid.Column="0"
-						Margin="0 0 10 0">
-				<!--#region LABEL: PROFESOR-->
-				<Label Content="Profesor a Cargo"
-					   Margin="4 0 0 0"
-					   Style="{ StaticResource ResourceKey=Form }"/>
-				<!--#endregion-->
-				<!--#region INPUT: PROFESOR-->
-				<TextBox Text="{ Binding Path=SituacionRevista.Docente, FallbackValue='Profesor sin asignar', TargetNullValue='Profesor sin asignar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-						 IsReadOnly="True"
-						 Style="{ StaticResource ResourceKey=TextBox}"/>
-				<!--#endregion-->
-			</StackPanel>
-			<!--#endregion-->
-			<!--#region CARGOS OCUPADOS-->
-			<StackPanel Grid.Column="1"
-						Margin="10 0 0 0">
-				<!--#region LABEL: CARGOS OCUPADOS-->
-				<Label Content="Docentes con Cargos Ocupados"
-					   Margin="4 0 0 0" 
-					   Style="{ StaticResource Form }"/>
-				<!--#endregion-->
-				<!--#region INPUT: CARGOS OCUPADOS-->
-				<TextBox Text="{ Binding Path=CargosOcupados, FallbackValue='Sin datos de los docentes', TargetNullValue='Sin datos', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-						 IsReadOnly="True"
-						 Style="{ StaticResource ResourceKey=TextBox }"/>
-			</StackPanel>
-			<!--#endregion-->
-			<!--#endregion-->
-		</Grid>
 	</Grid>
 </UserControl>

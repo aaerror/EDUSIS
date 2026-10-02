@@ -3,7 +3,6 @@ using Core.ServicioMaterias.DTOs.Responses;
 using System.ComponentModel.DataAnnotations;
 using System;
 using WPF_Desktop.Store;
-using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 
@@ -32,12 +31,6 @@ internal partial class MateriaViewModel : ObservableValidator
 	[ObservableProperty]
 	private int _horasCatedra;
 
-	[ObservableProperty]
-	private int _cargosOcupados;
-
-	[ObservableProperty]
-	private SituacionRevistaViewModel _situacionRevista = null;
-
 
 	public MateriaViewModel(MateriaResponse materiaResponse)
 	{
@@ -50,8 +43,6 @@ internal partial class MateriaViewModel : ObservableValidator
 			MateriaID = _materiaResponse.MateriaID;
 			Descripcion = _materiaResponse.Descripcion;
 			HorasCatedra = _materiaResponse.HorasCatedra;
-			CargosOcupados = _materiaResponse.CargosOcupados;
-			SituacionRevista = _materiaResponse.SituacionRevistaResponse is not null ? new SituacionRevistaViewModel(_materiaResponse.SituacionRevistaResponse) : null;
 		}
 	}
 }

@@ -21,9 +21,6 @@ internal partial class CurriculaViewModel : ObservableObject
 	private DateTime? _fechaFin;
 
 	[ObservableProperty]
-	private int _materias;
-
-	[ObservableProperty]
 	private bool _estaActiva;
 
 
@@ -37,7 +34,6 @@ internal partial class CurriculaViewModel : ObservableObject
 			CurriculaID = _response.CurriculaID;
 			FechaInicio = _response.FechaInicio;
 			FechaFin = _response.FechaFin;
-			Materias = _response.Materias.Count;
 			EstaActiva = !_response.FechaFin.HasValue;
 		}
 	}
