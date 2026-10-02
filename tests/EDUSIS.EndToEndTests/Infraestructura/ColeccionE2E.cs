@@ -130,19 +130,32 @@ public abstract class BaseE2E : IAsyncLifetime
 		return docente;
 	}
 
-	/// <summary>Persiste un <see cref="Domain.Cursos.Curso"/> con la cantidad de divisiones indicada y lo devuelve.</summary>
-	protected async Task<Domain.Cursos.Curso> SembrarCursoAsync(string grado = "Primero", int divisiones = 0)
+	/// <summary>Persiste un <see cref="Domain.Cursos.Curso"/> y lo devuelve (las divisiones son agregados propios: usar <see cref="SembrarDivisionAsync"/>).</summary>
+	protected async Task<Domain.Cursos.Curso> SembrarCursoAsync(string grado = "Primero")
 	{
 		var curso = new CursoBuilder()
 			.ConGrado(grado)
 			.ConNivelEducativo("Secundaria")
-			.ConDivision(divisiones)
 			.Build();
 
 		await using var contexto = Fixture.CrearContexto();
 		contexto.Add(curso);
 		await contexto.SaveChangesAsync();
 		return curso;
+	}
+
+	/// <summary>Persiste una <see cref="Domain.Divisiones.Division"/> propia del curso indicado y la devuelve.</summary>
+	protected async Task<Domain.Divisiones.Division> SembrarDivisionAsync(Guid cursoID, string descripcion = "A")
+	{
+		var division = new DivisionBuilder()
+			.ConCurso(cursoID)
+			.ConDescripcion(descripcion)
+			.Build();
+
+		await using var contexto = Fixture.CrearContexto();
+		contexto.Add(division);
+		await contexto.SaveChangesAsync();
+		return division;
 	}
 
 	#endregion

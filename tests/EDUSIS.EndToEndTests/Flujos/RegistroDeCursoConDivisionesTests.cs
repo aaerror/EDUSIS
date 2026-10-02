@@ -1,5 +1,7 @@
 using Core.ServicioCursos;
 using Core.ServicioCursos.DTOs.Requests;
+using Core.ServicioDivisiones;
+using Core.ServicioDivisiones.DTOs.Requests;
 using EDUSIS.EndToEndTests.Infraestructura;
 using EDUSIS.TestSupport.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,9 +12,9 @@ namespace EDUSIS.EndToEndTests.Flujos;
 
 /// <summary>
 /// Flujo e2e 2 (SC-003 / data-model.md §6): registro de un curso y alta de divisiones desde la
-/// fachada <see cref="IServicioCurso"/> hasta SQL Server real. Se verifica el estado persistido
-/// del curso y de sus divisiones vía <see cref="IServicioCurso.BuscarDivisionesAsync"/> en
-/// <em>scopes</em> nuevos.
+/// fachada <see cref="IServicioCurso"/> y <see cref="IServicioDivision"/> hasta SQL Server real.
+/// Las divisiones son un agregado propio: se verifica el estado persistido del curso y de sus
+/// divisiones vía <see cref="IServicioDivision.ListarDivisionesAsync"/> en <em>scopes</em> nuevos.
 /// </summary>
 public sealed class RegistroDeCursoConDivisionesTests : BaseE2E
 {
@@ -22,7 +24,7 @@ public sealed class RegistroDeCursoConDivisionesTests : BaseE2E
 	}
 
 	[RequiereSqlServerFact]
-	public async Task RegistrarCurso_y_AgregarDivisionAlCurso_persisten_el_curso_con_sus_divisiones()
+	public async Task RegistrarCurso_y_AgregarDivision_persisten_el_curso_con_sus_divisiones()
 	{
 		await EnUnScope(sp =>
 			sp.GetRequiredService<IServicioCurso>().RegistrarCurso(new RegistrarCursoRequest("Primero", "Secundaria")));
@@ -34,23 +36,29 @@ public sealed class RegistroDeCursoConDivisionesTests : BaseE2E
 			var curso = cursos.ShouldHaveSingleItem();
 			curso.Grado.ToString().ShouldBe("Primero");
 			curso.NivelEducativo.ToString().ShouldBe("Secundaria");
-			curso.Divisiones.ShouldBe(0);
 			return curso.CursoID;
 		});
 
+		var cicloLectivo = DateTime.Now.Year.ToString();
+
+		// Un curso recién registrado no tiene divisiones.
+		var divisionesIniciales = await EnUnScope(sp =>
+			sp.GetRequiredService<IServicioDivision>().ListarDivisionesAsync(new ListarDivisionesRequest(cursoID, cicloLectivo)));
+		divisionesIniciales.ShouldBeEmpty();
+
 		// Cada alta de división es un request independiente: su propio scope / su propia UoW.
-		await EnUnScope(sp => sp.GetRequiredService<IServicioCurso>().AgregarDivisionAlCurso(cursoID));
-		await EnUnScope(sp => sp.GetRequiredService<IServicioCurso>().AgregarDivisionAlCurso(cursoID));
+		await EnUnScope(sp => sp.GetRequiredService<IServicioDivision>().AgregarDivisionAsync(new AgregarDivisionRequest(cursoID)));
+		await EnUnScope(sp => sp.GetRequiredService<IServicioDivision>().AgregarDivisionAsync(new AgregarDivisionRequest(cursoID)));
 
 		var divisiones = await EnUnScope(sp =>
-			sp.GetRequiredService<IServicioCurso>().BuscarDivisionesAsync(cursoID));
+			sp.GetRequiredService<IServicioDivision>().ListarDivisionesAsync(new ListarDivisionesRequest(cursoID, cicloLectivo)));
 
 		divisiones.Count.ShouldBe(2);
 		divisiones.Select(x => x.Descripcion).OrderBy(x => x).ShouldBe(new[] { "A", "B" });
 
-		// El listado de cursos también refleja las 2 divisiones persistidas.
+		// El curso sigue siendo el único y no guarda sus divisiones: las lleva el agregado Division.
 		var cursosFinal = await EnUnScope(sp =>
 			sp.GetRequiredService<IServicioCurso>().ListarCursosAsync());
-		cursosFinal.ShouldHaveSingleItem().Divisiones.ShouldBe(2);
+		cursosFinal.ShouldHaveSingleItem().CursoID.ShouldBe(cursoID);
 	}
 }
