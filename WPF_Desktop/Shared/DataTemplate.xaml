@@ -20,6 +20,8 @@
 					xmlns:vCurriculas="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas"
 					xmlns:vmMaterias="clr-namespace:WPF_Desktop.ViewModels.Cursos.Curriculas.Materias"
 					xmlns:vMaterias="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias"
+					xmlns:vmCatedras="clr-namespace:WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras"
+					xmlns:vCatedras="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.Catedras"
 					xmlns:vmSituacionRevista="clr-namespace:WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista"
 					xmlns:vSituacionRevista="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
 					xmlns:vmDivisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones"
@@ -171,6 +173,12 @@
 		<vMaterias:HorarioView/>
 	</DataTemplate>
 	-->
+
+	<!--#region CÁTEDRAS-->
+	<DataTemplate DataType="{ x:Type vmCatedras:GestionCatedrasViewModel }">
+		<vCatedras:GestionCatedrasView/>
+	</DataTemplate>
+	<!--#endregion-->
 
 	<!--#region SITUACIÓN DE REVISTA-->
 	<DataTemplate DataType="{ x:Type vmSituacionRevista:GestionSituacionRevistaViewModel }">
