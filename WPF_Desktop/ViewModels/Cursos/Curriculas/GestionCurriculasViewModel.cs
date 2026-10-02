@@ -1,16 +1,16 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCurriculas.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioCurriculas;
-using Core.ServicioDocentes;
+using Core.ServicioMaterias;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using System;
 using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 using WPF_Desktop.ViewModels.Docentes;
@@ -21,9 +21,10 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 {
 	#region Services
 	private readonly INavigationService _gestionCursosNavigationService;
-	private readonly INavigationService _gestionSituacionRevistaNavigationService;
+	private readonly INavigationService _gestionCatedrasNavigationService;
 	private readonly IServicioCurricula _servicioCurricula;
-	private readonly IServicioDocente _servicioDocente;
+	private readonly IServicioMateria _servicioMateria;
+	private readonly IDialogService _dialogService;
 	#endregion
 
 	#region Store
@@ -38,13 +39,15 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 	#region Registrar Materia
 	[Required(AllowEmptyStrings=true, ErrorMessage="Se debe especificar el nombre de la materia.")]
 	[NotifyDataErrorInfo]
+	[NotifyCanExecuteChangedFor(nameof(GuardarCommandAsync))]
 	[ObservableProperty]
 	private string _descripcion = string.Empty;
 
 	[Required]
 	[NotifyDataErrorInfo]
+	[NotifyCanExecuteChangedFor(nameof(GuardarCommandAsync))]
 	[ObservableProperty]
-	private int _cargaHoraria = 0;
+	private int _cargaHoraria = 1;
 	#endregion
 
 	#region Notifications
@@ -63,6 +66,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 
 	[NotifyCanExecuteChangedFor(nameof(CancelarCommand))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarCommand))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[ObservableProperty]
 	private bool _habilitarRegistrarMateria = false;
 
@@ -89,48 +93,57 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 	public ObservableCollection<MateriaViewModel> _materias = new();
 
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
+	[NotifyCanExecuteChangedFor(nameof(EditarCommand))]
+	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
 	[ObservableProperty]
 	private MateriaViewModel _materia;
 	#endregion
 
 	#region Commands
+	public IAsyncRelayCommand CargarCurriculasCommandAsync { get; }
+	public IAsyncRelayCommand CargarMateriasCommandAsync { get; }
 	public IAsyncRelayCommand EliminarCommandAsync { get; }
 	public IAsyncRelayCommand GuardarCommandAsync { get; }
+	public IAsyncRelayCommand CancelarCommand { get; }
+	public IAsyncRelayCommand RegistrarCommand { get; }
 
-	public IRelayCommand CancelarCommand { get; }
 	public IRelayCommand EditarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
-	public IRelayCommand RegistrarCommand { get; }
 	#endregion
 
 
 	public GestionCurriculasViewModel(INavigationService gestionCursosNavigationService,
-									  INavigationService gestionSituacionRevistaNavigationService,
-									  IServicioCurricula servicioMateria,
-									  IServicioDocente servicioDocente,
+									  INavigationService gestionCatedrasNavigationService,
+									  IServicioCurricula servicioCurricula,
+									  IServicioMateria servicioMateria,
+									  IDialogService dialogService,
 									  CursoStore cursoStore,
 									  MateriaStore materiaStore)
 	{
 		_gestionCursosNavigationService = gestionCursosNavigationService;
-		_gestionSituacionRevistaNavigationService = gestionSituacionRevistaNavigationService;
-		_servicioCurricula = servicioMateria;
-		_servicioDocente = servicioDocente;
+		_gestionCatedrasNavigationService = gestionCatedrasNavigationService;
+		_servicioCurricula = servicioCurricula;
+		_servicioMateria = servicioMateria;
+		_dialogService = dialogService;
 		_cursoStore = cursoStore;
 		_materiaStore = materiaStore;
 
-		CancelarCommand = new RelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
+		CargarCurriculasCommandAsync = new AsyncRelayCommand(CargarCurriculasAsync);
+		CargarMateriasCommandAsync = new AsyncRelayCommand(CargarMateriasAsync);
+
+		CancelarCommand = new AsyncRelayCommand<string>(ExecuteCancelarCommandAsync, CanExecuteCancelarCommand);
 		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
 		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
 
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 		EditarCommand = new RelayCommand<string>(ExecuteEditarCommand, CanExecuteEditarCommand);
-		RegistrarCommand = new RelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
+		RegistrarCommand = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, CanExecuteRegistrarCommand);
 
 		HabilitarNotificacion = false;
 		HabilitarEditarMateria = false;
 	}
 
-	public async void CargarCurriculas()
+	public async Task CargarCurriculasAsync()
 	{
 		Materias.Clear();
 		Curriculas.Clear();
@@ -156,7 +169,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 		catch (Exception ex)
 		{
 			string messageBoxText = $"Error al cargar los diseño curriculares del curso.\nError: { ex.Message }";
-			MessageBox.Show(messageBoxText, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Warning);
+			_dialogService.MostrarAdvertencia(messageBoxText, "Error en la operación");
 
 			HabilitarCurriculas = false;
 			HabilitarNotificacion = true;
@@ -164,16 +177,16 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 		}
 	}
 
-	public async void CargarMaterias()
+	public async Task CargarMateriasAsync()
 	{
 		Materias.Clear();
-		if (_curriculas.Count is not 0)
+		if (Curriculas.Count is not 0)
 		{
 			try
 			{
 				var request = new ListarMateriasSegunCurriculaRequest(CursoID: _cursoStore.Curso.CursoID,
 																	  CurriculaID: Curricula.CurriculaID);
-				var response = await _servicioCurricula.ListarMateriasSegunCurriculaAsync(request);
+				var response = await _servicioMateria.ListarMateriasSegunCurriculaAsync(request);
 				if (response.Count is not 0)
 				{
 					Materias = new ObservableCollection<MateriaViewModel>(response.Select(x => new MateriaViewModel(x)));
@@ -187,7 +200,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 			catch (Exception ex)
 			{
 				string messageBoxText = $"Error al cargar las materias del curso.\nError: { ex.Message }";
-				MessageBox.Show(messageBoxText, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Warning);
+				_dialogService.MostrarAdvertencia(messageBoxText, "Error en la operación");
 
 				HabilitarMaterias = false;
 				HabilitarNotificacion = true;
@@ -201,7 +214,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 	private bool CanExecuteNavigationCommand(object obj) => obj switch
 	{
 		"Cursos" => !HabilitarRegistrarMateria && !HabilitarEditarMateria,
-		"SituacionRevista" => Materia is not null && !HabilitarEditarMateria,
+		"Catedras" => Materia is not null && !HabilitarEditarMateria,
 		_ => false
 	};
 
@@ -213,9 +226,9 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 				_gestionCursosNavigationService.Navigate();
 				break;
 
-			case "SituacionRevista":
+			case "Catedras":
 				_materiaStore.Materia = Materia;
-				_gestionSituacionRevistaNavigationService.Navigate();
+				_gestionCatedrasNavigationService.Navigate();
 				break;
 		}
 	}
@@ -233,41 +246,51 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		switch (obj)
 		{
 			case "Materia":
-				messageBoxText = $"¿Está seguro que desea registrar la materia?\nMateria: { Descripcion }\nCarga horaria: { CargaHoraria + 1 } hora cátedra";
-				caption = "Guardar Materia";
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
+				if (string.IsNullOrWhiteSpace(Descripcion))
+				{
+					messageBoxText = $"Error al registrar una materia en el curso. Existen algunos campos vacíos y debe completarlos antes de poder continuar.";
+					caption = "Error al Registrar Materia";
+					_dialogService.MostrarAdvertencia(messageBoxText, caption);
 
-				if (result is MessageBoxResult.Yes)
+					break;
+				}
+
+				messageBoxText = $"¿Está seguro que desea agregar la materia a la currícula de { _cursoStore.Curso.Grado }° año de la { _cursoStore.Curso.NivelEducativo }?\n\n" +
+								 $"Materia: { Descripcion }\nCarga horaria: { CargaHoraria } horas cátedra";
+				caption = "Registrar Materia";
+
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						//TODO: Verificar id de curricula
 						var request = new RegistrarMateriaRequest(CursoID: Curricula.CursoID,
 																  CurriculaID: Curricula.CurriculaID,
 																  Descripcion: Descripcion,
 																  HorasCatedra: CargaHoraria);
-						await _servicioCurricula.RegistrarMateria(request);
+						await _servicioMateria.RegistrarMateriaAsync(request);
 
-						messageBoxText = $"Materia registrada exitósamente.";
+						messageBoxText = $"Nueva materia agregada a la currícula del curso.";
 						caption = "Operación Exitosa";
 
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion(messageBoxText, caption);
 
 						HabilitarRegistrarMateria = false;
-						_descripcion = string.Empty;
-						_cargaHoraria = 0;
 
-						CargarCurriculas();
+						await CargarCurriculasAsync();
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 						HabilitarRegistrarMateria = false;
+					}
+					finally
+					{
+						Descripcion = string.Empty;
+						CargaHoraria = 1;
 					}
 				}
 
@@ -275,9 +298,8 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 			case "Update":
 				messageBoxText = $"¿Está seguro que desea guardar los cambios en la materia?";
 				caption = "Guardar Materia";
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
 
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
@@ -286,19 +308,19 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 																  MateriaID: Materia.MateriaID,
 																  Descripcion: Materia.Descripcion,
 																  HorasCatedra: Materia.HorasCatedra);
-						await _servicioCurricula.ModificarMateriaAsync(request);
+						await _servicioMateria.ModificarMateriaAsync(request);
 
 						messageBoxText = $"Cambios guardados exitósamente.";
 						caption = "Operación Exitosa";
 
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion(messageBoxText, caption);
 
 						HabilitarEditarMateria = false;
-						CargarMaterias();
+						await CargarMateriasAsync();
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 
 						HabilitarEditarMateria = false;
 					}
@@ -336,23 +358,20 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 		_ => false
 	};
 
-	private async void ExecuteRegistrarCommand(object obj)
+	private async Task ExecuteRegistrarCommandAsync(object obj)
 	{
 		switch (obj)
 		{
 			case "Curricula":
 				string messageBoxText = string.Empty;
 				string caption = string.Empty;
-				MessageBoxResult result;
 
 				messageBoxText = $"¿Está seguro que desea crear un nuevo diseño curricular? Se procedera a crear un diseño curricular con fecha inicio desde la fecha de hoy, { DateTime.Today.ToString("D") }. El diseño curricular que se encuentra vigente dejara de estarlo en el día de la fecha.";
 				caption = "Nuevo diseño curricular";
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						//TODO: Verificar id de curricula
 						var request = new RegistrarCurriculaRequest(CursoID: _cursoStore.Curso.CursoID,
 																	FechaInicio: DateTime.Today,
 																	FechaFin: null);
@@ -361,14 +380,14 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 						messageBoxText = $"Cambios guardados exitósamente.";
 						caption = "Operación Exitosa";
 
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion(messageBoxText, caption);
 
 						HabilitarEditarMateria = false;
-						CargarMaterias();
+						await CargarMateriasAsync();
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 
@@ -377,54 +396,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 			case "Update":
 				HabilitarRegistrarMateria = false;
 				HabilitarEditarMateria = true;
-/*
-				if (string.IsNullOrWhiteSpace(Descripcion))
-				{
-					_errorsByProperty.Add(nameof(Descripcion), new List<string>()
-					{
-						"Se debe especificar el nombre de la materia."
-					});
-					ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Descripcion)));
 
-					messageBoxText = $"Error al registrar una materia en el curso. Existen algunos campos vacíos y debe completarlos antes de poder continuar.";
-					caption = "Error al Registrar Materia";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
-					break;
-				}
-
-				messageBoxText = $"¿Está seguro que desea agregar la materia a la currícula de { _cursoStore.Curso.Grado }° año de la { _cursoStore.Curso.NivelEducativoDescripcion }?\n\n" +
-								 $"Materia: { Descripcion }\nCarga horaria: { CargaHoraria + 1 } horas cátedra";
-				caption = "Registrar Materia";
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-
-				if (result is MessageBoxResult.Yes)
-				{
-					try
-					{
-						_registrarMateriaRequest = new RegistrarMateriaRequest(CursoID: _cursoStore.Curso.CursoID,
-																			   Descripcion: Descripcion,
-																			   HorasCatedra: CargaHoraria + 1);
-						await _servicioMateria.RegistrarMateria(_registrarMateriaRequest);
-
-						messageBoxText = $"Nueva materia agregada a la currícula del curso.";
-						caption = "Operación Exitosa";
-
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-						LoadMaterias();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-						var materiaduplicada = ex.GetType();
-					}
-					finally
-					{
-						Descripcion = string.Empty;
-						CargaHoraria = 0;
-					}
-				}
-*/
 				break;
 
 			case "Materia":
@@ -448,7 +420,6 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		switch (obj)
 		{
@@ -456,25 +427,24 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 				messageBoxText = $"¿Está seguro que desea eliminar la materia de {Materia.Descripcion} del diseño curricular del curso?";
 				caption = "Eliminar Materia";
 
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
 						var request = new EliminarMateriaRequest(CursoID: Curricula.CursoID,
 																 CurriculaID: Curricula.CurriculaID,
 																 MateriaID: Materia.MateriaID);
-						await _servicioCurricula.EliminarMateriaAsync(request);
+						await _servicioMateria.EliminarMateriaAsync(request);
 
 						messageBoxText = $"La materia se eliminó correctamente de la currícula del curso.";
 						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion(messageBoxText, caption);
 
-						CargarMaterias();
+						await CargarMateriasAsync();
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 				break;
@@ -490,19 +460,19 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 		_ => false
 	};
 
-	private async void ExecuteCancelarCommand(object obj)
+	private async Task ExecuteCancelarCommandAsync(object obj)
 	{
 		switch (obj)
 		{
 			case "Nueva":
 				HabilitarRegistrarMateria = false;
 
-				CargarCurriculas();
+				await CargarCurriculasAsync();
 				break;
 
 			case "Editar":
 				HabilitarEditarMateria = false;
-				CargarMaterias();
+				await CargarMateriasAsync();
 				break;
 
 			default:
