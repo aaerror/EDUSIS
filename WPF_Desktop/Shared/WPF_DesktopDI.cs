@@ -1,8 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioAlumnos;
 using Core.ServicioAutenticaciones;
+using Core.ServicioCatedras;
 using Core.ServicioCurriculas;
 using Core.ServicioCursos;
+using Core.ServicioDivisiones;
 using Core.ServicioDocentes;
 using Core.ServicioDocumentos;
 using Core.ServicioUsuarios;
@@ -17,6 +19,7 @@ using WPF_Desktop.Navigation;
 using WPF_Desktop.Store.NavigationStore;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Alumnos;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 using WPF_Desktop.ViewModels.Cursos.Curriculas;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
@@ -131,12 +134,14 @@ internal static class WPF_DesktopDI
 									   CreateGestionDisenoCurricularNavigationService(provider),
 									   provider.GetRequiredService<CursoStore>()));
 		services.AddTransient<GestionDivisionesViewModel>(provider =>
-			new GestionDivisionesViewModel(provider.GetRequiredService<IServicioCurso>(),
+			new GestionDivisionesViewModel(provider.GetRequiredService<IServicioDivision>(),
 										   provider.GetRequiredService<IServicioDocente>(),
 										   CreateGestionCursosNavigationService(provider),
 										   CreateGestionCursantesNavigationService(provider),
 										   provider.GetRequiredService<CursoStore>(),
-										   provider.GetRequiredService<DivisionStore>()));
+										   provider.GetRequiredService<DivisionStore>(),
+										   provider.GetRequiredService<CicloLectivoStore>(),
+										   provider.GetRequiredService<IDialogService>()));
 		#endregion
 
 		#region Materias
@@ -147,6 +152,18 @@ internal static class WPF_DesktopDI
 										 provider.GetRequiredService<IServicioDocente>(),
 										 provider.GetRequiredService<CursoStore>(),
 										 provider.GetRequiredService<MateriaStore>()));
+		#endregion
+
+		#region Catedras
+		services.AddTransient<GestionCatedrasViewModel>(provider =>
+			new GestionCatedrasViewModel(CreateGestionDisenoCurricularNavigationService(provider),
+										 CreateGestionSituacionRevistaNavigationService(provider),
+										 provider.GetRequiredService<IServicioCatedra>(),
+										 provider.GetRequiredService<IServicioDivision>(),
+										 provider.GetRequiredService<MateriaStore>(),
+										 provider.GetRequiredService<CatedraStore>(),
+										 provider.GetRequiredService<CicloLectivoStore>(),
+										 provider.GetRequiredService<IDialogService>()));
 		#endregion
 
 		#region SituaciónRevista
@@ -266,6 +283,13 @@ internal static class WPF_DesktopDI
 	private static INavigationService CreateGestionDisenoCurricularNavigationService(IServiceProvider serviceProvider) =>
 		new GestionDisenoCurricularNavigationService<GestionCurriculasViewModel>(() =>
 			serviceProvider.GetRequiredService<GestionCurriculasViewModel>(),
+			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
+	#endregion
+
+	#region CatedrasNavigationService
+	private static INavigationService CreateGestionCatedrasNavigationService(IServiceProvider serviceProvider) =>
+		new GestionCatedrasNavigationService<GestionCatedrasViewModel>(() =>
+			serviceProvider.GetRequiredService<GestionCatedrasViewModel>(),
 			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
 	#endregion
 
