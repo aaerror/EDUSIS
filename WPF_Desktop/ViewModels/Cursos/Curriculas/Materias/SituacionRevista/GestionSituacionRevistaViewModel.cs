@@ -67,6 +67,10 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 	[ObservableProperty]
 	private bool _habilitarDocenteEnFunciones = false;
 
+	/// <summary>Situación de revista en funciones de la cátedra (<c>null</c> si no hay ninguna). Se recalcula en cada carga del listado.</summary>
+	[ObservableProperty]
+	private SituacionRevistaViewModel _situacionRevistaEnFunciones;
+
 	[ObservableProperty]
 	private bool _habilitarNuevaSituacionRevista;
 
@@ -159,6 +163,8 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		{
 			DocentesEnMateria.Clear();
 			SituacionesReemplazables.Clear();
+			SituacionRevistaEnFunciones = null;
+			HabilitarDocenteEnFunciones = false;
 
 			var request = new ListarSituacionesRevistaRequest(CatedraID: _catedraStore.Catedra);
 			var situaciones = await _servicioCatedra.ListarSituacionesRevistaAsync(request);
@@ -190,6 +196,11 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 			DocentesEnMateria = new ObservableCollection<SituacionRevistaViewModel>(items);
 
 			SituacionesReemplazables = new ObservableCollection<SituacionRevistaViewModel>(DocentesEnMateria.Where(EsVigente));
+
+			// El bloque "Docente en Aula" se muestra sólo si hay alguien en funciones, y apunta a esa situación.
+			SituacionRevistaEnFunciones = DocentesEnMateria.FirstOrDefault(x => x.EnFunciones);
+			HabilitarDocenteEnFunciones = SituacionRevistaEnFunciones is not null;
+			SituacionRevistaUPDATE = SituacionRevistaEnFunciones;
 
 			HabilitarNotificacion = false;
 			HabilitarGestionSituacionRevista = true;
@@ -410,7 +421,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 					}
 				}
 
-				SituacionRevistaUPDATE = null;
+				SituacionRevistaUPDATE = SituacionRevistaEnFunciones;
 				break;
 		}
 	}

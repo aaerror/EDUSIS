@@ -30,8 +30,7 @@
 	<!--#region EVENTS-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger x:Name="Loaded">
-			<behaviors:CallMethodAction MethodName="CargarSituacionRevistas"
-										TargetObject="{Binding}"/>
+			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarSituacionRevistasCommandAsync }"/>
 		</behaviors:EventTrigger>
 	</behaviors:Interaction.Triggers>
 	<!--#endregion-->
@@ -62,14 +61,14 @@
 				<!--#region RegistrarCommand: SituacionRevista-->
 				<Button Command="{ Binding Path=RegistrarCommand }"
 						CommandParameter="SituacionRevista"
-						ToolTip="Asignar Cargo Docente"
+						ToolTip="Designar docente"
 						Style="{ StaticResource ResourceKey=Secondary }">
 					<Button.Content>
 						<WrapPanel>
 							<fa:IconBlock Icon="Plus"
 										  Foreground="{ StaticResource ResourceKey=Neutral800 }"
 										  Margin="0 0 2 0"/>
-							<TextBlock Text="Asignar Cargo"
+							<TextBlock Text="Designar Docente"
 									   Margin="2 0 0 2"/>
 						</WrapPanel>
 					</Button.Content>
@@ -191,7 +190,7 @@
 				<StackPanel Grid.Row="1"
 							Margin="0 2 0 0">
 					<!--#region Situación Revista-->
-					<local:SituacionRevistaView DataContext="{ Binding Path=Materia.SituacionRevista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+					<local:SituacionRevistaView DataContext="{ Binding Path=SituacionRevistaEnFunciones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 												IsEnabled="False"/>
 					<!--#endregion-->
 				</StackPanel>
@@ -302,7 +301,7 @@
 															Background="White"
 															Foreground="{ StaticResource ResourceKey=Neutral800 }"
 															Margin="2 0 0 0"
-															ToolTip="Rescindir Cargo Docente"
+															ToolTip="Establecer fin de la designación"
 															Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
 															Style="{ StaticResource ResourceKey=Icon }">
 														<Button.Content>
@@ -349,12 +348,12 @@
 										<Button Command="{ Binding Path=EliminarCommand }"
 												CommandParameter="Docente"
 												Background="{ StaticResource ResourceKey=Red500 }"
-												ToolTip="Eliminar Cargo Docente"
+												ToolTip="Finalizar designación"
 												Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
 												Style="{ StaticResource ResourceKey=Tertiary }">
 											<Button.Content>
 												<WrapPanel>
-													<fa:IconBlock Icon="Trash"
+													<fa:IconBlock Icon="CircleStop"
 																  Foreground="White"/>
 												</WrapPanel>
 											</Button.Content>
@@ -513,6 +512,29 @@
 									  Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
 								<StackPanel>
 									<local:SituacionRevistaView DataContext="{ Binding Path=SituacionRevistaINSERT, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+
+									<!--#region ReemplazaA: sólo para el cargo Suplente-->
+									<StackPanel Margin="0 5 0 0"
+												Visibility="{ Binding Path=HabilitarReemplazaA, Mode=OneWay, Converter={ StaticResource ResourceKey=booleanConverter } }">
+										<Label Content="¿A quién reemplaza?"
+											   Margin="4 0 0 0"
+											   Style="{ StaticResource ResourceKey=Form }"/>
+										<ComboBox ItemsSource="{ Binding Path=SituacionesReemplazables, Mode=OneWay }"
+												  SelectedValuePath="SituacionRevistaID"
+												  SelectedValue="{ Binding Path=SituacionRevistaINSERT.ReemplazaA, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+												  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
+											<ComboBox.ItemTemplate>
+												<DataTemplate>
+													<WrapPanel>
+														<TextBlock Text="{ Binding Path=Docente }"/>
+														<TextBlock Text=" - "/>
+														<TextBlock Text="{ Binding Path=Cargo }"/>
+													</WrapPanel>
+												</DataTemplate>
+											</ComboBox.ItemTemplate>
+										</ComboBox>
+									</StackPanel>
+									<!--#endregion-->
 
 									<!--#region COMMANDs-->
 									<WrapPanel Margin="0 5 0 0"
