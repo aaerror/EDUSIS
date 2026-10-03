@@ -176,9 +176,11 @@ internal static class WPF_DesktopDI
 		services.AddTransient<GestionSituacionRevistaViewModel>(provider =>
 			new GestionSituacionRevistaViewModel(CreateGestionDisenoCurricularNavigationService(provider),
 												 provider.GetRequiredService<IServicioDocente>(),
-												 provider.GetRequiredService<IServicioCurricula>(),
+												 provider.GetRequiredService<IServicioCatedra>(),
+												 provider.GetRequiredService<IDialogService>(),
 												 provider.GetRequiredService<CursoStore>(),
-												 provider.GetRequiredService<MateriaStore>()));
+												 provider.GetRequiredService<MateriaStore>(),
+												 provider.GetRequiredService<CatedraStore>()));
 		#endregion
 
 		#region Usuarios
