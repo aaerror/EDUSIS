@@ -150,7 +150,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject
 
 	private async Task CancelarCommandExecute(object obj)
 	{
-		CargarPerfilCommandAsyncExecute();
+		await CargarPerfilCommandAsyncExecute();
 
 		switch (obj as string)
 		{

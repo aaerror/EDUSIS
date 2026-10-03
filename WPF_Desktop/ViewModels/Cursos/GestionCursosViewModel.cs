@@ -174,7 +174,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 						await _servicioCursos.EliminarCurso(new EliminarCursoRequest(Curso.CursoID));
 						MessageBox.Show("Curso eliminado correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
 						
-						ExecuteCargarCursosCommandAsync();
+						await ExecuteCargarCursosCommandAsync();
 					}
 					catch (Exception ex)
 					{
