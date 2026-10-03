@@ -16,8 +16,6 @@ namespace WPF_Desktop;
 
 public partial class App : Application
 {
-	private IServiceProvider _serviceProvider;
-
 	public static IHost? AppHost { get; private set; }
 
 
@@ -58,42 +56,84 @@ public partial class App : Application
 			{
 				DataContext = provider.GetRequiredService<MainViewModel>()
 			});
-
-		_serviceProvider = services.BuildServiceProvider();
 	}
 
 	protected override async void OnStartup(StartupEventArgs e)
 	{
-		await AppHost.StopAsync();
-
-		AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
-		//AppDomain.CurrentDomain.SetThreadPrincipal(new CustomPrincipal(new AnonymousIdentity()));
-		/*
-		INavigationService navigationService = _serviceProvider.GetRequiredService<INavigationService>();
-		navigationService.Navigate();
-
-		Thread.CurrentPrincipal = new GenericPrincipal(new GenericIdentity(""), null);
-
-		var startUpWindow = AppHost.Services.GetRequiredService<AccesoWindow>();
-		startUpWindow.Show();
-
-		startUpWindow.IsVisibleChanged += (s, ev) =>
+		try
 		{
-			if (!startUpWindow.IsVisible && startUpWindow.IsLoaded)
+			await AppHost!.StartAsync();
+
+			AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
+			//AppDomain.CurrentDomain.SetThreadPrincipal(new CustomPrincipal(new AnonymousIdentity()));
+
+			base.OnStartup(e);
+
+			// Una sola raíz de DI (AppHost.Services): la ventana y el servicio de navegación comparten los Singleton.
+			var mainWindow = AppHost.Services.GetRequiredService<MainWindow>();
+			INavigationService navigationService = AppHost.Services.GetRequiredService<INavigationService>();
+			navigationService.Navigate();
+			mainWindow.Show();
+
+			/*
+			Thread.CurrentPrincipal = new GenericPrincipal(new GenericIdentity(""), null);
+
+			var startUpWindow = AppHost.Services.GetRequiredService<AccesoWindow>();
+			startUpWindow.Show();
+
+			startUpWindow.IsVisibleChanged += (s, ev) =>
 			{
-				var mainWindow = new MainWindow();
-				mainWindow.Show();
-			}
-		};
-		*/
-		base.OnStartup(e);
+				if (!startUpWindow.IsVisible && startUpWindow.IsLoaded)
+				{
+					var mainWindow = new MainWindow();
+					mainWindow.Show();
+				}
+			};
+			*/
+
+			/*
+			var startupWindow = AppHost.Services.GetService<StartupWindow>();
+			startupWindow.Show();
+
+			startupWindow.IsVisibleChanged += (s, ev) =>
+			{
+				if (!startupWindow.IsVisible && startupWindow.IsLoaded)
+				{
+					var mainWindow = AppHost.Services.GetRequiredService<MainWindow>();
+					INavigationService navigationService = AppHost.Services.GetRequiredService<INavigationService>();
+					navigationService.Navigate();
+					mainWindow.Show();
+				}
+			};
+			*/
+		}
+		catch (Exception ex)
+		{
+			MostrarErrorFatal(ex);
+		}
 	}
 
 	protected override async void OnExit(ExitEventArgs e)
 	{
-		await AppHost.StopAsync();
+		try
+		{
+			await AppHost!.StopAsync();
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"Error al detener el host: {ex}");
+		}
 
 		base.OnExit(e);
+	}
+
+	private void MostrarErrorFatal(Exception ex)
+	{
+		string caption = "Error en la aplicación";
+		string message = $"Ha ocurrido un error inesperado y la aplicación se debe cerrar.\nDisculpe las molestias ocasionadas.\n\nError: { ex.Message }";
+		MessageBox.Show(message, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+
+		Shutdown(-1);
 	}
 
 	private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
@@ -104,29 +144,5 @@ public partial class App : Application
 		e.Handled = true;
 
 		Shutdown(-1);
-	}
-
-	private void Application_Startup(object sender, StartupEventArgs e)
-	{
-		var mainWindow = AppHost.Services.GetService<MainWindow>();
-		INavigationService navigationService = _serviceProvider.GetRequiredService<INavigationService>();
-		navigationService.Navigate();
-		mainWindow.Show();
-
-		/*
-		var startupWindow = AppHost.Services.GetService<StartupWindow>();
-		startupWindow.Show();
-
-		startupWindow.IsVisibleChanged += (s, ev) =>
-		{
-			if (!startupWindow.IsVisible && startupWindow.IsLoaded)
-			{
-				var mainWindow = AppHost.Services.GetRequiredService<MainWindow>();
-				INavigationService navigationService = _serviceProvider.GetRequiredService<INavigationService>();
-				navigationService.Navigate();
-				mainWindow.Show();
-			}
-		};
-		*/
 	}
 }
