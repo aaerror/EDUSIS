@@ -61,7 +61,7 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 				new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 0, "gripe"))));
 	}
 
-	[Fact(Skip = "H-022: InfrastructureDI no escanea el assembly Core; LicenciaSolicitadaEventHandler no se registra y SolicitarLicencia publica el evento al vacío. El efecto sobre el curso/cursante del docente no es observable con la composición real. Ver hallazgos.md.")]
+	[Fact(Skip = "H-022: el motivo original (InfrastructureDI no escanea el assembly Core) quedó corregido; hoy `RegisterServicesFromAssemblies` incluye los dos assemblies y `LicenciaSolicitadaEventHandler` sí se registra. Pero su `Handle` es un no-op con un TODO (`Core/ServicioCursos/Events/LicenciaSolicitadaEventHandler.cs:19`): devuelve `Task.CompletedTask` sin tocar el curso. El efecto sigue sin ser observable, por una causa distinta. Ver hallazgos.md.")]
 	public void SolicitarLicencia_aplica_el_efecto_del_evento_sobre_el_curso_del_docente()
 	{
 	}

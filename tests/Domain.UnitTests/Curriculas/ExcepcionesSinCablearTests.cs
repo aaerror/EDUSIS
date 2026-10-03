@@ -13,10 +13,10 @@ namespace Domain.UnitTests.Curriculas;
 [Trait("Categoria", Categorias.Unidad)]
 public class ExcepcionesSinCablearTests
 {
-	[Fact(Skip = "H-010: DocenteSinCargoException no se lanza desde ningún método del dominio. Ver hallazgos.md.")]
-	public void Operar_sobre_una_materia_sin_docente_lanza_DocenteSinCargoException()
-	{
-	}
+	// H-010 quedó corregido por el rediseño de agregados: `Catedra.RelevarDeFunciones` lanza
+	// `DocenteSinCargoException` (`Domain/Catedras/Catedra.cs:136`) y la cubre una prueba real,
+	// `CatedraTests.RelevarDeFunciones_sin_nadie_en_funciones_lanza_DocenteSinCargoException`.
+	// El placeholder vacío que lo documentaba se retiró: afirmaba lo contrario de lo que el código hace.
 
 	[Fact(Skip = "H-011: LimiteCantidadHorasCatedrasException no se lanza; la validación de límite de horas cátedra está en código comentado. Ver hallazgos.md.")]
 	public void Superar_el_limite_de_horas_catedra_lanza_LimiteCantidadHorasCatedrasException()
