@@ -218,7 +218,9 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 	#region Suplencia
 	private static bool EsVigente(SituacionRevistaViewModel situacion) =>
-		!situacion.Estado.Equals("Finalizado") && (situacion.FechaFin is null || situacion.FechaFin.Value.Date >= DateTime.Today);
+		!situacion.Estado.Equals("Finalizado")
+		&& situacion.FechaInicio.Date <= DateTime.Today
+		&& (situacion.FechaFin is null || situacion.FechaFin.Value.Date >= DateTime.Today);
 
 	partial void OnSituacionRevistaINSERTChanged(SituacionRevistaViewModel oldValue, SituacionRevistaViewModel newValue)
 	{
