@@ -206,13 +206,6 @@ internal static class WPF_DesktopDI
 	}
 	#endregion
 
-	#region ModalNavigationService
-	private static INavigationService CreateBuscarModalNavigationService(IServiceProvider serviceProvider) =>
-		new ModalNavigationService<BuscarViewModel>(() =>
-			serviceProvider.GetRequiredService<BuscarViewModel>(),
-			serviceProvider.GetRequiredService<ModalWindowNavigationStore>());
-	#endregion
-
 	#region MainNavigationServices
 	private static INavigationService CreateMainNavigationService(IServiceProvider serviceProvider) =>
 		new MainNavigationService<MainViewModel>(() =>
