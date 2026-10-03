@@ -2,9 +2,11 @@
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos;
-using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos;
 using Core.ServicioCursantes.DTOs.Requests;
+using Core.ServicioCursantes;
+using Core.ServicioDivisiones.DTOs.Requests;
+using Core.ServicioDivisiones;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
 using System.Collections.ObjectModel;
@@ -15,18 +17,20 @@ using System.Windows;
 using System;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Cursos;
+using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Shared;
 
 namespace WPF_Desktop.ViewModels.Alumnos;
 
-//TODO: Refactorizar
 internal partial class RegistrarAlumnoViewModel : ObservableValidator
 {
 	private readonly IServicioAlumno _servicioAlumnos;
 	private readonly IServicioCurso _servicioCursos;
+	private readonly IServicioCursante _servicioCursantes;
+	private readonly IServicioDivision _servicioDivisiones;
+	private readonly CicloLectivoStore _cicloLectivoStore;
 
 	#region Request
-	private RegistrarCursanteRequest _crearCursanteRequest;
 	private RegistrarDatosPersonalesRequest _informacionPersonalRequest;
 	private RegistrarContactoRequest _contactoRequest;
 	private RegistrarDomicilioRequest _domicilioRequest;
@@ -42,11 +46,13 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	[ObservableProperty]
 	private ContactoViewModel _contacto;
 
+	[NotifyCanExecuteChangedFor(nameof(GuardarCommand))]
 	[ObservableProperty]
-	private CursoViewModel _curso;
+	private CursoViewModel? _curso;
 
+	[NotifyCanExecuteChangedFor(nameof(GuardarCommand))]
 	[ObservableProperty]
-	private DivisionViewModel _division;
+	private DivisionViewModel? _division;
 	#endregion
 
 	private Guid alumnoID = Guid.Empty;
@@ -54,20 +60,21 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	[Required(AllowEmptyStrings=false, ErrorMessage="Debe ingresar el año en el que desea inscribir el alumno.")]
 	[RegularExpression(@"^(20)\d{2}$", ErrorMessage="Formato inválido del año. Puede ingresar un año comprendido entre el 2000 y el 2099.")]
 	[NotifyDataErrorInfo]
+	[NotifyCanExecuteChangedFor(nameof(GuardarCommand))]
 	[ObservableProperty]
-	private string _periodo;
+	private string _periodo = string.Empty;
 
 	[ObservableProperty]
 	private int _tab = 0;
 
 
-	private ObservableCollection<CursoViewModel> _cursos = new();
-	private ObservableCollection<DivisionViewModel> _divisiones = new();
+	public ObservableCollection<CursoViewModel> Cursos { get; } = new();
+	public ObservableCollection<DivisionViewModel> Divisiones { get; } = new();
 
 	#region Commands
 	public IRelayCommand AtrasCommand { get; }
 	public IRelayCommand ContinuarCommand { get; }
-	public IRelayCommand GuardarCommand { get; }
+	public IAsyncRelayCommand GuardarCommand { get; }
 	#endregion
 
 	#region AsyncCommands
@@ -75,10 +82,13 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	#endregion
 
 
-	public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumnos, IServicioCurso servicioCursos)
+	public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumnos, IServicioCurso servicioCursos, IServicioCursante servicioCursantes, IServicioDivision servicioDivisiones, CicloLectivoStore cicloLectivoStore)
 	{
 		_servicioAlumnos = servicioAlumnos;
 		_servicioCursos = servicioCursos;
+		_servicioCursantes = servicioCursantes;
+		_servicioDivisiones = servicioDivisiones;
+		_cicloLectivoStore = cicloLectivoStore;
 
 		_informacionPersonal = new(null);
 		_domicilio = new(null);
@@ -86,76 +96,69 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 
 		AtrasCommand = new RelayCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
 		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
-		GuardarCommand = new RelayCommand(ExecuteGuardarCommand, CanExecuteGuardarCommand);
+		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
 
 		ActualizarCursosAsyncCommand = new AsyncRelayCommand(ActualizarCursos);
+
+		// Las propiedades con [NotifyCanExecuteChangedFor] se asignan DESPUÉS de crear los comandos.
+		Periodo = _cicloLectivoStore.CicloLectivo;
+
+		_ = ActualizarCursos();
 	}
 
+	#region Cursos y divisiones
 	private async Task ActualizarCursos()
 	{
-		var cursos = await _servicioCursos.ListarCursosAsync();
-		_cursos = new ObservableCollection<CursoViewModel>(cursos.Select(x => new CursoViewModel(x)));
-	}
-
-	#region TODO:
-	/*
-	public CursoViewModel CursoViewModel
-	{
-		get
+		try
 		{
-			return _cursoViewModel;
-		}
+			var cursos = await _servicioCursos.ListarCursosAsync();
 
-		set
-		{
-			_cursoViewModel = value;
-			SetProperty(ref _cursoViewModel, value);
-
-			if (CursoViewModel is not null)
+			Cursos.Clear();
+			foreach (var curso in cursos)
 			{
-				var divisiones = _servicioCursos.BuscarDivisiones(CursoViewModel.CursoID);
-				Divisiones = new ObservableCollection<DivisionViewModel>(divisiones.Select(x => new DivisionViewModel(x)));
+				Cursos.Add(new CursoViewModel(curso));
 			}
-			
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 
-	public DivisionViewModel DivisionViewModel
+	partial void OnCursoChanged(CursoViewModel? value)
 	{
-		get
-		{
-			return _divisionViewModel;
-		}
+		Division = null;
+		Divisiones.Clear();
 
-		set
+		if (value is not null)
 		{
-			_divisionViewModel = value;
-			SetProperty(ref _divisionViewModel, value);
+			_ = CargarDivisionesAsync(value.CursoID);
 		}
 	}
 
-	public ObservableCollection<CursoViewModel> Cursos
+	private async Task CargarDivisionesAsync(Guid cursoID)
 	{
-		get
+		try
 		{
-			return _cursos;
+			var divisiones = await _servicioDivisiones.ListarDivisionesAsync(new ListarDivisionesRequest(cursoID, Periodo));
+
+			// El usuario pudo cambiar de curso mientras la consulta estaba en vuelo.
+			if (Curso is null || Curso.CursoID != cursoID)
+			{
+				return;
+			}
+
+			Divisiones.Clear();
+			foreach (var division in divisiones)
+			{
+				Divisiones.Add(new DivisionViewModel(division));
+			}
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
-
-	public ObservableCollection<DivisionViewModel> Divisiones
-	{
-		get
-		{
-			return _divisiones;
-		}
-
-		set
-		{
-			_divisiones = value;
-			SetProperty(ref _divisiones, value);
-		}
-	}
-	*/
 	#endregion
 
 	#region AtrasCommand
@@ -283,11 +286,16 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	private bool CanExecuteGuardarCommand() =>
 		!HasErrors && Curso is not null && Division is not null;
 
-	private void ExecuteGuardarCommand()
+	private async Task ExecuteGuardarCommandAsync()
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
 		MessageBoxResult result;
+
+		if (Curso is null || Division is null)
+		{
+			return;
+		}
 
 		if (string.IsNullOrWhiteSpace(Periodo))
 		{
@@ -307,6 +315,8 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
 
 			Tab = 0;
+
+			return;
 		}
 
 		messageBoxText = $"Está a punto de inscribir a { InformacionPersonal.Apellido } { InformacionPersonal.Nombre } en:\n" +
@@ -320,9 +330,9 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 		{
 			try
 			{
-				_crearCursanteRequest = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo);
-				//TODO: Refactorizar inscripción de alumno
-				//_servicioCursos.InscribirAlumnoEnDivision(_crearCursanteRequest);
+				// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
+				var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo);
+				await _servicioCursantes.InscribirCursanteAsync(request);
 
 				messageBoxText = $"Se han inscripto el alumno en el curso correctamente .";
 				caption = "Operación Exitosa";
@@ -333,7 +343,10 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 				Domicilio = new(null);
 				Contacto = new(null);
 
-				ActualizarCursos();
+				Curso = null;
+				Periodo = _cicloLectivoStore.CicloLectivo;
+
+				await ActualizarCursos();
 
 				Tab = 0;
 			}

@@ -154,12 +154,12 @@
 												   Style="{ StaticResource ResourceKey=Form }"/>
 											<ComboBox x:Name="ComboBox_Cursos"
 													  ItemsSource="{ Binding Path=Cursos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-													  SelectedItem="{ Binding Path=CursoViewModel, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+													  SelectedItem="{ Binding Path=Curso, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 													  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
 												<ComboBox.ItemTemplate>
 													<DataTemplate>
 														<StackPanel Orientation="Horizontal">
-															<TextBlock Text="{ Binding Path=Descripcion, StringFormat={}{0}° Año }"
+															<TextBlock Text="{ Binding Path=Grado, StringFormat={}{0}° Año }"
 																	   Margin="0 0 2 0"/>
 															<TextBlock Text="{ Binding Path=NivelEducativo, StringFormat={}({0})}"
 																	   Margin="2 0 0 0"/>
@@ -198,11 +198,11 @@
 												   Style="{ StaticResource ResourceKey=Form }"/>
 											<ComboBox x:Name="ComboBox_Divisiones"
 													  ItemsSource="{ Binding Path=Divisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-													  SelectedItem="{ Binding Path=DivisionViewModel, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+													  SelectedItem="{ Binding Path=Division, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 													  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
 												<ComboBox.ItemTemplate>
 													<DataTemplate>
-														<TextBlock Text="{ Binding Path=DivisionDescripcion }"
+														<TextBlock Text="{ Binding Path=Descripcion }"
 																   Margin="0 0 2 0"/>
 													</DataTemplate>
 												</ComboBox.ItemTemplate>
