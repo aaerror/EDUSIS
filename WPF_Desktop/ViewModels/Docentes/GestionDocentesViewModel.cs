@@ -54,7 +54,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 	[ObservableProperty]
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommand))]
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
-	private LegajoDocenteViewModel _legajoDocenteSeleccionado;
+	private LegajoDocenteViewModel? _legajoDocenteSeleccionado;
 
 	[ObservableProperty]
 	private ObservableCollection<LegajoDocenteViewModel> _legajosDocentes = new();
@@ -62,7 +62,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 	#region Commands
 	public IRelayCommand RegistrarCommand { get; }
 	public IAsyncRelayCommand BuscarCommandAsync { get; }
-	public IRelayCommand EliminarCommand { get; }
+	public IAsyncRelayCommand EliminarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	#endregion
 
@@ -86,7 +86,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 			_registrarDocenteNavigationService.Navigate();
 		});
 		BuscarCommandAsync = new AsyncRelayCommand(ExecuteBuscarCommandAsync, CanExecuteBuscarCommand);
-		EliminarCommand = new RelayCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
+		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommandAsync,CanExecuteEliminarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
 		MostrarVista = false;
@@ -153,7 +153,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 		return canExecute;
 	}
 
-	private void ExecuteEliminarCommand()
+	private async Task ExecuteEliminarCommandAsync()
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
@@ -175,12 +175,12 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 		{
 			try
 			{
-				_servicioDocentes.QuitarDocente(new DocenteIDRequest(LegajoDocenteSeleccionado.DocenteID));
+				await _servicioDocentes.QuitarDocenteAsync(new DocenteIDRequest(LegajoDocenteSeleccionado.DocenteID));
 				messageBoxText = $"El docente, {LegajoDocenteSeleccionado.NombreCompleto}, se quitó correctamente.";
 				caption = "Operación Exitosa";
 
 				MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-				LegajoDocenteSeleccionado = new LegajoDocenteViewModel(null);
+				LegajoDocenteSeleccionado = null;
 			}
 			catch (Exception ex)
 			{

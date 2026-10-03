@@ -3,6 +3,8 @@ using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Store.NavigationStore;
 
+namespace WPF_Desktop.Navigation.NavigationServices.Docentes;
+
 internal class GestionLicenciasNavigationService<TViewModel> : INavigationService
 	where TViewModel : ObservableObject
 {

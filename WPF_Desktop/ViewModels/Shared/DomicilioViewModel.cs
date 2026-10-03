@@ -48,7 +48,8 @@ internal partial class DomicilioViewModel : ObservableValidator
 		{
 			Calle = domicilioResponse.Calle;
 			Altura = domicilioResponse.Altura;
-			//TODO:Verificar string
+			//Cerrado (UI-06): DomicilioResponse.Vivienda ya es string y la propiedad _vivienda también; no hace falta Enum.Parse.
+			//La validación del valor ([Required]) queda en la propiedad; la pertenencia al enum Vivienda la valida el dominio (Direccion.Crear).
 			//Vivienda = Enum.Parse<Vivienda>(domicilioResponse.Vivienda);
 			Vivienda = domicilioResponse.Vivienda;
 			Localidad = domicilioResponse.Localidad;
