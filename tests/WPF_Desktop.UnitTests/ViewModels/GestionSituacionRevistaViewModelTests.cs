@@ -352,7 +352,8 @@ public class GestionSituacionRevistaViewModelTests
 		contexto.ViewModel.SituacionesReemplazables.ShouldAllBe(x => x.CatedraID == contexto.CatedraID);
 	}
 
-	[Fact(Skip = "Hallazgo R6-1: EsVigente de la UI no exige FechaInicio <= hoy (el dominio si: RangoFechas.HaIniciado). Una designacion que todavia no empezo se ofrece como reemplazable y Catedra.Designar la rechaza con SituacionRevistaNoEncontradaException. Se habilita cuando la UI replique HaIniciado.")]
+	// El hallazgo R6-1 quedo corregido: EsVigente ya exige FechaInicio <= hoy, replicando RangoFechas.HaIniciado.
+	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public async Task SituacionesReemplazables_excluye_las_designaciones_que_todavia_no_empezaron()
 	{

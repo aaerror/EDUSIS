@@ -1,3 +1,6 @@
+// El SDK de WPF excluye System.IO de los implicit usings, a diferencia del SDK normal: hay que importarlo a mano.
+using System.IO;
+
 namespace WPF_Desktop.UnitTests.Dobles;
 
 /// <summary>

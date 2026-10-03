@@ -1,4 +1,6 @@
 using Shouldly;
+// El SDK de WPF excluye System.IO de los implicit usings, a diferencia del SDK normal: hay que importarlo a mano.
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using WPF_Desktop.UnitTests.Dobles;
@@ -289,7 +291,8 @@ public class GuardasEstaticasW6Tests
 	{
 		var codigo = CodigoVivo(GestionSituacionRevistaCs);
 
-		codigo.ShouldNotContain("MessageBox");
+		// "MessageBox.Show" y no "MessageBox": ShouldNotContain ignora mayusculas y chocaria con la variable local messageBoxText.
+		codigo.ShouldNotContain("MessageBox.Show");
 		codigo.ShouldNotContain("async void");
 		codigo.ShouldNotContain("IServicioCurricula");
 	}

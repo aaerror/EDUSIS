@@ -325,7 +325,9 @@ public class GestionDivisionesViewModelTests
 		contexto.ViewModel.NavigationCommand.CanExecute("Cursantes").ShouldBeFalse();
 	}
 
-	[Fact(Skip = "Defecto preexistente, no corregido por W4.A: Division no tiene [NotifyCanExecuteChangedFor] hacia NavigationCommand ni EliminarCommandAsync, y el RelayCommand de CommunityToolkit no se engancha a CommandManager.RequerySuggested; el boton no se habilita al elegir una fila.")]
+	// El defecto que esta prueba documentaba quedo corregido en el lote de R4: Division ya declara
+	// [NotifyCanExecuteChangedFor] hacia NavigationCommand y EliminarCommandAsync.
+	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void Seleccionar_una_division_notifica_el_cambio_de_CanExecute_de_la_navegacion_y_la_baja()
 	{
