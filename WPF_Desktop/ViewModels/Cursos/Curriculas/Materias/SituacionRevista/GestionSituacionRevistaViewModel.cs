@@ -1,17 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCatedras.DTOs.Requests;
-using Core.ServicioCurriculas;
+using Core.ServicioCatedras;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes;
 using Core.Shared.DTOs.Personas.Requests;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
 using System.Linq;
-using System.Windows;
+using System.Threading.Tasks;
 using System;
 using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Docentes;
 
@@ -22,19 +24,22 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 	#region Services
 	private readonly INavigationService _gestionMateriasNavigationService;
 	private readonly IServicioDocente _servicioDocente;
-	private readonly IServicioCurricula _servicioCurricula;
+	private readonly IServicioCatedra _servicioCatedra;
+	private readonly IDialogService _dialogService;
 	#endregion
 
 	#region Store
 	private readonly CursoStore _cursoStore = null;
 
 	private readonly MateriaStore _materiaStore = null;
+
+	private readonly CatedraStore _catedraStore = null;
 	#endregion
 
 	#region ViewModels
 	[ObservableProperty]
 	private MateriaViewModel _materia;
-	
+
 	[NotifyCanExecuteChangedFor(nameof(SeleccionarCommand))]
 	[ObservableProperty]
 	private LegajoDocenteViewModel _legajoDocente;
@@ -64,20 +69,28 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 	[ObservableProperty]
 	private bool _habilitarNuevaSituacionRevista;
-	
+
 	[ObservableProperty]
 	private bool _habilitarResultadoBuscar;
-	
+
 	[ObservableProperty]
 	private bool _habilitarGestionSituacionRevista;
-	
+
 	[ObservableProperty]
 	private bool _habilitarInfoSituacionRevista;
 
 	[NotifyCanExecuteChangedFor(nameof(ListarCommand))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarCommand))]
 	[ObservableProperty]
 	private bool _habilitarInsert;
+
+	/// <summary>
+	/// <c>true</c> cuando la nueva situación de revista tiene el cargo <c>Suplente</c>: el formulario tiene que pedir
+	/// a quién reemplaza (<see cref="SituacionRevistaINSERT"/>.<c>ReemplazaA</c>, elegido entre <see cref="SituacionesReemplazables"/>).
+	/// </summary>
+	[ObservableProperty]
+	private bool _habilitarReemplazaA;
 
 	[Required(AllowEmptyStrings=false, ErrorMessage="Debe ingresar el docente que desea buscar")]
 	[RegularExpression(@"^[A-Za-zÀ-ÿ]+( [A-Za-zÀ-ÿ]+)*$", ErrorMessage="Solo debe ingresar nombre, apellido o una combinación de ambos.")]
@@ -92,12 +105,17 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 	[ObservableProperty]
 	private ObservableCollection<SituacionRevistaViewModel> _docentesEnMateria = new();
 
+	/// <summary>Situaciones de revista vigentes de la cátedra: los candidatos a ser reemplazados por un suplente.</summary>
+	[ObservableProperty]
+	private ObservableCollection<SituacionRevistaViewModel> _situacionesReemplazables = new();
+
 	#region Commands
-	public IRelayCommand CancelarCommand { get; }
-	public IRelayCommand EditarCommand { get; }
-	public IRelayCommand EliminarCommand { get; }
-	public IRelayCommand GuardarCommand { get; }
-	public IRelayCommand ListarCommand { get; }
+	public IAsyncRelayCommand CargarSituacionRevistasCommandAsync { get; }
+	public IAsyncRelayCommand CancelarCommand { get; }
+	public IAsyncRelayCommand EditarCommand { get; }
+	public IAsyncRelayCommand EliminarCommand { get; }
+	public IAsyncRelayCommand GuardarCommand { get; }
+	public IAsyncRelayCommand ListarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	public IRelayCommand RegistrarCommand { get; }
 	public IRelayCommand SeleccionarCommand { get; }
@@ -106,44 +124,49 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 	public GestionSituacionRevistaViewModel(INavigationService gestionMateriasNavigationService,
 											IServicioDocente servicioDocente,
-											IServicioCurricula servicioCurricula,
+											IServicioCatedra servicioCatedra,
+											IDialogService dialogService,
 											CursoStore cursoStore,
-											MateriaStore materiaStore)
+											MateriaStore materiaStore,
+											CatedraStore catedraStore)
 	{
 		_gestionMateriasNavigationService = gestionMateriasNavigationService;
 		_servicioDocente = servicioDocente;
-		_servicioCurricula = servicioCurricula;
+		_servicioCatedra = servicioCatedra;
+		_dialogService = dialogService;
 
 		_cursoStore = cursoStore;
 		_materiaStore = materiaStore;
+		_catedraStore = catedraStore;
 
-		Materia = _materiaStore.Materia;
-
-		CancelarCommand = new RelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
-		EditarCommand = new RelayCommand<string>(ExecuteEditarCommand, CanExecuteEditarCommand);
-		EliminarCommand = new RelayCommand<string>(ExecuteEliminarCommand, CanExecuteEliminarCommand);
-		GuardarCommand = new RelayCommand<string>(ExecuteGuardarCommand, CanExecuteGuardarCommand);
-		ListarCommand = new RelayCommand<string>(ExecuteListarCommand, CanExecuteListarCommand);
+		CargarSituacionRevistasCommandAsync = new AsyncRelayCommand(CargarSituacionRevistasAsync);
+		CancelarCommand = new AsyncRelayCommand<string>(ExecuteCancelarCommandAsync, CanExecuteCancelarCommand);
+		EditarCommand = new AsyncRelayCommand<string>(ExecuteEditarCommandAsync, CanExecuteEditarCommand);
+		EliminarCommand = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
+		GuardarCommand = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
+		ListarCommand = new AsyncRelayCommand<string>(ExecuteListarCommandAsync, CanExecuteListarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 		RegistrarCommand = new RelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
 		SeleccionarCommand = new RelayCommand(ExecuteSeleccionarCommand, CanExecuteCommand);
+
+		// Va después de los comandos: el setter generado notifica a los comandos que declaran [NotifyCanExecuteChangedFor].
+		Materia = _materiaStore.Materia;
 	}
 
-	public async void CargarSituacionRevistas()
+	public async Task CargarSituacionRevistasAsync()
 	{
 		try
 		{
 			DocentesEnMateria.Clear();
+			SituacionesReemplazables.Clear();
 
-			var request = new ListarCargosDocenteSegunMateriaRequest(CursoID: _materiaStore.Materia.CursoID,
-																	 CurriculaID: _materiaStore.Materia.CurriculaID,
-																	 MateriaID: _materiaStore.Materia.MateriaID);
-			var docentes = await _servicioCurricula.ListarCargosDocenteSegunMateriaAsync(request);
-			if (docentes.Count is 0)
+			var request = new ListarSituacionesRevistaRequest(CatedraID: _catedraStore.Catedra);
+			var situaciones = await _servicioCatedra.ListarSituacionesRevistaAsync(request);
+			if (situaciones.Count is 0)
 			{
 				string messageBoxText = "No existen docentes registrados para esta materia.";
 				string caption = "Docentes";
-				MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+				_dialogService.MostrarAdvertencia(messageBoxText, caption);
 
 				Mensaje = messageBoxText;
 				HabilitarNotificacion = true;
@@ -152,7 +175,21 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 				return;
 			}
 
-			DocentesEnMateria = new ObservableCollection<SituacionRevistaViewModel>(docentes.Select(x => new SituacionRevistaViewModel(x)));
+			// SituacionRevistaResponse trae DocenteID y no el nombre: una sola consulta y cruce en memoria.
+			var docentes = await _servicioDocente.ListarDocentesActivosAsync();
+			var nombresPorDocente = new System.Collections.Generic.Dictionary<Guid, string>();
+			foreach (var docente in docentes)
+			{
+				nombresPorDocente.TryAdd(docente.DocenteID, docente.NombreCompleto);
+			}
+
+			var items = situaciones.Select(x => new SituacionRevistaViewModel(x)
+			{
+				Docente = nombresPorDocente.TryGetValue(x.DocenteID, out var nombre) ? nombre : "Docente no disponible"
+			});
+			DocentesEnMateria = new ObservableCollection<SituacionRevistaViewModel>(items);
+
+			SituacionesReemplazables = new ObservableCollection<SituacionRevistaViewModel>(DocentesEnMateria.Where(EsVigente));
 
 			HabilitarNotificacion = false;
 			HabilitarGestionSituacionRevista = true;
@@ -161,12 +198,50 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		catch (Exception ex)
 		{
 			string messageBoxText = $"Error al cargar los docentes de la materia.\nError: {ex.Message}";
-			MessageBox.Show(messageBoxText, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Warning);
+			_dialogService.MostrarAdvertencia(messageBoxText, "Error en la operación");
 
 			Mensaje = messageBoxText;
 			HabilitarNotificacion = true;
 		}
 	}
+
+	#region Suplencia
+	private static bool EsVigente(SituacionRevistaViewModel situacion) =>
+		!situacion.Estado.Equals("Finalizado") && (situacion.FechaFin is null || situacion.FechaFin.Value.Date >= DateTime.Today);
+
+	partial void OnSituacionRevistaINSERTChanged(SituacionRevistaViewModel oldValue, SituacionRevistaViewModel newValue)
+	{
+		if (oldValue is not null)
+		{
+			oldValue.PropertyChanged -= OnSituacionRevistaINSERTPropertyChanged;
+		}
+
+		if (newValue is not null)
+		{
+			newValue.PropertyChanged += OnSituacionRevistaINSERTPropertyChanged;
+		}
+
+		ActualizarReemplazaA();
+	}
+
+	private void OnSituacionRevistaINSERTPropertyChanged(object sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName is nameof(SituacionRevistaViewModel.Cargo))
+		{
+			ActualizarReemplazaA();
+		}
+	}
+
+	private void ActualizarReemplazaA()
+	{
+		HabilitarReemplazaA = SituacionRevistaINSERT is not null && SituacionRevistaINSERT.Cargo.Equals("Suplente");
+
+		if (!HabilitarReemplazaA && SituacionRevistaINSERT is not null)
+		{
+			SituacionRevistaINSERT.ReemplazaA = null;
+		}
+	}
+	#endregion
 
 	#region Commands
 	#region CancelarCommand
@@ -176,12 +251,12 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		_ => false
 	};
 
-	private void ExecuteCancelarCommand(object obj)
+	private async Task ExecuteCancelarCommandAsync(object obj)
 	{
 		switch (obj)
 		{
 			case "Insert":
-				CargarSituacionRevistas();
+				await CargarSituacionRevistasAsync();
 				Query = string.Empty;
 				HabilitarNuevaSituacionRevista = false;
 				HabilitarResultadoBuscar = false;
@@ -200,11 +275,10 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		_ => false
 	};
 
-	private async void ExecuteEditarCommand(object obj)
+	private async Task ExecuteEditarCommandAsync(object obj)
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 		/*
 		case "Docente":
 			messageBoxText = $"¿Está seguro que desea cambiar de situación de revista al docente {SituacionRevistaUPDATE.Docente} " +
@@ -245,58 +319,53 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 				messageBoxText = $"¿Está seguro que desea quitar de funciones al docente { SituacionRevistaUPDATE.Docente }? El cargo docente de { SituacionRevistaUPDATE.Cargo.ToLower() } continúa asignado al docente aunque el mismo no se encuentre en funciónes.";
 				caption = "Quitar docente de funciones";
 
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						var request = new RelevarDocenteDeAulaRequest(CursoID: _materiaStore.Materia.CursoID,
-																	  CurriculaID: _materiaStore.Materia.CurriculaID,
-																	  MateriaID: _materiaStore.Materia.MateriaID);
-						await _servicioCurricula.RelevarDocenteDeFuncionesEnMateriaAsync(request);
+						var request = new RelevarDeFuncionesRequest(CatedraID: _catedraStore.Catedra);
+						await _servicioCatedra.RelevarDeFuncionesAsync(request);
 
 						messageBoxText = $"Se relevó correctamente al docente de la materia.";
 						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion(messageBoxText, caption);
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 
-				CargarSituacionRevistas();
+				await CargarSituacionRevistasAsync();
 				break;
 
 			case "Rescindir":
 				messageBoxText = $"¿Está seguro que desea rescindir el cargo docente de { SituacionRevistaUPDATE.Cargo } al docente { SituacionRevistaUPDATE.Docente }? El cargo docente se encontrará disponible en la asignatura.\n" +
-								 $"\nFecha Alta: { SituacionRevistaUPDATE.FechaAlta.ToString("D") }" +
+								 $"\nFecha Alta: { SituacionRevistaUPDATE.FechaInicio.ToString("D") }" +
 								 $"\nFecha Cargo: { DateTime.Today.ToString("D") }";
 				caption = "Rescindir Cargo Docente";
 
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						var request = new RescindirCargoDocenteRequest(CursoID: _materiaStore.Materia.CursoID,
-																	   CurriculaID: _materiaStore.Materia.CurriculaID,
-																	   MateriaID: SituacionRevistaUPDATE.MateriaID,
-																	   SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID);
-						await _servicioCurricula.RescindirCargoDocenteDeMateriaAsync(request);
-						CargarSituacionRevistas();
+						var request = new EstablecerFinDeDesignacionRequest(CatedraID: _catedraStore.Catedra,
+																			SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID,
+																			FechaFin: DateTime.Today);
+						await _servicioCatedra.EstablecerFinDeDesignacionAsync(request);
+						await CargarSituacionRevistasAsync();
 
 						messageBoxText = $"Docente liberado correctamente del cargo docente en la materia.";
 						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion(messageBoxText, caption);
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 
-				CargarSituacionRevistas();
+				await CargarSituacionRevistasAsync();
 				break;
 		}
 	}
@@ -309,39 +378,35 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		_ => false
 	};
 
-	private async void ExecuteEliminarCommand(object obj)
+	private async Task ExecuteEliminarCommandAsync(object obj)
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		switch (obj)
 		{
 			case "Docente":
-				messageBoxText = $"¿Está seguro que desea eliminar definitivamente el cargo docente asignado al docente { SituacionRevistaUPDATE.Docente }?\n" +
-								 $"Esta operación no se puede deshacer.\n" +
-								 $"Fecha Alta: { SituacionRevistaUPDATE.FechaAlta.ToString("D") }";
-				caption = "Eliminar Cargo Docente";
+				messageBoxText = $"¿Está seguro que desea finalizar la designación del cargo docente asignado al docente { SituacionRevistaUPDATE.Docente }?\n" +
+								 $"La designación queda finalizada y el cargo deja de estar vigente en la materia.\n" +
+								 $"Fecha Alta: { SituacionRevistaUPDATE.FechaInicio.ToString("D") }";
+				caption = "Finalizar Designación";
 
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						var request = new EliminarCargoDocenteRequest(CursoID: _materiaStore.Materia.CursoID,
-																	  CurriculaID: _materiaStore.Materia.CurriculaID,
-																	  MateriaID: SituacionRevistaUPDATE.MateriaID,
+						var request = new FinalizarDesignacionRequest(CatedraID: _catedraStore.Catedra,
 																	  SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID);
-						await _servicioCurricula.EliminarCargoDocenteAsync(request);
-						CargarSituacionRevistas();
+						await _servicioCatedra.FinalizarDesignacionAsync(request);
+						await CargarSituacionRevistasAsync();
 
-						messageBoxText = $"Se eliminó correctamente el cargo docente.";
+						messageBoxText = $"Se finalizó correctamente la designación del cargo docente.";
 						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion(messageBoxText, caption);
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 
@@ -359,11 +424,10 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		_ => false
 	};
 
-	private async void ExecuteGuardarCommand(object obj)
+	private async Task ExecuteGuardarCommandAsync(object obj)
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		switch (obj)
 		{
@@ -371,54 +435,61 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 				messageBoxText = $"¿Está seguro que desea establecer como docente de aula a { SituacionRevistaUPDATE.Docente } en la asignatura de { _materiaStore.Materia.Descripcion } con el cargo de { SituacionRevistaUPDATE.Cargo }?";
 				caption = "Establecer docente de aula";
 
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						var request = new EstablecerDocenteDeAulaRequest(CursoID: _materiaStore.Materia.CursoID,
-																		 CurriculaID: _materiaStore.Materia.CurriculaID,
-																		 MateriaID: SituacionRevistaUPDATE.MateriaID,
-																		 SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID);
-						await _servicioCurricula.EstablecerDocenteDeAulaAsync(request);
+						var request = new PonerEnFuncionesRequest(CatedraID: _catedraStore.Catedra,
+																  SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID);
+						await _servicioCatedra.PonerEnFuncionesAsync(request);
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 				}
 
-				CargarSituacionRevistas();
+				await CargarSituacionRevistasAsync();
 				break;
 
 			case "Insert":
+				if (HabilitarReemplazaA && SituacionRevistaINSERT.ReemplazaA is null)
+				{
+					_dialogService.MostrarAdvertencia("Debe seleccionar a quién reemplaza el docente suplente.", "Cambio de Situación Revista");
+					return;
+				}
+
 				messageBoxText = $"¿Está seguro que desea realizar un cambio en la situación de revista del docente {SituacionRevistaINSERT.Docente}?\n" +
 								 $"Materia: {_materiaStore.Materia.Descripcion}\n" +
 								 $"Cargo: {SituacionRevistaINSERT.Cargo}\n\n";
 				caption = "Cambio de Situación Revista";
 
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						var request = new RegistrarDocenteEnMateriaRequest(CursoID: _materiaStore.Materia.CursoID,
-																		   CurriculaID: _materiaStore.Materia.CurriculaID,
-																		   MateriaID: _materiaStore.Materia.MateriaID,
-																		   DocenteID: SituacionRevistaINSERT.DocenteID,
-																		   Cargo: SituacionRevistaINSERT.Cargo,
-																		   FechaAlta: SituacionRevistaINSERT.FechaAlta,
-																		   FechaBaja: SituacionRevistaINSERT.FechaBaja,
-																		   EnFunciones: SituacionRevistaINSERT.EnFunciones);
-						await _servicioCurricula.RegistrarDocenteEnMateriaAsync(request);
+						// Sólo el suplente reemplaza a alguien: para titular e interino la cadena de suplencias no aplica.
+						var request = new DesignarDocenteRequest(CatedraID: _catedraStore.Catedra,
+																 DocenteID: SituacionRevistaINSERT.DocenteID,
+																 Cargo: SituacionRevistaINSERT.Cargo,
+																 FechaInicio: SituacionRevistaINSERT.FechaInicio,
+																 FechaFin: SituacionRevistaINSERT.FechaFin,
+																 ReemplazaA: HabilitarReemplazaA ? SituacionRevistaINSERT.ReemplazaA : null);
+						var situacionRevistaID = await _servicioCatedra.DesignarDocenteAsync(request);
+
+						if (SituacionRevistaINSERT.EnFunciones)
+						{
+							await _servicioCatedra.PonerEnFuncionesAsync(new PonerEnFuncionesRequest(CatedraID: _catedraStore.Catedra,
+																									 SituacionRevistaID: situacionRevistaID));
+						}
 
 						messageBoxText = $"Cambios guardados exitósamente.";
 						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+						_dialogService.MostrarInformacion(messageBoxText, caption);
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+						_dialogService.MostrarError(ex.Message, "Error en la operación");
 					}
 					finally
 					{
@@ -427,7 +498,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 						HabilitarNuevaSituacionRevista = false;
 					}
 
-					CargarSituacionRevistas();
+					await CargarSituacionRevistasAsync();
 				}
 				break;
 		}
@@ -442,11 +513,10 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		_ => false
 	};
 
-	private async void ExecuteListarCommand(object obj)
+	private async Task ExecuteListarCommandAsync(object obj)
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
-		MessageBoxResult result;
 
 		switch (obj)
 		{
@@ -460,7 +530,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 					{
 						messageBoxText = $"No existen coincidencias.";
 						caption = "Buscar";
-						result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Exclamation);
+						_dialogService.MostrarAdvertencia(messageBoxText, caption);
 
 						HabilitarResultadoBuscar = false;
 
@@ -472,11 +542,11 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 					messageBoxText = $"Se encontraron {Docentes.Count} coincidencias.";
 					caption = "Operación Exitosa";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+					_dialogService.MostrarInformacion(messageBoxText, caption);
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+					_dialogService.MostrarError(ex.Message, "Error en la operación");
 				}
 
 				break;
