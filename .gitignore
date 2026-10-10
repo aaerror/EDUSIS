@@ -372,9 +372,38 @@ FodyWeavers.xsd
 
 # Herramientas de agentes y specs (no versionar)
 .claude/
+.skill-map/
+.skillmapignore
 # Spec Kit: tooling y artefactos de especificación (no se versionan)
 .specify/
 specs/
 CLAUDE.md
 
 .github/
+
+# Documentación de trabajo y diagramas: se mantienen en disco, no se versionan.
+# No afecta a lo ya trackeado en docs/ (todos.md, roadmap.md, revision-arquitectura.md,
+# plan/core.md, plan/handoff-errores.md, plan/wpf-desktop.md, plan/wpf-desktop-tasks.md,
+# assets/), que sigue en el repo.
+
+# Modelos y diagramas de herramientas de UML
+*.mdj
+*.drawio
+
+# Imágenes y PDF de documentación (raíz y docs/)
+/*.jpg
+/*.png
+/docs/**/*.jpg
+/docs/**/*.png
+/docs/**/*.pdf
+
+# Material de UML y análisis
+/docs/uml/
+/docs/alcance-funcional.md
+/docs/conceptos-clean-architecture.md
+/docs/plan-implementacion.md
+/docs/tercera-etapa-pp3.md
+/docs/plan/plan.md
+/docs/plan/tasks.md
+/docs/plan/validaciones.md
+/docs/plan/hallazgos-tests-dominio.md
