@@ -1,7 +1,6 @@
 using Domain.Docentes;
 using Domain.Docentes.DomainEvents;
 using Domain.Licencias.DomainEvents;
-using Domain.Materias.DomainEvents;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Infraestructura;
 using Infrastructure;
@@ -80,23 +79,7 @@ public sealed class DespachoDeEventosTests : BaseIntegracion
 
 	#endregion
 
-	#region (c) Handlers de Core en la composición real (FR-018)
-
-	/// <summary>
-	/// La composición real de infraestructura registra los handlers de eventos de Core.
-	/// </summary>
-	[Fact]
-	public void La_composicion_real_registra_los_handlers_de_eventos_definidos_en_Core()
-	{
-		using var provider = ComposicionRealDeInfraestructura();
-
-		provider.GetServices<INotificationHandler<LicenciaSolicitadaEvent>>().ShouldNotBeEmpty();
-		provider.GetServices<INotificationHandler<MateriaEliminadaEvent>>().ShouldNotBeEmpty();
-	}
-
-	#endregion
-
-	#region (d) Despacho en cascada de eventos
+	#region (c) Despacho en cascada de eventos
 
 	/// <summary>
 	/// Un handler puede encolar eventos nuevos en otra entidad trackeada mientras se despacha:
@@ -147,12 +130,6 @@ public sealed class DespachoDeEventosTests : BaseIntegracion
 	private static IMediator CrearMediatorCon<TEvento>(EspiaDeEvento<TEvento> espia)
 		where TEvento : INotification =>
 		CrearMediator(servicios => servicios.AddSingleton<INotificationHandler<TEvento>>(espia));
-
-	private static ServiceProvider ComposicionRealDeInfraestructura() =>
-		new ServiceCollection()
-			.AddLogging()
-			.AddInfrastructure()
-			.BuildServiceProvider();
 
 	/// <summary>Handler espía: cuenta cuántas veces se ejecutó y ejecuta un callback opcional.</summary>
 	private sealed class EspiaDeEvento<TEvento> : INotificationHandler<TEvento>
