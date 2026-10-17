@@ -1,0 +1,201 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<!--
+		Dependencias EXPLICITAS. Un StaticResource escrito dentro de un ResourceDictionary
+		que se carga por Source se resuelve en el ambito de ESE diccionario, no en el del
+		padre que lo fusiona: los diccionarios hermanos de App.xaml no se ven entre si. Con
+		BasedOn el fallo es silencioso hasta que alguien construye la vista que lo usa.
+	-->
+	<ResourceDictionary.MergedDictionaries>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Brushes.xaml"/>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Typography.xaml"/>
+	</ResourceDictionary.MergedDictionaries>
+
+	<!--
+		SUPERFICIES — el papel y las reglas.
+
+		Nada de DropShadowEffect. Todas las tarjetas tenían la misma sombra (blur 15,
+		profundidad 5, #373737 al 30%), lo que produce dos cosas malas: visualmente, si todo
+		flota nada flota —la sombra deja de significar jerarquía—; y técnicamente, cada
+		DropShadowEffect es un pase de render adicional sobre un bitmap intermedio, en una
+		app que dibuja listas largas.
+
+		La jerarquía pasa a ser de REGLAS y FONDO: Tiza para el lienzo, Papel para lo que
+		contiene contenido, una línea de 1px donde hay un corte real.
+	-->
+
+	<!--#region SUPERFICIES-->
+	<Style x:Key="Superficie.Tarjeta" TargetType="{ x:Type Border }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=Papel }"/>
+		<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Linea }"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="4"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+	</Style>
+
+	<!-- Sección dentro de una tarjeta: sin caja propia, separada por una regla superior. -->
+	<Style x:Key="Superficie.Seccion" TargetType="{ x:Type Border }">
+		<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Linea }"/>
+		<Setter Property="BorderThickness" Value="0 1 0 0"/>
+		<Setter Property="Padding" Value="0 16 0 0"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+	</Style>
+
+	<!-- Aviso en línea: una nota al pie del formulario, no un MessageBox. -->
+	<Style x:Key="Superficie.Aviso" TargetType="{ x:Type Border }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=AvisoSuave }"/>
+		<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Aviso }"/>
+		<Setter Property="BorderThickness" Value="3 0 0 0"/>
+		<Setter Property="Padding" Value="12 10"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+	</Style>
+
+	<Style x:Key="Superficie.Error" TargetType="{ x:Type Border }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=AlertaSuave }"/>
+		<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Alerta }"/>
+		<Setter Property="BorderThickness" Value="3 0 0 0"/>
+		<Setter Property="Padding" Value="12 10"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region REGLAS-->
+	<Style x:Key="Regla" TargetType="{ x:Type Rectangle }">
+		<Setter Property="Fill" Value="{ StaticResource ResourceKey=Linea }"/>
+		<Setter Property="Height" Value="1"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+	</Style>
+
+	<Style x:Key="Regla.Vertical" TargetType="{ x:Type Rectangle }">
+		<Setter Property="Fill" Value="{ StaticResource ResourceKey=Linea }"/>
+		<Setter Property="Width" Value="1"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+	</Style>
+
+	<!-- Separator de WPF: se lo normaliza porque hay vistas que ya lo usan. -->
+	<Style TargetType="{ x:Type Separator }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=Linea }"/>
+		<Setter Property="Height" Value="1"/>
+		<Setter Property="Margin" Value="0 8"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region INSIGNIAS — estado de un registro
+		El texto nombra el estado; el color sólo lo refuerza. Nunca al revés: un estado que se
+		distingue únicamente por color no existe para quien no distingue ese color.
+	-->
+	<Style x:Key="Insignia" TargetType="{ x:Type Border }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=TizaBaja }"/>
+		<Setter Property="CornerRadius" Value="2"/>
+		<Setter Property="Padding" Value="7 2 7 3"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<Style x:Key="Insignia.Activa" TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Insignia }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+	</Style>
+
+	<Style x:Key="Insignia.Alerta" TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Insignia }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=AlertaSuave }"/>
+	</Style>
+
+	<Style x:Key="Txt.Insignia" TargetType="{ x:Type TextBlock }">
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Display }"/>
+		<Setter Property="FontStretch" Value="Condensed"/>
+		<Setter Property="FontSize" Value="11.5"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaMedia }"/>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region BARRAS DE SCROLL
+		Las de WPF miden 17px y traen dos botones de flecha que nadie usa. Acá: 10px, sin
+		botones, pulgar que se engrosa al apuntarlo.
+	-->
+	<Style x:Key="Scroll.Pulgar" TargetType="{ x:Type Thumb }">
+		<Setter Property="IsTabStop" Value="False"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Thumb }">
+					<Border Background="Transparent" Padding="3 2">
+						<Border x:Name="Pulgar"
+								Background="{ StaticResource ResourceKey=LineaFuerte }"
+								CornerRadius="2"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Pulgar" Property="Background" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+						<Trigger Property="IsDragging" Value="True">
+							<Setter TargetName="Pulgar" Property="Background" Value="{ StaticResource ResourceKey=Primario }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style TargetType="{ x:Type ScrollBar }">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Width" Value="10"/>
+		<Setter Property="MinWidth" Value="10"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type ScrollBar }">
+					<Grid Background="{ TemplateBinding Background }">
+						<Track x:Name="PART_Track" IsDirectionReversed="True">
+							<Track.DecreaseRepeatButton>
+								<RepeatButton Command="ScrollBar.PageUpCommand"
+											  Focusable="False"
+											  IsTabStop="False"
+											  Opacity="0"/>
+							</Track.DecreaseRepeatButton>
+							<Track.Thumb>
+								<Thumb Style="{ StaticResource ResourceKey=Scroll.Pulgar }"/>
+							</Track.Thumb>
+							<Track.IncreaseRepeatButton>
+								<RepeatButton Command="ScrollBar.PageDownCommand"
+											  Focusable="False"
+											  IsTabStop="False"
+											  Opacity="0"/>
+							</Track.IncreaseRepeatButton>
+						</Track>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="Orientation" Value="Horizontal">
+							<Setter Property="Height" Value="10"/>
+							<Setter Property="MinHeight" Value="10"/>
+							<Setter Property="Width" Value="Auto"/>
+							<Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region TOOLTIP-->
+	<Style TargetType="{ x:Type ToolTip }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=Pizarra }"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="Padding" Value="10 6"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type ToolTip }">
+					<Border Background="{ TemplateBinding Background }"
+							CornerRadius="3"
+							Padding="{ TemplateBinding Padding }"
+							SnapsToDevicePixels="True">
+						<ContentPresenter/>
+					</Border>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+</ResourceDictionary>

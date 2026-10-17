@@ -1,96 +1,82 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<!--
+		Dependencias EXPLICITAS. Un StaticResource escrito dentro de un ResourceDictionary
+		que se carga por Source se resuelve en el ambito de ESE diccionario, no en el del
+		padre que lo fusiona: los diccionarios hermanos de App.xaml no se ven entre si. Con
+		BasedOn el fallo es silencioso hasta que alguien construye la vista que lo usa.
+	-->
+	<ResourceDictionary.MergedDictionaries>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Brushes.xaml"/>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Typography.xaml"/>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_ButtonStyle.xaml"/>
+	</ResourceDictionary.MergedDictionaries>
 
-    <!-- CHECKBOX -->
-    <Style x:Key="CheckBox" TargetType="{ x:Type CheckBox }">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{ StaticResource Neutral600 }"/>
-        <Setter Property="FontFamily" Value="Segoe UI"/>
-        <Setter Property="FontSize" Value="14"/>
-        <Setter Property="FontWeight" Value="Regular"/>
-        <Setter Property="Height" Value="32"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <!-- CONTROL_TEMPLATE -->
-                <ControlTemplate TargetType="{ x:Type CheckBox }">
-                    <!-- BULLET_DECORATOR -->
-                    <BulletDecorator Background="Transparent"
-                                     VerticalAlignment="Center">
-                        <BulletDecorator.Bullet>
-                            <Border x:Name="Border"
-                                    CornerRadius="2"
-                                    BorderThickness="1.5"
-                                    BorderBrush="{ StaticResource Gray400 }"
-                                    HorizontalAlignment="Stretch"
-                                    Height="14"
-                                    Width="14"
-                                    SnapsToDevicePixels="True">
-                                <Grid>
-                                    <!-- CHECKMARK -->
-                                    <Path x:Name="CheckMark"
-                                          Data="M 0 0 L 7 7 M 0 7 L 7 0"
-                                          Height="7"
-                                          SnapsToDevicePixels="False"
-                                          Stroke="{ StaticResource Neutral600 }"
-                                          StrokeThickness="1.5"
-                                          Visibility="Collapsed"
-                                          Width="7"/>
-                                    <!-- INDETERMINATE_MARK -->
-                                    <Path x:Name="IndeterminateMark"
-                                          Data="M 0 7 L 7 0"
-                                          Height="7"
-                                          SnapsToDevicePixels="False"
-                                          Stroke="{ StaticResource Neutral600 }"
-                                          StrokeThickness="1.5"
-                                          Visibility="Collapsed"
-                                          Width="7"/>
-                                </Grid>
-                            </Border>
-                        </BulletDecorator.Bullet>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="CheckStates">
-                                <!-- EVENTO_CHECKED -->
-                                <VisualState x:Name="Checked">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CheckMark"
-                                                                       Storyboard.TargetProperty="(UIElement.Visibility)">
-                                            <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ x:Static Visibility.Visible }"/>
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="Unchecked"/>
-                                <!-- EVENTO_SIN_DETERMINAR -->
-                                <VisualState x:Name="Indeterminate">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="IndeterminateMark"
-                                                                       Storyboard.TargetProperty="(UIElement.Visibility)">
-                                            <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ x:Static Visibility.Visible }"/>
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
-                        <!-- CONTENT -->
-                        <ContentPresenter Margin="5 0 0 0"
-                                          HorizontalAlignment="Left"
-                                          VerticalAlignment="Center"/>
-                    </BulletDecorator>
-                    <!-- EVENTOS -->
-                    <ControlTemplate.Triggers>
-                        <!-- IS_MOUSE_OVER -->
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Gray600 }"/>
-                        </Trigger>
-                        <!-- PRESSED -->
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Blue600 }"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
+	<!--
+		CONTROLES DE FORMULARIO.
+
+		La casilla es de 18px con un tilde dibujado a mano (Path), no una fuente de iconos:
+		así escala sin depender de que FontAwesome esté cargado y mantiene el mismo grosor de
+		trazo que la flecha del selector.
+	-->
+
+	<!--#region CASILLA-->
+	<Style x:Key="Chk.Campo" TargetType="{ x:Type CheckBox }">
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
+		<Setter Property="FontSize" Value="13.5"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type CheckBox }">
+					<StackPanel Background="Transparent" Orientation="Horizontal">
+						<Border x:Name="Caja"
+								Background="{ StaticResource ResourceKey=Papel }"
+								BorderBrush="{ StaticResource ResourceKey=LineaFuerte }"
+								BorderThickness="1.5"
+								CornerRadius="3"
+								Height="18"
+								SnapsToDevicePixels="True"
+								VerticalAlignment="Center"
+								Width="18">
+							<Path x:Name="Tilde"
+								  Data="M 0 4 L 3.5 7.5 L 9.5 1"
+								  HorizontalAlignment="Center"
+								  Opacity="0"
+								  Stroke="#FFFFFF"
+								  StrokeEndLineCap="Round"
+								  StrokeStartLineCap="Round"
+								  StrokeThickness="2"
+								  VerticalAlignment="Center"/>
+						</Border>
+						<ContentPresenter Margin="9 0 0 0"
+										  VerticalAlignment="Center"/>
+					</StackPanel>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+						</Trigger>
+						<Trigger Property="IsChecked" Value="True">
+							<Setter TargetName="Caja" Property="Background" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Tilde" Property="Opacity" Value="1"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter TargetName="Caja" Property="Background" Value="{ StaticResource ResourceKey=Tiza }"/>
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Linea }"/>
+							<Setter Property="Cursor" Value="Arrow"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region COMPATIBILIDAD-->
+	<Style x:Key="CheckBox" TargetType="{ x:Type CheckBox }" BasedOn="{ StaticResource ResourceKey=Chk.Campo }"/>
+	<!--#endregion-->
 </ResourceDictionary>

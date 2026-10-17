@@ -1,89 +1,33 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-	<!-- DISPLAY TEXT BLOCK-->
-	<Style x:Key="TextBlock_Display" TargetType="{ x:Type TypeName=TextBlock }">
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontSize" Value="42"/>
-		<Setter Property="FontWeight" Value="Light"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Padding" Value="0"/>
-	</Style>
+	<!--
+		Dependencias EXPLICITAS. Un StaticResource escrito dentro de un ResourceDictionary
+		que se carga por Source se resuelve en el ambito de ESE diccionario, no en el del
+		padre que lo fusiona: los diccionarios hermanos de App.xaml no se ven entre si. Con
+		BasedOn el fallo es silencioso hasta que alguien construye la vista que lo usa.
+	-->
+	<ResourceDictionary.MergedDictionaries>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Typography.xaml"/>
+	</ResourceDictionary.MergedDictionaries>
 
-	<!-- HEADER TEXT BLOCK-->
-	<Style x:Key="TextBlock_Header" TargetType="{ x:Type TypeName=TextBlock }">
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontSize" Value="34"/>
-		<Setter Property="FontWeight" Value="Bold"/>
-		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Padding" Value="0"/>
-	</Style>
+	<!--
+		Capa de compatibilidad de la escala de TextBlock, apuntando a EDUSIS_Typography.xaml.
+		En código nuevo usar Txt.* directamente.
 
-	<!-- TITLE TEXT BLOCK-->
-	<Style x:Key="TextBlock_Title" TargetType="{ x:Type TypeName=TextBlock }">
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontSize" Value="28"/>
-		<Setter Property="FontWeight" Value="Medium"/>
-		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Padding" Value="0"/>
-	</Style>
+		La clave "TextBlock" a secas existe porque LoginUsuarioView la pedía y no estaba
+		definida en ningún lado: el acceso reventaba al construirse con "Se produjo una
+		excepción al proporcionar un valor en StaticResourceExtension". Un StaticResource
+		inexistente no es error de compilación —el BAML no valida claves—, así que el fallo
+		aparecía recién al instanciar la vista.
+	-->
+	<Style x:Key="TextBlock" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Cuerpo }"/>
 
-	<!-- SUBTITLE TEXT BLOCK-->
-	<Style x:Key="TextBlock_Subtitle" TargetType="{ x:Type TypeName=TextBlock }">
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontSize" Value="22"/>
-		<Setter Property="FontWeight" Value="Medium"/>
-		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Padding" Value="0"/>
-	</Style>
-
-	<!-- HEADLINE TEXT BLOCK-->
-	<Style x:Key="TextBlock_Headline" TargetType="{ x:Type TypeName=TextBlock }">
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontSize" Value="20"/>
-		<Setter Property="FontWeight" Value="Regular"/>
-		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Padding" Value="0"/>
-	</Style>
-
-	<!-- FORM TEXT BLOCK-->
-	<Style x:Key="TextBlock_Form" TargetType="{ x:Type TypeName=TextBlock }">
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral500 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontSize" Value="16"/>
-		<Setter Property="FontWeight" Value="SemiBold"/>
-		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Padding" Value="0,5"/>
-	</Style>
-
-	<!-- BODY TEXT BLOCK-->
-	<Style x:Key="TextBlock_Body" TargetType="{ x:Type TypeName=TextBlock }">
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontSize" Value="14"/>
-		<Setter Property="FontWeight" Value="Regular"/>
-		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Padding" Value="0"/>
-	</Style>
-
-	<!-- CAPTION TEXT BLOCK-->
-	<Style x:Key="TextBlock_Caption" TargetType="{ x:Type TypeName=TextBlock }">
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontSize" Value="12"/>
-		<Setter Property="FontWeight" Value="Regular"/>
-		<Setter Property="HorizontalAlignment" Value="{ Binding Path=HorizontalAlignment, RelativeSource={ RelativeSource Mode=Self } }"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Padding" Value="0"/>
-	</Style>
+	<Style x:Key="TextBlock_Display" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Display }"/>
+	<Style x:Key="TextBlock_Header" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Display }"/>
+	<Style x:Key="TextBlock_Title" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Titulo }"/>
+	<Style x:Key="TextBlock_Subtitle" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Subtitulo }"/>
+	<Style x:Key="TextBlock_Headline" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Subtitulo }"/>
+	<Style x:Key="TextBlock_Form" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Detalle }"/>
+	<Style x:Key="TextBlock_Body" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Cuerpo }"/>
+	<Style x:Key="TextBlock_Caption" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Detalle }"/>
 </ResourceDictionary>

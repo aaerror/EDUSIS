@@ -1,141 +1,169 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<!--
+		Dependencias EXPLICITAS. Un StaticResource escrito dentro de un ResourceDictionary
+		que se carga por Source se resuelve en el ambito de ESE diccionario, no en el del
+		padre que lo fusiona: los diccionarios hermanos de App.xaml no se ven entre si. Con
+		BasedOn el fallo es silencioso hasta que alguien construye la vista que lo usa.
+	-->
+	<ResourceDictionary.MergedDictionaries>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Brushes.xaml"/>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Typography.xaml"/>
+	</ResourceDictionary.MergedDictionaries>
 
-    <!-- TEXTBOX -->
-    <Style x:Key="TextBox" TargetType="{ x:Type TextBox }">
-        <Setter Property="Cursor" Value="IBeam"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
-        <Setter Property="FontFamily" Value="Segoe UI"/>
-        <Setter Property="FontSize" Value="14"/>
-        <Setter Property="FontWeight" Value="Regular"/>
-        <Setter Property="Height" Value="36"/>
-        <Setter Property="MaxHeight" Value="44"/>
-        <Setter Property="MinWidth" Value="64"/>
-        <Setter Property="Padding" Value="4 2 4 2"/>
-        <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <!-- CONTROL_TEMPLATE -->
-                <ControlTemplate TargetType="{ x:Type TextBox }">
-                    <Border x:Name="Border"
-                            Background="{ StaticResource Gray50 }"
-                            BorderBrush="{ StaticResource Gray200 }"
-                            BorderThickness="1.5"
-                            CornerRadius="4"
-                            SnapsToDevicePixels="True">
-                        <Grid Margin="{ TemplateBinding Padding }">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          Focusable="False"
-                                          HorizontalScrollBarVisibility="Hidden"
-                                          VerticalScrollBarVisibility="Hidden"/>
-                            <Label x:Name="Watermark"
-                                   Content="{ TemplateBinding Tag }"
-                                   Foreground="{ StaticResource Neutral400 }"
-                                   FontFamily="{ TemplateBinding FontFamily }"
-                                   FontSize="{ TemplateBinding FontSize }"
-                                   FontStyle="Italic"
-                                   FontWeight="{ TemplateBinding FontWeight }"
-                                   HorizontalAlignment="{ TemplateBinding HorizontalContentAlignment }"
-                                   VerticalAlignment="{ TemplateBinding VerticalContentAlignment }"
-                                   Padding="4 2 4 2"
-                                   Visibility="Collapsed"/>
-                        </Grid>
-                    </Border>
-                    <!-- EVENTOS -->
-                    <ControlTemplate.Triggers>
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="Text" Value=""/>
-                            </MultiTrigger.Conditions>
-                            <Setter Property="FontWeight" Value="Regular"/>
-                            <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
-                        </MultiTrigger>
-                        <!-- IS_MOUSE_OVER -->
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Gray300 }"/>
-                        </Trigger>
-                        <!-- IS_KEYBOARD_FOCUSED -->
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Blue500 }"/>
-                            <Setter TargetName="Border" Property="BorderThickness" Value="1 1 1 2"/>
-                            <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
-                        </Trigger>
-                        <!-- VALIDATION -->
-                        <Trigger Property="Validation.HasError" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Red500 }"/>
-                            <Setter TargetName="Border" Property="BorderThickness" Value="1 1 1 2"/>
-                            <Setter Property="ToolTip" Value="{ Binding RelativeSource={ RelativeSource Self }, Path=(Validation.Errors)[0].ErrorContent }"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Validation.ErrorTemplate">
-            <Setter.Value>
-                <ControlTemplate>
-                    <AdornedElementPlaceholder/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
+	<!--
+		CAMPOS DE ENTRADA.
 
-    <!-- PASSWORDBOX -->
-    <Style x:Key="PasswordBox" TargetType="{ x:Type PasswordBox }">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
-        <Setter Property="FontFamily" Value="Segoe UI"/>
-        <Setter Property="FontSize" Value="14"/>
-        <Setter Property="FontWeight" Value="Regular"/>
-        <Setter Property="Height" Value="32"/>
-        <Setter Property="Padding" Value="4 2 4 2"/>
-        <Setter Property="PasswordChar" Value="●"/>
-        <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{ x:Type PasswordBox }">
-                    <Grid>
-                        <Border x:Name="Border"
-                                Background="#FFFFFF"
-                                BorderBrush="{ DynamicResource Gray200 }"
-                                BorderThickness="1.5"
-                                CornerRadius="4"
-                                SnapsToDevicePixels="True">
-                        </Border>
-                        <ScrollViewer x:Name="PART_ContentHost"
-                                      Focusable="False"
-                                      HorizontalScrollBarVisibility="Hidden"
-                                      VerticalScrollBarVisibility="Hidden"/>
-                    </Grid>
-                    <ControlTemplate.Triggers>
-                        <!-- IS_MOUSE_OVER -->
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Gray300 }"/>
-                        </Trigger>
-                        <!-- IS_KEYBOARD_FOCUSED -->
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Blue500 }"/>
-                            <Setter TargetName="Border" Property="BorderThickness" Value="1 1 1 2"/>
-                            <Setter Property="Foreground" Value="{ StaticResource Neutral800 }"/>
-                        </Trigger>
-                        <!-- VALIDATION -->
-                        <Trigger Property="Validation.HasError" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource Red500 }"/>
-                            <Setter TargetName="Border" Property="BorderThickness" Value="1 1 1 2"/>
-                            <Setter Property="ToolTip" Value="{ Binding RelativeSource={ RelativeSource Self }, Path=(Validation.Errors)[0].ErrorContent }"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Validation.ErrorTemplate">
-            <Setter.Value>
-                <ControlTemplate>
-                    <AdornedElementPlaceholder/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
+		Fondo blanco, no gris: en un formulario, lo blanco es lo que se escribe y lo gris es
+		lo que no se toca. El estilo anterior pintaba los campos de Gray50 y los deshabilitados
+		también, así que no se distinguía uno de otro.
+
+		El foco pasó de azul a verde institucional, y además de cambiar de color el borde se
+		engrosa: quien no distingue el verde del gris igual ve dónde está parado.
+	-->
+
+	<!--#region CAMPO DE TEXTO-->
+	<Style x:Key="Txb.Campo" TargetType="{ x:Type TextBox }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=Papel }"/>
+		<Setter Property="Cursor" Value="IBeam"/>
+		<Setter Property="FocusVisualStyle" Value="{ x:Null }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
+		<Setter Property="FontSize" Value="13.5"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+		<Setter Property="Height" Value="34"/>
+		<Setter Property="MinWidth" Value="64"/>
+		<Setter Property="Padding" Value="11 0"/>
+		<Setter Property="SelectionBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type TextBox }">
+					<Border x:Name="Caja"
+							Background="{ TemplateBinding Background }"
+							BorderBrush="{ StaticResource ResourceKey=LineaFuerte }"
+							BorderThickness="1"
+							CornerRadius="3"
+							SnapsToDevicePixels="True">
+						<Grid>
+							<ScrollViewer x:Name="PART_ContentHost"
+										  Focusable="False"
+										  HorizontalScrollBarVisibility="Hidden"
+										  Margin="{ TemplateBinding Padding }"
+										  VerticalAlignment="{ TemplateBinding VerticalContentAlignment }"
+										  VerticalScrollBarVisibility="Hidden"/>
+							<!-- Texto guía: qué se espera acá, no una repetición de la etiqueta. -->
+							<TextBlock x:Name="Guia"
+									   Foreground="{ StaticResource ResourceKey=TintaTenue }"
+									   FontStyle="Italic"
+									   IsHitTestVisible="False"
+									   Margin="{ TemplateBinding Padding }"
+									   Text="{ TemplateBinding Tag }"
+									   VerticalAlignment="Center"
+									   Visibility="Collapsed"/>
+						</Grid>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="Text" Value="">
+							<Setter TargetName="Guia" Property="Visibility" Value="Visible"/>
+						</Trigger>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+						<Trigger Property="IsKeyboardFocused" Value="True">
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Caja" Property="BorderThickness" Value="2"/>
+							<Setter TargetName="Guia" Property="Visibility" Value="Collapsed"/>
+						</Trigger>
+						<Trigger Property="IsReadOnly" Value="True">
+							<Setter TargetName="Caja" Property="Background" Value="{ StaticResource ResourceKey=Tiza }"/>
+							<Setter Property="Cursor" Value="Arrow"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter TargetName="Caja" Property="Background" Value="{ StaticResource ResourceKey=Tiza }"/>
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Linea }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaSuave }"/>
+						</Trigger>
+						<Trigger Property="Validation.HasError" Value="True">
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Alerta }"/>
+							<Setter TargetName="Caja" Property="BorderThickness" Value="2"/>
+							<Setter Property="ToolTip" Value="{ Binding Path=(Validation.Errors)[0].ErrorContent, RelativeSource={ RelativeSource Self } }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<!-- Sin adorno rojo encima: el borde del propio campo ya marca el error. -->
+		<Setter Property="Validation.ErrorTemplate">
+			<Setter.Value>
+				<ControlTemplate>
+					<AdornedElementPlaceholder/>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region CAMPO DE CONTRASEÑA-->
+	<Style x:Key="Txb.Clave" TargetType="{ x:Type PasswordBox }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=Papel }"/>
+		<Setter Property="FocusVisualStyle" Value="{ x:Null }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
+		<Setter Property="FontSize" Value="13.5"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+		<Setter Property="Height" Value="34"/>
+		<Setter Property="Padding" Value="11 0"/>
+		<Setter Property="PasswordChar" Value="●"/>
+		<Setter Property="SelectionBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type PasswordBox }">
+					<Border x:Name="Caja"
+							Background="{ TemplateBinding Background }"
+							BorderBrush="{ StaticResource ResourceKey=LineaFuerte }"
+							BorderThickness="1"
+							CornerRadius="3"
+							SnapsToDevicePixels="True">
+						<ScrollViewer x:Name="PART_ContentHost"
+									  Focusable="False"
+									  HorizontalScrollBarVisibility="Hidden"
+									  Margin="{ TemplateBinding Padding }"
+									  VerticalAlignment="{ TemplateBinding VerticalContentAlignment }"
+									  VerticalScrollBarVisibility="Hidden"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+						<Trigger Property="IsKeyboardFocused" Value="True">
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Caja" Property="BorderThickness" Value="2"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter TargetName="Caja" Property="Background" Value="{ StaticResource ResourceKey=Tiza }"/>
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Linea }"/>
+						</Trigger>
+						<Trigger Property="Validation.HasError" Value="True">
+							<Setter TargetName="Caja" Property="BorderBrush" Value="{ StaticResource ResourceKey=Alerta }"/>
+							<Setter TargetName="Caja" Property="BorderThickness" Value="2"/>
+							<Setter Property="ToolTip" Value="{ Binding Path=(Validation.Errors)[0].ErrorContent, RelativeSource={ RelativeSource Self } }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="Validation.ErrorTemplate">
+			<Setter.Value>
+				<ControlTemplate>
+					<AdornedElementPlaceholder/>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region COMPATIBILIDAD-->
+	<Style x:Key="TextBox" TargetType="{ x:Type TextBox }" BasedOn="{ StaticResource ResourceKey=Txb.Campo }"/>
+	<Style x:Key="PasswordBox" TargetType="{ x:Type PasswordBox }" BasedOn="{ StaticResource ResourceKey=Txb.Clave }"/>
+	<!--#endregion-->
 </ResourceDictionary>

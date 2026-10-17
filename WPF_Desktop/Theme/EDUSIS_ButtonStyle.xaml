@@ -1,261 +1,457 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-	<!-- BUTTON MENU -->
-	<Style x:Key="MenuButton" TargetType="{ x:Type TypeName=Button }">
-		<Setter Property="Background" Value="Transparent"/>
+	<!--
+		Dependencias EXPLICITAS. Un StaticResource escrito dentro de un ResourceDictionary
+		que se carga por Source se resuelve en el ambito de ESE diccionario, no en el del
+		padre que lo fusiona: los diccionarios hermanos de App.xaml no se ven entre si. Con
+		BasedOn el fallo es silencioso hasta que alguien construye la vista que lo usa.
+	-->
+	<ResourceDictionary.MergedDictionaries>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Brushes.xaml"/>
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Typography.xaml"/>
+	</ResourceDictionary.MergedDictionaries>
+
+	<!--
+		BOTONES — una sola acción primaria por pantalla.
+
+		La jerarquía anterior estaba invertida: "Registrar" (crear un docente, la acción
+		principal de la pantalla) era Secondary blanco, mientras tres navegaciones laterales
+		eran Primary verde cada una. Tres primarios al lado no son tres primarios: no son
+		ninguno.
+
+		Radio 3px en todo: el registro es de reglas rectas, no de píldoras. Alturas 34/28 para
+		una app que se usa ocho horas por día — 36px de alto con 16px de texto desperdicia una
+		fila cada tres.
+	-->
+
+	<!--#region FOCO DE TECLADO
+		El FocusVisualStyle por omisión de WPF es un rectángulo punteado de 1px que sobre
+		fondos de color directamente no se ve. Acá se reemplaza por un anillo sólido afuera
+		del control. Dos variantes: Pizarra para superficies claras (y también sobre el verde
+		primario, porque es mucho más oscuro), blanco para el rail.
+	-->
+	<Style x:Key="Foco.Visual">
+		<Setter Property="Control.Template">
+			<Setter.Value>
+				<ControlTemplate>
+					<Rectangle Margin="-3"
+							   RadiusX="5"
+							   RadiusY="5"
+							   SnapsToDevicePixels="True"
+							   Stroke="{ StaticResource ResourceKey=Pizarra }"
+							   StrokeThickness="2"/>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style x:Key="Foco.Visual.Claro">
+		<Setter Property="Control.Template">
+			<Setter.Value>
+				<ControlTemplate>
+					<Rectangle Margin="-2"
+							   RadiusX="4"
+							   RadiusY="4"
+							   SnapsToDevicePixels="True"
+							   Stroke="#FFFFFF"
+							   StrokeThickness="2"/>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region PRIMARIO — la acción de la pantalla-->
+	<Style x:Key="Btn.Primario" TargetType="{ x:Type Button }">
 		<Setter Property="Cursor" Value="Hand"/>
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimaryColor }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
+		<Setter Property="FontSize" Value="13"/>
 		<Setter Property="FontWeight" Value="SemiBold"/>
-		<Setter Property="FontSize" Value="16"/>
-		<Setter Property="Padding" Value="5"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="Height" Value="34"/>
+		<Setter Property="MinWidth" Value="88"/>
 		<Setter Property="Template">
 			<Setter.Value>
-				<ControlTemplate TargetType="{ x:Type TypeName=Button }">
-					<Grid>
-						<!-- BORDER -->
-						<Border x:Name="ButtonBorder"
-								Background="White"
-								BorderBrush="Transparent" 
-								BorderThickness="1"
-								CornerRadius="8">
-							<!-- CONTENT -->
-							<ContentPresenter Content="{ TemplateBinding Property=Content }"
-											  HorizontalAlignment="Center"
-											  VerticalAlignment="Center"/>
-						</Border>
-					</Grid>
-					<!-- TRIGGER -->
-					<ControlTemplate.Triggers>
-						<Trigger Property="IsMouseOver" Value="True">
-							<Setter TargetName="ButtonBorder" Property="Background" Value="#8214B2"/>
-							<Setter Property="Foreground" Value="#FFFFFF"/>
-						</Trigger>
-						<Trigger Property="IsPressed" Value="True">
-							<Setter TargetName="ButtonBorder" Property="Background" Value="#72119C"/>
-							<Setter Property="Foreground" Value="#FFFFFF"/>
-							<!-- Animation 
-							<Trigger.EnterActions>
-								<BeginStoryboard>
-									<Storyboard>
-										<DoubleAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Opacity" To=".8" Duration="0:0:0"/>
-									</Storyboard>
-								</BeginStoryboard>
-							</Trigger.EnterActions>
-							<Trigger.ExitActions>
-								<BeginStoryboard>
-									<Storyboard>
-										<DoubleAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0"/>
-									</Storyboard>
-								</BeginStoryboard>
-							</Trigger.ExitActions>
-							-->
-						</Trigger>
-					</ControlTemplate.Triggers>
-				</ControlTemplate>
-			</Setter.Value>
-		</Setter>
-	</Style>
-
-	<!--#region PRIMARY BUTTON-->
-	<Style x:Key="Primary" TargetType="{ x:Type TypeName=Button }">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Cursor" Value="Hand"/>
-		<Setter Property="Foreground" Value="White"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontWeight" Value="Regular"/>
-		<Setter Property="FontSize" Value="16"/>
-		<Setter Property="Height" Value="36"/>
-		<Setter Property="MaxHeight" Value="44"/>
-		<Setter Property="MinWidth" Value="64"/>
-		<Setter Property="Template">
-			<Setter.Value>
-				<ControlTemplate TargetType="{ x:Type TypeName=Button }">
-					<Grid>
-						<!-- BORDER -->
-						<Border x:Name="Border"
-								Background="{ StaticResource ResourceKey=PrimaryColor }"
-								BorderBrush="Transparent"
-								BorderThickness="0"
-								CornerRadius="4"
-								Padding="16 0"
-								SnapsToDevicePixels="True">
-							<!-- CONTENT -->
-							<ContentPresenter Content="{ TemplateBinding Property=Content }"
-											  HorizontalAlignment="Center"
-											  VerticalAlignment="Center"/>
-						</Border>
-					</Grid>
-					<!-- TRIGGER -->
-					<ControlTemplate.Triggers>
-						<Trigger Property="IsEnabled" Value="False">
-							<Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Neutral100 }"/>
-							<Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Neutral200 }"/>
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral400 }"/>
-						</Trigger>
-						<Trigger Property="IsMouseOver" Value="True">
-							<Setter TargetName="Border" Property="Background" Value="#14B219"/>
-						</Trigger>
-						<Trigger Property="IsPressed" Value="True">
-							<Setter TargetName="Border" Property="Background" Value="#109114"/>
-						</Trigger>
-					</ControlTemplate.Triggers>
-				</ControlTemplate>
-			</Setter.Value>
-		</Setter>
-	</Style>
-	<!--#endregion-->
-
-	<!--#region SECONDARY BUTTON-->
-	<Style x:Key="Secondary" TargetType="{ x:Type TypeName=Button }">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Cursor" Value="Hand"/>
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontWeight" Value="Regular"/>
-		<Setter Property="FontSize" Value="16"/>
-		<Setter Property="Height" Value="36"/>
-		<Setter Property="MaxHeight" Value="44"/>
-		<Setter Property="MinWidth" Value="64"/>
-		<Setter Property="Template">
-			<Setter.Value>
-				<ControlTemplate TargetType="{ x:Type TypeName=Button }">
-					<Grid>
-						<!-- BORDER -->
-						<Border x:Name="Border"
-								Background="White"
-								BorderBrush="{ StaticResource ResourceKey=Gray500 }"
-								BorderThickness="1"
-								CornerRadius="4"
-								Padding="16 0"
-								SnapsToDevicePixels="True">
-							<!-- CONTENT -->
-							<ContentPresenter Content="{ TemplateBinding Property=Content }"
-											  HorizontalAlignment="Center"
-											  VerticalAlignment="Center"/>
-						</Border>
-					</Grid>
-					<!--#region TRIGGERs-->
-					<ControlTemplate.Triggers>
-						<Trigger Property="IsEnabled" Value="False">
-							<Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Neutral100 }"/>
-							<Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Neutral200 }"/>
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral400 }"/>
-						</Trigger>
-						<Trigger Property="IsMouseOver" Value="True">
-							<Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Gray100 }"/>
-							<Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Gray400 }"/>
-						</Trigger>
-						<Trigger Property="IsPressed" Value="True">
-							<Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Gray200 }"/>
-							<Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Gray500 }"/>
-						</Trigger>
-					</ControlTemplate.Triggers>
-					<!--#endregion-->
-				</ControlTemplate>
-			</Setter.Value>
-		</Setter>
-	</Style>
-	<!--#endregion-->
-
-	<!--#region TERTIARY BUTTON-->
-	<Style x:Key="Tertiary" TargetType="{ x:Type TypeName=Button }">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Cursor" Value="Hand"/>
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontFamily" Value="Segoe UI"/>
-		<Setter Property="FontWeight" Value="Regular"/>
-		<Setter Property="FontSize" Value="16"/>
-		<Setter Property="Height" Value="36"/>
-		<Setter Property="HorizontalAlignment" Value="Stretch"/>
-		<Setter Property="MaxHeight" Value="44"/>
-		<Setter Property="MinWidth" Value="64"/>
-		<Setter Property="Template">
-			<Setter.Value>
-				<ControlTemplate TargetType="{ x:Type TypeName=Button }">
-					<Grid>
-						<!-- BORDER -->
-						<Border x:Name="Border"
-								Background="{ TemplateBinding Property=Background }"
-								BorderBrush="Transparent"
-								BorderThickness="0"
-								CornerRadius="4"
-								Padding="16 0"
-								SnapsToDevicePixels="True">
-							<!-- CONTENT -->
-							<ContentPresenter Content="{ TemplateBinding Property=Content }"
-											  HorizontalAlignment="Center"
-											  VerticalAlignment="Center"/>
-						</Border>
-					</Grid>
-					<!-- TRIGGER -->
-					<ControlTemplate.Triggers>
-						<Trigger Property="IsEnabled" Value="False">
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral200 }"/>
-						</Trigger>
-						<Trigger Property="IsMouseOver" Value="True">
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-						</Trigger>
-						<Trigger Property="IsPressed" Value="True">
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimaryColor }"/>
-						</Trigger>
-					</ControlTemplate.Triggers>
-				</ControlTemplate>
-			</Setter.Value>
-		</Setter>
-	</Style>
-	<!--#endregion-->
-	
-	<!--#region ICON-->
-	<Style x:Key="Icon" TargetType="{ x:Type TypeName=Button }">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Cursor" Value="Hand"/>
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral800 }"/>
-		<Setter Property="FontSize" Value="12"/>
-		<Setter Property="Template">
-			<Setter.Value>
-				<ControlTemplate TargetType="{ x:Type TypeName=Button }">
-					<!--#region BORDER-->
-					<Border x:Name="Border"
-							Background="{ TemplateBinding Property=Background }"
-							BorderBrush="Transparent"
-							BorderThickness="1"
-							CornerRadius="8"
-							Padding="4"
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Border x:Name="Fondo"
+							Background="{ StaticResource ResourceKey=Primario }"
+							CornerRadius="3"
+							Padding="16 0"
 							SnapsToDevicePixels="True">
-						<StackPanel HorizontalAlignment="Center"
-									Margin="4"
-									VerticalAlignment="Center">
-							<!--#region CONTENT-->
-							<ContentPresenter Content="{ TemplateBinding Property=Content }"
-											  HorizontalAlignment="Center"
-											  Margin="0 0 0 0"
-											  VerticalAlignment="Center"/>
-							<!--#endregion-->
-						</StackPanel>
+						<ContentPresenter HorizontalAlignment="Center"
+										  VerticalAlignment="Center"/>
 					</Border>
-					<!--#endregion-->
-					<!--#region TRIGGER-->
 					<ControlTemplate.Triggers>
-						<Trigger Property="IsEnabled" Value="False">
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral400 }"/>
-							<Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Neutral100 }"/>
-							<Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Neutral200 }"/>
-						</Trigger>
 						<Trigger Property="IsMouseOver" Value="True">
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Neutral400 }"/>
-							<Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Gray100 }"/>
-							<Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Gray400 }"/>
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PrimarioHover }"/>
 						</Trigger>
 						<Trigger Property="IsPressed" Value="True">
-							<Setter TargetName="Border" Property="Background" Value="{ StaticResource ResourceKey=Gray200 }"/>
-							<Setter TargetName="Border" Property="BorderBrush" Value="{ StaticResource ResourceKey=Gray500 }"/>
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PrimarioPress }"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=TizaBaja }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
 						</Trigger>
 					</ControlTemplate.Triggers>
-					<!--#endregion-->
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
 	</Style>
+	<!--#endregion-->
+
+	<!--#region SECUNDARIO — acciones de igual peso entre sí-->
+	<Style x:Key="Btn.Secundario" TargetType="{ x:Type Button }">
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
+		<Setter Property="FontSize" Value="13"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+		<Setter Property="Height" Value="34"/>
+		<Setter Property="MinWidth" Value="88"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Border x:Name="Fondo"
+							Background="{ StaticResource ResourceKey=Papel }"
+							BorderBrush="{ StaticResource ResourceKey=LineaFuerte }"
+							BorderThickness="1"
+							CornerRadius="3"
+							Padding="16 0"
+							SnapsToDevicePixels="True">
+						<ContentPresenter HorizontalAlignment="Center"
+										  VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=TizaAlta }"/>
+							<Setter TargetName="Fondo" Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=Tiza }"/>
+							<Setter TargetName="Fondo" Property="BorderBrush" Value="{ StaticResource ResourceKey=Linea }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region TERCIARIO — acción liviana, sin caja hasta que se la toca-->
+	<Style x:Key="Btn.Terciario" TargetType="{ x:Type Button }">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
+		<Setter Property="FontSize" Value="13"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaMedia }"/>
+		<Setter Property="Height" Value="34"/>
+		<Setter Property="MinWidth" Value="64"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<!--
+						El Background va por TemplateBinding a propósito: hay vistas que todavía
+						pintan este estilo con un pincel local para improvisar un botón destructivo.
+						Lo correcto es Btn.Peligro, pero mientras tanto no se rompen.
+					-->
+					<Border x:Name="Fondo"
+							Background="{ TemplateBinding Background }"
+							CornerRadius="3"
+							Padding="12 0"
+							SnapsToDevicePixels="True">
+						<ContentPresenter HorizontalAlignment="Center"
+										  VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=TizaBaja }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioPress }"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--
+		Variante del terciario para el campo Pizarra. No alcanza con cambiar el Foreground
+		inicial: el disparador de IsMouseOver del terciario lo lleva a Tinta, que sobre verde
+		oscuro es invisible. Los estados hay que redefinirlos, no sólo el reposo.
+	-->
+	<Style x:Key="Btn.Terciario.Claro" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Terciario }">
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual.Claro }"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarraMedia }"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Border x:Name="Fondo"
+							Background="{ TemplateBinding Background }"
+							CornerRadius="3"
+							Padding="12 0"
+							SnapsToDevicePixels="True">
+						<ContentPresenter HorizontalAlignment="Center"
+										  VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PizarraAlta }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarra }"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PizarraBaja }"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarraTenue }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<!--#region PELIGRO — borrar, quitar, revocar-->
+	<Style x:Key="Btn.Peligro" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Secundario }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Alerta }"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Border x:Name="Fondo"
+							Background="{ StaticResource ResourceKey=Papel }"
+							BorderBrush="{ StaticResource ResourceKey=Alerta }"
+							BorderThickness="1"
+							CornerRadius="3"
+							Padding="16 0"
+							SnapsToDevicePixels="True">
+						<ContentPresenter HorizontalAlignment="Center"
+										  VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=Alerta }"/>
+							<Setter Property="Foreground" Value="#FFFFFF"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=AlertaHover }"/>
+							<Setter Property="Foreground" Value="#FFFFFF"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=Tiza }"/>
+							<Setter TargetName="Fondo" Property="BorderBrush" Value="{ StaticResource ResourceKey=Linea }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region PESTAÑA
+		El subrayado se pinta con BorderBrush, de modo que la vista pueda marcar la pestaña
+		activa con un DataTrigger contra el estado del ViewModel sin redefinir la plantilla.
+	-->
+	<Style x:Key="Btn.Pestana" TargetType="{ x:Type Button }">
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Display }"/>
+		<Setter Property="FontStretch" Value="SemiCondensed"/>
+		<Setter Property="FontSize" Value="15"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaSuave }"/>
+		<Setter Property="Height" Value="38"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Grid Background="Transparent">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="*"/>
+							<RowDefinition Height="2"/>
+						</Grid.RowDefinitions>
+						<ContentPresenter Grid.Row="0"
+										  HorizontalAlignment="Center"
+										  Margin="14 0"
+										  VerticalAlignment="Center"/>
+						<Rectangle Grid.Row="1"
+								   Fill="{ TemplateBinding BorderBrush }"
+								   SnapsToDevicePixels="True"/>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region ICONO — cuadrado, sin texto. Siempre con ToolTip.-->
+	<Style x:Key="Btn.Icono" TargetType="{ x:Type Button }">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="FontSize" Value="13"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaMedia }"/>
+		<Setter Property="Height" Value="32"/>
+		<Setter Property="Width" Value="32"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Border x:Name="Fondo"
+							Background="{ TemplateBinding Background }"
+							CornerRadius="3"
+							SnapsToDevicePixels="True">
+						<ContentPresenter HorizontalAlignment="Center"
+										  VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=TizaBaja }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioPress }"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+							<Setter TargetName="Fondo" Property="Background" Value="Transparent"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region MENÚ DEL RAIL
+		Sobre el campo Pizarra. La entrada activa o apuntada se marca con una REGLA VERDE a la
+		izquierda, no con un fondo: el rail queda tranquilo y la marca se lee de un vistazo.
+		(El estilo anterior tenía hover violeta #8214B2 sobre el verde institucional.)
+
+		Deshabilitado = sin permiso para esa sección. Se mantiene legible, no se apaga del
+		todo: una entrada invisible no enseña que la sección existe.
+	-->
+	<Style x:Key="Btn.Menu" TargetType="{ x:Type Button }">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual.Claro }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Display }"/>
+		<Setter Property="FontStretch" Value="SemiCondensed"/>
+		<Setter Property="FontSize" Value="16"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarraMedia }"/>
+		<Setter Property="Height" Value="42"/>
+		<Setter Property="HorizontalContentAlignment" Value="Left"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Grid Background="{ TemplateBinding Background }">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="3"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						<Rectangle x:Name="Marca"
+								   Grid.Column="0"
+								   Fill="{ StaticResource ResourceKey=Primario }"
+								   Opacity="0"/>
+						<ContentPresenter Grid.Column="1"
+										  HorizontalAlignment="Left"
+										  Margin="17 0 12 0"
+										  VerticalAlignment="Center"/>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter Property="Background" Value="{ StaticResource ResourceKey=PizarraAlta }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarra }"/>
+							<Setter TargetName="Marca" Property="Opacity" Value="1"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter Property="Background" Value="{ StaticResource ResourceKey=PizarraBaja }"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Cursor" Value="No"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarraTenue }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region BOTONES DE VENTANA — minimizar / maximizar / cerrar-->
+	<Style x:Key="Btn.Ventana" TargetType="{ x:Type Button }">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="FocusVisualStyle" Value="{ x:Null }"/>
+		<Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaMedia }"/>
+		<Setter Property="Height" Value="38"/>
+		<Setter Property="Width" Value="46"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Border x:Name="Fondo" Background="{ TemplateBinding Background }">
+						<ContentPresenter HorizontalAlignment="Center"
+										  VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=TizaBaja }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style x:Key="Btn.Ventana.Cerrar" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Ventana }">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Border x:Name="Fondo" Background="{ TemplateBinding Background }">
+						<ContentPresenter HorizontalAlignment="Center"
+										  VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=Alerta }"/>
+							<Setter Property="Foreground" Value="#FFFFFF"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region COMPATIBILIDAD
+		Nombres viejos del tema, usados por las vistas todavía no reescritas.
+	-->
+	<Style x:Key="Primary" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Primario }"/>
+	<Style x:Key="Secondary" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Secundario }"/>
+	<Style x:Key="Tertiary" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Terciario }"/>
+	<Style x:Key="Icon" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Icono }"/>
+	<Style x:Key="MenuButton" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Menu }"/>
 	<!--#endregion-->
 </ResourceDictionary>

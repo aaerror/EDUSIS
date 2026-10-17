@@ -1,69 +1,162 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <SolidColorBrush x:Key="PrimaryColor" Color="#119B15"/>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<!--
+		PALETA "REGISTRO"
 
-    <!-- BLUE -->
-    <SolidColorBrush x:Key="Blue50" Color="#eff6ff"/>
-    <SolidColorBrush x:Key="Blue100" Color="#dbeafe"/>
-    <SolidColorBrush x:Key="Blue200" Color="#bfdbfe"/>
-    <SolidColorBrush x:Key="Blue300" Color="#93c5fd"/>
-    <SolidColorBrush x:Key="Blue400" Color="#60a5fa"/>
-    <SolidColorBrush x:Key="Blue500" Color="#3b82f6"/>
-    <SolidColorBrush x:Key="Blue600" Color="#2563eb"/>
-    <SolidColorBrush x:Key="Blue700" Color="#1d4ed8"/>
-    <SolidColorBrush x:Key="Blue800" Color="#1e40af"/>
-    <SolidColorBrush x:Key="Blue900" Color="#1e3a8a"/>
-    <SolidColorBrush x:Key="Blue950" Color="#172554"/>
+		El verde institucional (#119B15) es obligatorio y manda sobre el resto: todos los
+		neutros están corridos unos grados hacia el verde en lugar de ser grises puros. Un
+		gris neutro al lado de un verde saturado se lee frío y despegado; con el sesgo, el
+		primario parece el origen de la paleta y no una calcomanía encima.
 
-    <!-- GRAY -->
-    <SolidColorBrush x:Key="Gray50" Color="#f9fafb"/>
-    <SolidColorBrush x:Key="Gray100" Color="#f3f4f6"/>
-    <SolidColorBrush x:Key="Gray200" Color="#e5e7eb"/>
-    <SolidColorBrush x:Key="Gray300" Color="#d1d5db"/>
-    <SolidColorBrush x:Key="Gray400" Color="#9ca3af"/>
-    <SolidColorBrush x:Key="Gray500" Color="#6b7280"/>
-    <SolidColorBrush x:Key="Gray600" Color="#4b5563"/>
-    <SolidColorBrush x:Key="Gray700" Color="#374151"/>
-    <SolidColorBrush x:Key="Gray800" Color="#1f2937"/>
-    <SolidColorBrush x:Key="Gray900" Color="#111827"/>
-    <SolidColorBrush x:Key="Gray950" Color="#030712"/>
+		El primario se reserva para ACCIÓN, SELECCIÓN y FOCO —superficies chicas—. Los campos
+		grandes de color usan Pizarra, el verde profundo. Un #119B15 a pantalla completa vibra
+		y deja de significar "acá se toca".
+	-->
 
-    <!-- GREEN -->
-    <SolidColorBrush x:Key="Green50" Color="#f0fdf4"/>
-    <SolidColorBrush x:Key="Green100" Color="#dcfce7"/>
-    <SolidColorBrush x:Key="Green200" Color="#bbf7d0"/>
-    <SolidColorBrush x:Key="Green300" Color="#86efac"/>
-    <SolidColorBrush x:Key="Green400" Color="#4ade80"/>
-    <SolidColorBrush x:Key="Green500" Color="#22c55e"/>
-    <SolidColorBrush x:Key="Green600" Color="#16a34a"/>
-    <SolidColorBrush x:Key="Green700" Color="#15803d"/>
-    <SolidColorBrush x:Key="Green800" Color="#166534"/>
-    <SolidColorBrush x:Key="Green900" Color="#14532d"/>
-    <SolidColorBrush x:Key="Green950" Color="#052e16"/>
+	<!--#region COLORES BASE-->
+	<!-- VERDE INSTITUCIONAL -->
+	<Color x:Key="Color.Primario">#119B15</Color>
+	<Color x:Key="Color.Primario.Hover">#15B41A</Color>
+	<Color x:Key="Color.Primario.Press">#0D7C11</Color>
+	<Color x:Key="Color.Primario.Suave">#E8F5E8</Color>
+	<Color x:Key="Color.Primario.Borde">#A8DCA9</Color>
 
-    <!-- RED -->
-    <SolidColorBrush x:Key="Red50" Color="#fef2f2"/>
-    <SolidColorBrush x:Key="Red100" Color="#fee2e2"/>
-    <SolidColorBrush x:Key="Red200" Color="#fecaca"/>
-    <SolidColorBrush x:Key="Red300" Color="#fca5a5"/>
-    <SolidColorBrush x:Key="Red400" Color="#f87171"/>
-    <SolidColorBrush x:Key="Red500" Color="#ef4444"/>
-    <SolidColorBrush x:Key="Red600" Color="#dc2626"/>
-    <SolidColorBrush x:Key="Red700" Color="#b91c1c"/>
-    <SolidColorBrush x:Key="Red800" Color="#991b1b"/>
-    <SolidColorBrush x:Key="Red900" Color="#7f1d1d"/>
-    <SolidColorBrush x:Key="Red950" Color="#450a0a"/>
+	<!-- PIZARRA: el campo oscuro (rail, encabezados sobre color) -->
+	<Color x:Key="Color.Pizarra">#0C3A21</Color>
+	<Color x:Key="Color.Pizarra.Alta">#114E2C</Color>
+	<Color x:Key="Color.Pizarra.Baja">#082615</Color>
 
-    <!-- NEUTRAL -->
-    <SolidColorBrush x:Key="Neutral50" Color="#fafafa"/>
-    <SolidColorBrush x:Key="Neutral100" Color="#f5f5f5"/>
-    <SolidColorBrush x:Key="Neutral200" Color="#e5e5e5"/>
-    <SolidColorBrush x:Key="Neutral300" Color="#d4d4d4"/>
-    <SolidColorBrush x:Key="Neutral400" Color="#a3a3a3"/>
-    <SolidColorBrush x:Key="Neutral500" Color="#737373"/>
-    <SolidColorBrush x:Key="Neutral600" Color="#525252"/>
-    <SolidColorBrush x:Key="Neutral700" Color="#404040"/>
-    <SolidColorBrush x:Key="Neutral800" Color="#262626"/>
-    <SolidColorBrush x:Key="Neutral900" Color="#171717"/>
-    <SolidColorBrush x:Key="Neutral950" Color="#0a0a0a"/>
+	<!-- TINTA: texto -->
+	<Color x:Key="Color.Tinta">#10180F</Color>
+	<Color x:Key="Color.Tinta.Media">#45523F</Color>
+	<Color x:Key="Color.Tinta.Suave">#6B7A66</Color>
+	<Color x:Key="Color.Tinta.Tenue">#94A08F</Color>
+
+	<!-- PAPEL Y TIZA: superficies -->
+	<Color x:Key="Color.Papel">#FFFFFF</Color>
+	<Color x:Key="Color.Tiza">#F1F4EF</Color>
+	<Color x:Key="Color.Tiza.Alta">#F7F9F6</Color>
+	<Color x:Key="Color.Tiza.Baja">#E7ECE4</Color>
+
+	<!-- LÍNEA: reglas de 1px -->
+	<Color x:Key="Color.Linea">#DCE3D9</Color>
+	<Color x:Key="Color.Linea.Fuerte">#C3CDBF</Color>
+
+	<!-- SEMÁNTICOS -->
+	<Color x:Key="Color.Alerta">#B3261E</Color>
+	<Color x:Key="Color.Alerta.Hover">#C9342B</Color>
+	<Color x:Key="Color.Alerta.Suave">#FBEBEA</Color>
+	<Color x:Key="Color.Aviso">#9A5B00</Color>
+	<Color x:Key="Color.Aviso.Suave">#FBF1E3</Color>
+	<!--#endregion-->
+
+	<!--#region PINCELES DEL SISTEMA-->
+	<SolidColorBrush x:Key="Primario" Color="{ StaticResource ResourceKey=Color.Primario }"/>
+	<SolidColorBrush x:Key="PrimarioHover" Color="{ StaticResource ResourceKey=Color.Primario.Hover }"/>
+	<SolidColorBrush x:Key="PrimarioPress" Color="{ StaticResource ResourceKey=Color.Primario.Press }"/>
+	<SolidColorBrush x:Key="PrimarioSuave" Color="{ StaticResource ResourceKey=Color.Primario.Suave }"/>
+	<SolidColorBrush x:Key="PrimarioBorde" Color="{ StaticResource ResourceKey=Color.Primario.Borde }"/>
+
+	<SolidColorBrush x:Key="Pizarra" Color="{ StaticResource ResourceKey=Color.Pizarra }"/>
+	<SolidColorBrush x:Key="PizarraAlta" Color="{ StaticResource ResourceKey=Color.Pizarra.Alta }"/>
+	<SolidColorBrush x:Key="PizarraBaja" Color="{ StaticResource ResourceKey=Color.Pizarra.Baja }"/>
+
+	<SolidColorBrush x:Key="Tinta" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
+	<SolidColorBrush x:Key="TintaMedia" Color="{ StaticResource ResourceKey=Color.Tinta.Media }"/>
+	<SolidColorBrush x:Key="TintaSuave" Color="{ StaticResource ResourceKey=Color.Tinta.Suave }"/>
+	<SolidColorBrush x:Key="TintaTenue" Color="{ StaticResource ResourceKey=Color.Tinta.Tenue }"/>
+
+	<SolidColorBrush x:Key="Papel" Color="{ StaticResource ResourceKey=Color.Papel }"/>
+	<SolidColorBrush x:Key="Tiza" Color="{ StaticResource ResourceKey=Color.Tiza }"/>
+	<SolidColorBrush x:Key="TizaAlta" Color="{ StaticResource ResourceKey=Color.Tiza.Alta }"/>
+	<SolidColorBrush x:Key="TizaBaja" Color="{ StaticResource ResourceKey=Color.Tiza.Baja }"/>
+
+	<SolidColorBrush x:Key="Linea" Color="{ StaticResource ResourceKey=Color.Linea }"/>
+	<SolidColorBrush x:Key="LineaFuerte" Color="{ StaticResource ResourceKey=Color.Linea.Fuerte }"/>
+
+	<SolidColorBrush x:Key="Alerta" Color="{ StaticResource ResourceKey=Color.Alerta }"/>
+	<SolidColorBrush x:Key="AlertaHover" Color="{ StaticResource ResourceKey=Color.Alerta.Hover }"/>
+	<SolidColorBrush x:Key="AlertaSuave" Color="{ StaticResource ResourceKey=Color.Alerta.Suave }"/>
+	<SolidColorBrush x:Key="Aviso" Color="{ StaticResource ResourceKey=Color.Aviso }"/>
+	<SolidColorBrush x:Key="AvisoSuave" Color="{ StaticResource ResourceKey=Color.Aviso.Suave }"/>
+
+	<!-- Texto sobre campo oscuro: blanco a tres niveles de énfasis. -->
+	<SolidColorBrush x:Key="SobrePizarra" Color="#FFFFFF" Opacity=".95"/>
+	<SolidColorBrush x:Key="SobrePizarraMedia" Color="#FFFFFF" Opacity=".66"/>
+	<SolidColorBrush x:Key="SobrePizarraTenue" Color="#FFFFFF" Opacity=".34"/>
+	<!--#endregion-->
+
+	<!--#region COMPATIBILIDAD
+		Las claves viejas (ramps literales de Tailwind) siguen definidas porque hay más de
+		cuarenta vistas que las referencian por nombre. Ahora son ALIAS del sistema nuevo: así
+		una pantalla todavía no reescrita igual adopta la paleta, en vez de quedar mezclando
+		dos lenguajes visuales. No usar estas claves en código nuevo.
+	-->
+	<SolidColorBrush x:Key="PrimaryColor" Color="{ StaticResource ResourceKey=Color.Primario }"/>
+
+	<!-- GRAY -> línea / tiza -->
+	<SolidColorBrush x:Key="Gray50" Color="{ StaticResource ResourceKey=Color.Tiza.Alta }"/>
+	<SolidColorBrush x:Key="Gray100" Color="{ StaticResource ResourceKey=Color.Tiza }"/>
+	<SolidColorBrush x:Key="Gray200" Color="{ StaticResource ResourceKey=Color.Linea }"/>
+	<SolidColorBrush x:Key="Gray300" Color="{ StaticResource ResourceKey=Color.Linea.Fuerte }"/>
+	<SolidColorBrush x:Key="Gray400" Color="{ StaticResource ResourceKey=Color.Tinta.Tenue }"/>
+	<SolidColorBrush x:Key="Gray500" Color="{ StaticResource ResourceKey=Color.Tinta.Suave }"/>
+	<SolidColorBrush x:Key="Gray600" Color="{ StaticResource ResourceKey=Color.Tinta.Media }"/>
+	<SolidColorBrush x:Key="Gray700" Color="{ StaticResource ResourceKey=Color.Tinta.Media }"/>
+	<SolidColorBrush x:Key="Gray800" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
+	<SolidColorBrush x:Key="Gray900" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
+	<SolidColorBrush x:Key="Gray950" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
+
+	<!-- NEUTRAL -> misma escala -->
+	<SolidColorBrush x:Key="Neutral50" Color="{ StaticResource ResourceKey=Color.Tiza.Alta }"/>
+	<SolidColorBrush x:Key="Neutral100" Color="{ StaticResource ResourceKey=Color.Tiza }"/>
+	<SolidColorBrush x:Key="Neutral200" Color="{ StaticResource ResourceKey=Color.Linea }"/>
+	<SolidColorBrush x:Key="Neutral300" Color="{ StaticResource ResourceKey=Color.Linea.Fuerte }"/>
+	<SolidColorBrush x:Key="Neutral400" Color="{ StaticResource ResourceKey=Color.Tinta.Tenue }"/>
+	<SolidColorBrush x:Key="Neutral500" Color="{ StaticResource ResourceKey=Color.Tinta.Suave }"/>
+	<SolidColorBrush x:Key="Neutral600" Color="{ StaticResource ResourceKey=Color.Tinta.Media }"/>
+	<SolidColorBrush x:Key="Neutral700" Color="{ StaticResource ResourceKey=Color.Tinta.Media }"/>
+	<SolidColorBrush x:Key="Neutral800" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
+	<SolidColorBrush x:Key="Neutral900" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
+	<SolidColorBrush x:Key="Neutral950" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
+
+	<!-- BLUE -> el foco pasó de azul a verde institucional -->
+	<SolidColorBrush x:Key="Blue50" Color="{ StaticResource ResourceKey=Color.Primario.Suave }"/>
+	<SolidColorBrush x:Key="Blue100" Color="{ StaticResource ResourceKey=Color.Primario.Suave }"/>
+	<SolidColorBrush x:Key="Blue200" Color="{ StaticResource ResourceKey=Color.Primario.Borde }"/>
+	<SolidColorBrush x:Key="Blue300" Color="{ StaticResource ResourceKey=Color.Primario.Borde }"/>
+	<SolidColorBrush x:Key="Blue400" Color="{ StaticResource ResourceKey=Color.Primario.Hover }"/>
+	<SolidColorBrush x:Key="Blue500" Color="{ StaticResource ResourceKey=Color.Primario }"/>
+	<SolidColorBrush x:Key="Blue600" Color="{ StaticResource ResourceKey=Color.Primario.Press }"/>
+	<SolidColorBrush x:Key="Blue700" Color="{ StaticResource ResourceKey=Color.Pizarra.Alta }"/>
+	<SolidColorBrush x:Key="Blue800" Color="{ StaticResource ResourceKey=Color.Pizarra }"/>
+	<SolidColorBrush x:Key="Blue900" Color="{ StaticResource ResourceKey=Color.Pizarra }"/>
+	<SolidColorBrush x:Key="Blue950" Color="{ StaticResource ResourceKey=Color.Pizarra.Baja }"/>
+
+	<!-- GREEN -> alrededor del primario -->
+	<SolidColorBrush x:Key="Green50" Color="{ StaticResource ResourceKey=Color.Primario.Suave }"/>
+	<SolidColorBrush x:Key="Green100" Color="{ StaticResource ResourceKey=Color.Primario.Suave }"/>
+	<SolidColorBrush x:Key="Green200" Color="{ StaticResource ResourceKey=Color.Primario.Borde }"/>
+	<SolidColorBrush x:Key="Green300" Color="{ StaticResource ResourceKey=Color.Primario.Borde }"/>
+	<SolidColorBrush x:Key="Green400" Color="{ StaticResource ResourceKey=Color.Primario.Hover }"/>
+	<SolidColorBrush x:Key="Green500" Color="{ StaticResource ResourceKey=Color.Primario }"/>
+	<SolidColorBrush x:Key="Green600" Color="{ StaticResource ResourceKey=Color.Primario }"/>
+	<SolidColorBrush x:Key="Green700" Color="{ StaticResource ResourceKey=Color.Primario.Press }"/>
+	<SolidColorBrush x:Key="Green800" Color="{ StaticResource ResourceKey=Color.Pizarra.Alta }"/>
+	<SolidColorBrush x:Key="Green900" Color="{ StaticResource ResourceKey=Color.Pizarra }"/>
+	<SolidColorBrush x:Key="Green950" Color="{ StaticResource ResourceKey=Color.Pizarra.Baja }"/>
+
+	<!-- RED -> alerta -->
+	<SolidColorBrush x:Key="Red50" Color="{ StaticResource ResourceKey=Color.Alerta.Suave }"/>
+	<SolidColorBrush x:Key="Red100" Color="{ StaticResource ResourceKey=Color.Alerta.Suave }"/>
+	<SolidColorBrush x:Key="Red200" Color="#F0C8C5"/>
+	<SolidColorBrush x:Key="Red300" Color="#E3A09B"/>
+	<SolidColorBrush x:Key="Red400" Color="{ StaticResource ResourceKey=Color.Alerta.Hover }"/>
+	<SolidColorBrush x:Key="Red500" Color="{ StaticResource ResourceKey=Color.Alerta }"/>
+	<SolidColorBrush x:Key="Red600" Color="{ StaticResource ResourceKey=Color.Alerta }"/>
+	<SolidColorBrush x:Key="Red700" Color="#8F1E17"/>
+	<SolidColorBrush x:Key="Red800" Color="#761913"/>
+	<SolidColorBrush x:Key="Red900" Color="#5C130F"/>
+	<SolidColorBrush x:Key="Red950" Color="#3D0D0A"/>
+	<!--#endregion-->
 </ResourceDictionary>
