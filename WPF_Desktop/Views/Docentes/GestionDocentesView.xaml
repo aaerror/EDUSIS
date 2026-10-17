@@ -1,240 +1,287 @@
-﻿<UserControl x:Class="WPF_Desktop.Views.Docentes.GestionDocentesView"
+<UserControl x:Class="WPF_Desktop.Views.Docentes.GestionDocentesView"
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
-
-			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
-
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-			 mc:Ignorable="d"
-			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<!--#region RESOURCES-->
-	<UserControl.Resources>
-		<BooleanToVisibilityConverter x:Key="booleanConverter"/>
-	</UserControl.Resources>
-	<!--#endregion-->
-	<!--#region EVENTS-->
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
 	<!--
+		ÍNDICE + FICHA.
+
+		La disposición anterior apilaba verticalmente: encabezado, botón, buscador, lista y
+		—abajo de todo, fuera de la pantalla— el detalle del seleccionado. Elegir una fila
+		cambiaba algo que no se veía. Acá el índice y la ficha conviven: se elige a la
+		izquierda y el resultado aparece al lado, sin desplazar nada.
+
+		El listado se carga solo al abrir la pantalla (evento Loaded) y el campo de arriba
+		FILTRA lo ya cargado mientras se escribe, en lugar de ser un buscador contra la base
+		que había que disparar con un botón.
+	-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
-			<behaviors:InvokeCommandAction Command="{ Binding Path=BuscarCommandAsync }"/>
+			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarCommandAsync }"/>
 		</behaviors:EventTrigger>
 	</behaviors:Interaction.Triggers>
-	-->
-	<!--#endregion-->
 
-	<Grid>
+	<Grid Margin="28 24 28 24">
 		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region TITTLE AND SUBTITLE-->
-		<components:Header Grid.Row="0"
-						   Title="Docentes"
-						   Subtitle="Altas, Bajas y Modificaciones de Docentes"/>
-		<!--#endregion-->
+		<!--#region ENCABEZADO DE PANTALLA-->
+		<Grid Grid.Row="0" Margin="0 0 0 20">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
+			</Grid.ColumnDefinitions>
 
-		<!--#region COMMAND: RegistrarCommand-->
-		<WrapPanel Grid.Row="1"
-				   Margin="20 10">
-			<Button Command="{Binding Path=RegistrarCommand }"
-					Margin="0 0 5 0"
-					ToolTip="Registrar docente"
-					Style="{ StaticResource ResourceKey=Secondary }">
-				<Button.Content>
-					<WrapPanel>
-						<fa:IconBlock Icon="Plus"
-									  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-									  FontSize="12"
-									  Margin="0 0 1 0"/>
-						<Label Content="Registrar"
-							   Margin="1 0 2 0"/>
-					</WrapPanel>
-				</Button.Content>
-			</Button>
-		</WrapPanel>
-		<!--#endregion-->
+			<components:Header Grid.Column="0"
+							   Title="Docentes"
+							   Subtitle="Legajos del personal docente, con sus puestos y licencias"/>
 
-		<!--#region SEARCHER-->
-		<Border Grid.Row="2"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10"
-				Padding="20">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-
-			<Grid Margin="20 10">
-				<Grid.RowDefinitions>
-					<RowDefinition/>
-					<RowDefinition/>
-				</Grid.RowDefinitions>
-
-				<!--#region SEARCH BOX-->
-				<StackPanel Grid.Row="0"
-							Margin="0 0 0 10">
-					<WrapPanel HorizontalAlignment="Center">
-						<TextBox Text="{ Binding Path=SearchedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-								 Tag="ingresar el nombre completo..."
-								 Cursor="IBeam"
-								 HorizontalAlignment="Center"
-								 Width="250"
-								 Margin="0 0 5 0"
-								 Style="{ StaticResource ResourceKey=TextBox }"/>
-						<!--#region COMMAND: BuscarCommandAsync-->
-						<Button Command="{ Binding Path=BuscarCommandAsync }"
-								Content="{ fa:Icon Search }"
-								Cursor="Hand"
-								IsDefault="True"
-								Margin="5 0 0 0"
-								ToolTip="Buscar"
-								Style="{ StaticResource ResourceKey=Primary }"/>
-						<!--#endregion-->
-					</WrapPanel>
+			<!--
+				La acción de crear es la primaria de la pantalla y es la única verde. Antes
+				era un botón secundario blanco mientras las tres navegaciones de abajo eran
+				verdes: la jerarquía estaba dada vuelta.
+			-->
+			<Button Grid.Column="1"
+					Command="{ Binding Path=RegistrarCommand }"
+					Style="{ StaticResource ResourceKey=Btn.Primario }"
+					ToolTip="Dar de alta un docente nuevo"
+					VerticalAlignment="Center">
+				<StackPanel Orientation="Horizontal">
+					<fa:IconBlock FontSize="11"
+								  Icon="Plus"
+								  Margin="0 0 8 0"
+								  VerticalAlignment="Center"/>
+					<TextBlock Text="Registrar docente" VerticalAlignment="Center"/>
 				</StackPanel>
+			</Button>
+		</Grid>
+		<!--#endregion-->
+
+		<!--#region CUERPO-->
+		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="360"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<!--#region ÍNDICE-->
+				<Grid Grid.Column="0">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+
+					<StackPanel Grid.Row="0" Margin="16 16 16 12">
+						<Grid>
+							<TextBox Tag="Filtrar por nombre, legajo o DNI"
+									 Text="{ Binding Path=SearchedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+									 Padding="34 0 11 0"
+									 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+							<fa:IconBlock Foreground="{ StaticResource ResourceKey=TintaTenue }"
+										  FontSize="12"
+										  HorizontalAlignment="Left"
+										  Icon="MagnifyingGlass"
+										  IsHitTestVisible="False"
+										  Margin="12 0 0 0"
+										  VerticalAlignment="Center"/>
+						</Grid>
+						<TextBlock Margin="2 10 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="{ Binding Path=Resumen }"/>
+					</StackPanel>
+
+					<ListView Grid.Row="1"
+							  ItemsSource="{ Binding Path=DocentesFiltrados }"
+							  SelectedItem="{ Binding Path=LegajoDocenteSeleccionado, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Lista.Indice }"
+							  Tag="No hay docentes que coincidan con el filtro.">
+						<ListView.View>
+							<GridView AllowsColumnReorder="False">
+								<GridView.Columns>
+									<GridViewColumn Header="LEGAJO" Width="86">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+														   Text="{ Binding Path=Legajo, TargetNullValue='—' }"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+									</GridViewColumn>
+									<GridViewColumn Header="DOCENTE" Width="240">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+														   Text="{ Binding Path=NombreCompleto, TargetNullValue='Sin datos' }"
+														   TextTrimming="CharacterEllipsis"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+									</GridViewColumn>
+								</GridView.Columns>
+							</GridView>
+						</ListView.View>
+					</ListView>
+				</Grid>
 				<!--#endregion-->
 
-				<StackPanel Grid.Row="1"
-							Margin="0 10 0 0"
-							Visibility="{ Binding Path=MostrarVista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }">
-					<StackPanel Margin="0 0 0 5">
-						<Label Content="Listado de docentes"
-							   Style="{ StaticResource ResourceKey=Headline }"/>
-						<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-								   Height=".8"
-								   Width="Auto"/>
+				<Rectangle Grid.Column="1" Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
+
+				<!--#region FICHA-->
+				<Grid Grid.Column="2">
+					<!-- Sin elección: la mitad derecha dice qué hacer, no queda en blanco. -->
+					<StackPanel HorizontalAlignment="Center"
+								VerticalAlignment="Center"
+								Visibility="{ Binding Path=LegajoDocenteSeleccionado, Converter={ StaticResource ResourceKey=visibleSiHay }, ConverterParameter=inverso }">
+						<TextBlock Foreground="{ StaticResource ResourceKey=TintaSuave }"
+								   HorizontalAlignment="Center"
+								   Style="{ StaticResource ResourceKey=Txt.Subtitulo }"
+								   Text="Elegí un docente"/>
+						<TextBlock HorizontalAlignment="Center"
+								   Margin="0 6 0 0"
+								   MaxWidth="280"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="Su legajo, sus puestos y sus licencias se abren desde el índice de la izquierda."
+								   TextAlignment="Center"
+								   TextWrapping="Wrap"/>
 					</StackPanel>
 
-					<StackPanel IsEnabled="{ Binding Path=HabilitarNotificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-								Margin="0 5 0 0"
-								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-						<Label Content="{ Binding Path=Notificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-							   Style="{ StaticResource ResourceKey=Body }"/>
-					</StackPanel>
+					<Grid Margin="28 22"
+						  Visibility="{ Binding Path=LegajoDocenteSeleccionado, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="*"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
 
-					<!--#region ListDocentes-->
-					<StackPanel IsEnabled="{ Binding Path=HabilitarListaDocentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-								Margin="0 5 0 0"
-								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-						<ListView x:Name="ListDocentes"
-								  ItemsSource="{ Binding Path=LegajosDocentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-								  SelectedItem="{ Binding Path=LegajoDocenteSeleccionado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-								  IsSynchronizedWithCurrentItem="True"
-								  d:ItemsSource="{ d:SampleData ItemCount=5 }"
-								  Style="{ StaticResource ResourceKey=ListViewStyle }">
-							<ListView.View>
-								<GridView AllowsColumnReorder="False">
-									<GridView.Columns>
-										<GridViewColumn Header="Legajo"
-														DisplayMemberBinding="{ Binding Legajo, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-														Width="Auto"/>
-										<GridViewColumn Header="Docente"
-														DisplayMemberBinding="{ Binding NombreCompleto, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-														Width="Auto"/>
-									</GridView.Columns>
-								</GridView>
-							</ListView.View>
-						</ListView>
-					</StackPanel>
-					<!--#endregion-->
-				</StackPanel>
-			</Grid>
-		</Border>
-		<!--#endregion-->
+						<!--
+							LA FICHA: regla verde, identificador tabular y nombre. El mismo
+							gesto encabeza cada registro del sistema, sea docente, alumno o
+							curso. En esta escuela la identidad de un legajo ES su número.
+						-->
+						<StackPanel Grid.Row="0" Orientation="Horizontal">
+							<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
+									   Margin="0 2 14 2"
+									   VerticalAlignment="Stretch"
+									   Width="3"/>
+							<StackPanel>
+								<TextBlock Style="{ StaticResource ResourceKey=Txt.Identificador }"
+										   Text="{ Binding Path=LegajoDocenteSeleccionado.Legajo, StringFormat='LEGAJO {0}', TargetNullValue='SIN LEGAJO' }"/>
+								<TextBlock Margin="0 2 0 0"
+										   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+										   Text="{ Binding Path=LegajoDocenteSeleccionado.NombreCompleto }"
+										   TextTrimming="CharacterEllipsis"/>
+							</StackPanel>
+						</StackPanel>
 
-		<!--#region LEGAJO DOCENTE-->
-		<Border Grid.Row="3"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10"
-				IsEnabled="{ Binding Path=LegajoDocenteSeleccionado, Mode=TwoWay, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
-				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-			<ScrollViewer Padding="20"
-						  VerticalScrollBarVisibility="Auto">
-				<StackPanel Margin="20 10 10 10">
-					<!--#region LEGAJO DOCENTE-->
-					<local:LegajoDocenteView DataContext="{ Binding Path=SelectedItem, ElementName=ListDocentes }"
-											 Margin="0 0 0 5"
-											 IsEnabled="False"/>
-					<!--#endregion-->
+						<!--#region DATOS-->
+						<Border Grid.Row="1"
+								Margin="0 20 0 0"
+								Style="{ StaticResource ResourceKey=Superficie.Seccion }"
+								VerticalAlignment="Top">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="Auto"/>
+								</Grid.RowDefinitions>
 
-					<Grid Margin="0 5 0 0">
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="*"/>
-							<ColumnDefinition Width="*"/>
-						</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Grid.Row="0"
+										   Margin="0 0 24 10"
+										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="DNI"/>
+								<TextBlock Grid.Column="1" Grid.Row="0"
+										   Margin="0 0 0 10"
+										   Style="{ StaticResource ResourceKey=Txt.Dato }"
+										   Text="{ Binding Path=LegajoDocenteSeleccionado.DocumentoNacionalIdentidad, TargetNullValue='—' }"/>
 
-						<!--#region COMMANDS-->
-						<WrapPanel Grid.Column="0"
-								   HorizontalAlignment="Left">
-							<!--#region EliminarCommand-->
-							<Button Command="{ Binding Path=EliminarCommand }"
-									Content="{ fa:Icon Trash, Foreground=White }"
-									Background="{ StaticResource ResourceKey=Red500 }"	
-									ToolTip="Eliminar docente"
-									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-									Style="{ StaticResource ResourceKey=Tertiary }"/>
-							<!--#endregion-->
-						</WrapPanel>
+								<TextBlock Grid.Column="0" Grid.Row="1"
+										   Margin="0 0 24 10"
+										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="CUIL"/>
+								<TextBlock Grid.Column="1" Grid.Row="1"
+										   Margin="0 0 0 10"
+										   Style="{ StaticResource ResourceKey=Txt.Dato }"
+										   Text="{ Binding Path=LegajoDocenteSeleccionado.CodigoUnicoIdentificacionLaboral, TargetNullValue='—' }"/>
+
+								<TextBlock Grid.Column="0" Grid.Row="2"
+										   Margin="0 0 24 10"
+										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="ALTA"/>
+								<TextBlock Grid.Column="1" Grid.Row="2"
+										   Margin="0 0 0 10"
+										   Style="{ StaticResource ResourceKey=Txt.Dato }"
+										   Text="{ Binding Path=LegajoDocenteSeleccionado.FechaAlta, StringFormat=dd/MM/yyyy }"/>
+
+								<TextBlock Grid.Column="0" Grid.Row="3"
+										   Margin="0 0 24 0"
+										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="ESTADO"/>
+								<Border Grid.Column="1" Grid.Row="3"
+										HorizontalAlignment="Left"
+										Style="{ StaticResource ResourceKey=Insignia.Activa }">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+											   Text="EN ACTIVIDAD"/>
+								</Border>
+							</Grid>
+						</Border>
 						<!--#endregion-->
 
-						<!--#region COMMANDS: NavigationCommand-->
-						<WrapPanel Grid.Column="1"
-								   HorizontalAlignment="Right">
-							<!--#region NAV: Puesto-->
-							<Button Command="{ Binding Path=NavigationCommand }"
-									CommandParameter="Puesto"
-									Content="Puestos"
-									Cursor="Hand"
-									Margin="0 0 5 0"
-									ToolTip="Ver puestos del docentes"
-									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-									Style="{ StaticResource ResourceKey=Primary }"/>
-							<!--#endregion-->
-							<!--#region NAV: Licencia-->
-							<Button Command="{ Binding Path=NavigationCommand }"
-									CommandParameter="Licencia"
-									Content="Licencias"
-									Cursor="Hand"
-									Margin="5 0"
-									ToolTip="Ver licencias del docentes"
-									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-									Style="{ StaticResource ResourceKey=Primary }"/>
-							<!--#endregion-->
-							<!--#region NAV: Perfil-->
-							<Button Command="{ Binding Path=NavigationCommand }"
-									CommandParameter="Perfil"
-									Content="Perfil"
-									Cursor="Hand"
-									Margin="5 0 0 0"
-									ToolTip="Ver perfil del docentes"
-									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-									Style="{ StaticResource ResourceKey=Primary }"/>
-							<!--#endregion-->
-						</WrapPanel>
+						<!--#region ACCIONES
+							Las tres navegaciones son secundarias y de igual peso entre sí,
+							porque eso es lo que son. Quitar va separado y a la izquierda:
+							una acción destructiva no comparte grupo con las de consulta.
+						-->
+						<Grid Grid.Row="2" Margin="0 20 0 0">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="Auto"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+
+							<Button Grid.Column="0"
+									Command="{ Binding Path=EliminarCommand }"
+									Content="Quitar"
+									Style="{ StaticResource ResourceKey=Btn.Peligro }"
+									ToolTip="Quitar este docente del listado"/>
+
+							<StackPanel Grid.Column="1"
+										HorizontalAlignment="Right"
+										Orientation="Horizontal">
+								<Button Command="{ Binding Path=NavigationCommand }"
+										CommandParameter="Perfil"
+										Content="Perfil"
+										Margin="0 0 8 0"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Datos personales, domicilio y contacto"/>
+								<Button Command="{ Binding Path=NavigationCommand }"
+										CommandParameter="Puesto"
+										Content="Puestos"
+										Margin="0 0 8 0"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Cargos y situación de revista"/>
+								<Button Command="{ Binding Path=NavigationCommand }"
+										CommandParameter="Licencia"
+										Content="Licencias"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Licencias solicitadas y aprobadas"/>
+							</StackPanel>
+						</Grid>
 						<!--#endregion-->
 					</Grid>
-				</StackPanel>
-			</ScrollViewer>
+				</Grid>
+				<!--#endregion-->
+			</Grid>
 		</Border>
 		<!--#endregion-->
 	</Grid>

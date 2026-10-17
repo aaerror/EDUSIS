@@ -1,34 +1,29 @@
-﻿<UserControl x:Class="WPF_Desktop.Components.Header"
-             xmlns:local="clr-namespace:WPF_Desktop.Components"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Name="aHeader"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-    <!-- TITTLE AND SUBTITLE -->
-    <Border Background="#FFFFFF"
-            BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-            BorderThickness="1"
-            CornerRadius="4"
-            Margin="20 10"
-            Padding="10">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="15"
-                              Color="#373737"
-                              ShadowDepth="5"
-                              Opacity=".3"/>
-        </Border.Effect>
+<UserControl x:Class="WPF_Desktop.Components.Header"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Components"
+			 x:Name="aHeader"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<!--
+		ENCABEZADO DE PANTALLA.
 
-        <StackPanel Margin="20 5"
-                    VerticalAlignment="Center">
-            <Label Content="{ Binding Path=Title, ElementName=aHeader }"
-                   Style="{ StaticResource ResourceKey=Title }"/>
-            <Separator Background="{ StaticResource ResourceKey=Gray300 }"
-                       Height="2"
-                       Margin="0 2"/>
-            <Label Content="{ Binding Subtitle, ElementName=aHeader }"
-                   Style="{ StaticResource ResourceKey=Subtitle }"/>
-        </StackPanel>
-    </Border>
+		Era una tarjeta blanca con sombra, borde, 20px de margen y 10 de relleno, con el
+		título a 28px y el subtítulo a 22px separados por una regla: unos 110px de alto para
+		decir "Docentes / Altas, Bajas y Modificaciones de Docentes". En una pantalla de 760px
+		eso es el 15% del alto gastado en repetir dónde estamos, dato que además ya está en el
+		rail y en la barra de título.
+
+		Ahora: una línea de título y una de apoyo, sin caja. El subtítulo explica QUÉ se puede
+		hacer, no reformula el título.
+	-->
+	<StackPanel>
+		<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+				   Text="{ Binding Path=Title, ElementName=aHeader }"/>
+		<TextBlock Margin="0 2 0 0"
+				   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+				   Text="{ Binding Path=Subtitle, ElementName=aHeader }"
+				   TextWrapping="Wrap"/>
+	</StackPanel>
 </UserControl>

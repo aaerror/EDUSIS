@@ -1,17 +1,17 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
 using System.Threading.Tasks;
+using System.Windows.Data;
 using System.Windows;
 using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Shared.Messages;
-using Core.Shared.DTOs.Personas.Requests;
 
 namespace WPF_Desktop.ViewModels.Docentes;
 
@@ -30,26 +30,21 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 
 	private LegajoStore _perfilBuscadoStore;
 
-	[Required(AllowEmptyStrings=false, ErrorMessage="Ingresar el nombre del docente.")]
-	[NotifyCanExecuteChangedFor(nameof(BuscarCommandAsync))]
-	[NotifyDataErrorInfo]
+	/// <summary>
+	/// Texto del filtro. No lleva <c>[Required]</c>: la pantalla arranca con el listado
+	/// completo y el filtro es opcional.
+	/// </summary>
+	/// <remarks>
+	/// El atributo anterior tenía un efecto que no se veía venir: con el campo vacío
+	/// —es decir, al abrir la pantalla— <c>HasErrors</c> quedaba en <c>true</c>, y como
+	/// <c>CanExecuteBuscarCommand</c> era <c>!HasErrors</c>, el botón de buscar nacía
+	/// deshabilitado. Había que escribir algo para poder hacer cualquier cosa.
+	/// </remarks>
 	[ObservableProperty]
-	private string _searchedText;
+	private string _searchedText = string.Empty;
 
 	[ObservableProperty]
-	private string _notificacion;
-
-	[ObservableProperty]
-	private bool _habilitarNotificacion;
-
-	[ObservableProperty]
-	private string _documentoNacionalIdentidad;
-
-	[ObservableProperty]
-	private bool _mostrarVista;
-
-	[ObservableProperty]
-	private bool _habilitarListaDocentes;
+	private bool _cargando;
 
 	[ObservableProperty]
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommand))]
@@ -59,9 +54,38 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 	[ObservableProperty]
 	private ObservableCollection<LegajoDocenteViewModel> _legajosDocentes = new();
 
+	/// <summary>
+	/// Vista filtrada del listado. El filtro se aplica en memoria sobre lo ya cargado, así
+	/// que responde a cada tecla sin ir a la base.
+	/// </summary>
+	public ICollectionView DocentesFiltrados { get; }
+
+	/// <summary>Resumen del índice: "24 docentes" o "3 de 24".</summary>
+	public string Resumen
+	{
+		get
+		{
+			int total = LegajosDocentes.Count;
+			if (total is 0)
+			{
+				return Cargando ? "Cargando…" : "Sin docentes activos";
+			}
+
+			int visibles = 0;
+			foreach (var _ in DocentesFiltrados)
+			{
+				visibles++;
+			}
+
+			return visibles == total
+				? $"{ total } { (total is 1 ? "docente" : "docentes") }"
+				: $"{ visibles } de { total }";
+		}
+	}
+
 	#region Commands
 	public IRelayCommand RegistrarCommand { get; }
-	public IAsyncRelayCommand BuscarCommandAsync { get; }
+	public IAsyncRelayCommand CargarCommandAsync { get; }
 	public IAsyncRelayCommand EliminarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	#endregion
@@ -81,50 +105,69 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 		_gestionLicenciasNavigationService = gestionLicenciasNavigationService;
 		_perfilBuscadoStore = perfilBuscadoStore;
 
-		RegistrarCommand = new RelayCommand<string>(commnad =>
-		{
-			_registrarDocenteNavigationService.Navigate();
-		});
-		BuscarCommandAsync = new AsyncRelayCommand(ExecuteBuscarCommandAsync, CanExecuteBuscarCommand);
-		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommandAsync,CanExecuteEliminarCommand);
-		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
+		DocentesFiltrados = CollectionViewSource.GetDefaultView(LegajosDocentes);
+		DocentesFiltrados.Filter = CoincideConFiltro;
 
-		MostrarVista = false;
-		HabilitarNotificacion = false;
-		HabilitarListaDocentes = false;
+		RegistrarCommand = new RelayCommand<string>(_ => _registrarDocenteNavigationService.Navigate());
+		CargarCommandAsync = new AsyncRelayCommand(ExecuteCargarCommandAsync);
+		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
+		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 	}
 
-	#region BuscarCommand
-	private bool CanExecuteBuscarCommand() =>
-		!HasErrors;
-
-	private async Task ExecuteBuscarCommandAsync()
+	#region Filtro
+	/// <summary>
+	/// Coincidencia por nombre o por legajo, sin distinguir mayúsculas ni acentos de más: el
+	/// personal de secretaría busca tanto por apellido como por número de legajo.
+	/// </summary>
+	private bool CoincideConFiltro(object item)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
+		if (string.IsNullOrWhiteSpace(SearchedText))
+		{
+			return true;
+		}
 
-		HabilitarNotificacion = false;
-		Notificacion = string.Empty;
-		MostrarVista = true;
+		if (item is not LegajoDocenteViewModel docente)
+		{
+			return false;
+		}
+
+		string filtro = SearchedText.Trim();
+
+		// Ojo con los nombres: en LegajoDocenteViewModel la región "Properties" escrita a mano
+		// —con DNI, CUIL y compañía— está dentro de un /* */, así que las propiedades reales
+		// son las que genera [ObservableProperty] a partir de los campos.
+		return docente.NombreCompleto.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+			|| docente.Legajo.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+			|| docente.DocumentoNacionalIdentidad.Contains(filtro, StringComparison.OrdinalIgnoreCase);
+	}
+
+	partial void OnSearchedTextChanged(string value)
+	{
+		DocentesFiltrados.Refresh();
+		OnPropertyChanged(nameof(Resumen));
+	}
+
+	partial void OnCargandoChanged(bool value) =>
+		OnPropertyChanged(nameof(Resumen));
+	#endregion
+
+	#region CargarCommand
+	/// <summary>
+	/// Trae el listado completo de docentes activos al abrir la pantalla.
+	/// </summary>
+	/// <remarks>
+	/// <c>IServicioDocente.ListarDocentesActivosAsync</c> ya existía y no la llamaba nadie: la
+	/// pantalla obligaba a escribir un nombre y apretar "Buscar" antes de mostrar una sola
+	/// fila. Eso convierte el índice en una adivinanza —hay que saber a quién se busca para
+	/// poder ver quién hay— y es el motivo principal por el que la pantalla se sentía vacía.
+	/// </remarks>
+	private async Task ExecuteCargarCommandAsync()
+	{
+		Cargando = true;
 
 		try
 		{
-			var response = await _servicioDocentes.BuscarDocenteSegunNombreCompletoAsync(new NombreCompletoRequest(SearchedText));
-
-			if (response.Count is 0)
-			{
-				/**
-				 * messageBoxText = $"No se ha encontrado ningún docente. Vuelva a intentarlo nuevamente.";
-				 * caption = "Resultado de la búsqueda";
-				 * MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-				 */
-
-				Notificacion = "No se ha encontrado docentes en la búsqueda.\nVuelva a intentarlo nuevamente.";
-				HabilitarNotificacion = true;
-				HabilitarListaDocentes = false;
-
-				return;
-			}
+			var response = await _servicioDocentes.ListarDocentesActivosAsync();
 
 			LegajosDocentes.Clear();
 			foreach (var legajoDocente in response)
@@ -132,87 +175,68 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 				LegajosDocentes.Add(new LegajoDocenteViewModel(legajoDocente));
 			}
 
-			HabilitarListaDocentes = true;
+			DocentesFiltrados.Refresh();
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+			MessageBox.Show(ex.Message, "No se pudo cargar el listado de docentes", MessageBoxButton.OK, MessageBoxImage.Error);
+		}
+		finally
+		{
+			Cargando = false;
+			OnPropertyChanged(nameof(Resumen));
 		}
 	}
 	#endregion
 
 	#region EliminarCommand
-	private bool CanExecuteEliminarCommand()
-	{
-		bool canExecute = false;
-		if (LegajoDocenteSeleccionado is not null)
-		{
-			canExecute = true;
-		}
-
-		return canExecute;
-	}
+	private bool CanExecuteEliminarCommand() =>
+		LegajoDocenteSeleccionado is not null;
 
 	private async Task ExecuteEliminarCommandAsync()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
 		if (LegajoDocenteSeleccionado is null)
 		{
-			messageBoxText = "Se debe buscar previamente el docente para poder realizar los cambios que necesite.";
-			caption = "Quitar Docente";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
 			return;
 		}
 
-		messageBoxText = $"¿Está seguro que desea quitar el docente {LegajoDocenteSeleccionado.NombreCompleto}?";
-		caption = "Quitar Docente";
-		result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-		if (result is MessageBoxResult.Yes)
-		{
-			try
-			{
-				await _servicioDocentes.QuitarDocenteAsync(new DocenteIDRequest(LegajoDocenteSeleccionado.DocenteID));
-				messageBoxText = $"El docente, {LegajoDocenteSeleccionado.NombreCompleto}, se quitó correctamente.";
-				caption = "Operación Exitosa";
+		string nombre = LegajoDocenteSeleccionado.NombreCompleto;
 
-				MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-				LegajoDocenteSeleccionado = null;
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-			}
+		var result = MessageBox.Show($"¿Quitar a { nombre } del listado de docentes?",
+									 "Quitar docente",
+									 MessageBoxButton.YesNo,
+									 MessageBoxImage.Question);
+		if (result is not MessageBoxResult.Yes)
+		{
+			return;
+		}
+
+		try
+		{
+			await _servicioDocentes.QuitarDocenteAsync(new DocenteIDRequest(LegajoDocenteSeleccionado.DocenteID));
+			LegajoDocenteSeleccionado = null;
+
+			// Recargar: dejar la fila borrada en pantalla es la forma más rápida de que
+			// alguien vuelva a operar sobre un registro que ya no existe.
+			await ExecuteCargarCommandAsync();
+
+			MessageBox.Show($"Se quitó a { nombre }.", "Docente quitado", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, "No se pudo quitar el docente", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 	#endregion
 
 	#region NavigationCommand
-	private bool CanExecuteNavigationCommand(object obj)
-	{
-		bool canExecute = false;
-		if (LegajoDocenteSeleccionado is not null)
-		{
-			canExecute = true;
-		}
-
-		return canExecute;
-	}
+	private bool CanExecuteNavigationCommand(object obj) =>
+		LegajoDocenteSeleccionado is not null;
 
 	private void ExecuteNavigationCommand(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
 		if (LegajoDocenteSeleccionado is null)
 		{
-			messageBoxText = "Se debe buscar previamente el docente que desea visitar el perfil.";
-			caption = "Perfil Docente";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
 			return;
 		}
 

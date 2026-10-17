@@ -14,9 +14,21 @@ internal class StartupViewModel : ObservableObject
 	private StartupWindowNavigationStore _navigationStore;
 
 	public ObservableObject ViewModel => _navigationStore.ViewModel;
-	
+
 	private bool _isWindowVisible = true;
 	private string _year = DateTime.Now.Year.ToString();
+	private string _seccionActiva = "Login";
+
+	/// <summary>
+	/// Pestaña abierta: <c>Login</c> o <c>Registrar</c>. La usa la vista para marcar cuál de
+	/// las dos está activa; sin esto las dos se ven igual y no hay forma de saber qué
+	/// formulario se está completando.
+	/// </summary>
+	public string SeccionActiva
+	{
+		get => _seccionActiva;
+		private set => SetProperty(ref _seccionActiva, value);
+	}
 
 	public IRelayCommand NavigationCommand { get; }
 
@@ -32,6 +44,11 @@ internal class StartupViewModel : ObservableObject
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
 		_navigationStore.ViewModelChanged += OnViewModelChanged;
+
+		// La ventana abría con el área del formulario vacía: había que hacer clic en "Login"
+		// para que apareciera siquiera el campo de usuario. El acceso es lo que viene a hacer
+		// el 99% de las veces; se navega solo.
+		ExecuteNavigationCommand("Login");
 	}
 
 	public bool IsWindowVisible
@@ -63,9 +80,11 @@ internal class StartupViewModel : ObservableObject
 		{
 			case "Login":
 				_loginUsuarioNavigationService.Navigate();
+				SeccionActiva = "Login";
 				break;
 			case "Registrar":
 				_registrarUsuarioNavigationService.Navigate();
+				SeccionActiva = "Registrar";
 				break;
 		}
 	}

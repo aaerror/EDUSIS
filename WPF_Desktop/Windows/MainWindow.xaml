@@ -1,29 +1,49 @@
-﻿<Window x:Class="WPF_Desktop.Windows.MainWindow"
-		xmlns:local="clr-namespace:WPF_Desktop.Windows"
-		xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
-		xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
-		xmlns:usuarioView="clr-namespace:WPF_Desktop.Views.Usuarios"
-		xmlns:components="clr-namespace:WPF_Desktop.Components"
-		xmlns:modal="clr-namespace:WPF_Desktop.Views.Shared.Modal"
+<Window x:Class="WPF_Desktop.Windows.MainWindow"
 		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:local="clr-namespace:WPF_Desktop.Windows"
+		xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+		xmlns:components="clr-namespace:WPF_Desktop.Components"
+		xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+		xmlns:usuarioView="clr-namespace:WPF_Desktop.Views.Usuarios"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		mc:Ignorable="d"
-		Title="EDUSIS"
-		AllowsTransparency="True"
-		Background="Transparent"
-		BorderBrush="Transparent"
-		BorderThickness="0"
+		Background="{ StaticResource ResourceKey=Tiza }"
+		Height="800"
 		Icon="../bell-ring-icon.png"
-		Height="760"
-		Width="1280"
-		HorizontalAlignment="Center"
-		VerticalAlignment="Center"
-		ResizeMode="NoResize"
-		UseLayoutRounding="False"
+		MinHeight="620"
+		MinWidth="1040"
+		ResizeMode="CanResize"
+		Title="EDUSIS"
+		Width="1320"
 		WindowStartupLocation="CenterScreen"
 		WindowStyle="None">
+	<!--
+		MARCO DE VENTANA PROPIO, PERO CON COMPORTAMIENTO NATIVO.
+
+		Antes: WindowStyle="None" + AllowsTransparency="True" + ResizeMode="NoResize" y ningún
+		botón de cierre en todo el XAML. La ventana no se podía mover, redimensionar, minimizar,
+		maximizar ni cerrar: la única salida era Alt+F4.
+
+		WindowChrome es la respuesta de WPF a esto. Conserva el marco real del sistema —y con él
+		el redimensionado desde los bordes, el acoplado con Win+flechas, el doble clic para
+		maximizar y el respeto por la barra de tareas— mientras deja dibujar la barra de título.
+		AllowsTransparency tiene que quedar en False: con transparencia se pierde el marco real
+		y vuelven todos esos problemas, además de forzar render por software.
+
+		CaptionHeight define la franja arrastrable; lo que tiene que seguir siendo clickeable
+		adentro de esa franja se marca con WindowChrome.IsHitTestVisibleInChrome="True".
+	-->
+	<shell:WindowChrome.WindowChrome>
+		<shell:WindowChrome CaptionHeight="38"
+							CornerRadius="0"
+							GlassFrameThickness="0"
+							NonClientFrameEdges="None"
+							ResizeBorderThickness="6"
+							UseAeroCaptionButtons="False"/>
+	</shell:WindowChrome.WindowChrome>
+
 	<!--#region EVENTS-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
@@ -32,139 +52,179 @@
 	</behaviors:Interaction.Triggers>
 	<!--#endregion-->
 
-	<!--#region MAIN-->
-	<Border Background="White"
-			BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-			BorderThickness="1"
-			CornerRadius="6">
-		<Grid x:Name="Container">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition/>
-				<ColumnDefinition Width="1017*"/>
-			</Grid.ColumnDefinitions>
-			<!--#region LEFT SIDE-->
-			<Border Grid.Column="0"
-					Background="#F8FAFC"
-					BorderBrush="Transparent"
-					BorderThickness="0"
-					CornerRadius="6 0 0 6">
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="248"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+
+		<!--#region RAIL
+			Campo Pizarra continuo de arriba a abajo, incluida la franja de título: la
+			identidad institucional ocupa una columna, no una barra decorativa.
+		-->
+		<Border Grid.Column="0"
+				Background="{ StaticResource ResourceKey=Pizarra }">
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
+
+				<!--#region MARCA-->
+				<StackPanel Grid.Row="0"
+							Margin="20 26 20 30">
+					<StackPanel Orientation="Horizontal">
+						<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
+								   Height="26"
+								   Margin="0 0 11 0"
+								   VerticalAlignment="Center"
+								   Width="4"/>
+						<TextBlock FontFamily="{ StaticResource ResourceKey=Fuente.Display }"
+								   FontSize="25"
+								   FontStretch="SemiCondensed"
+								   FontWeight="Bold"
+								   Foreground="#FFFFFF"
+								   Text="EDUSIS"
+								   VerticalAlignment="Center"/>
+					</StackPanel>
+					<TextBlock Foreground="{ StaticResource ResourceKey=SobrePizarraMedia }"
+							   Margin="15 3 0 0"
+							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="Gestión escolar"/>
+				</StackPanel>
+				<!--#endregion-->
+
+				<!--#region SECCIONES
+					Las entradas se habilitan por permiso. Una sección sin permiso queda
+					visible pero apagada, con el motivo en el ToolTip: esconderla haría que
+					nadie sepa que existe, y que un docente y un directivo vean dos apps
+					distintas sin explicación.
+				-->
+				<StackPanel Grid.Row="1">
+					<TextBlock Foreground="{ StaticResource ResourceKey=SobrePizarraTenue }"
+							   Margin="20 0 20 10"
+							   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+							   Text="GESTIÓN"/>
+
+					<Button Command="{ Binding Path=GestionDocentesCommand }"
+							Content="Docentes"
+							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							ToolTip="Legajos, puestos y licencias del personal docente"/>
+
+					<Button Command="{ Binding Path=GestionAlumnosCommand }"
+							Content="Alumnos"
+							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							ToolTip="Legajos de alumnos e inscripciones"/>
+
+					<Button Command="{ Binding Path=GestionCursosCommand }"
+							Content="Cursos"
+							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							ToolTip="Cursos, divisiones, currículas y cátedras"/>
+				</StackPanel>
+				<!--#endregion-->
+
+				<!--#region USUARIO-->
+				<Border Grid.Row="3"
+						BorderBrush="{ StaticResource ResourceKey=PizarraAlta }"
+						BorderThickness="0 1 0 0"
+						Padding="20 16">
+				<StackPanel>
+					<usuarioView:UsuarioView DataContext="{ Binding Path=UsuarioViewModel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
+					<Button Command="{ Binding Path=SalirCommand }"
+							Content="Salir"
+							FontSize="12"
+							Height="30"
+							HorizontalAlignment="Left"
+							Margin="-12 10 0 0"
+							Style="{ StaticResource ResourceKey=Btn.Terciario.Claro }"
+							ToolTip="Cerrar la sesión y salir de EDUSIS"/>
+				</StackPanel>
+				</Border>
+				<!--#endregion-->
+			</Grid>
+		</Border>
+		<!--#endregion-->
+
+		<!--#region LADO DE CONTENIDO-->
+		<Grid Grid.Column="1">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="38"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+
+			<!--#region BARRA DE TÍTULO-->
+			<Border Grid.Row="0"
+					Background="{ StaticResource ResourceKey=Papel }"
+					BorderBrush="{ StaticResource ResourceKey=Linea }"
+					BorderThickness="0 0 0 1">
 				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="*"/>
-					</Grid.RowDefinitions>
-					<!--#region LOGO-->
-					<Border Grid.Row="0"
-							BorderBrush="#F8FAFC"
-							BorderThickness="1"
-							CornerRadius="7 0 0 7"
-							Padding="20 35">
-						<StackPanel Grid.Row="0"
-									HorizontalAlignment="Center"
-									VerticalAlignment="Center">
-							<Label Content="EDUSIS"
-								   FontWeight="Black"
-								   Foreground="{ StaticResource ResourceKey=PrimaryColor }"
-								   Style="{ StaticResource ResourceKey=Display }"/>
-						</StackPanel>
-					</Border>
-					<!--#endregion-->
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
 
-					<!--#region MENU-->
-					<Border Grid.Row="1"
-							BorderThickness="0"
-							CornerRadius="0 40 0 7"
-							Padding="30 10">
-						<Border.Background>
-							<LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-								<GradientStop Color="#119B15" Offset=".25"/>
-								<GradientStop Color="#119C72" Offset=".75"/>
-							</LinearGradientBrush>
-						</Border.Background>
-						<Grid Margin="0 20">
-							<Grid.RowDefinitions>
-								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="*"/>
-							</Grid.RowDefinitions>
+					<TextBlock Grid.Column="0"
+							   Margin="20 0"
+							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="{ Binding Path=SeccionActual }"
+							   VerticalAlignment="Center"/>
 
-							<!--#region COMMANDS-->
-							<StackPanel Grid.Row="0">
-								<Button Command="{ Binding Path=GestionDocentesCommand }"
-										Content="Docentes"
-										Height="45"
-										Margin="0 0 0 20"
-										Width="200"
-										Style="{ StaticResource ResourceKey=MenuButton }"/>
-
-								<Button Command="{ Binding Path=GestionAlumnosCommand }"
-										Content="Alumnos"
-										Height="45"
-										Margin="0 20"
-										Width="200"
-										Style="{ StaticResource ResourceKey=MenuButton }"/>
-
-								<Button Command="{ Binding Path=GestionCursosCommand }"
-										Content="Cursos"
-										Height="45"
-										Margin="0 20"
-										Width="200"
-										Style="{ StaticResource ResourceKey=MenuButton }"/>
-							</StackPanel>
-							<!--#endregion-->
-
-							<!--#region USER INFO-->
-							<Border Grid.Row="1"
-									CornerRadius="8"
-									Padding="10 5"
-									VerticalAlignment="Bottom">
-								<Border.Background>
-									<LinearGradientBrush StartPoint="0,1" EndPoint="1,0">
-										<GradientStop Color="#FEFEFA" Offset=".25"/>
-										<GradientStop Color="#FEFEFB" Offset=".5"/>
-										<GradientStop Color="#FEFEFC" Offset=".75"/>
-									</LinearGradientBrush>
-								</Border.Background>
-								<usuarioView:UsuarioView DataContext="{ Binding Path=UsuarioViewModel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
-							</Border>
-							<!--#endregion-->
-						</Grid>
-					</Border>
-					<!--#endregion-->
+					<StackPanel Grid.Column="1"
+								Orientation="Horizontal"
+								shell:WindowChrome.IsHitTestVisibleInChrome="True">
+						<Button Click="Minimizar_Click"
+								Content="&#xE921;"
+								Style="{ StaticResource ResourceKey=Btn.Ventana }"
+								ToolTip="Minimizar"/>
+						<Button x:Name="BotonMaximizar"
+								Click="Maximizar_Click"
+								Content="&#xE922;"
+								Style="{ StaticResource ResourceKey=Btn.Ventana }"
+								ToolTip="Maximizar"/>
+						<Button Click="Cerrar_Click"
+								Content="&#xE8BB;"
+								Style="{ StaticResource ResourceKey=Btn.Ventana.Cerrar }"
+								ToolTip="Cerrar EDUSIS"/>
+					</StackPanel>
 				</Grid>
 			</Border>
 			<!--#endregion-->
 
-			<!--#region MAIN-->
-			<Border Grid.Column="1"
-					Grid.ColumnSpan="2"
-					Background="#F8FAFC"
-					BorderBrush="Transparent"
-					BorderThickness="0"
-					CornerRadius="0 6 6 0">
-				<Grid x:Name="MainContainer"
-					  Background="Transparent"
-					  Margin="10">
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="328*"/>
-						<ColumnDefinition Width="5*"/>
-					</Grid.ColumnDefinitions>
-					<!--#region MODAL-->
-					<components:ModalComponent Panel.ZIndex="10"
-											   EstaAbierto="{ Binding Path=ModalEstaAbierto, UpdateSourceTrigger=PropertyChanged }">
-						<ContentControl Content="{ Binding Path=ModalViewModelActual, UpdateSourceTrigger=PropertyChanged }"/>
-					</components:ModalComponent>
-					<!--#endregion-->
+			<!--#region CONTENIDO-->
+			<Grid Grid.Row="1">
+				<ContentControl Content="{ Binding Path=ViewModelActual }"
+								Validation.ErrorTemplate="{ x:Null }"/>
 
-					<!--#region ViewModel-->
-					<ContentControl Grid.ColumnSpan="2"
-									Content="{ Binding Path=ViewModelActual }"
-									Validation.ErrorTemplate="{ x:Null }"/>
-					<!--#endregion-->
-				</Grid>
-			</Border>
+				<!--
+					Estado inicial. Antes el área arrancaba en blanco sin ninguna indicación:
+					una pantalla vacía es una invitación a actuar sólo si dice qué hacer.
+				-->
+				<StackPanel HorizontalAlignment="Center"
+							VerticalAlignment="Center"
+							Visibility="{ Binding Path=HayContenido, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+					<TextBlock HorizontalAlignment="Center"
+							   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+							   Text="Elegí una sección"/>
+					<TextBlock HorizontalAlignment="Center"
+							   Margin="0 6 0 0"
+							   MaxWidth="340"
+							   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+							   Text="Docentes, Alumnos o Cursos, en el menú de la izquierda. Las secciones que tu rol no habilita aparecen apagadas."
+							   TextAlignment="Center"
+							   TextWrapping="Wrap"/>
+				</StackPanel>
+
+				<!--#region MODAL-->
+				<components:ModalComponent Panel.ZIndex="10"
+										   EstaAbierto="{ Binding Path=ModalEstaAbierto, UpdateSourceTrigger=PropertyChanged }">
+					<ContentControl Content="{ Binding Path=ModalViewModelActual, UpdateSourceTrigger=PropertyChanged }"/>
+				</components:ModalComponent>
+				<!--#endregion-->
+			</Grid>
 			<!--#endregion-->
 		</Grid>
-	</Border>
-	<!--#endregion-->
+		<!--#endregion-->
+	</Grid>
 </Window>

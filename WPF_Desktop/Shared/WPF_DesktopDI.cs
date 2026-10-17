@@ -98,6 +98,7 @@ internal static class WPF_DesktopDI
 								  CreateGestionAlumnosNavigationService(provider),
 								  CreateGestionCursosNavigationService(provider),
 								  provider.GetRequiredService<ISesionUsuario>(),
+								  provider.GetRequiredService<IDialogService>(),
 								  provider.GetRequiredService<IMessenger>()));
 
 		services.AddTransient<BuscarViewModel>();

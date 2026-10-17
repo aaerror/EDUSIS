@@ -4,6 +4,7 @@ using Core.ServicioUsuarios.DTOs.Requests;
 using Core.ServicioUsuarios;
 using Core.Shared.Seguridad;
 using System.Threading.Tasks;
+using System;
 
 namespace WPF_Desktop.ViewModels.Usuarios;
 
@@ -16,6 +17,7 @@ internal partial class UsuarioViewModel : ObservableObject
 	private string _username;
 
 	[ObservableProperty]
+	[NotifyPropertyChangedFor(nameof(Iniciales))]
 	private string _nombreCompleto;
 
 	[ObservableProperty]
@@ -23,6 +25,27 @@ internal partial class UsuarioViewModel : ObservableObject
 	private bool _estaConectado = false;
 
 	public string Estado => EstaConectado ? "Conectado" : "Sin conexión";
+
+	/// <summary>
+	/// Iniciales para la credencial del rail. Dos letras como máximo: con tres o más deja de
+	/// leerse como una inicial y pasa a parecer una sigla.
+	/// </summary>
+	public string Iniciales
+	{
+		get
+		{
+			if (string.IsNullOrWhiteSpace(NombreCompleto))
+			{
+				return "–";
+			}
+
+			var palabras = NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+			return palabras.Length is 1
+				? palabras[0][..1].ToUpperInvariant()
+				: string.Concat(palabras[0][..1], palabras[^1][..1]).ToUpperInvariant();
+		}
+	}
 
 	#region Commands
 	public IAsyncRelayCommand CargarUsuarioCommandAsync { get; }
