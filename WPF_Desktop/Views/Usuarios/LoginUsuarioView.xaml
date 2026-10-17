@@ -53,7 +53,7 @@
 				<TextBlock Text="{ Binding Path=MensajeError, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 						   TextWrapping="Wrap"
 						   Foreground="{ StaticResource ResourceKey=Red600 }"
-						   Style="{ StaticResource ResourceKey=TextBlock }"/>
+						   Style="{ StaticResource ResourceKey=TextBlock_Body }"/>
 			</StackPanel>
 			<!-- Content="" -->
 		</StackPanel>

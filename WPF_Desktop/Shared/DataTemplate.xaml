@@ -28,14 +28,14 @@
 					xmlns:vDivisiones="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
 					xmlns:vmUsuarios="clr-namespace:WPF_Desktop.ViewModels.Usuarios"
 					xmlns:vUsuarios="clr-namespace:WPF_Desktop.Views.Usuarios">
-	<!--WINDOWs-->
-	<DataTemplate DataType="{ x:Type viewModel:MainViewModel }">
-		<windows:MainWindow/>
-	</DataTemplate>
-
-	<DataTemplate DataType="{ x:Type viewModel:StartupViewModel }">
-		<windows:StartupWindow/>
-	</DataTemplate>
+	<!--
+		Acá NO van las ventanas. Había un DataTemplate de MainViewModel -> <windows:MainWindow/>
+		y otro de StartupViewModel -> <windows:StartupWindow/>: un DataTemplate nunca puede
+		producir una Window válida, porque una Window tiene que ser la raíz de su árbol. En
+		cuanto un ContentControl recibía uno de esos dos ViewModels, la app moría con "Window
+		debe ser la raíz del árbol. No se puede agregar Window como elemento secundario de
+		Visual". Este diccionario mapea ViewModels de CONTENIDO a UserControls, nada más.
+	-->
 
 	<!--MODAL-->
 	<DataTemplate DataType="{ x:Type vmModal:BuscarViewModel }">
