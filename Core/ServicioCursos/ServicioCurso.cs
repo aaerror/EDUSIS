@@ -2,8 +2,10 @@ using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos.DTOs.Responses;
 using Core.ServicioCursos.Exceptions;
 using Core.Shared;
+using Core.Shared.Seguridad;
 using Domain.Cursos;
 using Domain.Shared;
+using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioCursos;
@@ -12,10 +14,12 @@ internal class ServicioCurso : IServicio, IServicioCurso
 {
 	private readonly IUnitOfWork _unitOfWork;
 	private readonly ILogger<ServicioCurso> _logger;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioCurso(IUnitOfWork unitOfWork, ILogger<ServicioCurso> logger)
+	public ServicioCurso(IUnitOfWork unitOfWork, ILogger<ServicioCurso> logger, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_unitOfWork = unitOfWork;
 		_logger = logger;
 	}
@@ -49,6 +53,8 @@ internal class ServicioCurso : IServicio, IServicioCurso
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCursos);
+
 			var resultG = Enum.TryParse<Grado>(request.Grado, true, out Grado grado);
 			var resultNE = Enum.TryParse<NivelEducativo>(request.NivelEducativo, true, out NivelEducativo nivelEducativo);
 			if (resultG && resultNE)
@@ -78,6 +84,8 @@ internal class ServicioCurso : IServicio, IServicioCurso
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCursos);
+
 			await _unitOfWork.Cursos.EliminarAsync(request.CursoID);
 			// TODO: Eliminar todas las materias y divisiones con este curso asociado
 			var result = await _unitOfWork.GuardarCambiosAsync();

@@ -2,9 +2,11 @@ using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioDivisiones.Exceptions;
 using Core.Shared;
+using Core.Shared.Seguridad;
 using Domain.Cursantes;
 using Domain.Divisiones;
 using Domain.Shared;
+using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioDivisiones;
@@ -13,10 +15,12 @@ internal class ServicioDivision : IServicio, IServicioDivision
 {
 	private readonly ILogger<ServicioDivision> _logger;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioDivision(ILogger<ServicioDivision> logger, IUnitOfWork unitOfWork)
+	public ServicioDivision(ILogger<ServicioDivision> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 	}
@@ -70,6 +74,8 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCursos);
+
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
@@ -101,6 +107,8 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCursos);
+
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
@@ -136,6 +144,8 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCursos);
+
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
@@ -166,6 +176,8 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCursos);
+
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{

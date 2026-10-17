@@ -2,10 +2,12 @@ using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.DTOs.Responses;
 using Core.ServicioCatedras.Exceptions;
 using Core.Shared;
+using Core.Shared.Seguridad;
 using Domain.Catedras;
 using Domain.Catedras.Horarios;
 using Domain.Catedras.SituacionesRevista;
 using Domain.Shared;
+using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioCatedras;
@@ -14,10 +16,12 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 {
 	private readonly ILogger<ServicioCatedra> _logger;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioCatedra(ILogger<ServicioCatedra> logger, IUnitOfWork unitOfWork)
+	public ServicioCatedra(ILogger<ServicioCatedra> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 	}
@@ -53,6 +57,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
 			var materia = await _unitOfWork.Materias.BuscarPorIDAsync(request.MateriaID);
 			if (materia is null)
 			{
@@ -101,6 +107,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 
 			var existeDocente = await _unitOfWork.Docentes.ExisteIDAsync(request.DocenteID);
@@ -139,6 +147,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 			catedra.PonerEnFunciones(request.SituacionRevistaID);
 
@@ -158,6 +168,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 			catedra.RelevarDeFunciones();
 
@@ -179,6 +191,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 			catedra.EstablecerFinDeDesignacion(request.SituacionRevistaID, request.FechaFin);
 
@@ -198,6 +212,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 			catedra.FinalizarDesignacion(request.SituacionRevistaID);
 
@@ -219,6 +235,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 			var horario = CrearHorario(request.Turno, request.DiaSemana, request.HoraInicio, request.DuracionHoraCatedra);
 
@@ -267,6 +285,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 			var horario = CrearHorario(request.Turno, request.DiaSemana, request.HoraInicio, request.DuracionHoraCatedra);
 

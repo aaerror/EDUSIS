@@ -5,6 +5,8 @@ using Core.Shared;
 using Domain.Licencias;
 using Domain.Shared;
 using Microsoft.Extensions.Logging;
+using Core.Shared.Seguridad;
+using Domain.Usuarios;
 
 namespace Core.ServicioLicencias;
 
@@ -12,10 +14,12 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 {
 	private readonly ILogger<ServicioLicencia> _logger;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioLicencia(ILogger<ServicioLicencia> logger, IUnitOfWork unitOfWork)
+	public ServicioLicencia(ILogger<ServicioLicencia> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 	}
@@ -48,6 +52,8 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
@@ -72,6 +78,8 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
@@ -96,6 +104,8 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
@@ -121,6 +131,8 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
@@ -149,6 +161,8 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var existeDocente = await _unitOfWork.Docentes.ExisteIDAsync(request.DocenteID);
 			if (!existeDocente)
 			{

@@ -1,4 +1,6 @@
 using Core.Shared;
+using Core.Shared.Seguridad;
+using EDUSIS.TestSupport.Fakes;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,12 +31,20 @@ public static class ComposicionDePruebaE2E
 	/// nunca la hardcodeada de <c>InfrastructureDI</c> — FR-016). El llamador es dueño del
 	/// <see cref="ServiceProvider"/> devuelto y debe liberarlo.
 	/// </summary>
-	public static ServiceProvider Construir(string cadenaDeConexion)
+	public static ServiceProvider Construir(string cadenaDeConexion, ISesionActual? sesion = null)
 	{
 		var servicios = new ServiceCollection();
 
 		servicios.AddLogging();
 		servicios.AddInfrastructure();
+
+		// La sesión es la segunda sustitución respecto de producción, donde la provee
+		// WPF_Desktop (SesionUsuario). Va ANTES de AddServices() sólo por legibilidad: los
+		// servicios de Core la piden por constructor y el contenedor la resuelve igual.
+		// Por omisión concede los diez permisos: las pruebas E2E recorren casos de uso, no
+		// autorización.
+		servicios.AddSingleton(sesion ?? SesionDePrueba.ConTodosLosPermisos());
+
 		servicios.AddServices();
 
 		RedirigirElDbContext(servicios, cadenaDeConexion);

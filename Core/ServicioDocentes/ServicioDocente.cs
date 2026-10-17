@@ -9,6 +9,8 @@ using Domain.Personas.Domicilios;
 using Domain.Personas;
 using Domain.Shared;
 using Microsoft.Extensions.Logging;
+using Core.Shared.Seguridad;
+using Domain.Usuarios;
 
 namespace Core.ServicioDocentes;
 
@@ -16,10 +18,12 @@ internal class ServicioDocente : IServicio, IServicioDocente
 {
 	private readonly ILogger<ServicioDocente> _logger;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioDocente(ILogger<ServicioDocente> logger, IUnitOfWork unitOfWork)
+	public ServicioDocente(ILogger<ServicioDocente> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 	}
@@ -235,6 +239,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			if (request is null)
 			{
 				throw new NullReferenceException("Datos incompletos para registrar el docente.");
@@ -310,6 +316,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			_logger.LogInformation($"Actualizando datos de contacto del docente...");
 
 			var unDocente = await BuscarDocentePorIDAsync(request.PersonaID);
@@ -332,6 +340,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			_logger.LogInformation($"Actualizando domicilio del docente...");
 
 			var unDocente = await BuscarDocentePorIDAsync(request.PersonaID);
@@ -362,6 +372,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			_logger.LogInformation($"Actualizando datos de sexo del docente...");
 
 			var unDocente = await BuscarDocentePorIDAsync(request.PersonaID);
@@ -383,6 +395,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var unDocente = await BuscarDocentePorIDAsync(request.DocenteID);
 			unDocente.Desafectar();
 
@@ -521,6 +535,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var unDocente = await _unitOfWork.Docentes
 				.BuscarPorIDAsync(request.DocenteID);
 			unDocente.AsignarCargoDocente(
@@ -544,6 +560,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var unDocente = await _unitOfWork.Docentes
 				.BuscarPorIDAsync(request.DocenteID);
 			unDocente.ModificarCargoDocente(
@@ -588,6 +606,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var unDocente = await _unitOfWork.Docentes
 				.BuscarPorIDAsync(request.DocenteID);
 			unDocente.RescindirCargoDocente(request.PuestoID, request.FechaFin);
@@ -610,6 +630,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
 			var unDocente = await _unitOfWork.Docentes
 				.BuscarPorIDAsync(request.DocenteID);
 			unDocente.EliminarCargoDocente(request.PuestoID);

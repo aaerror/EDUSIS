@@ -4,6 +4,17 @@
 		<TargetFramework>net7.0-windows</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
+
+		<!--
+			El TFM sigue siendo net7.0-windows, pero en esta máquina sólo está el runtime
+			.NET 10 (de WindowsDesktop no hay ningún 7.x ni 8.x). El build rollforwardea
+			solo; la EJECUCIÓN no, por defecto: la política por defecto es Minor, que no
+			cruza de major. Sin esta propiedad, `dotnet run` y `dotnet ef` (que arranca el
+			entry point de este proyecto para obtener el IHost) cortan con
+			"You must install or update .NET to run this application".
+			Mismo criterio que tests/Directory.Build.props.
+		-->
+		<RollForward>Major</RollForward>
 	</PropertyGroup>
 
 	<ItemGroup>

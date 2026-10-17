@@ -5,6 +5,7 @@ using Core.Shared;
 using Domain.Usuarios;
 using Domain.Shared;
 using Microsoft.Extensions.Logging;
+using Core.Shared.Seguridad;
 
 namespace Core.ServicioUsuarios;
 
@@ -13,10 +14,12 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 	private readonly ILogger<ServicioUsuario> _logger;
 	private readonly IUnitOfWork _unitOfWork;
 	private readonly IServicioSeguridad _servicioSeguridad;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioUsuario(ILogger<ServicioUsuario> logger, IUnitOfWork unitOfWork, IServicioSeguridad servicioSeguridad)
+	public ServicioUsuario(ILogger<ServicioUsuario> logger, IUnitOfWork unitOfWork, IServicioSeguridad servicioSeguridad, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 		_servicioSeguridad = servicioSeguridad;
@@ -39,12 +42,11 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 									   usuario.Username,
 									   docente.DatosPersonales.NombreCompleto(),
 									   docente.Puesto is not null ? docente.Puesto.Posicion.ToString() : "Sin puesto docente asignado",
-									   new List<string>()
-									   {
-										   "Basic",
-										   "Custom"
-									   });
-									   //usuario.Roles.Count() > 0 ? usuario.Roles.Select(x => x.Descripcion).ToList() : new List<string>());
+									   // Roles reales del usuario, no los "Basic"/"Custom" que devolvía hardcodeado:
+									   // son el insumo de la autorización (ver Core.Shared.Seguridad.ISesionActual) y
+									   // Viajan como Id, no como descripción (ver UsuarioResponse). Los carga el Include de
+									   // UsuarioRepository.Consulta(), que BuscarPorIDAsync usa por la clase base.
+									   usuario.Roles.Select(x => x.Id).ToList());
 		}
 		catch (Exception ex)
 		{
@@ -55,6 +57,8 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 
 	public async Task RegistrarUsuarioAsync(RegistrarUsuarioRequest request)
 	{
+		_sesion.Exigir(Permiso.AdministrarUsuarios);
+
 		if (request is null)
 		{
 			throw new NullReferenceException("Datos incompletos para registrar el usuario.");
@@ -156,6 +160,8 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 
 	public async Task RestablecerAccesoAsync(RestablecerAccesoRequest request)
 	{
+		_sesion.Exigir(Permiso.AdministrarUsuarios);
+
 		if (request is null)
 		{
 			throw new NullReferenceException("Datos incompletos para restablecer la clave de identidad del usuario.");
@@ -196,6 +202,8 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.AsignarRoles);
+
 			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{
@@ -218,6 +226,8 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.AsignarRoles);
+
 			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{

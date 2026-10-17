@@ -1,20 +1,16 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioUsuarios.DTOs.Requests;
 using Core.ServicioUsuarios;
-using System.Security.Claims;
+using Core.Shared.Seguridad;
 using System.Threading.Tasks;
-using System.Threading;
-using System;
-using WPF_Desktop.Security;
 
 namespace WPF_Desktop.ViewModels.Usuarios;
 
-//https://dotnetcodr.com/security-and-cryptography/
-//https://tamingdotnet.blogspot.com/2024/11/claimsprincipal-claimsidentity-claims.html
 internal partial class UsuarioViewModel : ObservableObject
 {
 	private readonly IServicioUsuario _servicioUsuario;
+	private readonly ISesionActual _sesion;
 
 	[ObservableProperty]
 	private string _username;
@@ -32,36 +28,32 @@ internal partial class UsuarioViewModel : ObservableObject
 	public IAsyncRelayCommand CargarUsuarioCommandAsync { get; }
 	#endregion
 
-	public UsuarioViewModel(IServicioUsuario servicioUsuario)
+	public UsuarioViewModel(IServicioUsuario servicioUsuario, ISesionActual sesion)
 	{
 		_servicioUsuario = servicioUsuario;
+		_sesion = sesion;
 
 		CargarUsuarioCommandAsync = new AsyncRelayCommand(CargarUsuarioCommandExecute);
 	}
 
+	/// <summary>
+	/// Lee la sesión del singleton y no de <c>Thread.CurrentPrincipal</c>. Además de resolver la
+	/// afinidad de hilo (ver <c>SesionUsuario</c>), saca de encima un <c>NullReferenceException</c>
+	/// latente: la versión anterior hacía <c>principal.Identity</c> sobre el resultado de un
+	/// <c>as ClaimsPrincipal</c> sin comprobar null.
+	/// </summary>
 	private async Task CargarUsuarioCommandExecute()
 	{
-		var principal = Thread.CurrentPrincipal as ClaimsPrincipal;
-		if (!principal.Identity.IsAuthenticated)
+		if (!_sesion.EstaAutenticado)
 		{
 			EstaConectado = false;
+			return;
 		}
-		else
-		{
-			var identity = principal.Identity as BasicIdentity;
-			if (identity is not null)
-			{
-				var usuarioID = Guid.Parse(identity.FindFirst(ClaimTypes.NameIdentifier).Value);
-				var usuario = await _servicioUsuario.BuscarUsuarioPorIDAsync(new UsuarioIDRequest(usuarioID));
 
-				Username = usuario.Usuario;
-				NombreCompleto = usuario.NombreCompleto;
-				EstaConectado = principal.Identity.IsAuthenticated;
+		var usuario = await _servicioUsuario.BuscarUsuarioPorIDAsync(new UsuarioIDRequest(_sesion.UsuarioID.Value));
 
-				return;
-			}
-
-			EstaConectado = false;
-		}
+		Username = usuario.Usuario;
+		NombreCompleto = usuario.NombreCompleto;
+		EstaConectado = true;
 	}
 }

@@ -19,6 +19,16 @@
 	<ItemGroup>
 		<InternalsVisibleTo Include="Core.UnitTests" />
 		<InternalsVisibleTo Include="EDUSIS.EndToEndTests" />
+
+		<!--
+			Agregado por plan/rbac-y-seed.md Fase 7: Tools/EDUSIS.Seed necesita
+			`IServicioSeguridad` para hashear las contraseñas de los usuarios sembrados
+			con el MISMO algoritmo que valida el login. La alternativa era duplicar el
+			PBKDF2 en el seeder, que divergiría sin aviso al cambiar iteraciones o
+			algoritmo. Mismo criterio y mismo costo que las dos líneas de arriba:
+			metadatos de assembly, sin efecto en comportamiento ni en el binario.
+		-->
+		<InternalsVisibleTo Include="EDUSIS.Seed" />
 	</ItemGroup>
 
 	<ItemGroup>

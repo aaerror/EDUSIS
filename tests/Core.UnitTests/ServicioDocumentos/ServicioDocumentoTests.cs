@@ -1,6 +1,7 @@
 using Core.ServicioDocumentos;
 using Core.Shared.Documentos;
 using EDUSIS.TestSupport;
+using EDUSIS.TestSupport.Fakes;
 using NSubstitute;
 using Shouldly;
 using Xunit;
@@ -21,7 +22,7 @@ public class ServicioDocumentoTests
 
 	public ServicioDocumentoTests()
 	{
-		_servicio = new ServicioDocumento(_generador);
+		_servicio = new ServicioDocumento(_generador, SesionDePrueba.ConTodosLosPermisos());
 	}
 
 	[Fact]

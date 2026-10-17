@@ -85,6 +85,14 @@ public class Usuario : Entity
 		_roles.Remove(rol);
 	}
 
+	/// <summary>
+	/// Autorización del usuario: ¿alguno de sus roles habilita esta acción? Sin roles no hay
+	/// permisos (se niega por omisión), y la pregunta es por permiso y no por rol para que
+	/// mover una atribución sea un cambio en <see cref="Rol"/> y no en cada punto de uso.
+	/// </summary>
+	public bool TienePermiso(Permiso unPermiso) =>
+		_roles.Any(rol => rol.Tiene(unPermiso));
+
 	public void CambiarPassword(string passwordSalt, string passwordHash)
 	{
 		PasswordSalt = passwordSalt;

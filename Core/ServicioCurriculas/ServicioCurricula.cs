@@ -1,8 +1,10 @@
 using Core.ServicioCurriculas.DTOs.Requests;
 using Core.ServicioCurriculas.DTOs.Responses;
 using Core.Shared;
+using Core.Shared.Seguridad;
 using Domain.Curriculas;
 using Domain.Shared;
+using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioCurriculas;
@@ -11,10 +13,12 @@ internal class ServicioCurricula : IServicio, IServicioCurricula
 {
 	private readonly IUnitOfWork _unitOfWork;
 	private readonly ILogger<ServicioCurricula> _logger;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioCurricula(IUnitOfWork unitOfWork, ILogger<ServicioCurricula> logger)
+	public ServicioCurricula(IUnitOfWork unitOfWork, ILogger<ServicioCurricula> logger, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_unitOfWork = unitOfWork;
 		_logger = logger;
 	}
@@ -62,6 +66,8 @@ internal class ServicioCurricula : IServicio, IServicioCurricula
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCurriculas);
+
 			await _unitOfWork.BeginTransactionAsync();
 
 			var curriculas = await _unitOfWork.Curriculas.CurriculasSegunCursoAsync(request.CursoID);
@@ -101,6 +107,8 @@ internal class ServicioCurricula : IServicio, IServicioCurricula
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCurriculas);
+
 			var curricula = await BuscarCurriculaAsync(request);
 			curricula.Desafectar();
 

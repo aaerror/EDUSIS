@@ -2,9 +2,11 @@ using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes.DTOs.Responses;
 using Core.ServicioCursantes.Exceptions;
 using Core.Shared;
+using Core.Shared.Seguridad;
 using Domain.Cursantes;
 using Domain.Cursantes.Calificaciones;
 using Domain.Shared;
+using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioCursantes;
@@ -13,10 +15,12 @@ internal class ServicioCursante : IServicio, IServicioCursante
 {
 	private readonly ILogger<ServicioCursante> _logger;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioCursante(ILogger<ServicioCursante> logger, IUnitOfWork unitOfWork)
+	public ServicioCursante(ILogger<ServicioCursante> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 	}
@@ -26,6 +30,8 @@ internal class ServicioCursante : IServicio, IServicioCursante
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.InscribirCursantes);
+
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
@@ -148,6 +154,8 @@ internal class ServicioCursante : IServicio, IServicioCursante
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.CargarCalificaciones);
+
 			var cicloLectivo = CicloLectivo.Crear(request.Periodo);
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
@@ -181,6 +189,8 @@ internal class ServicioCursante : IServicio, IServicioCursante
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.CargarCalificaciones);
+
 			var cicloLectivo = CicloLectivo.Crear(request.Periodo);
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
@@ -214,6 +224,8 @@ internal class ServicioCursante : IServicio, IServicioCursante
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.CargarCalificaciones);
+
 			var cicloLectivo = CicloLectivo.Crear(request.Periodo);
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
@@ -239,6 +251,8 @@ internal class ServicioCursante : IServicio, IServicioCursante
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.CargarCalificaciones);
+
 			var cicloLectivo = CicloLectivo.Crear(request.Periodo);
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)

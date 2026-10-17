@@ -10,8 +10,10 @@ using Core.ServicioCursantes;
 using Core.ServicioDocumentos;
 using Core.ServicioMaterias;
 using Core.ServicioUsuarios;
+using Core.Shared.Seguridad;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using WPF_Desktop.Security;
 using WPF_Desktop.Navigation.NavigationServices.Cursos;
 using WPF_Desktop.Navigation.NavigationServices.Docentes;
 using WPF_Desktop.Navigation.NavigationServices.Modal;
@@ -63,6 +65,18 @@ internal static class WPF_DesktopDI
 		services.AddSingleton<CicloLectivoStore>();
 		services.AddSingleton<CatedraStore>();
 
+		// La sesión es estado compartido entre pantallas, como los stores, y Singleton porque hay
+		// un único usuario logueado por proceso.
+		//
+		// OJO con las tres líneas: se registra la clase concreta y las dos interfaces resuelven
+		// HACIA ELLA. Registrar `AddSingleton<ISesionUsuario, SesionUsuario>()` y
+		// `AddSingleton<ISesionActual, SesionUsuario>()` por separado crearía DOS instancias, y
+		// entonces el login escribiría en una y los casos de uso de Core leerían la otra: la
+		// autorización negaría todo sin un solo error.
+		services.AddSingleton<SesionUsuario>();
+		services.AddSingleton<ISesionUsuario>(provider => provider.GetRequiredService<SesionUsuario>());
+		services.AddSingleton<ISesionActual>(provider => provider.GetRequiredService<SesionUsuario>());
+
 		return services;
 	}
 	#endregion
@@ -83,6 +97,7 @@ internal static class WPF_DesktopDI
 								  CreateGestionDocentesNavigationService(provider),
 								  CreateGestionAlumnosNavigationService(provider),
 								  CreateGestionCursosNavigationService(provider),
+								  provider.GetRequiredService<ISesionUsuario>(),
 								  provider.GetRequiredService<IMessenger>()));
 
 		services.AddTransient<BuscarViewModel>();
@@ -188,7 +203,8 @@ internal static class WPF_DesktopDI
 
 		services.AddTransient<LoginUsuarioViewModel>(provider =>
 			new LoginUsuarioViewModel(CreateMainNavigationService(provider),
-									  provider.GetRequiredService<IServicioAutenticacion>()));
+									  provider.GetRequiredService<IServicioAutenticacion>(),
+									  provider.GetRequiredService<ISesionUsuario>()));
 		#endregion
 
 		return services;

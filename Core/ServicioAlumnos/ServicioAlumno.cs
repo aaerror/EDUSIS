@@ -7,6 +7,8 @@ using Domain.Personas.Domicilios;
 using Domain.Personas;
 using Domain.Shared;
 using Microsoft.Extensions.Logging;
+using Core.Shared.Seguridad;
+using Domain.Usuarios;
 
 namespace Core.ServicioAlumnos;
 
@@ -14,10 +16,12 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 {
 	private readonly ILogger<ServicioAlumno> _logger;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioAlumno(ILogger<ServicioAlumno> logger, IUnitOfWork unitOfWork)
+	public ServicioAlumno(ILogger<ServicioAlumno> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 	}
@@ -106,6 +110,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarAlumnos);
+
 			if (request is null)
 			{
 				throw new ArgumentNullException("Datos incompletos para registrar un alumno.");
@@ -156,6 +162,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 
 	public async Task ModificarNombreCompleto(Guid alumnoID, string nuevoApellido, string nuevoNombre)
 	{
+		_sesion.Exigir(Permiso.GestionarAlumnos);
+
 		var alumno = await BuscarAlumnoPorIDAsync(alumnoID);
 
 		try
@@ -176,6 +184,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarAlumnos);
+
 			_logger.LogInformation($"Actualizando datos de contacto del alumno...");
 
 			var unAlumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
@@ -198,6 +208,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarAlumnos);
+
 			_logger.LogInformation($"Actualizando domicilio del alumno...");
 
 			var unAlumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
@@ -228,6 +240,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarAlumnos);
+
 			_logger.LogInformation($"Actualizando datos de sexo del alumno...");
 
 			var alumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
@@ -248,6 +262,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 
 	public async Task ActualizarDireccion(Guid personaId, DireccionRequest request)
 	{
+		_sesion.Exigir(Permiso.GestionarAlumnos);
+
 		var alumno = await BuscarAlumnoPorIDAsync(personaId);
 
 		var nuevaDireccion = Direccion.Crear(
@@ -266,6 +282,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarAlumnos);
+
 			await _unitOfWork.Alumnos.EliminarAsync(request.AlumnoID);
 
 			await _unitOfWork.GuardarCambiosAsync();

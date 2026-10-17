@@ -363,8 +363,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Entity Framework Core Migrations
-/Infrastructure/Migrations/
+# Las migraciones de EF Core (/Infrastructure/Migrations/) SÍ se versionan: son código
+# fuente que define el esquema y el orden en que se aplica. No agregar una regla acá.
 
 # Reporte de cobertura de la suite de pruebas (tests/run-tests.sh --cobertura)
 /tests/CoverageReport/

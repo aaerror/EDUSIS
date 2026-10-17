@@ -21,6 +21,7 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 {
 	private readonly IServicioAutenticacion _servicioAutenticacion;
 	private readonly INavigationService _navigationService;
+	private readonly ISesionUsuario _sesion;
 
 	[ObservableProperty]
 	[NotifyDataErrorInfo]
@@ -41,10 +42,11 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 	#endregion
 
 
-	public LoginUsuarioViewModel(INavigationService navigationService, IServicioAutenticacion servicioAutenticacion)
+	public LoginUsuarioViewModel(INavigationService navigationService, IServicioAutenticacion servicioAutenticacion, ISesionUsuario sesion)
 	{
 		_servicioAutenticacion = servicioAutenticacion;
 		_navigationService = navigationService;
+		_sesion = sesion;
 
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
 	}
@@ -160,16 +162,11 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 					var response = await _servicioAutenticacion.Login(request);
 
 
-					var identities = new List<BasicIdentity>();
-					foreach (var rol in response.Roles)
-					{
-						var identity = BasicIdentity.Create(usuarioID: response.UsuarioID,
-															docente: response.NombreCompleto,
-															email: response.Usuario,
-															rol: rol);
-						identities.Add(identity);
-					}
-					Thread.CurrentPrincipal = CustomPrincipal.Create(identities);
+					// La sesión va al singleton, no a Thread.CurrentPrincipal: en .NET (Core) el
+					// security context no viaja con el ExecutionContext, así que el principal no
+					// llega a las continuaciones async que retomen fuera del hilo de UI, y la
+					// autorización del RBAC no puede depender de eso (ver SesionUsuario).
+					_sesion.Iniciar(response.UsuarioID, response.RolesIDs);
 
 					WeakReferenceMessenger.Default.Send(new UsuarioLogeadoMessage(response.UsuarioID));
 					Application.Current.MainWindow.Close();

@@ -15,7 +15,7 @@ public static class InfrastructureDI
 		// DBContext
 		services.AddDbContext<EdusisDBContext>(options =>
 			{
-				options.UseSqlServer("Data Source=localhost; Initial Catalog=EdusisDB; Integrated Security=True; Encrypt=True; TrustServerCertificate=True")
+				options.UseSqlServer("Data Source=localhost;Initial Catalog=EdusisDB;Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=True;Application Name='Edusis';Command Timeout=0")
 					   .LogTo(Console.WriteLine, LogLevel.Debug)
 					   .EnableDetailedErrors(true);
 			},

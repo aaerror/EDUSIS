@@ -2,9 +2,11 @@ using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Responses;
 using Core.ServicioMaterias.Exceptions;
 using Core.Shared;
+using Core.Shared.Seguridad;
 using Domain.Curriculas;
 using Domain.Materias;
 using Domain.Shared;
+using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioMaterias;
@@ -21,10 +23,12 @@ internal class ServicioMateria : IServicio, IServicioMateria
 
 	private readonly ILogger<ServicioMateria> _logger;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioMateria(ILogger<ServicioMateria> logger, IUnitOfWork unitOfWork)
+	public ServicioMateria(ILogger<ServicioMateria> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 	}
@@ -98,6 +102,8 @@ internal class ServicioMateria : IServicio, IServicioMateria
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCurriculas);
+
 			await BuscarCurriculaAsync(request.CursoID, request.CurriculaID);
 			await ValidarNombreNoDuplicadoAsync(new NombreDuplicadoRequest(request.CurriculaID, null, request.Descripcion));
 
@@ -135,6 +141,8 @@ internal class ServicioMateria : IServicio, IServicioMateria
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCurriculas);
+
 			var materia = await BuscarMateriaAsync(new MateriaRequest(request.CursoID, request.CurriculaID, request.MateriaID));
 
 			await ValidarNombreNoDuplicadoAsync(new NombreDuplicadoRequest(request.CurriculaID, materia.Id, request.Descripcion));
@@ -165,6 +173,8 @@ internal class ServicioMateria : IServicio, IServicioMateria
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarCurriculas);
+
 			var materia = await BuscarMateriaAsync(new MateriaRequest(request.CursoID, request.CurriculaID, request.MateriaID));
 
 			materia.Eliminar();

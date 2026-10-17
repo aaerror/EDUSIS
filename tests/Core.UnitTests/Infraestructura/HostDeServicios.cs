@@ -1,5 +1,6 @@
 using Core.ServicioSecurity;
 using Core.Shared;
+using Core.Shared.Seguridad;
 using EDUSIS.TestSupport.Fakes;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,7 +23,13 @@ internal sealed class HostDeServicios : IDisposable
 
 	public UnitOfWorkFake UnidadDeTrabajo { get; }
 
-	public HostDeServicios(Action<UnitOfWorkFake>? sembrar = null)
+	/// <summary>
+	/// <paramref name="sesion"/> es el doble de <see cref="ISesionActual"/> que reciben los
+	/// servicios. Por omisión concede los diez permisos, para que las pruebas que ejercitan un
+	/// caso de uso no tengan que saber qué permiso pide; las pruebas de autorización pasan una
+	/// <see cref="SesionDePrueba"/> acotada.
+	/// </summary>
+	public HostDeServicios(Action<UnitOfWorkFake>? sembrar = null, ISesionActual? sesion = null)
 	{
 		UnidadDeTrabajo = new UnitOfWorkFake();
 		sembrar?.Invoke(UnidadDeTrabajo);
@@ -30,6 +37,7 @@ internal sealed class HostDeServicios : IDisposable
 		var servicios = new ServiceCollection();
 		servicios.AddLogging();
 		servicios.AddSingleton<Domain.Shared.IUnitOfWork>(UnidadDeTrabajo);
+		servicios.AddSingleton(sesion ?? SesionDePrueba.ConTodosLosPermisos());
 		servicios.AddServices();
 
 		_provider = servicios.BuildServiceProvider();

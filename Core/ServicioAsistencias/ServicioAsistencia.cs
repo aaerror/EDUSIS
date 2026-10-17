@@ -2,8 +2,10 @@ using Core.ServicioAsistencias.DTOs.Requests;
 using Core.ServicioAsistencias.DTOs.Responses;
 using Core.ServicioAsistencias.Exceptions;
 using Core.Shared;
+using Core.Shared.Seguridad;
 using Domain.Asistencias;
 using Domain.Shared;
+using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
 
 namespace Core.ServicioAsistencias;
@@ -12,10 +14,12 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 {
 	private readonly ILogger<ServicioAsistencia> _logger;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ISesionActual _sesion;
 
 
-	public ServicioAsistencia(ILogger<ServicioAsistencia> logger, IUnitOfWork unitOfWork)
+	public ServicioAsistencia(ILogger<ServicioAsistencia> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
 	}
@@ -25,6 +29,8 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
 			var existePlanilla = await _unitOfWork.PlanillasAsistencia.ExistePlanillaAsync(request.DivisionID, request.Fecha);
 			if (existePlanilla)
 			{
@@ -63,6 +69,8 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
 			var planilla = await BuscarPlanillaAsync(request.DivisionID, request.Fecha);
 
 			planilla.MarcarPresente(request.CursanteID);
@@ -83,6 +91,8 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
 			var planilla = await BuscarPlanillaAsync(request.DivisionID, request.Fecha);
 
 			planilla.MarcarAusencia(request.CursanteID, request.Observacion);
@@ -103,6 +113,8 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
 			var planilla = await BuscarPlanillaAsync(request.DivisionID, request.Fecha);
 
 			planilla.MarcarInasistencia(request.CursanteID, request.Observacion);
@@ -123,6 +135,8 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
 			var planilla = await BuscarPlanillaAsync(request.DivisionID, request.Fecha);
 
 			planilla.MarcarTardanza(request.CursanteID, request.Minutos, request.Observacion);
@@ -145,6 +159,8 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
 			var planilla = await BuscarPlanillaAsync(request.DivisionID, request.Fecha);
 
 			planilla.IncorporarCursante(request.CursanteID);
@@ -167,6 +183,8 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
 			var planilla = await BuscarPlanillaAsync(request.DivisionID, request.Fecha);
 
 			planilla.Cerrar();
@@ -187,6 +205,8 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
 			var planilla = await BuscarPlanillaAsync(request.DivisionID, request.Fecha);
 
 			planilla.Reabrir();

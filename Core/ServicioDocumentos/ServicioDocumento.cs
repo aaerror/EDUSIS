@@ -1,14 +1,18 @@
 using Core.Shared;
 using Core.Shared.Documentos;
+using Core.Shared.Seguridad;
+using Domain.Usuarios;
 
 namespace Core.ServicioDocumentos;
 
 internal class ServicioDocumento : IServicio, IServicioDocumento
 {
 	private readonly IGeneradorDocumentos _generadorDocumentos;
+	private readonly ISesionActual _sesion;
 
-	public ServicioDocumento(IGeneradorDocumentos generadorDocumentos)
+	public ServicioDocumento(IGeneradorDocumentos generadorDocumentos, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_generadorDocumentos = generadorDocumentos;
 	}
 
@@ -16,6 +20,8 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 	{
 		try
 		{
+			_sesion.Exigir(Permiso.GestionarAlumnos);
+
 			var request = new CertificadoAlumnoRegularRequest(NombreCompleto: "Juan Perez",
 															  DNI: "33998731",
 															  FechaIngreso: DateTime.Today.Date,

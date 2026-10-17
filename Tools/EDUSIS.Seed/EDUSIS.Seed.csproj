@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		Poblador de la base con la escuela demo (plan/rbac-y-seed.md, Fase 7).
+
+		FUERA de EDUSIS.sln a propósito, mismo criterio que Tests/WPF_Desktop.UnitTests:
+		es una herramienta de desarrollo, no parte del producto. Así `dotnet build
+		EDUSIS.sln` no arrastra Bogus ni este proyecto, y el código de datos de demo
+		no viaja en el binario final.
+
+		Tampoco hereda ningún Directory.Build.props: no hay uno en la raíz del repo
+		y el de Tests/ no alcanza hasta acá. Por eso las propiedades están completas,
+		y la versión de Bogus es explícita en lugar de centralizada.
+	-->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>11</LangVersion>
+		<IsPackable>false</IsPackable>
+		<RootNamespace>EDUSIS.Seed</RootNamespace>
+
+		<!--
+			El TFM sigue siendo net7.0 (restricción de la constitución) pero en esta
+			máquina sólo hay runtime .NET 8/10: sin roll-forward explícito el build
+			compila y la ejecución no arranca. Mismo criterio que
+			Tests/Directory.Build.props y WPF_Desktop.csproj.
+		-->
+		<RollForward>Major</RollForward>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Bogus" Version="35.6.1" />
+
+		<!-- El informe de la siembra va a la consola; AddLogging() por sí solo no trae proveedor. -->
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--
+			Infrastructure para el DbContext y el UnitOfWork; TestSupport.Domain por los
+			18 builders de agregados, que construyen con los constructores PÚBLICOS del
+			dominio y por lo tanto validan invariantes y encolan eventos igual que
+			producción (decisión #8 del plan).
+
+			Nota de nomenclatura, ya registrada como violación #1 del plan: ese proyecto
+			vive bajo Tests/ pero declara <IsTestProject>false</IsTestProject> y sólo
+			depende de Domain, así que es una biblioteca de construcción de agregados y
+			no código de prueba. No invierte ninguna dependencia de capas.
+		-->
+		<ProjectReference Include="..\..\Infrastructure\Infrastructure.csproj" />
+		<ProjectReference Include="..\..\Tests\EDUSIS.TestSupport.Domain\EDUSIS.TestSupport.Domain.csproj" />
+
+		<!--
+			Core sólo por IServicioSeguridad: es quien sabe hashear contraseñas, y los
+			usuarios sembrados tienen que poder iniciar sesión. Replicar el PBKDF2 acá
+			sería una segunda fuente de verdad que divergiría en silencio del
+			ValidatePassword real el día que alguien cambie iteraciones o algoritmo.
+			Requiere el InternalsVisibleTo de Core.csproj: la interfaz es internal.
+		-->
+		<ProjectReference Include="..\..\Core\Core.csproj" />
+	</ItemGroup>
+
+</Project>
