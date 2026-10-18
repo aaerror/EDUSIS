@@ -4,6 +4,7 @@ using Domain.Curriculas;
 using Domain.Cursos;
 using Domain.Divisiones;
 using Domain.Docentes;
+using Domain.Usuarios;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Infraestructura;
@@ -184,6 +185,21 @@ public abstract class BaseIntegracion : IAsyncLifetime
 		contexto.Add(curricula);
 		await contexto.SaveChangesAsync();
 		return curricula.Id;
+	}
+
+	/// <summary>
+	/// Persiste un <see cref="Usuario"/> ya construido, <strong>adjuntando primero sus roles</strong>.
+	/// El rol es un dato de referencia que la migración siembra con <c>HasData</c>, así que su fila
+	/// ya existe: sin el <c>Attach</c> previo, EF ve la instancia estática de <c>Rol</c> como nueva,
+	/// intenta <c>INSERT INTO rol</c> y choca con <c>PK_ROL</c>. Es el mismo patrón que usa
+	/// <c>Tools/EDUSIS.Seed</c> (ver <c>docs/plan/rbac-y-seed.md</c> §C).
+	/// </summary>
+	protected async Task SembrarUsuarioAsync(Usuario usuario)
+	{
+		await using var contexto = Fixture.CrearContexto();
+		contexto.AttachRange(usuario.Roles);
+		contexto.Add(usuario);
+		await contexto.SaveChangesAsync();
 	}
 
 	/// <summary>Persiste una <see cref="Materia"/> válida con la currícula indicada y devuelve su <c>Id</c>.</summary>

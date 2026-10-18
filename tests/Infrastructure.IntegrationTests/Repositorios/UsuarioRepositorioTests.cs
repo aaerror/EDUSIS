@@ -17,7 +17,7 @@ public sealed class UsuarioRepositorioTests : BaseIntegracion
 	{
 	}
 
-	private async Task<Usuario> SembrarUsuarioAsync(Guid docenteID, string username)
+	private async Task<Usuario> SembrarUsuarioDocenteAsync(Guid docenteID, string username)
 	{
 		var usuario = new UsuarioBuilder()
 			.ConDocente(docenteID)
@@ -25,9 +25,7 @@ public sealed class UsuarioRepositorioTests : BaseIntegracion
 			.ConRol("Docente")
 			.Build();
 
-		await using var contexto = Fixture.CrearContexto();
-		contexto.Add(usuario);
-		await contexto.SaveChangesAsync();
+		await SembrarUsuarioAsync(usuario);
 		return usuario;
 	}
 
@@ -35,7 +33,7 @@ public sealed class UsuarioRepositorioTests : BaseIntegracion
 	public async Task BuscarPorUsernameAsync_devuelve_el_usuario_sin_distinguir_mayusculas()
 	{
 		var docenteID = await SembrarDocenteAsync();
-		var sembrado = await SembrarUsuarioAsync(docenteID, "maria.gonzalez");
+		var sembrado = await SembrarUsuarioDocenteAsync(docenteID, "maria.gonzalez");
 
 		using var uow = CrearUnidadDeTrabajo();
 
@@ -49,7 +47,7 @@ public sealed class UsuarioRepositorioTests : BaseIntegracion
 	public async Task BuscarPorDocenteAsync_devuelve_el_usuario_del_docente()
 	{
 		var docenteID = await SembrarDocenteAsync();
-		var sembrado = await SembrarUsuarioAsync(docenteID, "rocio.dominguez");
+		var sembrado = await SembrarUsuarioDocenteAsync(docenteID, "rocio.dominguez");
 
 		using var uow = CrearUnidadDeTrabajo();
 
@@ -63,7 +61,7 @@ public sealed class UsuarioRepositorioTests : BaseIntegracion
 	public async Task ExisteUsuarioDelDocenteAsync_retorna_true_cuando_el_docente_tiene_usuario()
 	{
 		var docenteID = await SembrarDocenteAsync();
-		await SembrarUsuarioAsync(docenteID, "pedro.martinez");
+		await SembrarUsuarioDocenteAsync(docenteID, "pedro.martinez");
 
 		using var uow = CrearUnidadDeTrabajo();
 
@@ -75,7 +73,7 @@ public sealed class UsuarioRepositorioTests : BaseIntegracion
 	public async Task EsUsernameInvalidoAsync_retorna_true_cuando_el_username_ya_existe()
 	{
 		var docenteID = await SembrarDocenteAsync();
-		await SembrarUsuarioAsync(docenteID, "ana.lopez");
+		await SembrarUsuarioDocenteAsync(docenteID, "ana.lopez");
 
 		using var uow = CrearUnidadDeTrabajo();
 
