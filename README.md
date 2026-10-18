@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="docs/assets/edusis-logo.svg" alt="EDUSIS" width="420">
+	<img src="assets/edusis-logo.svg" alt="EDUSIS" width="420">
 </p>
 
 <p align="center">

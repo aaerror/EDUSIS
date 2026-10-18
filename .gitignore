@@ -370,10 +370,12 @@ FodyWeavers.xsd
 /tests/CoverageReport/
 
 
-# Herramientas de agentes y specs (no versionar)
+# Herramientas de agentes, editores y specs (no versionar)
 .claude/
 .skill-map/
 .skillmapignore
+# Configuración local de VS Code (.vs/ de Visual Studio ya está más arriba)
+.vscode/
 # Spec Kit: tooling y artefactos de especificación (no se versionan)
 .specify/
 specs/
