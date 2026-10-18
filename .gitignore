@@ -382,28 +382,16 @@ CLAUDE.md
 .github/
 
 # Documentación de trabajo y diagramas: se mantienen en disco, no se versionan.
-# No afecta a lo ya trackeado en docs/ (todos.md, roadmap.md, revision-arquitectura.md,
-# plan/core.md, plan/handoff-errores.md, plan/wpf-desktop.md, plan/wpf-desktop-tasks.md,
-# assets/), que sigue en el repo.
+# Desde el 2026-10-18 queda fuera del repo TODO docs/, incluido lo que antes seguía
+# trackeado (todos.md, roadmap.md, revision-arquitectura.md, plan/ y assets/). Reemplaza
+# la lista archivo por archivo que había acá: una sola regla, sin excepciones.
+# Mismo criterio que .claude/, specs/ y CLAUDE.md, que ya estaban fuera.
+/docs/
 
 # Modelos y diagramas de herramientas de UML
 *.mdj
 *.drawio
 
-# Imágenes y PDF de documentación (raíz y docs/)
+# Imágenes y PDF de documentación (raíz; docs/ ya está cubierto entero)
 /*.jpg
 /*.png
-/docs/**/*.jpg
-/docs/**/*.png
-/docs/**/*.pdf
-
-# Material de UML y análisis
-/docs/uml/
-/docs/alcance-funcional.md
-/docs/conceptos-clean-architecture.md
-/docs/plan-implementacion.md
-/docs/tercera-etapa-pp3.md
-/docs/plan/plan.md
-/docs/plan/tasks.md
-/docs/plan/validaciones.md
-/docs/plan/hallazgos-tests-dominio.md
