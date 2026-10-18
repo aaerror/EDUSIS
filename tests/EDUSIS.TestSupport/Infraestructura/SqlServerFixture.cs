@@ -106,8 +106,9 @@ public sealed class SqlServerFixture : IAsyncLifetime
 	}
 
 	/// <summary>
-	/// Vacía todas las tablas conservando el esquema (FR-009). Se llama en el
-	/// <c>InitializeAsync</c> de cada clase de prueba. No-op si la base se omite.
+	/// Vacía las tablas de datos conservando el esquema y los catálogos de referencia (FR-009;
+	/// ver <see cref="TablasDeReferencia"/>). Se llama en el <c>InitializeAsync</c> de cada clase
+	/// de prueba. No-op si la base se omite.
 	/// </summary>
 	public async Task ResetAsync()
 	{
@@ -127,7 +128,53 @@ public sealed class SqlServerFixture : IAsyncLifetime
 	{
 		await using var contexto = CrearContexto();
 		await contexto.Database.MigrateAsync();
+
+		if (await FaltaAlgunCatalogoAsync())
+		{
+			// La base ya existía con los catálogos vaciados: el estado que dejaba este mismo
+			// fixture antes de ignorarlos (TEST-09). `Migrate()` no los repone porque el
+			// historial dice que la migración está aplicada y el `InsertData` no vuelve a
+			// correr, así que la única forma de replicar el `HasData` es recrear el esquema.
+			// Es seguro: `GarantizarQueNoEsProduccion` ya corrió (FR-016) y la base de prueba
+			// es desechable por contrato.
+			await contexto.Database.EnsureDeletedAsync();
+			await contexto.Database.MigrateAsync();
+		}
 	}
+
+	/// <summary>
+	/// ¿Quedó algún catálogo de referencia sin filas? Las tablas son las de
+	/// <see cref="TablasDeReferencia"/> menos el historial de migraciones, que no tiene
+	/// <c>HasData</c>. Se consulta por SQL y no por el modelo porque <c>ciclo_lectivo</c> no
+	/// tiene entidad propia: es el catálogo contra el que mapea el <c>OwnsOne</c> de
+	/// <c>Cursante</c>.
+	/// </summary>
+	private async Task<bool> FaltaAlgunCatalogoAsync()
+	{
+		await using var conexion = new SqlConnection(CadenaDeConexion);
+		await conexion.OpenAsync();
+
+		await using var comando = conexion.CreateCommand();
+		comando.CommandText =
+			"SELECT CASE WHEN EXISTS (SELECT 1 FROM rol) " +
+			"AND EXISTS (SELECT 1 FROM ciclo_lectivo) THEN 0 ELSE 1 END;";
+
+		return Convert.ToInt32(await comando.ExecuteScalarAsync()) == 1;
+	}
+
+	/// <summary>
+	/// Tablas que <c>Respawn</c> no debe vaciar entre pruebas: el historial de migraciones y los
+	/// <strong>catálogos de referencia</strong> que las migraciones siembran con <c>HasData</c>
+	/// (<c>rol</c> y <c>ciclo_lectivo</c>). Son parte del esquema, no datos de prueba: sin ellos,
+	/// cualquier inserción contra <c>FK_CURSANTE_CICLO_LECTIVO</c> o <c>FK_USUARIO_ROL_ROL</c> falla.
+	/// Si se agrega un catálogo nuevo con <c>HasData</c>, va también acá.
+	/// </summary>
+	private static readonly Table[] TablasDeReferencia =
+	{
+		"__EFMigrationsHistory",
+		"rol",
+		"ciclo_lectivo",
+	};
 
 	private async Task InicializarRespawnerAsync()
 	{
@@ -137,7 +184,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 		_respawner = await Respawner.CreateAsync(conexion, new RespawnerOptions
 		{
 			DbAdapter = DbAdapter.SqlServer,
-			TablesToIgnore = new Table[] { "__EFMigrationsHistory" },
+			TablesToIgnore = TablasDeReferencia,
 		});
 	}
 

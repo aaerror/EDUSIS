@@ -28,11 +28,7 @@ public sealed class MapeoDeUsuarioTests : BaseIntegracion
 			.ConRol("Docente")
 			.Build();
 
-		await using (var contexto = Fixture.CrearContexto())
-		{
-			contexto.Add(usuario);
-			await contexto.SaveChangesAsync();
-		}
+		await SembrarUsuarioAsync(usuario);
 
 		await using (var contexto = Fixture.CrearContexto())
 		{
