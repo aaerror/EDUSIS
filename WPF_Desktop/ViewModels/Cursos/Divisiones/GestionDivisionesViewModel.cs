@@ -1,13 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
-using Core.ServicioDocentes.DTOs.Requests;
-using Core.ServicioDocentes;
 using Core.Shared.DTOs.Personas.Requests;
-using Microsoft.IdentityModel.Tokens;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
@@ -16,6 +13,7 @@ using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Docentes;
+using WPF_Desktop.ViewModels.Shared.Messages;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
@@ -23,9 +21,13 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 {
 	#region Service
 	private readonly IServicioDivision _servicioDivision;
-	private readonly IServicioDocente _servicioDocente;
 	private readonly INavigationService _gestionCursosNavigationService;
 	private readonly INavigationService _gestionCursantesNavigationService;
+	private readonly INavigationService _buscarDocenteModalNavigationService;
+	#endregion
+
+	#region Mensajeria
+	private readonly IMessenger _messenger;
 	#endregion
 
 	#region Stores
@@ -48,17 +50,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	private LegajoDocenteViewModel _docente;
 	#endregion
 
-	[ObservableProperty]
-	private ObservableCollection<LegajoDocenteViewModel> _docentes;
-
 	private ObservableCollection<DivisionViewModel> _divisiones;
-
-	[Required(AllowEmptyStrings=true)]
-	[DataType(DataType.Text)]
-	[RegularExpression(@"^[A-Za-zÀ-ÿ]+( [A-Za-zÀ-ÿ]+)*$", ErrorMessage="Solo debe ingresar nombre, apellido o una combinación de ambos.")]
-	[NotifyDataErrorInfo]
-	[ObservableProperty]
-	private string _query = string.Empty;
 
 	[ObservableProperty]
 	private int _totalDivisiones;
@@ -71,11 +63,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	[ObservableProperty]
 	private bool _habilitarDivisiones;
 
-	[ObservableProperty]
-	private bool _habilitarListaDocentes;
-
 	[NotifyCanExecuteChangedFor(nameof(CancelarCommand))]
-	[NotifyCanExecuteChangedFor(nameof(ListarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarCommandAsync))]
@@ -100,8 +88,8 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	#region Commands
 	public IAsyncRelayCommand CargarDivisionesCommandAsync { get; }
 	public IAsyncRelayCommand EliminarCommandAsync { get; }
+	public IRelayCommand BuscarDocenteCommand { get; }
 	public IAsyncRelayCommand GuardarCommandAsync { get; }
-	public IAsyncRelayCommand ListarCommandAsync { get; }
 	public IAsyncRelayCommand RegistrarCommandAsync { get; }
 
 	public IRelayCommand CancelarCommand { get; }
@@ -110,41 +98,55 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 
 
 	public GestionDivisionesViewModel(IServicioDivision servicioDivisiones,
-									  IServicioDocente servicioDocentes,
 									  INavigationService gestionCursosNavigationService,
 									  INavigationService gestionCursantesNavigationService,
+									  INavigationService buscarDocenteModalNavigationService,
 									  CursoStore cursoStore,
 									  DivisionStore divisionStore,
 									  CicloLectivoStore cicloLectivoStore,
-									  IDialogService dialogService)
+									  IDialogService dialogService,
+									  IMessenger messenger)
 	{
 		_servicioDivision = servicioDivisiones;
-		_servicioDocente = servicioDocentes;
 		_gestionCursosNavigationService = gestionCursosNavigationService;
 		_gestionCursantesNavigationService = gestionCursantesNavigationService;
+		_buscarDocenteModalNavigationService = buscarDocenteModalNavigationService;
 		_cursoStore = cursoStore;
 		_divisionStore = divisionStore;
 		_cicloLectivoStore = cicloLectivoStore;
 		_dialogService = dialogService;
+		_messenger = messenger;
 
 		Curso = _cursoStore.Curso.Grado.ToString();
 		NivelEducativo = _cursoStore.Curso.NivelEducativo.ToString();
 
 		_divisiones = new ObservableCollection<DivisionViewModel>();
-		_docentes = new ObservableCollection<LegajoDocenteViewModel>();
 
 		CargarDivisionesCommandAsync = new AsyncRelayCommand(CargarDivisionesAsync);
 		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
 		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
-		ListarCommandAsync = new AsyncRelayCommand<string>(ExecuteListarCommandAsync, CanExecuteListarCommand);
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, CanExecuteRegistrarCommand);
 
+		BuscarDocenteCommand = new RelayCommand(ExecuteBuscarDocenteCommand, () => HabilitarRegistrarDocente);
 		CancelarCommand = new RelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
+		// El buscador vive en el modal y no conoce a sus llamadores: el elegido vuelve por acá.
+		_messenger.Register<GestionDivisionesViewModel, DocenteElegidoMessage>(this, (receptor, mensaje) =>
+			receptor.Docente = mensaje.Docente);
 
 		HabilitarRegistrarDocente = false;
 	}
+
+	#region BuscarDocenteCommand
+	/// <summary>
+	/// Abre el buscador de docentes en el modal. Antes esta pantalla traía su propia copia del
+	/// buscador —campo, lupa, "Ver docentes" y grilla de resultados— dentro de la tarjeta de
+	/// asignación, con su propio <c>Query</c> validado y su propia colección de docentes.
+	/// </summary>
+	private void ExecuteBuscarDocenteCommand() =>
+		_buscarDocenteModalNavigationService.Navigate();
+	#endregion
 
 	private async Task CargarDivisionesAsync()
 	{
@@ -186,8 +188,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	private void ExecuteCancelarCommand(object obj)
 	{
 		HabilitarRegistrarDocente = false;
-		Query = string.Empty;
-		Docentes.Clear();
 	}
 	#endregion
 
@@ -255,84 +255,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	}
 	#endregion
 
-	#region ListarCommandAsync
-	private bool CanExecuteListarCommand(object obj) => obj switch
-	{
-		"Buscar" => !HasErrors,
-		"Listar" => HabilitarRegistrarDocente,
-		_ => false
-	};
-
-	private async Task ExecuteListarCommandAsync(object obj)
-	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
-		switch (obj)
-		{
-			case "Buscar":
-				try
-				{
-					Docentes.Clear();
-					var request = new NombreCompletoRequest(Query);
-					var response = await _servicioDocente.BuscarDocenteSegunNombreCompletoAsync(request);
-
-					if (response.Count is 0)
-					{
-						messageBoxText = $"No existen coincidencias.";
-						caption = "Buscar";
-						_dialogService.MostrarAdvertencia(messageBoxText, caption);
-						Docentes.Clear();
-
-						HabilitarListaDocentes = false;
-
-						return;
-					}
-
-					Docentes = new ObservableCollection<LegajoDocenteViewModel>(response.Select(x => new LegajoDocenteViewModel(x)));
-					HabilitarListaDocentes = true;
-					
-					messageBoxText = $"Se encontraron { Docentes.Count } coincidencias.";
-					caption = "Operación Exitosa";
-					_dialogService.MostrarInformacion(messageBoxText, caption);
-				}
-				catch (Exception ex)
-				{
-					_dialogService.MostrarError(ex.Message, "Error en la operación");
-				}
-				break;
-
-			case "Listar":
-				try
-				{
-					var response = await _servicioDocente.ListarDocentesActivosAsync();
-					if (response.IsNullOrEmpty())
-					{
-						messageBoxText = $"No existen coincidencias.";
-						caption = "Buscar";
-						_dialogService.MostrarAdvertencia(messageBoxText, caption);
-						Docentes.Clear();
-
-						HabilitarListaDocentes = false;
-
-						return;
-					}
-
-					Docentes = new ObservableCollection<LegajoDocenteViewModel>(response.Select(x => new LegajoDocenteViewModel(x)));
-					HabilitarListaDocentes = true;
-
-					messageBoxText = $"Se encontraron { Docentes.Count } coincidencias.";
-					caption = "Operación Exitosa";
-					_dialogService.MostrarInformacion(messageBoxText, caption);
-				}
-				catch (Exception ex)
-				{
-					_dialogService.MostrarError(ex.Message, "Error en la operación");
-				}
-				break;
-		}
-	}
-	#endregion
 
 	#region NavigationCommand
 	private bool CanExecuteNavigationCommand(object obj) => obj switch
@@ -374,7 +296,9 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		switch (obj)
 		{
 			case "Docente":
+				// Abre la tarjeta de asignacion y, encima, el buscador en el modal.
 				HabilitarRegistrarDocente = true;
+				ExecuteBuscarDocenteCommand();
 				break;
 
 			case "Division":
@@ -433,7 +357,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 			}
 
 			Docente = null;
-			Query = string.Empty;
 		}
 		catch (Exception ex)
 		{
