@@ -1,48 +1,34 @@
 ﻿<UserControl x:Class="WPF_Desktop.Components.InfoContactoComponent"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:local="clr-namespace:WPF_Desktop.Components"
-             x:Name="contactoData">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1*"/>
-            <ColumnDefinition Width="1*"/>
-        </Grid.ColumnDefinitions>
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Components"
+			 x:Name="contactoData"
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
 
-        <Label Grid.Column="0"
-               Grid.Row="0"
-               Content="Teléfono"
-               Margin="0 0 10 0"
-               HorizontalContentAlignment="Left"
-               VerticalContentAlignment="Center"
-               Style="{ StaticResource Form }"/>
-        <TextBox Grid.Column="0"
-                 Grid.Row="1"
-                 Text="{ Binding Telefono, ElementName=contactoData }"
-                 IsEnabled="{ Binding EstaHabilitado, ElementName=contactoData }"
-                 Margin="0 0 10 0"
-                 Style="{ StaticResource TextBox }"/>
+		<HeaderedContentControl Grid.Column="0"
+							   Header="Teléfono"
+							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=contactoData }"
+					 Tag="11 5555 5555"
+					 Text="{ Binding Path=Telefono, ElementName=contactoData }"
+					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+		</HeaderedContentControl>
 
-        <Label Grid.Column="1"
-               Grid.Row="0"
-               Content="Correo Electrónico"
-               Margin="10 0 0 0"
-               HorizontalContentAlignment="Left"
-               VerticalContentAlignment="Center"
-               Style="{ StaticResource Form }"/>
-        <TextBox Grid.Column="1"
-                 Grid.Row="1"
-                 Text="{ Binding Email, ElementName=contactoData }"
-                 IsEnabled="{ Binding EstaHabilitado, ElementName=contactoData }"
-                 Margin="10 0 0 0"
-                 Style="{ StaticResource TextBox }"/>
-    </Grid>
+		<HeaderedContentControl Grid.Column="1"
+							   Header="Correo electrónico"
+							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
+			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=contactoData }"
+					 Tag="nombre@edu.ar"
+					 Text="{ Binding Path=Email, ElementName=contactoData }"
+					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+		</HeaderedContentControl>
+	</Grid>
 </UserControl>

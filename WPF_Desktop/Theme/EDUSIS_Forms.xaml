@@ -13,14 +13,419 @@
 	</ResourceDictionary.MergedDictionaries>
 
 	<!--
-		CONTROLES DE FORMULARIO.
+		ARMAZÓN DEL FORMULARIO.
 
+		Acá viven las piezas que ESTRUCTURAN un formulario —el campo, la sección, el paso, el
+		desplegable—, no los controles de entrada: esos están en EDUSIS_TextBox.xaml,
+		EDUSIS_ComboBox.xaml y EDUSIS_DatePicker.xaml.
+
+		El problema que resuelven: cada formulario venía armando el par rótulo+control a mano,
+		con un StackPanel y los márgenes que le parecían. Unas doscientas repeticiones con
+		cinco ritmos distintos (0 5, 4 0 0 0, 0 0 0 5, 0 5 10 5...), y varias con las filas de
+		la grilla en * en lugar de Auto, así que el sobrante de la pantalla se repartía entre
+		los campos y los dejaba desparejos. El espaciado deja de ser una decisión por vista.
+	-->
+
+	<!--#region CAMPO
+		El par rótulo + control, en una sola pieza.
+
+		HeaderedContentControl es nativo de WPF y toma Header y Content: no hace falta una
+		clase ni code-behind. El Label apunta al Content con Target, así que el lector de
+		pantalla anuncia el rótulo del campo —antes no lo hacía en ningún formulario—.
+
+		El hueco de 4px entre rótulo y control ya lo pone Lbl.Campo con su Padding; acá sólo
+		se fija el ritmo de 16px entre un campo y el siguiente.
+	-->
+	<Style x:Key="Campo" TargetType="{ x:Type HeaderedContentControl }">
+		<Setter Property="Margin" Value="0 0 0 16"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type HeaderedContentControl }">
+					<StackPanel>
+						<Label Content="{ TemplateBinding Header }"
+							   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+							   Target="{ Binding Path=Content, RelativeSource={ RelativeSource TemplatedParent } }"/>
+						<ContentPresenter/>
+					</StackPanel>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<!--
+		Campo que comparte fila con otro. El de la izquierda lleva Campo.Izquierda y el de la
+		derecha Campo.Derecha: así la separación horizontal de 20px se declara una vez y las
+		dos columnas quedan a ras del borde de la tarjeta, sin el margen de 5 o 10 que cada
+		vista inventaba por su lado.
+	-->
+	<Style x:Key="Campo.Izquierda" TargetType="{ x:Type HeaderedContentControl }" BasedOn="{ StaticResource ResourceKey=Campo }">
+		<Setter Property="Margin" Value="0 0 10 16"/>
+	</Style>
+
+	<Style x:Key="Campo.Centro" TargetType="{ x:Type HeaderedContentControl }" BasedOn="{ StaticResource ResourceKey=Campo }">
+		<Setter Property="Margin" Value="10 0 10 16"/>
+	</Style>
+
+	<Style x:Key="Campo.Derecha" TargetType="{ x:Type HeaderedContentControl }" BasedOn="{ StaticResource ResourceKey=Campo }">
+		<Setter Property="Margin" Value="10 0 0 16"/>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region DATO
+		El par rótulo + valor: lo que se LEE, no lo que se escribe.
+
+		Es el contrario de Campo y existe por un problema concreto. Las pantallas de detalle
+		—CursoView, DivisionView, DocenteView— y las mitades deshabilitadas de las de alta
+		—el estado de una licencia, la fecha de fin que calcula el sistema— mostraban datos
+		dentro de un TextBox enlazado Mode=OneWay. Un TextBox invita a escribir: se podía
+		hacer clic, tipear, y ver desaparecer lo tipeado al refrescar. Nada avisaba que ese
+		dato no era editable, porque se dibujaba igual que uno que sí.
+
+		Acá la ausencia de caja ES la información: si no tiene marco, no se escribe. Un campo
+		gris deshabilitado dice "no podés ahora"; un dato sin caja dice "esto no se edita".
+
+		MinHeight=34 y el centrado son los de Txb.Campo, así que un dato y un campo que
+		comparten fila apoyan su texto en la misma línea. El valor se alinea con el RÓTULO,
+		en cero, no con el texto del campo vecino: lo que se lee arranca contra el margen.
+	-->
+	<Style x:Key="Dato" TargetType="{ x:Type HeaderedContentControl }">
+		<Setter Property="Margin" Value="0 0 0 16"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type HeaderedContentControl }">
+					<StackPanel>
+						<Label Content="{ TemplateBinding Header }"
+							   Style="{ StaticResource ResourceKey=Lbl.Campo }"/>
+						<!--
+							El estilo implícito alcanza al TextBlock que genera el
+							ContentPresenter cuando el valor es una cadena. Una vista que
+							necesite el valor en monoespaciada —un legajo, un DNI, una nota—
+							pasa su propio TextBlock con Txt.Dato y conserva el suyo.
+						-->
+						<ContentPresenter MinHeight="34" VerticalAlignment="Center">
+							<ContentPresenter.Resources>
+								<Style TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Cuerpo }">
+									<Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+									<Setter Property="VerticalAlignment" Value="Center"/>
+								</Style>
+							</ContentPresenter.Resources>
+						</ContentPresenter>
+					</StackPanel>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style x:Key="Dato.Izquierda" TargetType="{ x:Type HeaderedContentControl }" BasedOn="{ StaticResource ResourceKey=Dato }">
+		<Setter Property="Margin" Value="0 0 10 16"/>
+	</Style>
+
+	<Style x:Key="Dato.Centro" TargetType="{ x:Type HeaderedContentControl }" BasedOn="{ StaticResource ResourceKey=Dato }">
+		<Setter Property="Margin" Value="10 0 10 16"/>
+	</Style>
+
+	<Style x:Key="Dato.Derecha" TargetType="{ x:Type HeaderedContentControl }" BasedOn="{ StaticResource ResourceKey=Dato }">
+		<Setter Property="Margin" Value="10 0 0 16"/>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region ACCIONES
+		El pie de un formulario o de una tarjeta.
+
+		Header = lo que sale del flujo o destruye (volver, eliminar, rescindir), a la
+		izquierda. Content = la confirmación, a la derecha. Las dos puntas están lo más
+		separadas posible porque son las dos cosas que no conviene confundir.
+
+		Antes cada pantalla lo armaba con un WrapPanel HorizontalAlignment=Right y los
+		márgenes que le parecían (0 0 5 0, 5 0 0 0, 0 10 0 0...), y el destructivo quedaba
+		pegado al confirmar. El orden de lectura del pie deja de ser una decisión por vista.
+	-->
+	<Style x:Key="Acciones" TargetType="{ x:Type HeaderedContentControl }">
+		<Setter Property="Margin" Value="0 20 0 0"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type HeaderedContentControl }">
+					<Border BorderBrush="{ StaticResource ResourceKey=Linea }"
+							BorderThickness="0 1 0 0"
+							Padding="0 16 0 0"
+							SnapsToDevicePixels="True">
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="Auto"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+
+							<ContentPresenter Grid.Column="0"
+											  ContentSource="Header"
+											  HorizontalAlignment="Left"
+											  VerticalAlignment="Center"/>
+							<ContentPresenter Grid.Column="1"
+											  HorizontalAlignment="Right"
+											  VerticalAlignment="Center"/>
+						</Grid>
+					</Border>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region SECCIÓN
+		Un bloque de campos con su rótulo.
+
+		Se restyliza GroupBox en vez de inventar un control: las pantallas de perfil ya lo
+		usan, así que adoptan el idioma nuevo sin tocarles el markup. El estilo es implícito
+		por eso mismo.
+
+		Antes había dos idiomas compitiendo para lo mismo: GroupBox con un Label "Headline" de
+		17px en los perfiles, y Label + Separator en los registros; varios con un ícono y el
+		título CENTRADO, mientras el resto de la app alinea todo a la izquierda. Ahora es el
+		mismo recurso que usan las pantallas de gestión: una regla de 1px arriba y el rótulo
+		en versalita condensada. El rótulo se escribe en MAYÚSCULA en la vista porque WPF no
+		tiene text-transform.
+
+		La separación del contenido es FIJA y el Padding del GroupBox queda sin efecto a
+		propósito. Las pantallas que todavía no se reescribieron pasan Padding="20" o "20 10"
+		—heredado de la plantilla de Windows, donde el relleno iba adentro del marco—: si se
+		respetara, el contenido quedaría sangrado 20px mientras el rótulo de la sección queda
+		en cero, desalineado contra su propio título.
+	-->
+	<Style x:Key="Seccion" TargetType="{ x:Type GroupBox }">
+		<Setter Property="Margin" Value="0 0 0 8"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type GroupBox }">
+					<StackPanel>
+						<Border BorderBrush="{ StaticResource ResourceKey=Linea }"
+								BorderThickness="0 1 0 0"
+								SnapsToDevicePixels="True">
+							<!--
+								El estilo implícito de TextBlock alcanza al que genera el
+								ContentPresenter cuando el Header es una cadena. Una vista que
+								todavía pase un <Label> conserva el suyo: degrada sin romperse.
+							-->
+							<ContentPresenter ContentSource="Header" Margin="0 14 0 0">
+								<ContentPresenter.Resources>
+									<Style TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Seccion }"/>
+								</ContentPresenter.Resources>
+							</ContentPresenter>
+						</Border>
+						<ContentPresenter Margin="0 16 0 0"/>
+					</StackPanel>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style TargetType="{ x:Type GroupBox }" BasedOn="{ StaticResource ResourceKey=Seccion }"/>
+	<!--#endregion-->
+
+	<!--#region PASOS
+		El alta de un alumno y la de un docente son un TabControl cuyas pestañas habilita el
+		ViewModel por etapa: un recorrido por pasos disfrazado de pestañas, y sin estilo, así
+		que se veía con las pestañas de Windows.
+
+		Acá el orden SÍ carga información: no se puede inscribir a alguien que todavía no
+		existe como persona. Por eso el número no es decoración —dice que hay una secuencia
+		obligatoria— y el paso bloqueado se ve bloqueado, en lugar de ser una pestaña que no
+		responde al clic.
+
+		El número sale del Tag de cada TabItem y el rótulo del Header. La marca es la misma
+		regla verde del rail y de Btn.Pestana: tres lugares distintos de la app contestando
+		"dónde estoy" con el mismo recurso.
+	-->
+	<Style x:Key="Paso" TargetType="{ x:Type TabItem }">
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type TabItem }">
+					<Grid Background="Transparent" Margin="0 0 28 0">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="*"/>
+							<RowDefinition Height="2"/>
+						</Grid.RowDefinitions>
+
+						<StackPanel Grid.Row="0"
+									Margin="0 0 0 11"
+									Orientation="Horizontal">
+							<TextBlock x:Name="Numero"
+									   FontFamily="{ StaticResource ResourceKey=Fuente.Dato }"
+									   FontSize="12.5"
+									   FontWeight="Bold"
+									   Foreground="{ StaticResource ResourceKey=TintaTenue }"
+									   Margin="0 0 8 0"
+									   Text="{ TemplateBinding Tag }"
+									   VerticalAlignment="Center"/>
+							<TextBlock x:Name="Rotulo"
+									   FontFamily="{ StaticResource ResourceKey=Fuente.Display }"
+									   FontSize="13"
+									   FontStretch="Condensed"
+									   FontWeight="Bold"
+									   Foreground="{ StaticResource ResourceKey=TintaSuave }"
+									   Text="{ TemplateBinding Header }"
+									   VerticalAlignment="Center"/>
+						</StackPanel>
+
+						<Rectangle x:Name="Marca"
+								   Grid.Row="1"
+								   Fill="Transparent"
+								   SnapsToDevicePixels="True"/>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<!--
+							EL ORDEN DE ESTOS DISPARADORES ES EL ESTILO. Cuando dos están
+							activos y escriben la misma propiedad, gana el ÚLTIMO. "Bloqueado"
+							va primero para que el paso actual se vea actual aunque su TabItem
+							esté deshabilitado, que es justo el caso de las dos altas: el
+							ViewModel deshabilita las dos pestañas y mueve el índice él mismo.
+						-->
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Cursor" Value="Arrow"/>
+							<Setter TargetName="Numero" Property="Foreground" Value="{ StaticResource ResourceKey=LineaFuerte }"/>
+							<Setter TargetName="Rotulo" Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Rotulo" Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</Trigger>
+						<Trigger Property="IsSelected" Value="True">
+							<Setter TargetName="Marca" Property="Fill" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Numero" Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Rotulo" Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style x:Key="Pestanas" TargetType="{ x:Type TabControl }">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="ItemContainerStyle" Value="{ StaticResource ResourceKey=Paso }"/>
+		<Setter Property="Padding" Value="0 24 0 0"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type TabControl }">
+					<Grid>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="*"/>
+						</Grid.RowDefinitions>
+
+						<!--
+							La regla corre a lo ancho de TODA la fila de pasos, no sólo debajo
+							de las pestañas: es el renglón del que cuelga el paso actual. La
+							marca de 2px del Paso la tapa donde corresponde.
+						-->
+						<Grid Grid.Row="0">
+							<Rectangle Fill="{ StaticResource ResourceKey=Linea }"
+									   Height="1"
+									   SnapsToDevicePixels="True"
+									   VerticalAlignment="Bottom"/>
+							<TabPanel IsItemsHost="True" Panel.ZIndex="1"/>
+						</Grid>
+
+						<ContentPresenter Grid.Row="1"
+										  ContentSource="SelectedContent"
+										  Margin="{ TemplateBinding Padding }"/>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region DESPLEGABLE
+		Para el dato de apoyo que no se mira siempre —"Información adicional del Curso"—. El
+		Expander por omisión de WPF trae la flecha circular de Aero y un borde propio; acá es
+		un rótulo de sección con un galón que gira, sin caja.
+	-->
+	<Style x:Key="Desplegable.Titulo" TargetType="{ x:Type ToggleButton }">
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type ToggleButton }">
+					<Grid Background="Transparent">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<Path x:Name="Galon"
+							  Data="M 0 0 L 4 4 L 0 8"
+							  Grid.Column="0"
+							  Margin="0 0 9 0"
+							  RenderTransformOrigin=".5 .5"
+							  Stroke="{ StaticResource ResourceKey=TintaSuave }"
+							  StrokeEndLineCap="Round"
+							  StrokeStartLineCap="Round"
+							  StrokeThickness="1.5"
+							  VerticalAlignment="Center">
+							<Path.RenderTransform>
+								<RotateTransform Angle="0"/>
+							</Path.RenderTransform>
+						</Path>
+
+						<ContentPresenter Grid.Column="1" VerticalAlignment="Center">
+							<ContentPresenter.Resources>
+								<Style TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Seccion }"/>
+							</ContentPresenter.Resources>
+						</ContentPresenter>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Galon" Property="Stroke" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</Trigger>
+						<!--
+							Se gira el Path, no el RotateTransform: el TargetName de un Setter
+							sólo alcanza elementos del árbol de la plantilla, y un
+							RotateTransform es un Freezable, así que nombrarlo no sirve.
+						-->
+						<Trigger Property="IsChecked" Value="True">
+							<Setter TargetName="Galon" Property="RenderTransform">
+								<Setter.Value>
+									<RotateTransform Angle="90"/>
+								</Setter.Value>
+							</Setter>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style x:Key="Desplegable" TargetType="{ x:Type Expander }">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Expander }">
+					<StackPanel>
+						<ToggleButton Content="{ TemplateBinding Header }"
+									  IsChecked="{ Binding Path=IsExpanded, Mode=TwoWay, RelativeSource={ RelativeSource TemplatedParent } }"
+									  Style="{ StaticResource ResourceKey=Desplegable.Titulo }"/>
+						<!-- Sangrado a la altura del rótulo, no del galón. -->
+						<ContentPresenter x:Name="Cuerpo"
+										  Margin="13 14 0 0"
+										  Visibility="Collapsed"/>
+					</StackPanel>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsExpanded" Value="True">
+							<Setter TargetName="Cuerpo" Property="Visibility" Value="Visible"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style TargetType="{ x:Type Expander }" BasedOn="{ StaticResource ResourceKey=Desplegable }"/>
+	<!--#endregion-->
+
+	<!--#region CASILLA
 		La casilla es de 18px con un tilde dibujado a mano (Path), no una fuente de iconos:
 		así escala sin depender de que FontAwesome esté cargado y mantiene el mismo grosor de
 		trazo que la flecha del selector.
 	-->
-
-	<!--#region CASILLA-->
 	<Style x:Key="Chk.Campo" TargetType="{ x:Type CheckBox }">
 		<Setter Property="Cursor" Value="Hand"/>
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
@@ -73,6 +478,17 @@
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
+	</Style>
+
+	<!--
+		Casilla que comparte fila con campos de texto. Sin rótulo propio arriba, el tilde
+		queda pegado al borde superior de la fila y a 20px del campo vecino; este margen lo
+		baja hasta la línea de los controles.
+	-->
+	<Style x:Key="Chk.Campo.Alineada" TargetType="{ x:Type CheckBox }" BasedOn="{ StaticResource ResourceKey=Chk.Campo }">
+		<Setter Property="Margin" Value="0 0 0 16"/>
+		<Setter Property="VerticalAlignment" Value="Bottom"/>
+		<Setter Property="Height" Value="34"/>
 	</Style>
 	<!--#endregion-->
 

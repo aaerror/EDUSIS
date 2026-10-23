@@ -3,177 +3,99 @@
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos"
 
-			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
 			 xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+
 			 xmlns:cursoDomain="clr-namespace:Domain.Cursos;assembly=Domain"
 			 xmlns:domainShared="clr-namespace:Domain.Shared;assembly=Domain"
 			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
-			 
+
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<!--#region RESOURCES-->
-	<ContentControl.Resources>
+	<!--
+		Un curso son DOS datos. La pantalla usaba el ancho completo con los rótulos alineados a
+		la derecha en su propia columna —el único lugar de la app que lo hacía— y gastaba una
+		fila entera arriba en un botón de navegación. Ahora los dos campos van en un bloque
+		angosto, como la búsqueda de alumnos, y la navegación sube al lado del encabezado,
+		donde está en las pantallas de gestión.
+	-->
+	<UserControl.Resources>
 		<converters:GradoConverter x:Key="gradoConverter"/>
 		<converters:NivelEducativoConverter x:Key="nivelEducativoConverter"/>
 
-		<ObjectDataProvider x:Key="grados" ObjectType="{ x:Type sys:Enum }" MethodName="GetValues">
+		<ObjectDataProvider x:Key="grados" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
 			<ObjectDataProvider.MethodParameters>
 				<x:Type TypeName="cursoDomain:Grado"/>
 			</ObjectDataProvider.MethodParameters>
 		</ObjectDataProvider>
-		
-		<ObjectDataProvider x:Key="nivelEducativo" ObjectType="{ x:Type sys:Enum }" MethodName="GetValues">
+
+		<ObjectDataProvider x:Key="nivelEducativo" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
 			<ObjectDataProvider.MethodParameters>
 				<x:Type TypeName="domainShared:NivelEducativo"/>
 			</ObjectDataProvider.MethodParameters>
 		</ObjectDataProvider>
-	</ContentControl.Resources>
-	<!--#endregion-->
+	</UserControl.Resources>
 
-	<Grid>
+	<Grid Margin="28 24">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region TITLE & SUBTITLE-->
-		<components:Header Grid.Row="0"
-						   Title="Gestión de Cursos"
-						   Subtitle="Registrar Curso"/>
-		<!--#endregion-->
-
-		<!--#region COMMANDs-->
-		<Grid Grid.Row="1"
-			  Margin="20 10">
+		<Grid Grid.Row="0" Margin="0 0 0 20">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
 			</Grid.ColumnDefinitions>
-			<!--#region NavigationCommand: Curso-->
-			<WrapPanel Grid.Column="0"
-					   HorizontalAlignment="Right">
-				<Button Command="{ Binding Path=NavigationCommand }"
-						CommandParameter="Curso"
-						Margin="0 0 4 0"
-						ToolTip="Cursos"
-						Style="{ StaticResource ResourceKey=Secondary }">
-					<Button.Content>
-						<WrapPanel>
-							<TextBlock Text="Ir a Cursos"
-									   Margin="0 0 2 3"/>
-							<fa:IconBlock Icon="ArrowRightLong"
-										  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-										  Margin="2 0 0 0"/>
-						</WrapPanel>
-					</Button.Content>
-				</Button>
-			</WrapPanel>
-			<!--#endregion-->
-		</Grid>
-		<!--#endregion-->
 
-		<!--#region INPUTs-->
-		<Border Grid.Row="2"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10"
-				Padding="10">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
+			<components:Header Grid.Column="0"
+							   Title="Cursos"
+							   Subtitle="Alta de un curso nuevo"/>
 
-			<Grid Margin="20 10">
-				<Grid.RowDefinitions>
-					<RowDefinition/>
-					<RowDefinition/>
-					<RowDefinition/>
-				</Grid.RowDefinitions>
-
-				<!--#region Title-->
-				<StackPanel Grid.Row="0"
-							Margin="0 0 0 2">
-					<Label Style="{ StaticResource ResourceKey=Headline }">
-						<Label.Content>
-							<WrapPanel HorizontalAlignment="Center">
-								<fa:IconBlock Icon="Chalkboard"
-											  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-											  Margin="0 0 2 0"/>
-								<TextBlock Text="Nuevo curso"
-										   Margin="2 0 0 2"/>
-							</WrapPanel>
-						</Label.Content>
-					</Label>
-					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-							   Height=".8"
-							   Width="Auto"/>
+			<Button Grid.Column="1"
+					Command="{ Binding Path=NavigationCommand }"
+					CommandParameter="Curso"
+					Style="{ StaticResource ResourceKey=Btn.Terciario }"
+					ToolTip="Volver al listado de cursos"
+					VerticalAlignment="Center">
+				<StackPanel Orientation="Horizontal">
+					<TextBlock Text="Ir a cursos" VerticalAlignment="Center"/>
+					<fa:IconBlock FontSize="11"
+								  Icon="ArrowRightLong"
+								  Margin="8 0 0 0"
+								  VerticalAlignment="Center"/>
 				</StackPanel>
-				<!--#endregion-->
+			</Button>
+		</Grid>
 
-				<Grid Grid.Row="1"
-					  Margin="0 5 0 10">
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="Auto"/>
-						<ColumnDefinition Width="*"/>
-					</Grid.ColumnDefinitions>
-					<Grid.RowDefinitions>
-						<RowDefinition/>
-						<RowDefinition/>
-						<RowDefinition/>
-					</Grid.RowDefinitions>
-					<!--#region GRADO-->
-					<Label Grid.Column="0"
-						   Grid.Row="0"
-						   Content="Grado"
-						   HorizontalAlignment="Right"
-						   Style="{ StaticResource ResourceKey=Form }"/>
-
-					<ComboBox Grid.Column="1"
-							  Grid.Row="0"
-							  ItemsSource="{ Binding Source={ StaticResource ResourceKey=grados } }"
+		<Border Grid.Row="1"
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				VerticalAlignment="Top">
+			<StackPanel HorizontalAlignment="Left"
+						Margin="28 24"
+						MaxWidth="420">
+				<HeaderedContentControl Header="Grado" Style="{ StaticResource ResourceKey=Campo }">
+					<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=grados } }"
 							  SelectedItem="{ Binding Path=Grado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=gradoConverter } }"
-							  Margin="10 10 0 10"
-							  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
-					<!--#endregion-->
+							  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+				</HeaderedContentControl>
 
-					<!--#region NIVEL EDUCATIVO-->
-					<Label Grid.Column="0"
-						   Grid.Row="1"
-						   Content="Nivel Educativo"
-						   HorizontalAlignment="Right"
-						   Style="{ StaticResource ResourceKey=Form }"/>
-
-					<ComboBox Grid.Column="1"
-							  Grid.Row="1"
-							  ItemsSource="{ Binding Source={ StaticResource ResourceKey=nivelEducativo } }"
+				<HeaderedContentControl Header="Nivel educativo" Style="{ StaticResource ResourceKey=Campo }">
+					<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=nivelEducativo } }"
 							  SelectedItem="{ Binding Path=NivelEducativo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=nivelEducativoConverter } }"
-							  Margin="10 10 0 10"
-							  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
-					<!--#endregion-->
+							  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+				</HeaderedContentControl>
 
-					<!--#region COMMAND-->
-					<StackPanel Grid.Column="1"
-								Grid.Row="2"
-								Margin="0 10 0 0"
-								HorizontalAlignment="Right">
-						<Button Command="{ Binding Path=RegistrarCommand }"
-								Content="Guardar"
-								ToolTip="Guardar cambios"
-								Style="{ StaticResource ResourceKey=Primary }"/>
-					</StackPanel>
-					<!--#endregion-->
-				</Grid>
-
-				
-			</Grid>
+				<Border Style="{ StaticResource ResourceKey=Superficie.Seccion }">
+					<Button Command="{ Binding Path=RegistrarCommand }"
+							Content="Guardar"
+							HorizontalAlignment="Right"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Dar de alta el curso"/>
+				</Border>
+			</StackPanel>
 		</Border>
-		<!--#endregion-->
 	</Grid>
 </UserControl>

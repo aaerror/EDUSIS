@@ -45,12 +45,18 @@
 							CornerRadius="3"
 							SnapsToDevicePixels="True">
 						<Grid>
+							<!--
+								Las barras salen del control, no de la plantilla: un campo de
+								una línea las deja en Hidden y Txb.Nota pide Auto para la
+								vertical. Estaban fijas en Hidden, así que una nota larga
+								scrolleaba con el teclado sin nada que lo indicara.
+							-->
 							<ScrollViewer x:Name="PART_ContentHost"
 										  Focusable="False"
-										  HorizontalScrollBarVisibility="Hidden"
+										  HorizontalScrollBarVisibility="{ TemplateBinding HorizontalScrollBarVisibility }"
 										  Margin="{ TemplateBinding Padding }"
 										  VerticalAlignment="{ TemplateBinding VerticalContentAlignment }"
-										  VerticalScrollBarVisibility="Hidden"/>
+										  VerticalScrollBarVisibility="{ TemplateBinding VerticalScrollBarVisibility }"/>
 							<!-- Texto guía: qué se espera acá, no una repetición de la etiqueta. -->
 							<TextBlock x:Name="Guia"
 									   Foreground="{ StaticResource ResourceKey=TintaTenue }"
@@ -58,7 +64,7 @@
 									   IsHitTestVisible="False"
 									   Margin="{ TemplateBinding Padding }"
 									   Text="{ TemplateBinding Tag }"
-									   VerticalAlignment="Center"
+									   VerticalAlignment="{ TemplateBinding VerticalContentAlignment }"
 									   Visibility="Collapsed"/>
 						</Grid>
 					</Border>
@@ -100,6 +106,23 @@
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region NOTA — texto libre de varias líneas
+		Observaciones venía con Height="94" escrito en la vista, peleando contra el Height=34
+		de Txb.Campo y contra su VerticalContentAlignment=Center. El alto mínimo y la
+		alineación arriba pasan a ser parte del estilo: una nota es un campo de otro tipo, no
+		un campo de una línea estirado a mano.
+	-->
+	<Style x:Key="Txb.Nota" TargetType="{ x:Type TextBox }" BasedOn="{ StaticResource ResourceKey=Txb.Campo }">
+		<Setter Property="AcceptsReturn" Value="True"/>
+		<Setter Property="Height" Value="Auto"/>
+		<Setter Property="MinHeight" Value="88"/>
+		<Setter Property="Padding" Value="11 8"/>
+		<Setter Property="TextWrapping" Value="Wrap"/>
+		<Setter Property="VerticalContentAlignment" Value="Top"/>
+		<Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
 	</Style>
 	<!--#endregion-->
 

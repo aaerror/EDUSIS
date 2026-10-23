@@ -3,198 +3,114 @@
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Alumnos"
 
-			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
-			 xmlns:viewModel="clr-namespace:WPF_Desktop.ViewModels.Alumnos"
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
+			 xmlns:viewModel="clr-namespace:WPF_Desktop.ViewModels.Alumnos"
 
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<!--#region RESOURCES-->
-	<UserControl.Resources>
-		<BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter"/>
-	</UserControl.Resources>
-	<!--#endregion-->
+	<!--
+		EL MENSAJE DEJA DE SER UNA TARJETA.
 
-	<Grid>
+		Venía en una tarjeta propia, con sombra, borde, y un encabezado centrado con ícono que
+		decía "Notificaciones": una caja del tamaño de la del formulario para mostrar una línea
+		de texto, y un rótulo que nombra el continente en lugar de decir qué pasó. Ahora es el
+		aviso en línea del sistema —Superficie.Aviso, la barra de 3px al margen—, el mismo que
+		usa la búsqueda de alumnos cuando no encuentra a nadie.
+	-->
+	<Grid Margin="28 24">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region TITTLE AND SUBTITLE {{{-->
 		<components:Header Grid.Row="0"
-						   Title="Inscripción de Alumnos en Curso"
+						   Margin="0 0 0 20"
+						   Title="Inscribir alumno"
 						   Subtitle="Inscribir al alumno seleccionado en una división"/>
-		<!--#endregion }}}-->
 
-		<!--#region NOTIFICATIONs {{{-->
 		<Border Grid.Row="1"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10"
-				Padding="10"
-				Visibility="{ Binding Path=HabilitarMessage, Mode=OneWay, Converter={ StaticResource ResourceKey=booleanToVisibilityConverter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-			<Grid Margin="20 10">
-				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="*"/>
-				</Grid.RowDefinitions>
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				VerticalAlignment="Top">
+			<StackPanel Margin="28 24">
+				<Border Margin="0 0 0 20"
+						Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+						Visibility="{ Binding Path=HabilitarMessage, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+					<TextBlock MaxWidth="560"
+							   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+							   Text="{ Binding Path=Message, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+							   TextWrapping="Wrap"/>
+				</Border>
 
-				<StackPanel Grid.Row="0"
-							Margin="0 0 0 5">
-					<Label Style="{ StaticResource ResourceKey=Headline }">
-						<Label.Content>
-							<WrapPanel HorizontalAlignment="Center">
-								<fa:IconBlock Icon="CircleInfo"
-											  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-											  Margin="0 0 2 0"/>
-								<TextBlock Text="Notificaciones"
-										   Margin="2 0 0 2"/>
-							</WrapPanel>
-						</Label.Content>
-					</Label>
-					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-							   Height=".8"
-							   Width="Auto"/>
-				</StackPanel>
+				<GroupBox Header="INSCRIPCIÓN EN EL CURSO" Style="{ StaticResource ResourceKey=Seccion }">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
 
-				<!--#region MESSAGE-->
-				<StackPanel Grid.Row="1"
-							Margin="0 5 0 0">
-					<TextBlock Text="{ Binding Path=Message, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-							   TextWrapping="Wrap"
-							   Style="{ StaticResource ResourceKey=TextBlock_Body }"/>
-				</StackPanel>
-				<!--#endregion-->
-			</Grid>
-		</Border>
-		<!--#endregion }}}-->
+						<HeaderedContentControl Grid.Column="0" Grid.Row="0"
+											   Header="Curso"
+											   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+							<ComboBox ItemsSource="{ Binding Path=Cursos, Mode=OneWay }"
+									  SelectedItem="{ Binding Path=Curso, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+									  Style="{ StaticResource ResourceKey=Cmb.Campo }">
+								<ComboBox.ItemTemplate>
+									<DataTemplate>
+										<StackPanel Orientation="Horizontal">
+											<TextBlock Margin="0 0 4 0"
+													   Text="{ Binding Path=Grado, StringFormat={}{0}° Año }"/>
+											<TextBlock Text="{ Binding Path=NivelEducativo, StringFormat={}({0}) }"/>
+										</StackPanel>
+									</DataTemplate>
+								</ComboBox.ItemTemplate>
+							</ComboBox>
+						</HeaderedContentControl>
 
-		<!--#region DETAILS {{{-->
-		<Border Grid.Row="2"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10"
-				Padding="10">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-			<Grid Margin="20 10">
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="*"/>
-					<ColumnDefinition Width="*"/>
-				</Grid.ColumnDefinitions>
-				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="Auto"/>
-				</Grid.RowDefinitions>
+						<HeaderedContentControl Grid.Column="1" Grid.Row="0"
+											   Header="División"
+											   Style="{ StaticResource ResourceKey=Campo.Derecha }">
+							<ComboBox ItemsSource="{ Binding Path=Divisiones, Mode=OneWay }"
+									  SelectedItem="{ Binding Path=Division, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+									  Style="{ StaticResource ResourceKey=Cmb.Campo }">
+								<ComboBox.ItemTemplate>
+									<DataTemplate>
+										<TextBlock Text="{ Binding Path=Descripcion }"/>
+									</DataTemplate>
+								</ComboBox.ItemTemplate>
+							</ComboBox>
+						</HeaderedContentControl>
 
-				<!--#region Title-->
-				<StackPanel Grid.ColumnSpan="2"
-							Grid.Row="0"
-							Margin="0 0 0 5">
-					<Label Content="Inscripción en el Curso"
-						   Style="{ StaticResource ResourceKey=Headline }"/>
-					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-							   Height=".8"
-							   Width="Auto"/>
-				</StackPanel>
-				<!--#endregion-->
+						<HeaderedContentControl Grid.Column="0" Grid.Row="1"
+											   Header="Ciclo lectivo"
+											   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+							<TextBox IsReadOnly="True"
+									 Text="{ Binding Path=Periodo, Mode=OneWay }"
+									 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+						</HeaderedContentControl>
 
-				<!--#region CURSOS-->
-				<StackPanel Grid.Column="0"
-							Grid.Row="1"
-							Margin="0 5 10 10">
-					<Label Content="Cursos"
-						   Style="{ StaticResource ResourceKey=Form }"/>
-					<ComboBox ItemsSource="{ Binding Path=Cursos, Mode=OneWay }"
-							  SelectedItem="{ Binding Path=Curso, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-							  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-						<ComboBox.ItemTemplate>
-							<DataTemplate>
-								<StackPanel Orientation="Horizontal">
-									<TextBlock Text="{ Binding Path=Grado, StringFormat={}{0}° Año }"
-											   Margin="0 0 2 0"/>
-									<TextBlock Text="{ Binding Path=NivelEducativo, StringFormat={}({0}) }"
-											   Margin="2 0 0 0"/>
-								</StackPanel>
-							</DataTemplate>
-						</ComboBox.ItemTemplate>
-					</ComboBox>
-				</StackPanel>
-				<!--#endregion-->
+						<!-- Chk.Campo.Alineada baja la casilla hasta la línea de los campos de la fila. -->
+						<!-- "Recursante" es el término de la institución: no se reemplaza por una paráfrasis. -->
+						<CheckBox Grid.Column="1" Grid.Row="1"
+								  Content="Recursante"
+								  IsChecked="{ Binding Path=EsRecursante, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+								  Margin="10 0 0 16"
+								  Style="{ StaticResource ResourceKey=Chk.Campo.Alineada }"/>
+					</Grid>
+				</GroupBox>
 
-				<!--#region DIVISIONES-->
-				<StackPanel Grid.Column="1"
-							Grid.Row="1"
-							Margin="10 5 0 10">
-					<Label Content="Divisiones"
-						   Style="{ StaticResource ResourceKey=Form }"/>
-					<ComboBox ItemsSource="{ Binding Path=Divisiones, Mode=OneWay }"
-							  SelectedItem="{ Binding Path=Division, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-							  Style="{ StaticResource ResourceKey=ComboBoxStyle }">
-						<ComboBox.ItemTemplate>
-							<DataTemplate>
-								<TextBlock Text="{ Binding Path=Descripcion }"
-										   Margin="0 0 2 0"/>
-							</DataTemplate>
-						</ComboBox.ItemTemplate>
-					</ComboBox>
-				</StackPanel>
-				<!--#endregion-->
-
-				<!--#region CICLO LECTIVO-->
-				<StackPanel Grid.Column="0"
-							Grid.Row="2"
-							Margin="0 5 10 10">
-					<Label Content="Ciclo Lectivo"
-						   Style="{ StaticResource ResourceKey=Form }"/>
-					<TextBox Text="{ Binding Path=Periodo, Mode=OneWay }"
-							 IsReadOnly="True"
-							 Style="{ StaticResource ResourceKey=TextBox }"/>
-				</StackPanel>
-				<!--#endregion-->
-
-				<!--#region RECURSANTE-->
-				<StackPanel Grid.Column="1"
-							Grid.Row="2"
-							VerticalAlignment="Bottom"
-							Margin="10 5 0 10">
-					<CheckBox Content="Recursante"
-							  IsChecked="{ Binding Path=EsRecursante, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-							  Style="{ StaticResource ResourceKey=CheckBox }"/>
-				</StackPanel>
-				<!--#endregion-->
-
-				<!--#region COMMANDS-->
-				<WrapPanel Grid.ColumnSpan="2"
-						   Grid.Row="3"
-						   HorizontalAlignment="Right"
-						   Margin="0 10 0 0">
+				<Border Style="{ StaticResource ResourceKey=Superficie.Seccion }">
 					<Button Command="{ Binding Path=InscribirCommand }"
 							Content="Inscribir"
-							Style="{ StaticResource ResourceKey=Primary }"/>
-				</WrapPanel>
-				<!--#endregion-->
-			</Grid>
+							HorizontalAlignment="Right"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Inscribir el alumno en esta división"/>
+				</Border>
+			</StackPanel>
 		</Border>
-		<!--#endregion }}}-->
 	</Grid>
 </UserControl>

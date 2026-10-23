@@ -4,199 +4,148 @@
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Alumnos"
 
 			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
-			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
 
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<!--#region RESOURCES-->
-	<UserControl.Resources>
-		<BooleanToVisibilityConverter x:Key="Converter"/>
-	</UserControl.Resources>
-	<!--#endregion-->
-	<!--#region EVENTS-->
+	<!--
+		Tres bloques que se editan por separado, cada uno con su propio par cancelar/guardar.
+
+		Antes cada bloque era un GroupBox con la plantilla de Windows y un Label de 17px por
+		título, dentro de una tarjeta con sombra. Ahora el GroupBox es el recurso Seccion: una
+		regla de 1px y el rótulo en versalita, el mismo corte que separa secciones en las
+		pantallas de gestión.
+
+		Los botones de cada bloque NO llevan regla propia: la de la sección ya marca el corte,
+		y una regla por cada fila de botones deja la pantalla rayada de arriba a abajo.
+
+		Se usa el converter visibilidad del tema en lugar de declarar un
+		BooleanToVisibilityConverter por vista.
+	-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
-			<behaviors:CallMethodAction MethodName="CargarPerfil" TargetObject="{Binding}"/>
-			<!-- <behaviors:InvokeCommandAction Command="{ Binding Path=CargarPerfilCommandAsync }"/> -->
+			<behaviors:CallMethodAction MethodName="CargarPerfil" TargetObject="{ Binding }"/>
 		</behaviors:EventTrigger>
 	</behaviors:Interaction.Triggers>
-	<!--#endregion-->
 
-	<Grid>
+	<Grid Margin="28 24">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region TITTLE & SUBTITLE-->
 		<components:Header Grid.Row="0"
-						   Title="Gestión de Alumnos"
-						   Subtitle="Perfil"/>
-		<!--#endregion-->
+						   Margin="0 0 0 20"
+						   Title="Perfil del alumno"
+						   Subtitle="Datos personales, contacto y domicilio. Cada bloque se edita por separado."/>
 
-		<Border Grid.Row="1"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-			<ScrollViewer VerticalScrollBarVisibility="Auto"
-						  Padding="20">
-				<StackPanel>
-					<!--#region INFORMACION PERSONAL-->
-					<GroupBox Margin="0 0 0 5"
-							  Padding="30 10">
-						<GroupBox.Header>
-							<Label Content="Información Personal"
-								   Style="{ StaticResource ResourceKey=Headline }"/>
-						</GroupBox.Header>
+		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<ScrollViewer VerticalScrollBarVisibility="Auto">
+				<StackPanel Margin="28 4 28 24">
+					<!--#region INFORMACIÓN PERSONAL-->
+					<GroupBox Header="INFORMACIÓN PERSONAL" Style="{ StaticResource ResourceKey=Seccion }">
 						<StackPanel>
-							<!--#region DatosPersonales-->
 							<components:InfoPersonalComponent Apellido="{ Binding Path=Alumno.Apellido, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-															  Nombre="{ Binding Path=Alumno.Nombre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 															  Documento="{ Binding Path=Alumno.Documento }"
-															  Sexo="{ Binding Path=Alumno.Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+															  EstaHabilitado="{ Binding Path=HabilitarEditarSexo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 															  FechaNacimiento="{ Binding Path=Alumno.FechaNacimiento }"
 															  Nacionalidad="{ Binding Path=Alumno.Nacionalidad }"
-															  EstaHabilitado="{ Binding Path=HabilitarEditarSexo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
-							<!--#endregion-->
-							<!--#region COMMANDs-->
-							<WrapPanel HorizontalAlignment="Right"
-									   Margin="0 15 0 0">
-								<!--#region EditarCommand: Sexo-->
+															  Nombre="{ Binding Path=Alumno.Nombre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+															  Sexo="{ Binding Path=Alumno.Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+
+							<StackPanel HorizontalAlignment="Right"
+										Margin="0 4 0 0"
+										Orientation="Horizontal">
 								<Button Command="{ Binding Path=EditarCommand }"
 										CommandParameter="Sexo"
 										Content="Editar"
-										Margin="0 0 0 0"
-										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Tertiary }"/>
-								<!--#endregion-->
-								<!--#region CancelarCommand: Sexo-->
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Editar los datos personales"
+										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 								<Button Command="{ Binding Path=CancelarCommand }"
 										CommandParameter="Sexo"
 										Content="Cancelar"
-										Margin="0 0 5 0"
-										Visibility="{ Binding Path=HabilitarEditarSexo, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Secondary }"/>
-								<!--#endregion-->
-								<!--#region GuardarCommand: Sexo-->
+										Margin="0 0 8 0"
+										Style="{ StaticResource ResourceKey=Btn.Terciario }"
+										Visibility="{ Binding Path=HabilitarEditarSexo, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 								<Button Command="{ Binding Path=GuardarCommand }"
 										CommandParameter="Sexo"
-										Content="Guardar Cambios"
-										Margin="5 0 0 0"
-										Visibility="{ Binding Path=HabilitarEditarSexo, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Primary }"/>
-								<!--#endregion-->
-							</WrapPanel>
-							<!--#endregion-->
+										Content="Guardar cambios"
+										Style="{ StaticResource ResourceKey=Btn.Primario }"
+										Visibility="{ Binding Path=HabilitarEditarSexo, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							</StackPanel>
 						</StackPanel>
 					</GroupBox>
 					<!--#endregion-->
 
 					<!--#region CONTACTO-->
-					<GroupBox Margin="0 5 0 5"
-							  Padding="30 10">
-						<GroupBox.Header>
-							<Label Content="Contacto"
-								   Style="{ StaticResource ResourceKey=Headline }"/>
-						</GroupBox.Header>
+					<GroupBox Header="CONTACTO" Style="{ StaticResource ResourceKey=Seccion }">
 						<StackPanel>
-							<!--#region Contacto-->
-							<components:InfoContactoComponent Telefono="{ Binding Path=Alumno.Telefono, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-															  Email="{ Binding Path=Alumno.Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-															  EstaHabilitado="{ Binding Path=HabilitarEditarContacto, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
-							<!--#endregion-->
-							<!--#region COMMANDs-->
-							<WrapPanel HorizontalAlignment="Right"
-									   Margin="0 15 0 0">
-								<!--#region EditarCommand: Contacto-->
+							<components:InfoContactoComponent Email="{ Binding Path=Alumno.Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+															  EstaHabilitado="{ Binding Path=HabilitarEditarContacto, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+															  Telefono="{ Binding Path=Alumno.Telefono, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+
+							<StackPanel HorizontalAlignment="Right"
+										Margin="0 4 0 0"
+										Orientation="Horizontal">
 								<Button Command="{ Binding Path=EditarCommand }"
 										CommandParameter="Contacto"
 										Content="Editar"
-										Margin="0 0 0 0"
-										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Tertiary }"/>
-								<!--#endregion-->
-								<!--#region CancelarCommand: Contacto-->
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Editar el teléfono y el correo"
+										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 								<Button Command="{ Binding Path=CancelarCommand }"
 										CommandParameter="Contacto"
 										Content="Cancelar"
-										Margin="0 0 5 0"
-										Visibility="{ Binding Path=HabilitarEditarContacto, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Secondary }"/>
-								<!--#endregion-->
-								<!--#region GuardarCommand: Contacto-->
+										Margin="0 0 8 0"
+										Style="{ StaticResource ResourceKey=Btn.Terciario }"
+										Visibility="{ Binding Path=HabilitarEditarContacto, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 								<Button Command="{ Binding Path=GuardarCommand }"
 										CommandParameter="Contacto"
-										Content="Guardar Cambios"
-										Margin="5 0 0 0"
-										Visibility="{ Binding Path=HabilitarEditarContacto, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Primary }"/>
-								<!--#endregion-->
-							</WrapPanel>
-							<!--#endregion-->
+										Content="Guardar cambios"
+										Style="{ StaticResource ResourceKey=Btn.Primario }"
+										Visibility="{ Binding Path=HabilitarEditarContacto, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							</StackPanel>
 						</StackPanel>
 					</GroupBox>
 					<!--#endregion-->
 
 					<!--#region DOMICILIO-->
-					<GroupBox Margin="0 5 0 0"
-							  Padding="30 10">
-						<GroupBox.Header>
-							<Label Content="Domicilio"
-								   Style="{ StaticResource ResourceKey=Headline }"/>
-						</GroupBox.Header>
+					<GroupBox Header="DOMICILIO" Style="{ StaticResource ResourceKey=Seccion }">
 						<StackPanel>
-							<!--#region Domicilio-->
-							<components:InfoDireccionDomicilioComponent Calle="{ Binding Path=Alumno.Calle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-																		Altura="{ Binding Path=Alumno.Altura, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-																		Vivienda="{ Binding Path=Alumno.Vivienda, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+							<components:InfoDireccionDomicilioComponent Altura="{ Binding Path=Alumno.Altura, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+																		Calle="{ Binding Path=Alumno.Calle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+																		EstaHabilitado="{ Binding Path=HabilitarEditarDomicilio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 																		Observacion="{ Binding Path=Alumno.Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-																		EstaHabilitado="{ Binding HabilitarEditarDomicilio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
-							<!--#endregion-->
-							<!--#region Ubicación-->
-							<components:InfoUbicacionDomicilioComponent Localidad="{ Binding Path=Alumno.Localidad, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-																		Provincia="{ Binding Path=Alumno.Provincia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+																		Vivienda="{ Binding Path=Alumno.Vivienda, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+
+							<components:InfoUbicacionDomicilioComponent EstaHabilitado="{ Binding Path=HabilitarEditarDomicilio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+																		Localidad="{ Binding Path=Alumno.Localidad, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 																		Pais="{ Binding Path=Alumno.Pais, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-																		EstaHabilitado="{ Binding HabilitarEditarDomicilio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
-							<!--#endregion-->
-							<!--#region COMMANDs-->
-							<WrapPanel HorizontalAlignment="Right"
-									   Margin="0 15 0 0">
-								<!--#region EditarCommand: Domicilio-->
+																		Provincia="{ Binding Path=Alumno.Provincia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+
+							<StackPanel HorizontalAlignment="Right"
+										Margin="0 4 0 0"
+										Orientation="Horizontal">
 								<Button Command="{ Binding Path=EditarCommand }"
 										CommandParameter="Domicilio"
 										Content="Editar"
-										Margin="0 0 0 0"
-										Visibility="{ Binding RelativeSource={ RelativeSource Self }, Path=IsEnabled, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Tertiary }"/>
-								<!--#endregion-->
-								<!--#region CancelarCommand: Domicilio-->
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Editar el domicilio"
+										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 								<Button Command="{ Binding Path=CancelarCommand }"
 										CommandParameter="Domicilio"
 										Content="Cancelar"
-										Margin="0 0 5 0"
-										Visibility="{ Binding Path=HabilitarEditarDomicilio, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Secondary }"/>
-								<!--#endregion-->
-								<!--#region GuardarCommand: Domicilio-->
+										Margin="0 0 8 0"
+										Style="{ StaticResource ResourceKey=Btn.Terciario }"
+										Visibility="{ Binding Path=HabilitarEditarDomicilio, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 								<Button Command="{ Binding Path=GuardarCommand }"
 										CommandParameter="Domicilio"
-										Content="Guardar Cambios"
-										Margin="5 0 0 0"
-										Visibility="{ Binding Path=HabilitarEditarDomicilio, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource Converter } }"
-										Style="{ StaticResource ResourceKey=Primary }"/>
-								<!--#endregion-->
-							</WrapPanel>
-							<!--#endregion-->
+										Content="Guardar cambios"
+										Style="{ StaticResource ResourceKey=Btn.Primario }"
+										Visibility="{ Binding Path=HabilitarEditarDomicilio, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							</StackPanel>
 						</StackPanel>
 					</GroupBox>
 					<!--#endregion-->
