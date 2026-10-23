@@ -146,8 +146,7 @@
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="{ x:Type DataGrid }">
-					<Border Background="{ TemplateBinding Background }"
-							SnapsToDevicePixels="True">
+					<Grid>
 						<ScrollViewer x:Name="DG_ScrollViewer" Focusable="False">
 							<ScrollViewer.Template>
 								<ControlTemplate TargetType="{ x:Type ScrollViewer }">
@@ -194,7 +193,35 @@
 							</ScrollViewer.Template>
 							<ItemsPresenter/>
 						</ScrollViewer>
-					</Border>
+
+						<!--
+							Estado vacío, igual que en Lista.Indice: el mensaje viene del Tag
+							de cada grilla, así que dice qué falta hacer en ESA pantalla en
+							lugar de un "no hay registros" universal. Una grilla sin filas
+							mostraba sólo los encabezados y nada más.
+
+							Los encabezados quedan a la vista —dicen qué se va a listar—, así
+							que el aviso arranca debajo: 32px de encabezado + su regla.
+						-->
+						<Border x:Name="Vacio"
+								Margin="0 33 0 0"
+								Visibility="Collapsed">
+							<TextBlock Foreground="{ StaticResource ResourceKey=TintaSuave }"
+									   FontFamily="{ StaticResource ResourceKey=Fuente.Cuerpo }"
+									   FontSize="13"
+									   HorizontalAlignment="Center"
+									   Margin="32 36"
+									   Text="{ TemplateBinding Tag }"
+									   TextAlignment="Center"
+									   TextWrapping="Wrap"
+									   VerticalAlignment="Top"/>
+						</Border>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="HasItems" Value="False">
+							<Setter TargetName="Vacio" Property="Visibility" Value="Visible"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>

@@ -107,7 +107,11 @@ internal static class WPF_DesktopDI
 								  provider.GetRequiredService<IDialogService>(),
 								  provider.GetRequiredService<IMessenger>()));
 
-		services.AddTransient<BuscarViewModel>();
+		services.AddTransient<BuscarViewModel>(provider =>
+			new BuscarViewModel(provider.GetRequiredService<IServicioDocente>(),
+								provider.GetRequiredService<IDialogService>(),
+								provider.GetRequiredService<ModalWindowNavigationStore>(),
+								provider.GetRequiredService<IMessenger>()));
 
 		#region Docentes
 		services.AddTransient<GestionDocentesViewModel>(provider =>
@@ -162,13 +166,14 @@ internal static class WPF_DesktopDI
 									   provider.GetRequiredService<CursoStore>()));
 		services.AddTransient<GestionDivisionesViewModel>(provider =>
 			new GestionDivisionesViewModel(provider.GetRequiredService<IServicioDivision>(),
-										   provider.GetRequiredService<IServicioDocente>(),
 										   CreateGestionCursosNavigationService(provider),
 										   CreateGestionCursantesNavigationService(provider),
+										   CreateBuscarDocenteModalNavigationService(provider),
 										   provider.GetRequiredService<CursoStore>(),
 										   provider.GetRequiredService<DivisionStore>(),
 										   provider.GetRequiredService<CicloLectivoStore>(),
-										   provider.GetRequiredService<IDialogService>()));
+										   provider.GetRequiredService<IDialogService>(),
+										   provider.GetRequiredService<IMessenger>()));
 		#endregion
 
 		#region Materias
@@ -197,12 +202,14 @@ internal static class WPF_DesktopDI
 		#region SituaciónRevista
 		services.AddTransient<GestionSituacionRevistaViewModel>(provider =>
 			new GestionSituacionRevistaViewModel(CreateGestionCatedrasNavigationService(provider),
+												 CreateBuscarDocenteModalNavigationService(provider),
 												 provider.GetRequiredService<IServicioDocente>(),
 												 provider.GetRequiredService<IServicioCatedra>(),
 												 provider.GetRequiredService<IDialogService>(),
 												 provider.GetRequiredService<CursoStore>(),
 												 provider.GetRequiredService<MateriaStore>(),
-												 provider.GetRequiredService<CatedraStore>()));
+												 provider.GetRequiredService<CatedraStore>(),
+												 provider.GetRequiredService<IMessenger>()));
 		#endregion
 
 		#region Documentación y reportes
@@ -354,6 +361,18 @@ internal static class WPF_DesktopDI
 		new GestionReportesNavigationService<GestionReportesViewModel>(() =>
 			serviceProvider.GetRequiredService<GestionReportesViewModel>(),
 			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
+	#endregion
+
+	#region ModalNavigationService
+	/// <summary>
+	/// Abre el buscador de docentes en el modal. Es el único servicio de navegación que escribe en el
+	/// <c>ModalWindowNavigationStore</c> en lugar del de la ventana principal, así que la pantalla de
+	/// abajo no se reemplaza: queda atrás del velo.
+	/// </summary>
+	private static INavigationService CreateBuscarDocenteModalNavigationService(IServiceProvider serviceProvider) =>
+		new ModalNavigationService<BuscarViewModel>(() =>
+			serviceProvider.GetRequiredService<BuscarViewModel>(),
+			serviceProvider.GetRequiredService<ModalWindowNavigationStore>());
 	#endregion
 
 	#region UsuariosNavigationService

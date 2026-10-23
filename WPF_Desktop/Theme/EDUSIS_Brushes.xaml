@@ -84,6 +84,13 @@
 	<SolidColorBrush x:Key="SobrePizarra" Color="#FFFFFF" Opacity=".95"/>
 	<SolidColorBrush x:Key="SobrePizarraMedia" Color="#FFFFFF" Opacity=".66"/>
 	<SolidColorBrush x:Key="SobrePizarraTenue" Color="#FFFFFF" Opacity=".34"/>
+
+	<!--
+		Velo del modal: apaga la pantalla que queda atrás sin teñirla de negro. Es Pizarra,
+		el mismo verde profundo del rail, así que el modal se lee como parte de la app y no
+		como una ventana ajena encima. Estaba escrito a mano como #990C3A21 en el componente.
+	-->
+	<SolidColorBrush x:Key="Velo" Color="{ StaticResource ResourceKey=Color.Pizarra }" Opacity=".6"/>
 	<!--#endregion-->
 
 	<!--#region COMPATIBILIDAD

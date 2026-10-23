@@ -2,26 +2,35 @@
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas"
-
-			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
-			 xmlns:components="clr-namespace:WPF_Desktop.Components"
-			 xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
-			 xmlns:domainMaterias="clr-namespace:Domain.Curriculas;assembly=Domain"
-			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 			 xmlns:vMaterias="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias"
-
+			 xmlns:components="clr-namespace:WPF_Desktop.Components"
+			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 			 xmlns:sys="clr-namespace:System;assembly=System.Runtime"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<!--#region RESOURCES-->
+	<!--
+		DISEÑO CURRICULAR DEL CURSO — currículas y las materias de cada una.
+
+		SE SACARON OCHO ENLACES ROTOS. Ocho botones de esta pantalla tenían
+		IsEnabled="{ Binding HabilitarEditarMateria, Converter={ StaticResource booleanConverter } }",
+		y ese conversor es un BooleanToVisibilityConverter: devuelve Visibility, no bool. El
+		enlace fallaba en silencio y el IsEnabled se quedaba en su valor por omisión, true, así
+		que los botones estaban SIEMPRE habilitados. Encima la polaridad era al revés:
+		HabilitarEditarMateria arranca en false y sólo es true mientras se edita una materia,
+		o sea que el enlace, si hubiera funcionado, habría apagado la pantalla entera.
+
+		No hacía falta reemplazarlos: los cinco comandos ya tienen CanExecute y ya discriminan
+		con la polaridad correcta ("Cursos" => !HabilitarRegistrarMateria &&
+		!HabilitarEditarMateria, "Materia" => Materia is not null && !HabilitarEditarMateria,
+		etc.). Quitando el enlace, IsEnabled vuelve a salir del comando, que es de donde tiene
+		que salir.
+
+		El formulario de materia nueva tenía los rótulos en una columna a la derecha de su
+		propio campo. Pasan arriba, como en el resto de la app.
+	-->
 	<UserControl.Resources>
-		<BooleanToVisibilityConverter x:Key="booleanConverter"/>
-
-		<converters:EnumConverter x:Key="enumConverter"/>
-		<converters:InvertBooleanConverter x:Key="invertBooleanConverter"/>
-		<converters:CargoConverter x:Key="cargoConverter"/>
-
 		<!-- Horas cátedra válidas (1 a 5): el combo expone el valor de dominio, no su índice. -->
 		<x:Array x:Key="horasCatedra" Type="{ x:Type TypeName=sys:Int32 }">
 			<sys:Int32>1</sys:Int32>
@@ -31,455 +40,307 @@
 			<sys:Int32>5</sys:Int32>
 		</x:Array>
 	</UserControl.Resources>
-	<!--#endregion-->
-	<!--#region EVENTS-->
+
 	<behaviors:Interaction.Triggers>
-		<behaviors:EventTrigger x:Name="Loaded">
+		<behaviors:EventTrigger EventName="Loaded">
 			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarCurriculasCommandAsync }"/>
 		</behaviors:EventTrigger>
 	</behaviors:Interaction.Triggers>
-	<!--#endregion-->
 
-	<Grid>
+	<Grid Margin="28 24 28 24">
 		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region TITLE AND SUBTITLE-->
-		<components:Header Grid.Row="0"
-						   Title="{ Binding Path=Curso, Mode=OneTime }"
-						   Subtitle="Gestión de Materias"/>
-		<!--#endregion-->
-
-		<!--#region COMMANDs-->
-		<Grid Grid.Row="1"
-			  Margin="25 10">
+		<!--#region ENCABEZADO-->
+		<Grid Grid.Row="0" Margin="0 0 0 20">
 			<Grid.ColumnDefinitions>
-				<ColumnDefinition/>
-				<ColumnDefinition/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
 			</Grid.ColumnDefinitions>
-			<WrapPanel Grid.Column="0"
-					   HorizontalAlignment="Left">
-				<!--#region RegistrarCommand: Curricula-->
-				<Button Command="{ Binding Path=RegistrarCommand }"
-						CommandParameter="Curricula"
-						IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-						Margin="0 0 5 0"
-						ToolTip="Nueva Curricula"
-						Style="{ StaticResource ResourceKey=Secondary }">
-					<Button.Content>
-						<WrapPanel>
-							<fa:IconBlock Icon="Plus"
-										  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-										  Margin="0 0 2 0"/>
-							<TextBlock Text="Curricula"
-									   Margin="2 0 0 2"/>
-						</WrapPanel>
-					</Button.Content>
-				</Button>
-				<!--#endregion-->
 
-				<!--#region RegistrarCommand: Materia-->
-				<Button Command="{ Binding Path=RegistrarCommand }"
-						CommandParameter="Materia"
-						IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-						Margin="5 0 0 0"
-						ToolTip="Nueva Materia"
-						Style="{ StaticResource ResourceKey=Secondary }">
-					<Button.Content>
-						<WrapPanel>
-							<fa:IconBlock Icon="Plus"
-										  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-										  Margin="0 0 2 0"/>
-							<TextBlock Text="Materia"
-									   Margin="2 0 0 2"/>
-						</WrapPanel>
-					</Button.Content>
-				</Button>
-				<!--#endregion-->
-			</WrapPanel>
-			<WrapPanel Grid.Column="1"
-					   HorizontalAlignment="Right">
-				<!--#region NavigationCommand: Cursos-->
+			<components:Header Grid.Column="0"
+							   Title="{ Binding Path=Curso, Mode=OneTime }"
+							   Subtitle="Diseño curricular: materias del curso y su carga horaria"/>
+
+			<StackPanel Grid.Column="1"
+						Orientation="Horizontal"
+						VerticalAlignment="Center">
 				<Button Command="{ Binding Path=NavigationCommand }"
 						CommandParameter="Cursos"
-						IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-						ToolTip="Cursos"
-						Style="{ StaticResource ResourceKey=Secondary }">
-					<Button.Content>
-						<WrapPanel>
-							<TextBlock Text="Ir a Cursos"
-									   Margin="0 0 2 2"/>
-							<fa:IconBlock Icon="ArrowRight"
-										  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-										  Margin="2 0 0 0"/>
-						</WrapPanel>
-					</Button.Content>
+						Margin="0 0 8 0"
+						Style="{ StaticResource ResourceKey=Btn.Terciario }"
+						ToolTip="Volver a cursos">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="ArrowLeft"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Volver a cursos" VerticalAlignment="Center"/>
+					</StackPanel>
 				</Button>
-				<!--#endregion-->
-			</WrapPanel>
+
+				<Button Command="{ Binding Path=RegistrarCommand }"
+						CommandParameter="Curricula"
+						Margin="0 0 8 0"
+						Style="{ StaticResource ResourceKey=Btn.Secundario }"
+						ToolTip="Abrir un diseño curricular nuevo para el curso">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Nueva currícula" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+
+				<Button Command="{ Binding Path=RegistrarCommand }"
+						CommandParameter="Materia"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Agregar una materia al diseño curricular elegido">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Nueva materia" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+			</StackPanel>
 		</Grid>
 		<!--#endregion-->
 
-		<!--#region NOTIFICATIONs-->
-		<Border Grid.Row="2"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
+		<!--#region AVISO-->
+		<Border Grid.Row="1"
 				IsEnabled="{ Binding Path=HabilitarNotificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Margin="20 10"
-				Padding="10"
-				VerticalAlignment="Top"
-				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-			<Grid Margin="20 10">
-				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="*"/>
-				</Grid.RowDefinitions>
-				<!--#region TITLE-->
-				<StackPanel Grid.Row="0"
-							Margin="0 0 0 5">
-					<Label Style="{ StaticResource ResourceKey=Headline }">
-						<WrapPanel HorizontalAlignment="Center">
-							<fa:IconBlock Icon="CircleInfo"
-								  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-								  Margin="0 0 2 0"/>
-							<TextBlock Text="Notificaciones"
-							   Margin="2 0 0 2"/>
-						</WrapPanel>
-					</Label>
-					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-							   Height=".8"
-							   Width="Auto"/>
-				</StackPanel>
-				<!--#endregion-->
-				<!--#region MESSAGE-->
-				<StackPanel Grid.Row="1"
-							Margin="0 5 0 0">
-					<Label Content="{ Binding Path=Mensaje, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-						   Style="{ StaticResource ResourceKey=Body }"/>
-				</StackPanel>
-				<!--#endregion-->
-			</Grid>
+				Margin="0 0 0 16"
+				Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+					   Text="{ Binding Path=Mensaje, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+					   TextWrapping="Wrap"/>
 		</Border>
 		<!--#endregion-->
 
-		<!--#region REGISTRAR-->
-		<Border Grid.Row="3"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
+		<!--#region MATERIA NUEVA-->
+		<Border Grid.Row="2"
 				IsEnabled="{ Binding Path=HabilitarRegistrarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Margin="20 10"
-				Padding="10"
-				VerticalAlignment="Top"
-				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-
-			<Grid Margin="20 10">
+				Margin="0 0 0 16"
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<Grid Margin="20 18">
 				<Grid.RowDefinitions>
 					<RowDefinition Height="Auto"/>
 					<RowDefinition Height="Auto"/>
 					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
-				<!--#region TITLE-->
-				<StackPanel Grid.Row="0"
-							Margin="0 0 0 2">
-					<Label Content="Nueva materia"
-						   Style="{ StaticResource ResourceKey=Headline }"/>
-					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-							   Height=".8"
-							   Width="Auto"/>
-				</StackPanel>
-				<!--#endregion-->
 
-				<Grid Grid.Row="1"
-					  Margin="0 2 0 10">
+				<TextBlock Grid.Row="0"
+						   Margin="0 0 0 16"
+						   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+						   Text="Materia nueva"/>
+
+				<Grid Grid.Row="1">
 					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="Auto"/>
-						<ColumnDefinition/>
+						<ColumnDefinition Width="2*"/>
+						<ColumnDefinition Width="*"/>
 					</Grid.ColumnDefinitions>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition/>
-					</Grid.RowDefinitions>
-					<!--#region DESCRIPICIÓN-->
-					<!--#region LABEL: Descripción-->
-					<Label Grid.Column="0"
-						   Grid.Row="0"
-						   Content="Descripción"
-						   HorizontalAlignment="Right"
-						   Margin="0 0 5 0"
-						   VerticalAlignment="Center"
-						   Style="{ StaticResource ResourceKey=Form }"/>
-					<!--#endregion-->
-					<!--#region INPUT: Descripción-->
-					<TextBox Grid.Column="1"
-							 Grid.Row="0"
-							 Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-							 Tag="ingresar el nombre de la materia&#x2026;"
-							 Margin="5 0 0 5"
-							 MaxLength="30"
-							 VerticalAlignment="Center"
-							 Style="{ StaticResource ResourceKey=TextBox }"/>
-					<!--#endregion-->
-					<!--#endregion-->
 
-					<!--#region HORAS CÁTEDRA-->
-					<!--#region LABEL: Horas Cátedra-->
-					<Label Grid.Column="0"
-						   Grid.Row="1"
-						   Content="Horas Cátedras"
-						   HorizontalAlignment="Right"
-						   Margin="0 5 5 0"
-						   Style="{ StaticResource ResourceKey=Form }"/>
-					<!--#endregion-->
-					<!--#region INPUT: Horas Cátedra-->
-					<ComboBox Grid.Column="1"
-							  Grid.Row="1"
-							  ItemsSource="{ StaticResource ResourceKey=horasCatedra }"
-							  SelectedItem="{ Binding Path=CargaHoraria, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-							  Margin="5 5 0 0"
-							  VerticalAlignment="Center"
-							  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
-					<!--#endregion-->
-					<!--#endregion-->
+					<HeaderedContentControl Grid.Column="0"
+											Header="Materia"
+											Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+						<TextBox MaxLength="30"
+								 Tag="Lengua y Literatura"
+								 Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+								 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					</HeaderedContentControl>
+
+					<HeaderedContentControl Grid.Column="1"
+											Header="Horas cátedra"
+											Style="{ StaticResource ResourceKey=Campo.Derecha }">
+						<ComboBox ItemsSource="{ StaticResource ResourceKey=horasCatedra }"
+								  SelectedItem="{ Binding Path=CargaHoraria, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+					</HeaderedContentControl>
 				</Grid>
 
-				<!--#region COMMANDs-->
-				<WrapPanel Grid.Row="3"
-						   HorizontalAlignment="Right"
-						   Margin="0 10 0 0"
-						   VerticalAlignment="Center">
-					<!--#region CancelarCommand: Materia-->
-					<Button Command="{ Binding Path=CancelarCommand }"
-							CommandParameter="Nueva"
-							Content="Cancelar"
-							Margin="0 0 5 0"
-							Visibility="{Binding Path=HabilitarRegistrarMateria, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource booleanConverter } }"
-							Style="{ StaticResource ResourceKey=Secondary }"/>
-					<!--#endregion-->
-					<!--#region GuardarCommand: Materia-->
+				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+					<HeaderedContentControl.Header>
+						<Button Command="{ Binding Path=CancelarCommand }"
+								CommandParameter="Nueva"
+								Content="Cancelar"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								ToolTip="Descartar la materia nueva"/>
+					</HeaderedContentControl.Header>
+
 					<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
 							CommandParameter="Materia"
-							Content="Guardar"
-							Margin="5 0 0 0"
-							Visibility="{Binding Path=HabilitarRegistrarMateria, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource booleanConverter } }"
-							Style="{ StaticResource ResourceKey=Primary }"/>
-					<!--#endregion-->
-				</WrapPanel>
-				<!--#endregion-->
+							Content="Agregar materia"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Agregar la materia al diseño curricular"/>
+				</HeaderedContentControl>
 			</Grid>
 		</Border>
 		<!--#endregion-->
 
-		<!--#region CURRICULAS-->
-		<Border Grid.Row="4"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
+		<!--#region DISEÑOS CURRICULARES-->
+		<Border Grid.Row="3"
 				IsEnabled="{ Binding Path=HabilitarCurriculas, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Margin="20 10"
-				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-
-			<ScrollViewer Padding="10"
-						  VerticalScrollBarVisibility="Auto">
-				<Grid Margin="20 00">
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<ScrollViewer VerticalScrollBarVisibility="Auto">
+				<Grid Margin="20 18">
 					<Grid.RowDefinitions>
 						<RowDefinition Height="Auto"/>
 						<RowDefinition Height="Auto"/>
 						<RowDefinition Height="Auto"/>
 					</Grid.RowDefinitions>
-					<!--#region TITLE-->
-					<StackPanel Grid.Row="0"
-								Margin="0 0 0 2">
-						<Label Content="Diseño Curricular"
-							   Style="{ StaticResource ResourceKey=Headline }"/>
-						<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-								   Height=".8"
-								   Width="Auto"/>
-					</StackPanel>
-					<!--#endregion-->
-					<!--#region GRIDs-->
-					<StackPanel Grid.Row="1"
-								Margin="0 2 0 10">
-						<!--#region DataGrid_Curriculas-->
-						<GroupBox Header="Diseños Curriculares"
-								  Margin="0 0 0 5"
-								  Padding="20">
-							<!--#region DataGrid-->
-							<DataGrid x:Name="DataGrid_Curriculas"
-									  ItemsSource="{ Binding Path=Curriculas, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-									  SelectedItem="{ Binding Path=Curricula, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
-									  IsReadOnly="True"
-									  IsSynchronizedWithCurrentItem="True"
-									  Loaded="DataGridCurriculas_Loaded"
-									  d:ItemsSource="{ d:SampleData ItemCount=5 }"
-									  Style="{ StaticResource ResourceKey=DataGrid }">
-								<DataGrid.Columns>
-									<DataGridTextColumn Binding="{ Binding Path=FechaInicio, FallbackValue='Sin especificar', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:yyyy}, ConverterCulture='es-ES' }"
-														Header="Año"
+
+					<!--#region CURRÍCULAS-->
+					<Grid Grid.Row="0">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+
+						<TextBlock Grid.Row="0"
+								   Margin="0 0 0 12"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="DISEÑOS CURRICULARES DEL CURSO"/>
+
+						<DataGrid x:Name="DataGrid_Curriculas"
+								  Grid.Row="1"
+								  ItemsSource="{ Binding Path=Curriculas, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+								  SelectedItem="{ Binding Path=Curricula, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+								  IsReadOnly="True"
+								  IsSynchronizedWithCurrentItem="True"
+								  Loaded="DataGridCurriculas_Loaded"
+								  MaxHeight="220"
+								  MinHeight="120"
+								  Style="{ StaticResource ResourceKey=Grilla }"
+								  Tag="El curso todavía no tiene diseño curricular. Empezá con &#x201C;Nueva currícula&#x201D;."
+								  d:ItemsSource="{ d:SampleData ItemCount=5 }">
+							<DataGrid.Columns>
+								<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:yyyy}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+													Header="CICLO"
+													Width="Auto"/>
+								<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+													Header="DESDE"
+													Width="*"/>
+								<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Vigente' }"
+													Header="HASTA"
+													Width="*"/>
+								<DataGridCheckBoxColumn Binding="{ Binding Path=EstaActiva, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, FallbackValue=False, TargetNullValue=False }"
+														Header="ACTIVO"
 														Width="Auto"/>
-									<DataGridTextColumn Binding="{ Binding Path=FechaInicio, FallbackValue='Sin especificar', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-ES' }"
-														Header="Fecha Inicio"
-														Width="*"/>
-									<DataGridTextColumn Binding="{ Binding Path=FechaFin, FallbackValue='Sin especificar', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-ES' }"
-														Header="Fecha de Finalización"
-														Width="*"/>
-									<DataGridCheckBoxColumn Binding="{ Binding Path=EstaActiva, FallbackValue=False, TargetNullValue=False, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-															Header="¿Esta activo?"
-															Width="*"/>
-								</DataGrid.Columns>
-								<!--#region TRIGGERS: CargarMateriasCommandAsync-->
-								<behaviors:Interaction.Triggers>
-									<behaviors:EventTrigger EventName="SelectionChanged"
-															SourceObject="{ Binding ElementName=DataGrid_Curriculas }">
-										<behaviors:InvokeCommandAction Command="{ Binding Path=CargarMateriasCommandAsync }"/>
-									</behaviors:EventTrigger>
-								</behaviors:Interaction.Triggers>
-								<!--#endregion-->
-							</DataGrid>
-							<!--#endregion-->
-						</GroupBox>
-						<!--#endregion-->
+							</DataGrid.Columns>
 
-						<!--#region ListView_Materias-->
-						<GroupBox Header="Materias del Diseño Curricular"
-								  Margin="0 5 0 0"
-								  Padding="20">
-							<StackPanel>
-								<!--#region ListView-->
-								<ListView x:Name="ListView_Materias"
-										  ItemsSource="{ Binding Path=Materias, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-										  SelectedItem="{ Binding Path=Materia, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
-										  IsSynchronizedWithCurrentItem="True"
-										  Margin="0 0 0 2"
-										  d:ItemsSource="{ d:SampleData ItemCount=5 }"
-										  Style="{ StaticResource ResourceKey=ListViewStyle }">
-									<ListView.View>
-										<GridView ColumnHeaderToolTip="Materias">
-											<GridViewColumn DisplayMemberBinding="{ Binding Path=Descripcion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-															Header="Materia"/>
-											<GridViewColumn Header="Acciones">
-												<GridViewColumn.CellTemplate>
-													<DataTemplate>
-														<WrapPanel Orientation="Horizontal">
-															<!--#region RegistrarCommand: Update-->
-															<Button Command="{ Binding Path=DataContext.EditarCommand, RelativeSource={ RelativeSource AncestorType=UserControl, Mode=FindAncestor } }"
-																	CommandParameter="Materia"
-																	FontSize="12"
-																	IsEnabled="{ Binding Path=DataContext.HabilitarEditarMateria, RelativeSource={ RelativeSource AncestorType=UserControl, Mode=FindAncestor }, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-																	Margin="0 0 2 0"
-																	Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
-																	ToolTip="Modificar Materia"
-																	Style="{ StaticResource ResourceKey=Icon }">
-																<Button.Content>
-																	<WrapPanel>
-																		<fa:IconBlock Icon="PenToSquare"
-																					  Foreground="{ StaticResource ResourceKey=Neutral800 }"/>
-																	</WrapPanel>
-																</Button.Content>
-															</Button>
-															<!--#endregion-->
-															<!--#region EliminarCommand: Materia-->
-															<Button Command="{ Binding Path=DataContext.EliminarCommandAsync, IsAsync=True, RelativeSource={ RelativeSource AncestorType=UserControl, Mode=FindAncestor } }"
-																	CommandParameter="Materia"
-																	FontSize="12"
-																	IsEnabled="{ Binding Path=DataContext.HabilitarEditarMateria, RelativeSource={ RelativeSource AncestorType=UserControl, Mode=FindAncestor }, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-																	Margin="2 0 0 0"
-																	Visibility="{ Binding RelativeSource={ RelativeSource Mode=Self }, Path=IsEnabled, Converter={ StaticResource ResourceKey=booleanConverter } }"
-																	ToolTip="Eliminar Materia"
-																	Style="{ StaticResource ResourceKey=Icon }">
-																<Button.Content>
-																	<WrapPanel>
-																		<fa:IconBlock Icon="Trash"
-																					  Foreground="{ StaticResource ResourceKey=Neutral800 }"/>
-																	</WrapPanel>
-																</Button.Content>
-															</Button>
-															<!--#endregion-->
-														</WrapPanel>
-													</DataTemplate>
-												</GridViewColumn.CellTemplate>
-											</GridViewColumn>
-										</GridView>
-									</ListView.View>
-								</ListView>
-								<!--#endregion-->
-
-								<!--#region MateriaView-->
-								<StackPanel Margin="0 2 0 0"
-											IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }">
-									<vMaterias:MateriaView DataContext="{ Binding Path=SelectedItem, ElementName=ListView_Materias }"
-														   Margin="0 0 0 0"/>
-									<WrapPanel HorizontalAlignment="Right"
-											   Margin="0 20 0 0"
-											   Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }">
-										<!--#region CancelarCommand: Editar-->
-										<Button Command="{ Binding Path=CancelarCommand }"
-												CommandParameter="Editar"
-												Content="Cancelar"
-												IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-												Margin="0 0 5 0"
-												Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
-												Style="{ StaticResource ResourceKey=Secondary }"/>
-										<!--#endregion-->
-										<!--#region GuardarCommand: Update-->
-										<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True	}"
-												CommandParameter="Update"
-												Content="Guardar"
-												IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-												Margin="5 0 0 0"
-												Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }"
-												Style="{ StaticResource ResourceKey=Primary }"/>
-										<!--#endregion-->
-									</WrapPanel>
-								</StackPanel>
-								<!--#endregion-->
-							</StackPanel>
-						</GroupBox>
-						<!--#endregion-->
-					</StackPanel>
+							<behaviors:Interaction.Triggers>
+								<behaviors:EventTrigger EventName="SelectionChanged"
+														SourceObject="{ Binding ElementName=DataGrid_Curriculas }">
+									<behaviors:InvokeCommandAction Command="{ Binding Path=CargarMateriasCommandAsync }"/>
+								</behaviors:EventTrigger>
+							</behaviors:Interaction.Triggers>
+						</DataGrid>
+					</Grid>
 					<!--#endregion-->
 
-					<!--#region COMMANDs-->
-					<StackPanel Grid.Row="2"
-								Margin="0 10">
-						<WrapPanel HorizontalAlignment="Right">
-							<!--#region NavigationCommand: Catedras-->
-							<Button Command="{ Binding Path=NavigationCommand }"
-									CommandParameter="Catedras"
-									Content="Cátedras"
-									IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=booleanConverter } }"
-									ToolTip="Cátedras"
-									Style="{ StaticResource ResourceKey=Secondary }"/>
-							<!--#endregion-->
-						</WrapPanel>
-					</StackPanel>
+					<!--#region MATERIAS-->
+					<GroupBox Grid.Row="1"
+							  Header="MATERIAS DEL DISEÑO ELEGIDO"
+							  Margin="0 20 0 0"
+							  Style="{ StaticResource ResourceKey=Seccion }">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+							</Grid.RowDefinitions>
+
+							<ListView x:Name="ListView_Materias"
+									  Grid.Row="0"
+									  ItemsSource="{ Binding Path=Materias, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+									  SelectedItem="{ Binding Path=Materia, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+									  IsSynchronizedWithCurrentItem="True"
+									  MaxHeight="240"
+									  MinHeight="120"
+									  Style="{ StaticResource ResourceKey=Lista.Indice }"
+									  Tag="Este diseño curricular todavía no tiene materias. Agregá la primera con &#x201C;Nueva materia&#x201D;."
+									  d:ItemsSource="{ d:SampleData ItemCount=5 }">
+								<ListView.View>
+									<GridView AllowsColumnReorder="False">
+										<!--
+											DisplayMemberBinding y no una CellTemplate: la guarda
+											estática W5 audita las columnas de esta lista por su
+											enlace declarado. La tipografía la hereda de
+											Lista.Indice, que la fija en el ListView.
+										-->
+										<GridViewColumn DisplayMemberBinding="{ Binding Path=Descripcion, Mode=OneWay }"
+														Header="MATERIA"
+														Width="420"/>
+										<GridViewColumn Header="">
+											<GridViewColumn.CellTemplate>
+												<DataTemplate>
+													<StackPanel Orientation="Horizontal">
+														<Button Command="{ Binding Path=DataContext.EditarCommand, RelativeSource={ RelativeSource AncestorType=UserControl, Mode=FindAncestor } }"
+																CommandParameter="Materia"
+																Margin="0 0 4 0"
+																Style="{ StaticResource ResourceKey=Btn.Icono }"
+																ToolTip="Editar esta materia">
+															<fa:IconBlock FontSize="11" Icon="PenToSquare"/>
+														</Button>
+														<Button Command="{ Binding Path=DataContext.EliminarCommandAsync, IsAsync=True, RelativeSource={ RelativeSource AncestorType=UserControl, Mode=FindAncestor } }"
+																CommandParameter="Materia"
+																Style="{ StaticResource ResourceKey=Btn.Icono }"
+																ToolTip="Quitar esta materia del diseño">
+															<fa:IconBlock FontSize="11" Icon="Trash"/>
+														</Button>
+													</StackPanel>
+												</DataTemplate>
+											</GridViewColumn.CellTemplate>
+										</GridViewColumn>
+									</GridView>
+								</ListView.View>
+							</ListView>
+
+							<!-- Edición de la materia elegida en la lista de arriba. -->
+							<ContentControl Grid.Row="1"
+											IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+											Margin="0 16 0 0"
+											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+								<vMaterias:MateriaView DataContext="{ Binding Path=SelectedItem, ElementName=ListView_Materias }"/>
+							</ContentControl>
+
+							<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+								<HeaderedContentControl.Header>
+									<Button Command="{ Binding Path=CancelarCommand }"
+											CommandParameter="Editar"
+											Content="Cancelar"
+											Style="{ StaticResource ResourceKey=Btn.Terciario }"
+											ToolTip="Descartar los cambios de la materia"
+											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+								</HeaderedContentControl.Header>
+
+								<StackPanel Orientation="Horizontal">
+									<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+											CommandParameter="Update"
+											Content="Guardar materia"
+											Margin="0 0 8 0"
+											Style="{ StaticResource ResourceKey=Btn.Primario }"
+											ToolTip="Guardar los cambios de la materia"
+											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+									<Button Command="{ Binding Path=NavigationCommand }"
+											CommandParameter="Catedras"
+											Content="Cátedras de la materia"
+											Style="{ StaticResource ResourceKey=Btn.Secundario }"
+											ToolTip="Cátedras y docentes de la materia elegida"/>
+								</StackPanel>
+							</HeaderedContentControl>
+						</Grid>
+					</GroupBox>
 					<!--#endregion-->
 				</Grid>
 			</ScrollViewer>

@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras;
 using Core.ServicioDocentes.DTOs.Requests;
@@ -16,6 +17,7 @@ using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Docentes;
+using WPF_Desktop.ViewModels.Shared.Messages;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
@@ -23,9 +25,14 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 {
 	#region Services
 	private readonly INavigationService _gestionMateriasNavigationService;
+	private readonly INavigationService _buscarDocenteModalNavigationService;
 	private readonly IServicioDocente _servicioDocente;
 	private readonly IServicioCatedra _servicioCatedra;
 	private readonly IDialogService _dialogService;
+	#endregion
+
+	#region Mensajeria
+	private readonly IMessenger _messenger;
 	#endregion
 
 	#region Store
@@ -83,7 +90,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 	[ObservableProperty]
 	private bool _habilitarInfoSituacionRevista;
 
-	[NotifyCanExecuteChangedFor(nameof(ListarCommand))]
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarCommand))]
 	[ObservableProperty]
@@ -95,16 +101,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 	/// </summary>
 	[ObservableProperty]
 	private bool _habilitarReemplazaA;
-
-	[Required(AllowEmptyStrings=false, ErrorMessage="Debe ingresar el docente que desea buscar")]
-	[RegularExpression(@"^[A-Za-zÀ-ÿ]+( [A-Za-zÀ-ÿ]+)*$", ErrorMessage="Solo debe ingresar nombre, apellido o una combinación de ambos.")]
-	[NotifyDataErrorInfo]
-	[NotifyCanExecuteChangedFor(nameof(ListarCommand))]
-	[ObservableProperty]
-	private string _query = string.Empty;
-
-	[ObservableProperty]
-	private ObservableCollection<LegajoDocenteViewModel> _docentes = new();
 
 	[ObservableProperty]
 	private ObservableCollection<SituacionRevistaViewModel> _docentesEnMateria = new();
@@ -119,25 +115,29 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 	public IAsyncRelayCommand EditarCommand { get; }
 	public IAsyncRelayCommand EliminarCommand { get; }
 	public IAsyncRelayCommand GuardarCommand { get; }
-	public IAsyncRelayCommand ListarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	public IRelayCommand RegistrarCommand { get; }
 	public IRelayCommand SeleccionarCommand { get; }
+	public IRelayCommand BuscarDocenteCommand { get; }
 	#endregion
 
 
 	public GestionSituacionRevistaViewModel(INavigationService gestionMateriasNavigationService,
+											INavigationService buscarDocenteModalNavigationService,
 											IServicioDocente servicioDocente,
 											IServicioCatedra servicioCatedra,
 											IDialogService dialogService,
 											CursoStore cursoStore,
 											MateriaStore materiaStore,
-											CatedraStore catedraStore)
+											CatedraStore catedraStore,
+											IMessenger messenger)
 	{
 		_gestionMateriasNavigationService = gestionMateriasNavigationService;
+		_buscarDocenteModalNavigationService = buscarDocenteModalNavigationService;
 		_servicioDocente = servicioDocente;
 		_servicioCatedra = servicioCatedra;
 		_dialogService = dialogService;
+		_messenger = messenger;
 
 		_cursoStore = cursoStore;
 		_materiaStore = materiaStore;
@@ -148,14 +148,31 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		EditarCommand = new AsyncRelayCommand<string>(ExecuteEditarCommandAsync, CanExecuteEditarCommand);
 		EliminarCommand = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
 		GuardarCommand = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
-		ListarCommand = new AsyncRelayCommand<string>(ExecuteListarCommandAsync, CanExecuteListarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 		RegistrarCommand = new RelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
 		SeleccionarCommand = new RelayCommand(ExecuteSeleccionarCommand, CanExecuteCommand);
+		BuscarDocenteCommand = new RelayCommand(ExecuteBuscarDocenteCommand, () => HabilitarInsert);
+
+		// El buscador vive en el modal y no conoce a sus llamadores: el elegido vuelve por acá.
+		_messenger.Register<GestionSituacionRevistaViewModel, DocenteElegidoMessage>(this, (receptor, mensaje) =>
+		{
+			receptor.LegajoDocente = mensaje.Docente;
+			receptor.SeleccionarCommand.Execute(null);
+		});
 
 		// Va después de los comandos: el setter generado notifica a los comandos que declaran [NotifyCanExecuteChangedFor].
 		Materia = _materiaStore.Materia;
 	}
+
+	#region BuscarDocenteCommand
+	/// <summary>
+	/// Abre el buscador de docentes en el modal. Esta pantalla traía su propia copia del buscador
+	/// —campo validado, lupa, un Expander con la grilla de resultados y un botón "Seleccionar"—,
+	/// idéntica a la de <c>GestionDivisionesView</c>. Las dos se reemplazaron por el modal.
+	/// </summary>
+	private void ExecuteBuscarDocenteCommand() =>
+		_buscarDocenteModalNavigationService.Navigate();
+	#endregion
 
 	public async Task CargarSituacionRevistasAsync()
 	{
@@ -270,9 +287,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 		{
 			case "Insert":
 				await CargarSituacionRevistasAsync();
-				Query = string.Empty;
 				HabilitarNuevaSituacionRevista = false;
-				HabilitarResultadoBuscar = false;
 				HabilitarInsert = false;
 
 				break;
@@ -506,7 +521,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 					}
 					finally
 					{
-						Query = string.Empty;
 						HabilitarInsert = false;
 						HabilitarNuevaSituacionRevista = false;
 					}
@@ -514,85 +528,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 					await CargarSituacionRevistasAsync();
 				}
 				break;
-		}
-	}
-	#endregion
-
-	#region ListarCommand
-	private bool CanExecuteListarCommand(object obj) => obj switch
-	{
-		"Query" => !HasErrors,
-		"Listar" => HabilitarInsert,
-		_ => false
-	};
-
-	private async Task ExecuteListarCommandAsync(object obj)
-	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
-		switch (obj)
-		{
-			case "Query":
-				try
-				{
-					var request = new NombreCompletoRequest(Query);
-					var response = await _servicioDocente.BuscarDocenteSegunNombreCompletoAsync(request);
-
-					if (response.IsNullOrEmpty())
-					{
-						messageBoxText = $"No existen coincidencias.";
-						caption = "Buscar";
-						_dialogService.MostrarAdvertencia(messageBoxText, caption);
-
-						HabilitarResultadoBuscar = false;
-
-						return;
-					}
-
-					Docentes = new ObservableCollection<LegajoDocenteViewModel>(response.Select(x => new LegajoDocenteViewModel(x)));
-					HabilitarResultadoBuscar = true;
-
-					messageBoxText = $"Se encontraron {Docentes.Count} coincidencias.";
-					caption = "Operación Exitosa";
-					_dialogService.MostrarInformacion(messageBoxText, caption);
-				}
-				catch (Exception ex)
-				{
-					_dialogService.MostrarError(ex.Message, "Error en la operación");
-				}
-
-				break;
-
-				/*
-				case "Listar":
-					try
-					{
-						var response = await _servicioDocente.ListarDocentesActivosAsync();
-						if (response.IsNullOrEmpty())
-						{
-							messageBoxText = $"No existen docentes activos.";
-							caption = "Listado docente";
-							result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Exclamation);
-
-							HabilitarResultadoBuscar = false;
-							return;
-						}
-
-						Docentes = new ObservableCollection<LegajoDocenteViewModel>(response.Select(x => new LegajoDocenteViewModel(x)));
-						HabilitarResultadoBuscar = true;
-
-						messageBoxText = $"Se encontraron { Docentes.Count } docentes activos.";
-						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
-
-					break;
-				*/
 		}
 	}
 	#endregion
@@ -631,6 +566,8 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 				HabilitarGestionSituacionRevista = true;
 				HabilitarInfoSituacionRevista = false;
 				HabilitarInsert = true;
+				// Abre el buscador en el modal, que es de donde sale el docente a designar.
+				ExecuteBuscarDocenteCommand();
 				break;
 		}
 	}

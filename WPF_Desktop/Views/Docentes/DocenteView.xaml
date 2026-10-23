@@ -1,60 +1,57 @@
 ﻿<UserControl x:Class="WPF_Desktop.Views.Docentes.DocenteView"
-			 xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Docentes"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<Grid Background="AliceBlue">
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition/>
-			<ColumnDefinition/>
-		</Grid.ColumnDefinitions>
-		<Grid.RowDefinitions>
-			<RowDefinition/>
-			<RowDefinition/>
-			<RowDefinition/>
-			<RowDefinition/>
-			<RowDefinition/>
-		</Grid.RowDefinitions>
+	<!--
+		FICHA DEL DOCENTE — se lee, no se edita. Los cuatro enlaces son Mode=OneWay.
 
-		<!-- DOCENTE -->
-		<StackPanel Grid.ColumnSpan="2"
-					Grid.Row="0">
-			<Label Content="Docente"
-				   Style="{ StaticResource Form }"/>
-			<Label Content="{ Binding Path=NombreCompleto, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				   Style="{ StaticResource Body }"/>
-		</StackPanel>
+		Se sacó el Background="AliceBlue" de la grilla raíz: era un color de depuración, el
+		único azul que quedaba en la app.
 
-		<!-- LEGAJO -->
-		<StackPanel Grid.Column="0"
-					Grid.Row="1"
-					Margin="0 0 10 0">
-			<Label Content="Legajo"
-				   Style="{ StaticResource Form }"/>
-			<Label Content="{ Binding Path=Legajo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				   Style="{ StaticResource Body }"/>
-		</StackPanel>
+		El legajo y el documento van en monoespaciada porque son números que se comparan
+		entre fichas; el nombre y la antigüedad, en texto corriente.
+	-->
+	<GroupBox Header="DOCENTE" Style="{ StaticResource ResourceKey=Seccion }">
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
 
-		<!-- DOCUMENTO  -->
-		<StackPanel Grid.Column="1"
-					Grid.Row="1"
-					Margin="10 0 0 0">
-			<Label Content="Documento"
-				   Style="{ StaticResource Form }"/>
-			<Label Content="{ Binding Path=Documento, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				   Margin="0 0 0 0"
-				   Style="{ StaticResource Body }"/>
-		</StackPanel>
+			<HeaderedContentControl Grid.ColumnSpan="2" Grid.Row="0"
+									Content="{ Binding Path=NombreCompleto, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+									Header="Docente"
+									Style="{ StaticResource ResourceKey=Dato }"/>
 
-		<!-- ANTIGUEDAD -->
-		<StackPanel Grid.ColumnSpan="2"
-					Grid.Row="2">
-			<Label Content="Antiguedad"
-				   Style="{ StaticResource Form }"/>
-			<Label Content="{ Binding Path=FechaAlta, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:D} }"
-				   Style="{ StaticResource Body }"/>
-		</StackPanel>
-	</Grid>
+			<HeaderedContentControl Grid.Column="0" Grid.Row="1"
+									Header="Legajo"
+									Style="{ StaticResource ResourceKey=Dato.Izquierda }">
+				<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+						   Text="{ Binding Path=Legajo, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
+			</HeaderedContentControl>
+
+			<HeaderedContentControl Grid.Column="1" Grid.Row="1"
+									Header="Documento"
+									Style="{ StaticResource ResourceKey=Dato.Derecha }">
+				<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+						   Text="{ Binding Path=Documento, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
+			</HeaderedContentControl>
+
+			<!-- El dato es la fecha de alta; "antigüedad" era el rótulo y no lo que se mostraba. -->
+			<HeaderedContentControl Grid.ColumnSpan="2" Grid.Row="2"
+									Header="En funciones desde"
+									Style="{ StaticResource ResourceKey=Dato }">
+				<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+						   Text="{ Binding Path=FechaAlta, Mode=OneWay, StringFormat={}{0:D}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
+			</HeaderedContentControl>
+		</Grid>
+	</GroupBox>
 </UserControl>

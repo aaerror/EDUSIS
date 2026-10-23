@@ -2,77 +2,46 @@
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
-
-			 xmlns:divisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones"
-
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<Grid>
-		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-		</Grid.RowDefinitions>
+	<!--
+		FICHA DE LA DIVISIÓN — se lee, no se edita. Los tres enlaces son Mode=OneWay.
 
-		<StackPanel Grid.Row="0"
-					Margin="0 0 0 10"
-					Visibility="Collapsed">
-			<!--#region DIVISION ID-->
-			<Label Content="División ID"
-				   Margin="4 0 0 0"
-				   Style="{ StaticResource ResourceKey=Form }"/>
-			<TextBox Text="{ Binding Path=DivisionID, FallbackValue='Sin información', TargetNullValue='Sin información', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-					 IsReadOnly="True"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-			<!--#endregion-->
-		</StackPanel>
+		Se sacó el bloque "División ID": Visibility="Collapsed" fija, como el PersonaID de la
+		ficha personal y el PuestoID del puesto docente. La propiedad sigue en el ViewModel.
 
-		<Grid Grid.Row="1"
-			  Margin="0 0 0 5">
+		"Cantidad de Alumnos" mostraba la propiedad Cursantes con dos textos distintos para la
+		falta de dato ("Listado de alumnos sin detalles" y "Sin datos del listado de alumnos").
+		Queda uno solo, y el rótulo dice qué se cuenta.
+	-->
+	<GroupBox Header="DIVISIÓN" Style="{ StaticResource ResourceKey=Seccion }">
+		<Grid>
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="*"/>
 			</Grid.ColumnDefinitions>
-			<!--#region DIVISIÓN-->
-			<StackPanel Grid.Column="0"
-						Margin="0 0 10 0">
-				<Label Content="División"
-					   Style="{ StaticResource ResourceKey=Form }"/>
-				<TextBox Text="{ Binding Path=Descripcion, FallbackValue='Sin información', TargetNullValue='Sin información', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-						 Style="{ StaticResource ResourceKey=TextBox }"/>
-			</StackPanel>
-			<!--#endregion-->
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
 
-			<!--#region PRECEPTOR-->
-			<StackPanel Grid.Column="1"
-						Margin="10 0 0 0">
-				<Label Content="Preceptor"
-					   Margin="4 0 0 0"
-					   Style="{ StaticResource ResourceKey=Form }"/>
-				<TextBox Text="{ Binding Path=Preceptor, FallbackValue='Preceptor sin asignar', TargetNullValue='Preceptor sin asignar', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-						 Style="{ StaticResource ResourceKey=TextBox }"/>
-			</StackPanel>
-			<!--#endregion-->
+			<HeaderedContentControl Grid.Column="0" Grid.Row="0"
+									Content="{ Binding Path=Descripcion, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+									Header="División"
+									Style="{ StaticResource ResourceKey=Dato.Izquierda }"/>
+
+			<HeaderedContentControl Grid.Column="1" Grid.Row="0"
+									Content="{ Binding Path=Preceptor, Mode=OneWay, FallbackValue='Sin asignar', TargetNullValue='Sin asignar' }"
+									Header="Preceptor"
+									Style="{ StaticResource ResourceKey=Dato.Derecha }"/>
+
+			<HeaderedContentControl Grid.Column="0" Grid.Row="1"
+									Header="Alumnos inscriptos"
+									Style="{ StaticResource ResourceKey=Dato.Izquierda }">
+				<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+						   Text="{ Binding Path=Cursantes, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
+			</HeaderedContentControl>
 		</Grid>
-
-		<Grid Grid.Row="2"
-			  Margin="0 5 0 0">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
-			</Grid.ColumnDefinitions>
-
-			<!--#region CANT. DE ALUMNOS-->
-			<StackPanel Grid.Column="0"
-						Margin="0 0 10 0">
-				<Label Content="Cantidad de Alumnos"
-					   Margin="4 0 0 0"
-					   Style="{ StaticResource ResourceKey=Form }"/>
-				<TextBox Text="{ Binding Path=Cursantes, FallbackValue='Listado de alumnos sin detalles', TargetNullValue='Sin datos del listado de alumnos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-						 Style="{ StaticResource ResourceKey=TextBox }"/>
-			</StackPanel>
-			<!--#endregion-->
-		</Grid>
-	</Grid>
+	</GroupBox>
 </UserControl>

@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioCatedras;
 using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.DTOs.Responses;
@@ -11,6 +12,7 @@ using WPF_Desktop.UnitTests.Dobles;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 using WPF_Desktop.ViewModels.Docentes;
+using WPF_Desktop.ViewModels.Shared.Messages;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.ViewModels;
@@ -29,6 +31,13 @@ public class GestionSituacionRevistaViewModelTests
 		public IServicioCatedra ServicioCatedra { get; } = Substitute.For<IServicioCatedra>();
 		public IServicioDocente ServicioDocente { get; } = Substitute.For<IServicioDocente>();
 		public NavegacionFalsa NavegarAMaterias { get; } = new();
+
+		/// <summary>
+		/// El buscador de docentes vive en el modal: la pantalla ya no busca, sólo lo abre. Esta
+		/// navegación falsa es la que registra esa apertura.
+		/// </summary>
+		public NavegacionFalsa NavegarAlBuscador { get; } = new();
+		public IMessenger Mensajero { get; } = new WeakReferenceMessenger();
 		public DialogServiceFalso Dialogos { get; } = new();
 		public CursoStore CursoStore { get; } = new();
 		public MateriaStore MateriaStore { get; } = new();
@@ -58,12 +67,14 @@ public class GestionSituacionRevistaViewModelTests
 						   .Returns(_ => Task.FromResult<IReadOnlyCollection<LegajoDocenteResponse>>(Docentes.ToList()));
 
 			ViewModel = new GestionSituacionRevistaViewModel(NavegarAMaterias,
+															 NavegarAlBuscador,
 															 ServicioDocente,
 															 ServicioCatedra,
 															 Dialogos,
 															 CursoStore,
 															 MateriaStore,
-															 CatedraStore);
+															 CatedraStore,
+															 Mensajero);
 		}
 
 		public SituacionRevistaResponse Agregar(string cargo = "Titular",
@@ -327,6 +338,41 @@ public class GestionSituacionRevistaViewModelTests
 
 		contexto.ViewModel.SituacionRevistaUPDATE.ShouldNotBeNull();
 		contexto.ViewModel.SituacionRevistaUPDATE.SituacionRevistaID.ShouldBe(enFunciones.SituacionRevistaID);
+	}
+	#endregion
+
+	#region Buscador de docentes en el modal
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Designar_docente_abre_el_buscador_en_el_modal()
+	{
+		var contexto = new Contexto();
+
+		contexto.ViewModel.RegistrarCommand.Execute("SituacionRevista");
+
+		contexto.ViewModel.HabilitarInsert.ShouldBeTrue();
+		contexto.NavegarAlBuscador.Llamadas.ShouldBe(1);
+	}
+
+	/// <summary>
+	/// El docente que llega del modal tiene que dejar el formulario de alta igual que lo dejaba el
+	/// buscador propio de la pantalla: con la situación de revista nueva ya creada a su nombre.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_docente_elegido_en_el_modal_abre_el_alta_a_su_nombre()
+	{
+		var contexto = new Contexto();
+		contexto.ViewModel.RegistrarCommand.Execute("SituacionRevista");
+		var docenteID = Guid.NewGuid();
+		var elegido = new LegajoDocenteViewModel(new LegajoDocenteResponse(docenteID, "Luna, Juan", "30111222", "20301112223", "L-9", DateTime.Today, null, true));
+
+		contexto.Mensajero.Send(new DocenteElegidoMessage(elegido));
+
+		contexto.ViewModel.HabilitarNuevaSituacionRevista.ShouldBeTrue();
+		contexto.ViewModel.SituacionRevistaINSERT.ShouldNotBeNull();
+		contexto.ViewModel.SituacionRevistaINSERT.DocenteID.ShouldBe(docenteID);
+		contexto.ViewModel.SituacionRevistaINSERT.Docente.ShouldBe("Luna, Juan");
 	}
 	#endregion
 

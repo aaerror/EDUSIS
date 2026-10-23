@@ -21,6 +21,8 @@ public class GuardasEstaticasW6Tests
 	private const string GestionSituacionRevistaXaml = "WPF_Desktop/Views/Cursos/Curriculas/Materias/SituacionRevista/GestionSituacionRevistaView.xaml";
 	private const string GestionSituacionRevistaCs = "WPF_Desktop/ViewModels/Cursos/Curriculas/Materias/SituacionRevista/GestionSituacionRevistaViewModel.cs";
 	private const string InscripcionAlumnoXaml = "WPF_Desktop/Views/Alumnos/InscripcionAlumnoView.xaml";
+	private const string GestionDivisionesXaml = "WPF_Desktop/Views/Cursos/Divisiones/GestionDivisionesView.xaml";
+	private const string BuscarXaml = "WPF_Desktop/Views/Shared/Modal/BuscarView.xaml";
 	private const string GestionDocentesCs = "WPF_Desktop/ViewModels/Docentes/GestionDocentesViewModel.cs";
 
 	private static readonly XNamespace Xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -111,18 +113,45 @@ public class GuardasEstaticasW6Tests
 		DebenExistirEn(typeof(SituacionRevistaViewModel), columnas);
 	}
 
+	/// <summary>
+	/// La grilla de resultados de la búsqueda de docentes se mudó: estaba escrita dos veces, dentro de
+	/// <c>GestionSituacionRevistaView</c> y de <c>GestionDivisionesView</c>, y ahora vive una sola vez en
+	/// <c>BuscarView</c>, el contenido del modal. La guarda sigue al mismo artefacto a su lugar nuevo:
+	/// lo que audita —que las columnas bindeadas existan en <see cref="LegajoDocenteViewModel"/>— no cambió.
+	/// </summary>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void DataGrid_LegajosDocentes_bindea_columnas_que_existen_en_LegajoDocenteViewModel()
 	{
-		var documento = Cargar(GestionSituacionRevistaXaml);
+		var documento = Cargar(BuscarXaml);
 
 		var grilla = documento.Descendants().Single(e => e.Name.LocalName == "DataGrid" && (string?) e.Attribute(Xaml + "Name") == "DataGrid_LegajosDocentes");
-		((string) grilla.Attribute("ItemsSource")!).ShouldContain("Path=Docentes");
+		((string) grilla.Attribute("ItemsSource")!).ShouldContain("Path=Resultados");
 
 		var columnas = ColumnasBindeadas(grilla);
-		columnas.ShouldBe(new[] { "FechaAlta", "NombreCompleto", "EstaActivo" });
+		columnas.ShouldBe(new[] { "FechaAlta", "NombreCompleto", "DocumentoNacionalIdentidad", "EstaActivo" });
 		DebenExistirEn(typeof(LegajoDocenteViewModel), columnas);
+	}
+
+	/// <summary>
+	/// Las dos pantallas que antes traían su propia copia del buscador no pueden volver a tenerla: el
+	/// bloque duplicado era campo + lupa + grilla de resultados, y ahora lo provee el modal.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Ninguna_pantalla_vuelve_a_traer_su_propia_grilla_de_busqueda_de_docentes()
+	{
+		foreach (var ruta in new[] { GestionSituacionRevistaXaml, GestionDivisionesXaml })
+		{
+			var documento = Cargar(ruta);
+
+			var grillas = documento.Descendants()
+								   .Where(e => e.Name.LocalName == "DataGrid")
+								   .Select(e => (string?) e.Attribute(Xaml + "Name"))
+								   .ToList();
+
+			grillas.ShouldNotContain("DataGrid_LegajosDocentes", $"{ ruta } volvió a escribir el buscador que vive en el modal");
+		}
 	}
 
 	[Fact]

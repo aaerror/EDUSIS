@@ -11,132 +11,82 @@
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<ContentControl.Resources>
+	<!--
+		Se sacó el campo PersonaID: era un StackPanel con Visibility="Collapsed" fijo, así que
+		no se mostraba nunca y ninguna de las dos pantallas de perfil le pasaba la propiedad.
+		La propiedad sigue declarada en el code-behind.
+
+		Documento, fecha de nacimiento y nacionalidad van deshabilitados a propósito: son datos
+		de identidad que no se editan desde el perfil. El fondo Tiza del campo deshabilitado es
+		lo que distingue "no se toca" de "escribí acá", que es la regla del sistema.
+	-->
+	<UserControl.Resources>
 		<converters:SexoConverter x:Key="sexoConverter"/>
 		<ObjectDataProvider x:Key="sexos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
 			<ObjectDataProvider.MethodParameters>
 				<x:Type TypeName="domainPersonas:Sexo"/>
 			</ObjectDataProvider.MethodParameters>
 		</ObjectDataProvider>
-	</ContentControl.Resources>
+	</UserControl.Resources>
 
 	<Grid>
 		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="1*"/>
-			<ColumnDefinition Width="1*"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
-		<!--#region PersonaID-->
-		<StackPanel Grid.ColumnSpan="2"
-					Grid.Row="0"
-					Margin="0 0 0 10"
-					Visibility="Collapsed">
-			<Label Content="PersonaID"
-				   Margin="4 0 0 0"
-				   HorizontalContentAlignment="Left"
-				   VerticalContentAlignment="Center"
-				   Style="{ StaticResource ResourceKey=Form }"/>
-			<TextBox Text="{ Binding Path=PersonaID, ElementName=personaData }"
-					 IsEnabled="False"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-		</StackPanel>
-		<!--#endregion-->
-		
-		<!--#region Apellido-->
-		<StackPanel Grid.Column="0"
-					Grid.Row="1"
-					Margin="0 0 10 5">
-			<Label Content="Apellido"
-				   Margin="4 0 0 0"
-				   HorizontalContentAlignment="Left"
-				   VerticalContentAlignment="Center"
-				   Style="{ StaticResource ResourceKey=Form }"/>
-			<TextBox Text="{ Binding Path=Apellido, ElementName=personaData }"
-					 IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-		</StackPanel>
-		<!--#endregion-->
+		<HeaderedContentControl Grid.Column="0" Grid.Row="0"
+							   Header="Apellido"
+							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
+					 Text="{ Binding Path=Apellido, ElementName=personaData }"
+					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+		</HeaderedContentControl>
 
-		<!--#region Nombre-->
-		<StackPanel Grid.Column="1"
-					Grid.Row="1"
-					Margin="10 0 0 5">
-			<Label Content="Nombre"
-				   Margin="4 0 0 0"
-				   HorizontalContentAlignment="Left"
-				   VerticalContentAlignment="Center"
-				   Style="{ StaticResource ResourceKey=Form }"/>
-			<TextBox Text="{ Binding Path=Nombre, ElementName=personaData }"
-					 IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-		</StackPanel>
-		<!--#endregion-->
+		<HeaderedContentControl Grid.Column="1" Grid.Row="0"
+							   Header="Nombre"
+							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
+			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
+					 Text="{ Binding Path=Nombre, ElementName=personaData }"
+					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+		</HeaderedContentControl>
 
-		<!--#region Documento-->
-		<StackPanel Grid.Column="0"
-					Grid.Row="2"
-					Margin="0 5 10 5">
-			<Label Content="Documento"
-				   Margin="4 0 0 0"
-				   HorizontalContentAlignment="Left"
-				   VerticalContentAlignment="Center"
-				   Style="{ StaticResource ResourceKey=Form }"/>
-			<TextBox Text="{ Binding Path=Documento, ElementName=personaData }"
-					 IsEnabled="False"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-		</StackPanel>
-		<!--#endregion-->
+		<HeaderedContentControl Grid.Column="0" Grid.Row="1"
+							   Header="Documento"
+							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+			<TextBox IsEnabled="False"
+					 Text="{ Binding Path=Documento, ElementName=personaData }"
+					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+		</HeaderedContentControl>
 
-		<!--#region Sexo-->
-		<StackPanel Grid.Column="1"
-					Grid.Row="2"
-					Margin="10 5 0 10">
-			<Label Content="Sexo"
-				   Margin="4 0 0 0"
-				   HorizontalContentAlignment="Left"
-				   VerticalContentAlignment="Center"
-				   Style="{ StaticResource ResourceKey=Form }"/>
-			<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos } }"
+		<HeaderedContentControl Grid.Column="1" Grid.Row="1"
+							   Header="Sexo"
+							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
+			<ComboBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
+					  ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos } }"
 					  SelectedItem="{ Binding Path=Sexo, ElementName=personaData, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, Converter={ StaticResource ResourceKey=sexoConverter } }"
-					  IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
-					  Style="{ StaticResource ResourceKey=ComboBoxStyle }"/>
-		</StackPanel>
-		<!--#endregion-->
+					  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+		</HeaderedContentControl>
 
-		<!--#region Fecha de Nacimiento-->
-		<StackPanel Grid.Column="0"
-					Grid.Row="3"
-					Margin="0 5 10 0">
-			<Label Content="Fecha de Nacimiento"
-				   Margin="4 0 0 0"
-				   HorizontalContentAlignment="Left"
-				   VerticalContentAlignment="Center"
-				   Style="{ StaticResource ResourceKey=Form }"/>
-			<TextBox Text="{ Binding Path=FechaNacimiento, ElementName=personaData, StringFormat=D }"
-					 IsEnabled="False"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-		</StackPanel>
-		<!--#endregion-->
+		<HeaderedContentControl Grid.Column="0" Grid.Row="2"
+							   Header="Fecha de nacimiento"
+							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+			<TextBox IsEnabled="False"
+					 Text="{ Binding Path=FechaNacimiento, ElementName=personaData, StringFormat=D }"
+					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+		</HeaderedContentControl>
 
-		<!--#region Nacionalidad-->
-		<StackPanel Grid.Column="1"
-					Grid.Row="3"
-					Margin="10 5 0 0">
-			<Label Content="Nacionalidad"
-				   Margin="4 0 0 0"
-				   HorizontalContentAlignment="Left"
-				   VerticalContentAlignment="Center"
-				   Style="{ StaticResource ResourceKey=Form }"/>
-			<TextBox Text="{ Binding Path=Nacionalidad, ElementName=personaData }"
-					 IsEnabled="False"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-		</StackPanel>
-		<!--#endregion-->
+		<HeaderedContentControl Grid.Column="1" Grid.Row="2"
+							   Header="Nacionalidad"
+							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
+			<TextBox IsEnabled="False"
+					 Text="{ Binding Path=Nacionalidad, ElementName=personaData }"
+					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+		</HeaderedContentControl>
 	</Grid>
 </UserControl>

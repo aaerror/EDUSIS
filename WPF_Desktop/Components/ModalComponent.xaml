@@ -21,8 +21,15 @@
 	<UserControl.Template>
 		<ControlTemplate TargetType="{ x:Type local:ModalComponent }">
 			<Grid x:Name="Raiz"
-				  Background="#990C3A21"
+				  Background="{ StaticResource ResourceKey=Velo }"
 				  Visibility="Collapsed">
+				<!--
+					El velo era #990C3A21 escrito a mano: el mismo verde del rail con alfa.
+					Ahora sale de la clave Velo, así que acompaña a la paleta si cambia.
+
+					El borde es LineaFuerte y no Linea, que es lo que pone Superficie.Tarjeta:
+					sobre el velo oscuro, la regla fina del sistema no se despega del fondo.
+				-->
 				<Border Background="{ StaticResource ResourceKey=Papel }"
 						BorderBrush="{ StaticResource ResourceKey=LineaFuerte }"
 						BorderThickness="1"
@@ -32,6 +39,7 @@
 						MaxWidth="760"
 						MinWidth="420"
 						Padding="24"
+						SnapsToDevicePixels="True"
 						VerticalAlignment="Center">
 					<ContentPresenter/>
 				</Border>

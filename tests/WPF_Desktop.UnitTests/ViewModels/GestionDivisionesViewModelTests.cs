@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioCursos.DTOs.Responses;
 using Core.ServicioDivisiones;
 using Core.ServicioDivisiones.DTOs.Requests;
@@ -13,6 +14,7 @@ using WPF_Desktop.UnitTests.Dobles;
 using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Docentes;
+using WPF_Desktop.ViewModels.Shared.Messages;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.ViewModels;
@@ -29,9 +31,15 @@ public class GestionDivisionesViewModelTests
 	private sealed class Contexto
 	{
 		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
-		public IServicioDocente ServicioDocente { get; } = Substitute.For<IServicioDocente>();
 		public NavegacionFalsa NavegarACursos { get; } = new();
 		public NavegacionFalsa NavegarACursantes { get; } = new();
+
+		/// <summary>
+		/// El buscador de docentes vive en el modal: la pantalla ya no busca, sólo lo abre. Por eso
+		/// acá no hay más <c>IServicioDocente</c>, y en su lugar se espía la navegación al modal.
+		/// </summary>
+		public NavegacionFalsa NavegarAlBuscador { get; } = new();
+		public IMessenger Mensajero { get; } = new WeakReferenceMessenger();
 		public CursoStore CursoStore { get; } = new();
 		public DivisionStore DivisionStore { get; } = new();
 		public CicloLectivoStore CicloLectivoStore { get; } = new();
@@ -47,13 +55,14 @@ public class GestionDivisionesViewModelTests
 			DevolverDivisiones();
 
 			ViewModel = new GestionDivisionesViewModel(ServicioDivision,
-													   ServicioDocente,
 													   NavegarACursos,
 													   NavegarACursantes,
+													   NavegarAlBuscador,
 													   CursoStore,
 													   DivisionStore,
 													   CicloLectivoStore,
-													   Dialogos);
+													   Dialogos,
+													   Mensajero);
 		}
 
 		public void DevolverDivisiones(params DivisionResponse[] divisiones)
@@ -222,6 +231,48 @@ public class GestionDivisionesViewModelTests
 		await contexto.ViewModel.RegistrarCommandAsync.ExecuteAsync("Division");
 
 		_ = contexto.ServicioDivision.DidNotReceive().AgregarDivisionAsync(Arg.Any<AgregarDivisionRequest>());
+	}
+	#endregion
+
+	#region Buscador de docentes en el modal
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Asignar_preceptor_abre_la_tarjeta_y_el_buscador_en_el_modal()
+	{
+		var contexto = new Contexto();
+
+		await contexto.ViewModel.RegistrarCommandAsync.ExecuteAsync("Docente");
+
+		contexto.ViewModel.HabilitarRegistrarDocente.ShouldBeTrue();
+		contexto.NavegarAlBuscador.Llamadas.ShouldBe(1);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task El_docente_elegido_en_el_modal_llega_por_el_mensajero()
+	{
+		var contexto = new Contexto();
+		await contexto.ViewModel.RegistrarCommandAsync.ExecuteAsync("Docente");
+		var docenteID = Guid.NewGuid();
+		var elegido = new LegajoDocenteViewModel(new LegajoDocenteResponse(docenteID, "Luna, Juan", "30111222", "20301112229", "L-2", new DateTime(2021, 3, 1), null, true));
+
+		contexto.Mensajero.Send(new DocenteElegidoMessage(elegido));
+
+		contexto.ViewModel.Docente.ShouldNotBeNull();
+		contexto.ViewModel.Docente.DocenteID.ShouldBe(docenteID);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_buscador_solo_se_reabre_mientras_la_tarjeta_de_asignacion_esta_abierta()
+	{
+		var contexto = new Contexto();
+
+		contexto.ViewModel.BuscarDocenteCommand.CanExecute(null).ShouldBeFalse();
+
+		contexto.ViewModel.HabilitarRegistrarDocente = true;
+
+		contexto.ViewModel.BuscarDocenteCommand.CanExecute(null).ShouldBeTrue();
 	}
 	#endregion
 

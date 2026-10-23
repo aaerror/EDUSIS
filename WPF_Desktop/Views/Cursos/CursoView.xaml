@@ -2,57 +2,37 @@
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos"
-			 xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
-	<UserControl.Resources>
-		<converters:NivelEducativoConverter x:Key="nivelEducativoConverter"/>
-	</UserControl.Resources>
-	<Grid>
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition/>
-			<ColumnDefinition/>
-		</Grid.ColumnDefinitions>
+	<!--
+		FICHA DEL CURSO — se lee, no se edita.
 
-		<Grid.RowDefinitions>
-			<RowDefinition/>
-			<RowDefinition/>
-			<RowDefinition/>
-		</Grid.RowDefinitions>
+		Los dos enlaces son Mode=OneWay y venían dentro de un TextBox: se podía hacer clic,
+		escribir, y lo escrito no iba a ninguna parte. Pasan a Dato, que no tiene caja, así
+		que se ve que son datos y no campos.
 
-		<!--#region TITLE-->
-		<StackPanel Grid.ColumnSpan="2"
-					Grid.Row="0"
-					Margin="0 0 0 5">
-			<Label Content="Detalle del Curso"
-				   Style="{ StaticResource Headline }"/>
-			<Separator Background="{ StaticResource Gray400 }"
-					   Height=".8"
-					   Width="Auto"/>
-		</StackPanel>
-		<!--#endregion-->
+		Se sacó el NivelEducativoConverter de los recursos locales: estaba declarado y no lo
+		usaba ningún enlace del archivo.
+	-->
+	<GroupBox Header="DETALLE DEL CURSO" Style="{ StaticResource ResourceKey=Seccion }">
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
 
-		<!--#region DESCRIPCIÓN-->
-		<StackPanel Grid.Column="0"
-					Grid.Row="1"
-					Margin="0 5 10 10">
-			<Label Content="Curso"
-				   Style="{ StaticResource Form }"/>
-			<TextBox Text="{ Binding Path=Grado, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0}° Año}"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-		</StackPanel>
-		<!--#endregion-->
+			<HeaderedContentControl Grid.Column="0"
+									Header="Curso"
+									Style="{ StaticResource ResourceKey=Dato.Izquierda }">
+				<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+						   Text="{ Binding Path=Grado, Mode=OneWay, StringFormat={}{0}° año, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
+			</HeaderedContentControl>
 
-		<!--#region NIVEL EDUCATIVO-->
-		<StackPanel Grid.Column="1"
-					Grid.Row="1"
-					Margin="10 5 0 10">
-			<Label Content="Nivel Educativo"
-				   Style="{ StaticResource Form }"/>
-			<TextBox Text="{ Binding Path=NivelEducativo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-					 Style="{ StaticResource ResourceKey=TextBox }"/>
-		</StackPanel>
-		<!--#endregion-->
-	</Grid>
+			<HeaderedContentControl Grid.Column="1"
+									Content="{ Binding Path=NivelEducativo, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+									Header="Nivel educativo"
+									Style="{ StaticResource ResourceKey=Dato.Derecha }"/>
+		</Grid>
+	</GroupBox>
 </UserControl>

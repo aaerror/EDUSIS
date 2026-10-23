@@ -2,446 +2,270 @@
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
-
-			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
-			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
 			 xmlns:components="clr-namespace:WPF_Desktop.Components"
-
+			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 mc:Ignorable="d">
-	<!--#region RESOURCES-->
-	<UserControl.Resources>
-		<BooleanToVisibilityConverter x:Key="booleanConverter"/>
-	</UserControl.Resources>
-	<!--#endregion-->
-	<!--#region EVENTS-->
+	<!--
+		DIVISIONES DEL CURSO.
+
+		La tarjeta de notificación tenía su propio título "Notificaciones" con un ícono de
+		información centrado. El aviso no necesita presentarse: pasa a ser una nota en línea
+		con la marca ámbar del sistema.
+
+		El bloque de búsqueda de docente —campo, lupa, "Ver docentes" y una grilla de
+		resultados— está escrito acá y otra vez en GestionSituacionRevista. Es exactamente el
+		trabajo de BuscarView, el modal: cuando el modal esté cableado, estas dos copias se
+		reemplazan por una llamada al ModalNavigationService.
+
+		Los resultados venían dentro de un Expander, pero su visibilidad ya cuelga de
+		HabilitarListaDocentes: no existen hasta que hay búsqueda, así que el Expander
+		escondía algo que recién había aparecido. Queda la sección con su rótulo.
+	-->
 	<behaviors:Interaction.Triggers>
-		<behaviors:EventTrigger x:Name="Loaded">
+		<behaviors:EventTrigger EventName="Loaded">
 			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarDivisionesCommandAsync }"/>
 		</behaviors:EventTrigger>
 	</behaviors:Interaction.Triggers>
-	<!--#endregion-->
 
-	<Grid>
+	<Grid Margin="28 24 28 24">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
-		<!-- #region TITTLE & SUBTITLE -->
-		<components:Header Grid.Row="0"
-						   Title="Gestión de Divisiones"
-						   Subtitle="Divisiones"/>
-		<!--#endregion-->
-
-		<!-- #region COMMANDS -->
-		<Grid Grid.Row="1"
-			  Margin="25 10">
+		<!--#region ENCABEZADO-->
+		<Grid Grid.Row="0" Margin="0 0 0 20">
 			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="Auto"/>
 				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
 			</Grid.ColumnDefinitions>
 
-			<StackPanel Grid.Column="0">
-				<WrapPanel HorizontalAlignment="Left">
-					<!--#region RegistrarCommand: Division-->
-					<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
-							CommandParameter="Division"
-							Margin="0 0 0 0"
-							ToolTip="Nueva división"
-							Style="{ StaticResource ResourceKey=Secondary }">
-						<Button.Content>
-							<WrapPanel>
-								<fa:IconBlock Icon="Plus"
-											  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-											  Margin="0 0 2 0"/>
-								<TextBlock Text="Divisiones"
-							   Margin="2 0 0 2"/>
-							</WrapPanel>
-						</Button.Content>
-					</Button>
-					<!--#endregion-->
-				</WrapPanel>
-			</StackPanel>
-			<StackPanel Grid.Column="1">
-				<WrapPanel HorizontalAlignment="Right">
-					<!--#region NavigationCommand: Curso-->
-					<Button Command="{ Binding Path=NavigationCommand }"
-							CommandParameter="Curso"
-							Margin="0 0 0 0"
-							ToolTip="Cursos"
-							Style="{ StaticResource ResourceKey=Secondary }">
-						<Button.Content>
-							<WrapPanel>
-								<TextBlock Text="Ir a Cursos"
-										   Margin="0 0 2 2"/>
-								<fa:IconBlock Icon="ArrowRight"
-											  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-											  Margin="2 0 0 0"/>
+			<components:Header Grid.Column="0"
+							   Title="Divisiones"
+							   Subtitle="Divisiones del curso, con su preceptor y sus alumnos"/>
 
-							</WrapPanel>
-						</Button.Content>
-					</Button>
-					<!--#endregion-->
-				</WrapPanel>
+			<StackPanel Grid.Column="1"
+						Orientation="Horizontal"
+						VerticalAlignment="Center">
+				<Button Command="{ Binding Path=NavigationCommand }"
+						CommandParameter="Curso"
+						Margin="0 0 8 0"
+						Style="{ StaticResource ResourceKey=Btn.Terciario }"
+						ToolTip="Volver a cursos">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="ArrowLeft"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Volver a cursos" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+
+				<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
+						CommandParameter="Division"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Crear una división nueva en el curso">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Nueva división" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
 			</StackPanel>
 		</Grid>
 		<!--#endregion-->
 
-		<!--#region NOTIFICATIONs-->
-		<Border Grid.Row="2"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
+		<!--#region AVISO-->
+		<Border Grid.Row="1"
 				IsEnabled="{ Binding Path=HabilitarNotificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Margin="20 10"
-				Padding="10"
-				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-			<Grid Margin="20 10">
-				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="*"/>
-				</Grid.RowDefinitions>
-				<StackPanel Grid.Row="0"
-							Margin="0 0 0 5">
-					<Label Style="{ StaticResource ResourceKey=Headline }">
-						<WrapPanel HorizontalAlignment="Center">
-							<fa:IconBlock Icon="CircleInfo"
-										  Foreground="{ StaticResource ResourceKey=Neutral800 }"
-										  Margin="0 0 2 0"/>
-							<TextBlock Text="Notificaciones"
-									   Margin="2 0 0 2"/>
-						</WrapPanel>
-					</Label>
-					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-							   Height=".8"
-							   Width="Auto"/>
-				</StackPanel>
-
-				<!--#region MESSAGE-->
-				<StackPanel Grid.Row="1"
-							Margin="0 5 0 0">
-					<Label Content="{ Binding Path=Message, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-						   Style="{ StaticResource ResourceKey=Body }"/>
-				</StackPanel>
-				<!--#endregion-->
-			</Grid>
+				Margin="0 0 0 16"
+				Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+					   Text="{ Binding Path=Message, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+					   TextWrapping="Wrap"/>
 		</Border>
 		<!--#endregion-->
 
 		<!--#region DIVISIONES-->
-		<Border Grid.Row="3"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
+		<Border Grid.Row="2"
 				IsEnabled="{ Binding Path=HabilitarDivisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Margin="20 10"
-				Padding="10"
-				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
-			<!--#region DATAGRID-->
-			<Grid Margin="20 10">
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<Grid Margin="20 18">
 				<Grid.RowDefinitions>
 					<RowDefinition Height="Auto"/>
 					<RowDefinition Height="*"/>
+					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
-				<!--#region DataGrid_Title-->
-				<StackPanel Grid.Row="0"
-							Margin="0 0 0 5"
-							VerticalAlignment="Center">
-					<Grid>
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition/>
-							<ColumnDefinition/>
-						</Grid.ColumnDefinitions>
-						<Label Grid.Column="0"
-							   Content="{ Binding Path=Curso, FallbackValue='Sin datos', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-							   ContentStringFormat="Divisiones de {0}"
-							   Style="{ StaticResource ResourceKey=Headline }"/>
-						<StackPanel Grid.Column="1"
-									HorizontalAlignment="Right"
-									VerticalAlignment="Center">
-							<!--#region NivelEducativo-->
-							<WrapPanel>
-								<Label Content="Nivel Educativo: "
-									   Style="{ StaticResource ResourceKey=Caption }"/>
-								<Label Content="{ Binding Path=NivelEducativo, FallbackValue='Sin datos', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-									   HorizontalAlignment="Center"
-									   Style="{ StaticResource ResourceKey=Caption }"/>
-							</WrapPanel>
-							<!--#endregion-->
-							<!--#region Cant. Divisiones-->
-							<WrapPanel>
-								<Label Content="Cant. Divisiones: "
-									   Style="{ StaticResource ResourceKey=Caption }"/>
-								<Label Content="{ Binding Path=TotalDivisiones, FallbackValue='Sin datos', TargetNullValue='Sin datos', Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-									   Style="{ StaticResource ResourceKey=Caption }"/>
-							</WrapPanel>
-							<!--#endregion-->
+
+				<!--#region FICHA DEL CURSO-->
+				<Grid Grid.Row="0" Margin="0 0 0 16">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
+
+					<StackPanel Grid.Column="0" Orientation="Horizontal">
+						<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
+								   Margin="0 2 14 2"
+								   VerticalAlignment="Stretch"
+								   Width="3"/>
+						<StackPanel VerticalAlignment="Center">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Identificador }"
+									   Text="{ Binding Path=NivelEducativo, Mode=OneWay, FallbackValue='SIN NIVEL', TargetNullValue='SIN NIVEL' }"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+									   Text="{ Binding Path=Curso, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
 						</StackPanel>
-					</Grid>
-					<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-							   Height=".8"
-							   Width="Auto"/>
-				</StackPanel>
-				<!--#endregion-->
-
-				<!--#region DataGrid_Divisiones-->
-				<Grid Grid.Row="1"
-					  Margin="0 5 0 0">
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="Auto"/>
-					</Grid.RowDefinitions>
-					<!--#region DataGrid-->
-					<StackPanel Grid.Row="0"
-								Margin="0 0 0 5">
-						<DataGrid x:Name="DataGrid_Divisiones"
-								  ItemsSource="{ Binding Path=ListCollectionDocentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-								  SelectedItem="{ Binding Path=Division, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
-								  IsReadOnly="True"
-								  IsSynchronizedWithCurrentItem="True"
-								  d:ItemsSource="{ d:SampleData ItemCount=5 }"
-								  Style="{ StaticResource ResourceKey=DataGrid }"
-								  Loaded="DataGrid_Divisiones_Loaded">
-							<DataGrid.Columns>
-								<DataGridTextColumn Header="División"
-													Binding="{ Binding Path=Descripcion, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-													Width="*"/>
-								<DataGridTextColumn Header="Preceptor"
-													Binding="{ Binding Path=Preceptor, FallbackValue='Sin datos', TargetNullValue='Preceptor sin asignar' }"
-													Width="2*"/>
-								<DataGridTextColumn Header="Alumnos Inscriptos"
-													Binding="{ Binding Path=Cursantes, FallbackValue='Sin datos', TargetNullValue='Sin datos', StringFormat={}{0} Alumnos }"
-													Width="2*"/>
-								<DataGridTemplateColumn Header="Acciones"
-														Width="*">
-									<DataGridTemplateColumn.CellTemplate>
-										<DataTemplate>
-											<Button Command="{ Binding Path=DataContext.EliminarCommandAsync, IsAsync=True, RelativeSource={ RelativeSource Mode=FindAncestor, AncestorType={ x:Type TypeName=UserControl } } }"
-													CommandParameter="Division"
-													Style="{ StaticResource ResourceKey=Delete }"/>
-										</DataTemplate>
-									</DataGridTemplateColumn.CellTemplate>
-								</DataGridTemplateColumn>
-							</DataGrid.Columns>
-						</DataGrid>
 					</StackPanel>
-					<!--#endregion-->
 
-					<!--#region Commnads-->
-					<Grid Grid.Row="1"
-						  Margin="0 5 0 0">
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="*"/>
-							<ColumnDefinition Width="Auto"/>
-						</Grid.ColumnDefinitions>
-						<WrapPanel Grid.Column="0"
-								   HorizontalAlignment="Left">
-							<!--#region RegistrarCommand: Docente-->
-							<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
-									CommandParameter="Docente"
-									Content="Asignar Preceptor"
-									Margin="0 0 5 0"
-									ToolTip="Asignar preceptor"
-									Style="{ StaticResource ResourceKey=Secondary }"/>
-							<!--#endregion-->
-							<!--#region EliminarCommand: Preceptor-->
-							<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
-									CommandParameter="Preceptor"
-									Content="Quitar Preceptor"
-									Margin="5 0 5 0"
-									Style="{ StaticResource ResourceKey=Secondary }"/>
-							<!--#endregion-->
-							<!--#region NavigationCommand: Cursantes-->
-							<Button Command="{ Binding Path=NavigationCommand }"
-									CommandParameter="Cursantes"
-									Content="Alumnos"
-									Margin="5 0 0 0"
-									Style="{ StaticResource ResourceKey=Secondary }"/>
-							<!--#endregion-->
-						</WrapPanel>
-					</Grid>
-					<!--#endregion-->
+					<TextBlock Grid.Column="1"
+							   Style="{ StaticResource ResourceKey=Txt.Dato }"
+							   Text="{ Binding Path=TotalDivisiones, Mode=OneWay, StringFormat={}{0} divisiones, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+							   VerticalAlignment="Center"/>
 				</Grid>
 				<!--#endregion-->
+
+				<DataGrid x:Name="DataGrid_Divisiones"
+						  Grid.Row="1"
+						  ItemsSource="{ Binding Path=ListCollectionDocentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+						  SelectedItem="{ Binding Path=Division, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+						  IsReadOnly="True"
+						  IsSynchronizedWithCurrentItem="True"
+						  Loaded="DataGrid_Divisiones_Loaded"
+						  MinHeight="160"
+						  Style="{ StaticResource ResourceKey=Grilla }"
+						  Tag="Este curso todavía no tiene divisiones. Empezá con &#x201C;Nueva división&#x201D;."
+						  d:ItemsSource="{ d:SampleData ItemCount=5 }">
+					<DataGrid.Columns>
+						<DataGridTextColumn Binding="{ Binding Path=Descripcion, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+											Header="DIVISIÓN"
+											Width="*"/>
+						<DataGridTextColumn Binding="{ Binding Path=Preceptor, FallbackValue='Sin datos', TargetNullValue='Sin asignar' }"
+											Header="PRECEPTOR"
+											Width="2*"/>
+						<DataGridTextColumn Binding="{ Binding Path=Cursantes, FallbackValue='Sin datos', TargetNullValue='Sin datos', StringFormat={}{0} alumnos }"
+											Header="INSCRIPTOS"
+											Width="*"/>
+						<DataGridTemplateColumn Header="" Width="Auto">
+							<DataGridTemplateColumn.CellTemplate>
+								<DataTemplate>
+									<Button Command="{ Binding Path=DataContext.EliminarCommandAsync, IsAsync=True, RelativeSource={ RelativeSource Mode=FindAncestor, AncestorType={ x:Type TypeName=UserControl } } }"
+											CommandParameter="Division"
+											Style="{ StaticResource ResourceKey=Btn.Icono }"
+											ToolTip="Eliminar esta división">
+										<fa:IconBlock FontSize="11" Icon="Trash"/>
+									</Button>
+								</DataTemplate>
+							</DataGridTemplateColumn.CellTemplate>
+						</DataGridTemplateColumn>
+					</DataGrid.Columns>
+				</DataGrid>
+
+				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+					<HeaderedContentControl.Header>
+						<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
+								CommandParameter="Preceptor"
+								Content="Quitar preceptor"
+								Style="{ StaticResource ResourceKey=Btn.Peligro }"
+								ToolTip="Quitar el preceptor de la división elegida"/>
+					</HeaderedContentControl.Header>
+
+					<StackPanel Orientation="Horizontal">
+						<Button Command="{ Binding Path=NavigationCommand }"
+								CommandParameter="Cursantes"
+								Content="Ver alumnos"
+								Margin="0 0 8 0"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								ToolTip="Alumnos y calificaciones de la división"/>
+						<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
+								CommandParameter="Docente"
+								Content="Asignar preceptor"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Buscar un docente y asignarlo como preceptor"/>
+					</StackPanel>
+				</HeaderedContentControl>
 			</Grid>
-			<!--#endregion-->
 		</Border>
 		<!--#endregion-->
 
-		<!--#region PRECEPTOR -->
-		<Border Grid.Row="4"
-				Background="#FFFFFF"
-				BorderBrush="{ StaticResource ResourceKey=Gray200 }"
-				BorderThickness="1"
-				CornerRadius="4"
-				Margin="20 10"
+		<!--#region ASIGNAR PRECEPTOR-->
+		<Border Grid.Row="3"
 				IsEnabled="{ Binding Path=HabilitarRegistrarDocente, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-			<Border.Effect>
-				<DropShadowEffect BlurRadius="15"
-								  Color="#373737"
-								  ShadowDepth="5"
-								  Opacity=".3"/>
-			</Border.Effect>
+				Margin="0 16 0 0"
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<Grid Margin="20 18">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
 
-			<!-- #region REGISTRAR PRECEPTOR -->
-			<ScrollViewer Padding="10 20"
-						  VerticalScrollBarVisibility="Auto">
-				<Grid Margin="20 0">
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="*"/>
-					</Grid.RowDefinitions>
-					<!--#region Title-->
-					<StackPanel Grid.Row="0"
-								Margin="0 0 0 5">
-						<Label Content="Asignar Preceptor"
-							   Style="{ StaticResource ResourceKey=Headline }"/>
-						<Separator Background="{ StaticResource ResourceKey=Gray400 }"
-								   Height=".8"
-								   Width="Auto"/>
-					</StackPanel>
-					<!--#endregion-->
+				<StackPanel Grid.Row="0" Margin="0 0 0 16">
+					<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+							   Text="Asignar preceptor"/>
+					<TextBlock Margin="0 4 0 0"
+							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="{ Binding Path=Division.Descripcion, Mode=OneWay, StringFormat=Preceptor de la división {0}, FallbackValue='Elegí primero una división', TargetNullValue='Elegí primero una división' }"/>
+				</StackPanel>
 
-					<StackPanel Grid.Row="1">
-						<!--#region BUSCAR-->
-						<GroupBox Header="Buscar Docente"
-								  Padding="20 10">
-							<Grid>
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="Auto"/>
-									<ColumnDefinition Width="*"/>
-								</Grid.ColumnDefinitions>
-								<Grid.RowDefinitions>
-									<RowDefinition Height="Auto"/>
-									<RowDefinition Height="*"/>
-								</Grid.RowDefinitions>
+				<!--
+					El buscador de docentes estaba acá, escrito a mano: campo con Query validado,
+					lupa, "Ver docentes" y un Expander con la grilla de resultados. Ahora lo abre
+					el modal (BuscarView), que es la misma pieza que usa Situación de Revista, y
+					el elegido vuelve por DocenteElegidoMessage.
+				-->
+				<Grid Grid.Row="1">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
 
-								<!--#region BUSCAR PROFESOR-->
-								<WrapPanel Grid.Column="0"
-										   Grid.Row="0"
-										   Margin="0 0 0 5"
-										   HorizontalAlignment="Stretch"
-										   VerticalAlignment="Center">
-									<!--#region QUERY-->
-									<TextBox Text="{ Binding Path=Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-											 Tag="ingresar apellido y nombre del docente&#x2026;"
-											 HorizontalContentAlignment="Stretch"
-											 Margin="0 0 5 0"
-											 Width="250"
-											 Style="{ StaticResource ResourceKey=TextBox }"/>
-									<!--#endregion-->
-									<!--#region ListarCommand: Buscar-->
-									<Button Command="{ Binding Path=ListarCommandAsync, IsAsync=True }"
-											CommandParameter="Buscar"
-											Margin="5 0 0 0"
-											Style="{ StaticResource ResourceKey=Primary }">
-										<Button.Content>
-											<WrapPanel>
-												<fa:IconBlock Icon="Search"
-															  Margin="0 0 0 0"/>
-											</WrapPanel>
-										</Button.Content>
-									</Button>
-									<!--#endregion-->
-								</WrapPanel>
-								<!--#endregion-->
+					<HeaderedContentControl Grid.Column="0"
+											Content="{ Binding Path=Docente.NombreCompleto, Mode=OneWay, FallbackValue='Ningún docente elegido', TargetNullValue='Ningún docente elegido' }"
+											Header="Docente"
+											Style="{ StaticResource ResourceKey=Dato.Izquierda }"/>
 
-								<WrapPanel Grid.Column="1"
-										   Grid.Row="0"
-										   Margin="0 0 0 5"
-										   HorizontalAlignment="Right"
-										   VerticalAlignment="Center">
-									<!--#region ListarCommand: Listar-->
-									<Button Command="{ Binding Path=ListarCommandAsync, IsAsync=True }"
-											CommandParameter="Listar"
-											Content="Ver docentes"
-											Style="{ StaticResource ResourceKey=Tertiary }"/>
-									<!--#endregion-->
-								</WrapPanel>
-
-								<Expander Grid.ColumnSpan="2"
-										  Grid.Row="1"
-										  Header="Docentes"
-										  ExpandDirection="Down"
-										  Margin="0 5 0 0"
-										  IsEnabled="{ Binding Path=HabilitarListaDocentes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-										  Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanConverter } }">
-									<!--#region DATAGRID-->
-									<StackPanel Margin="10 10 10 0">
-										<!--#region DataGrid_Docentes-->
-										<DataGrid x:Name="DataGrid_LegajosDocentes"
-												  ItemsSource="{ Binding Path=Docentes, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-												  SelectedItem="{ Binding Path=Docente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-												  IsReadOnly="True"
-												  Margin="0 0 0 5"
-												  d:ItemsSource="{ d:SampleData ItemCount=4 }"
-												  Style="{ StaticResource ResourceKey=DataGrid }">
-											<DataGrid.Columns>
-												<DataGridTextColumn Header="Fecha Alta"
-																	Binding="{ Binding Path=FechaAlta, StringFormat='D', ConverterCulture='es_ES', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-																	Width="*"/>
-												<DataGridTextColumn Header="Docente"
-																	Binding="{ Binding Path=NombreCompleto, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-																	Width="2*"/>
-												<DataGridCheckBoxColumn Header="¿En funciones?"
-																		Binding="{ Binding Path=EstaActivo }"
-																		Width="*"/>
-											</DataGrid.Columns>
-										</DataGrid>
-										<!--#endregion-->
-									</StackPanel>
-									<!--#endregion-->
-								</Expander>
-							</Grid>
-						</GroupBox>
-						<!--#endregion-->
-
-						<StackPanel Margin="0 10 0 0">
-							<!--#region COMMANDS-->
-							<WrapPanel Margin="0 5 0 0"
-									   HorizontalAlignment="Right">
-								<!--#region CancelarCommand: Cancelar-->
-								<Button Command="{ Binding Path=CancelarCommand }"
-										Content="Cancelar"
-										Margin="0 0 5 0"
-										ToolTip="Cancelar"
-										Style="{ StaticResource ResourceKey=Tertiary }"/>
-								<!--#endregion-->
-								<!--#region GuardarCommand: Insert-->
-								<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
-										CommandParameter="Insert"
-										Content="Guardar"
-										Margin="5 0 0 0"
-										ToolTip="Guardar cambios"
-										Style="{ StaticResource ResourceKey=Primary }"/>
-								<!--#endregion-->
-							</WrapPanel>
-							<!--#endregion-->
+					<Button Grid.Column="1"
+							Command="{ Binding Path=BuscarDocenteCommand }"
+							Margin="10 0 0 16"
+							Style="{ StaticResource ResourceKey=Btn.Secundario }"
+							ToolTip="Abrir el buscador de docentes"
+							VerticalAlignment="Bottom">
+						<StackPanel Orientation="Horizontal">
+							<fa:IconBlock FontSize="11"
+										  Icon="MagnifyingGlass"
+										  Margin="0 0 8 0"
+										  VerticalAlignment="Center"/>
+							<TextBlock Text="Buscar docente" VerticalAlignment="Center"/>
 						</StackPanel>
-					</StackPanel>
+					</Button>
 				</Grid>
-			</ScrollViewer>
-			<!-- #endregion -->
+
+				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+					<HeaderedContentControl.Header>
+						<Button Command="{ Binding Path=CancelarCommand }"
+								Content="Cancelar"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								ToolTip="Dejar la división sin cambios"/>
+					</HeaderedContentControl.Header>
+
+					<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+							CommandParameter="Insert"
+							Content="Asignar preceptor"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Asignar el docente elegido como preceptor"/>
+				</HeaderedContentControl>
+			</Grid>
 		</Border>
 		<!--#endregion-->
 	</Grid>

@@ -379,6 +379,23 @@
 										  VerticalAlignment="Center"/>
 					</Grid>
 					<ControlTemplate.Triggers>
+						<!--
+							SECCIÓN ABIERTA. La vista enlaza Tag contra SeccionActual con el
+							converter esIgualA; acá sólo se lee el booleano que sale de ahí.
+
+							Hasta acá el rail no tenía estado seleccionado: la regla verde se
+							encendía sólo con IsMouseOver, así que la marca decía dónde estaba el
+							MOUSE y no dónde estaba parado el usuario. El único "dónde estoy" era
+							un texto de 12px en la barra de título.
+
+							La abierta se marca con la regla y el texto en blanco, SIN fondo; el
+							hover agrega el fondo PizarraAlta. Así los dos estados no se
+							confunden: uno es un baño de fondo, el otro es una regla al margen.
+						-->
+						<DataTrigger Binding="{ Binding Path=Tag, RelativeSource={ RelativeSource Self } }" Value="True">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarra }"/>
+							<Setter TargetName="Marca" Property="Opacity" Value="1"/>
+						</DataTrigger>
 						<Trigger Property="IsMouseOver" Value="True">
 							<Setter Property="Background" Value="{ StaticResource ResourceKey=PizarraAlta }"/>
 							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarra }"/>
