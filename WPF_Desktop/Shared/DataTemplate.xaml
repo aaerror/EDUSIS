@@ -26,6 +26,10 @@
 					xmlns:vSituacionRevista="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
 					xmlns:vmDivisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones"
 					xmlns:vDivisiones="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
+					xmlns:vmDocumentacion="clr-namespace:WPF_Desktop.ViewModels.Documentacion"
+					xmlns:vDocumentacion="clr-namespace:WPF_Desktop.Views.Documentacion"
+					xmlns:vmReportes="clr-namespace:WPF_Desktop.ViewModels.Reportes"
+					xmlns:vReportes="clr-namespace:WPF_Desktop.Views.Reportes"
 					xmlns:vmUsuarios="clr-namespace:WPF_Desktop.ViewModels.Usuarios"
 					xmlns:vUsuarios="clr-namespace:WPF_Desktop.Views.Usuarios">
 	<!--
@@ -189,6 +193,18 @@
 		<vSituacionRevista:SituacionRevistaView/>
 	</DataTemplate>
 	<!--#endregion-->
+	<!--#endregion-->
+
+	<!--#region DOCUMENTACIÓN-->
+	<DataTemplate DataType="{ x:Type vmDocumentacion:GestionDocumentacionViewModel }">
+		<vDocumentacion:GestionDocumentacionView/>
+	</DataTemplate>
+	<!--#endregion-->
+
+	<!--#region REPORTES-->
+	<DataTemplate DataType="{ x:Type vmReportes:GestionReportesViewModel }">
+		<vReportes:GestionReportesView/>
+	</DataTemplate>
 	<!--#endregion-->
 
 	<!--#region USUARIOS-->

@@ -1,0 +1,239 @@
+<UserControl x:Class="WPF_Desktop.Views.Documentacion.GestionDocumentacionView"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Documentacion"
+			 xmlns:components="clr-namespace:WPF_Desktop.Components"
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<!--
+		UN ALUMNO, SEIS DOCUMENTOS.
+
+		La pantalla es un solo flujo: buscar al alumno, fijar el ciclo lectivo y elegir qué
+		emitir. Los seis botones quedan apagados hasta que hay alumno, para que no haya que
+		apretar uno y recién ahí descubrir que falta el dato.
+
+		El rango de fechas aparece junto al certificado de asistencia y no arriba con el resto
+		de los parámetros: es el único documento que lo usa, y arriba daría a entender que los
+		seis se emiten por período.
+	-->
+	<Grid Margin="28 24 28 24">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!--#region ENCABEZADO-->
+		<components:Header Grid.Row="0"
+						   Margin="0 0 0 20"
+						   Title="Documentación"
+						   Subtitle="Certificados, constancias y boletín de un alumno, en PDF"/>
+		<!--#endregion-->
+
+		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<ScrollViewer HorizontalScrollBarVisibility="Disabled"
+						  VerticalScrollBarVisibility="Auto">
+				<Grid Margin="28 24">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+
+					<!--#region ALUMNO-->
+					<StackPanel Grid.Row="0">
+						<TextBlock Margin="0 0 0 10"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="ALUMNO"/>
+
+						<StackPanel Orientation="Horizontal">
+							<StackPanel>
+								<Label Content="Documento"
+									   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+									   Target="{ Binding ElementName=CampoDocumento }"/>
+								<TextBox x:Name="CampoDocumento"
+										 Tag="8 dígitos, sin puntos"
+										 Text="{ Binding Path=Documento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+										 Style="{ StaticResource ResourceKey=Txb.Campo }"
+										 Width="200"/>
+							</StackPanel>
+
+							<Button Command="{ Binding Path=BuscarAlumnoCommandAsync }"
+									Content="Buscar"
+									IsDefault="True"
+									Margin="8 0 0 0"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									VerticalAlignment="Bottom"/>
+						</StackPanel>
+
+						<Border Margin="0 14 0 0"
+								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								HorizontalAlignment="Left">
+							<TextBlock MaxWidth="620"
+									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+									   Text="{ Binding Path=Mensaje }"
+									   TextWrapping="Wrap"/>
+						</Border>
+					</StackPanel>
+					<!--#endregion-->
+
+					<Rectangle Grid.Row="1"
+							   Margin="0 22"
+							   Style="{ StaticResource ResourceKey=Regla }"/>
+
+					<!--#region PARÁMETROS-->
+					<StackPanel Grid.Row="2">
+						<TextBlock Margin="0 0 0 10"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="DATOS DE LA EMISIÓN"/>
+
+						<StackPanel Orientation="Horizontal">
+							<StackPanel Margin="0 0 20 0">
+								<Label Content="Ciclo lectivo"
+									   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+									   Target="{ Binding ElementName=CampoCiclo }"/>
+								<TextBox x:Name="CampoCiclo"
+										 Tag="AAAA"
+										 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+										 Style="{ StaticResource ResourceKey=Txb.Campo }"
+										 Width="110"/>
+							</StackPanel>
+
+							<StackPanel>
+								<Label Content="Finalidad (opcional)"
+									   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+									   Target="{ Binding ElementName=CampoFinalidad }"/>
+								<TextBox x:Name="CampoFinalidad"
+										 Tag="Motivo del trámite, si corresponde"
+										 Text="{ Binding Path=Finalidad, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+										 Style="{ StaticResource ResourceKey=Txb.Campo }"
+										 Width="420"/>
+							</StackPanel>
+						</StackPanel>
+
+						<TextBlock Margin="0 8 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="Si dejás la finalidad vacía, el documento no declara motivo de emisión."
+								   TextWrapping="Wrap"/>
+					</StackPanel>
+					<!--#endregion-->
+
+					<!--#region DOCUMENTOS-->
+					<StackPanel Grid.Row="3" Margin="0 26 0 0">
+						<TextBlock Margin="0 0 0 12"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="EMITIR"/>
+
+						<WrapPanel Orientation="Horizontal">
+							<Button Command="{ Binding Path=CertificadoAlumnoRegularCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Primario }"
+									ToolTip="Acredita que el alumno cursa regularmente en el ciclo lectivo">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="FileLines" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Certificado de alumno regular" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+
+							<Button Command="{ Binding Path=ConstanciaEscolaridadCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Acredita nivel, curso y división del ciclo lectivo">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="FileLines" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Constancia de escolaridad" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+
+							<Button Command="{ Binding Path=MateriasAprobadasCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Espacios curriculares aprobados en el ciclo lectivo">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="ListCheck" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Constancia de materias aprobadas" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+
+							<Button Command="{ Binding Path=MateriasPendientesCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Espacios curriculares pendientes de aprobación">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="ListUl" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Constancia de materias pendientes" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+
+							<Button Command="{ Binding Path=BoletinCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Una fila por materia, con parcial, recuperatorio y condición">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="TableList" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Boletín de calificaciones" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+						</WrapPanel>
+
+						<!--#region CERTIFICADO DE ASISTENCIA-->
+						<Border Margin="0 10 0 0"
+								Style="{ StaticResource ResourceKey=Superficie.Seccion }">
+							<StackPanel>
+								<TextBlock Margin="0 0 0 4"
+										   Style="{ StaticResource ResourceKey=Txt.CuerpoFuerte }"
+										   Text="Certificado de asistencia"/>
+								<TextBlock Margin="0 0 0 12"
+										   MaxWidth="620"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="Acredita la concurrencia del alumno durante el período indicado. Requiere planillas de asistencia registradas en ese rango."
+										   TextWrapping="Wrap"/>
+
+								<StackPanel Orientation="Horizontal">
+									<StackPanel Margin="0 0 16 0">
+										<Label Content="Desde"
+											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+											   Target="{ Binding ElementName=CampoDesde }"/>
+										<DatePicker x:Name="CampoDesde"
+													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+													SelectedDate="{ Binding Path=Desde, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+													Style="{ StaticResource ResourceKey=DatePicker }"
+													Width="160"/>
+									</StackPanel>
+
+									<StackPanel Margin="0 0 16 0">
+										<Label Content="Hasta"
+											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+											   Target="{ Binding ElementName=CampoHasta }"/>
+										<DatePicker x:Name="CampoHasta"
+													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+													SelectedDate="{ Binding Path=Hasta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+													Style="{ StaticResource ResourceKey=DatePicker }"
+													Width="160"/>
+									</StackPanel>
+
+									<Button Command="{ Binding Path=CertificadoAsistenciaCommandAsync }"
+											Content="Emitir certificado"
+											Style="{ StaticResource ResourceKey=Btn.Primario }"
+											VerticalAlignment="Bottom"/>
+								</StackPanel>
+							</StackPanel>
+						</Border>
+						<!--#endregion-->
+					</StackPanel>
+					<!--#endregion-->
+				</Grid>
+			</ScrollViewer>
+		</Border>
+	</Grid>
+</UserControl>

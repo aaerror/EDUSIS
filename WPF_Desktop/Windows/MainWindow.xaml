@@ -122,6 +122,21 @@
 							Content="Cursos"
 							Style="{ StaticResource ResourceKey=Btn.Menu }"
 							ToolTip="Cursos, divisiones, currículas y cátedras"/>
+
+					<TextBlock Foreground="{ StaticResource ResourceKey=SobrePizarraTenue }"
+							   Margin="20 18 20 10"
+							   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+							   Text="EMISIÓN"/>
+
+					<Button Command="{ Binding Path=GestionDocumentacionCommand }"
+							Content="Documentación"
+							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							ToolTip="Certificados, constancias y boletín de un alumno"/>
+
+					<Button Command="{ Binding Path=GestionReportesCommand }"
+							Content="Reportes"
+							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							ToolTip="Matrículas, asistencias, calificaciones, materias pendientes y trayectorias"/>
 				</StackPanel>
 				<!--#endregion-->
 
@@ -211,7 +226,7 @@
 							   Margin="0 6 0 0"
 							   MaxWidth="340"
 							   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-							   Text="Docentes, Alumnos o Cursos, en el menú de la izquierda. Las secciones que tu rol no habilita aparecen apagadas."
+							   Text="Gestión de Docentes, Alumnos y Cursos, o emisión de Documentación y Reportes, en el menú de la izquierda. Las secciones que tu rol no habilita aparecen apagadas."
 							   TextAlignment="Center"
 							   TextWrapping="Wrap"/>
 				</StackPanel>

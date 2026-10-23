@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Core.ServicioDocumentos;
 using Core.ServicioUsuarios;
 using Domain.Usuarios;
 using System.Threading.Tasks;
@@ -19,7 +18,6 @@ namespace WPF_Desktop.ViewModels;
 internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLogeadoMessage>
 {
 	private readonly IServicioUsuario _servicioUsuario;
-	private readonly IServicioDocumento _servicioDocumento;
 	private readonly ISesionUsuario _sesion;
 	private readonly IDialogService _dialogos;
 
@@ -51,6 +49,8 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	public IRelayCommand GestionDocentesCommand { get; }
 	public IRelayCommand GestionAlumnosCommand { get; }
 	public IRelayCommand GestionCursosCommand { get; }
+	public IRelayCommand GestionDocumentacionCommand { get; }
+	public IRelayCommand GestionReportesCommand { get; }
 	public IRelayCommand SalirCommand { get; }
 	#endregion
 
@@ -62,10 +62,11 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	public MainViewModel(MainWindowNavigationStore navigationStore,
 						 ModalWindowNavigationStore modalNavigationStore,
 						 IServicioUsuario servicioUsuario,
-						 IServicioDocumento servicioDocumento,
 						 INavigationService docentesNavigationService,
 						 INavigationService alumnosNavigationService,
 						 INavigationService cursosNavigationService,
+						 INavigationService documentacionNavigationService,
+						 INavigationService reportesNavigationService,
 						 ISesionUsuario sesion,
 						 IDialogService dialogos,
 						 IMessenger messenger)
@@ -74,19 +75,22 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		_navigationStore = navigationStore;
 		_modalNavigationStore = modalNavigationStore;
 		_servicioUsuario = servicioUsuario;
-		_servicioDocumento = servicioDocumento;
 		_sesion = sesion;
 		_dialogos = dialogos;
 
 		// Cada entrada del menú se habilita por PERMISO, no por rol: mover una atribución es un
 		// cambio en Domain.Usuarios.Rol y no acá. Sin sesión iniciada no hay permisos, así que
-		// las tres quedan deshabilitadas por omisión.
+		// todas quedan deshabilitadas por omisión.
 		GestionDocentesCommand = new RelayCommand(() => Navegar(docentesNavigationService, "Docentes"),
 												  () => _sesion.TienePermiso(Permiso.GestionarDocentes));
 		GestionAlumnosCommand = new RelayCommand(() => Navegar(alumnosNavigationService, "Alumnos"),
 												 () => _sesion.TienePermiso(Permiso.GestionarAlumnos));
 		GestionCursosCommand = new RelayCommand(() => Navegar(cursosNavigationService, "Cursos"),
 												() => _sesion.TienePermiso(Permiso.GestionarCursos));
+		GestionDocumentacionCommand = new RelayCommand(() => Navegar(documentacionNavigationService, "Documentación"),
+													   () => _sesion.TienePermiso(Permiso.GenerarDocumentos));
+		GestionReportesCommand = new RelayCommand(() => Navegar(reportesNavigationService, "Reportes"),
+												  () => _sesion.TienePermiso(Permiso.GenerarReportes));
 		CargarUsuarioAsyncCommand = new AsyncRelayCommand(CargarUsuarioAsync);
 		SalirCommand = new RelayCommand(Salir);
 
@@ -95,7 +99,6 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		_sesion.Cambio += OnSesionCambio;
 
 		Messenger.Register<UsuarioLogeadoMessage>(this);
-		_servicioDocumento.GenerarCertificadoAlumnoRegular();
 	}
 
 	private async Task CargarUsuarioAsync()
@@ -114,6 +117,8 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		GestionDocentesCommand.NotifyCanExecuteChanged();
 		GestionAlumnosCommand.NotifyCanExecuteChanged();
 		GestionCursosCommand.NotifyCanExecuteChanged();
+		GestionDocumentacionCommand.NotifyCanExecuteChanged();
+		GestionReportesCommand.NotifyCanExecuteChanged();
 	}
 
 	/// <summary>

@@ -1,0 +1,233 @@
+<UserControl x:Class="WPF_Desktop.Views.Reportes.GestionReportesView"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Reportes"
+			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+			 xmlns:components="clr-namespace:WPF_Desktop.Components"
+			 xmlns:converters="clr-namespace:WPF_Desktop.Shared.Converters"
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+			 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<UserControl.Resources>
+		<converters:GradoConverter x:Key="grado"/>
+	</UserControl.Resources>
+
+	<!--
+		ALCANCE PRIMERO, REPORTE DESPUÉS.
+
+		Los cinco reportes comparten el mismo alcance —ciclo lectivo y, si se quiere, una
+		división—, así que se fija una vez arriba y vale para todos. Sin curso y división
+		elegidos el reporte abarca la institución completa, que es el caso habitual; el botón
+		"Quitar filtro" está para volver a eso sin tener que adivinar cómo deseleccionar.
+
+		El rango de fechas vive con el reporte de asistencias porque es el único que lo usa.
+	-->
+	<Grid Margin="28 24 28 24">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!--#region EVENTS-->
+		<behaviors:Interaction.Triggers>
+			<behaviors:EventTrigger EventName="Loaded">
+				<behaviors:InvokeCommandAction Command="{ Binding Path=CargarCommandAsync }"/>
+			</behaviors:EventTrigger>
+		</behaviors:Interaction.Triggers>
+		<!--#endregion-->
+
+		<!--#region ENCABEZADO-->
+		<components:Header Grid.Row="0"
+						   Margin="0 0 0 20"
+						   Title="Reportes"
+						   Subtitle="Matrículas, asistencias, calificaciones, materias pendientes y trayectorias, en PDF"/>
+		<!--#endregion-->
+
+		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<ScrollViewer HorizontalScrollBarVisibility="Disabled"
+						  VerticalScrollBarVisibility="Auto">
+				<Grid Margin="28 24">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+
+					<!--#region ALCANCE-->
+					<StackPanel Grid.Row="0">
+						<TextBlock Margin="0 0 0 10"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="ALCANCE"/>
+
+						<StackPanel Orientation="Horizontal">
+							<StackPanel Margin="0 0 20 0">
+								<Label Content="Ciclo lectivo"
+									   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+									   Target="{ Binding ElementName=CampoCiclo }"/>
+								<TextBox x:Name="CampoCiclo"
+										 Tag="AAAA"
+										 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+										 Style="{ StaticResource ResourceKey=Txb.Campo }"
+										 Width="110"/>
+							</StackPanel>
+
+							<StackPanel Margin="0 0 20 0">
+								<Label Content="Curso (opcional)"
+									   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+									   Target="{ Binding ElementName=CampoCurso }"/>
+								<ComboBox x:Name="CampoCurso"
+										  ItemsSource="{ Binding Path=Cursos, Mode=OneWay }"
+										  SelectedItem="{ Binding Path=Curso, Mode=TwoWay }"
+										  Style="{ StaticResource ResourceKey=ComboBoxStyle }"
+										  Width="190">
+									<ComboBox.ItemTemplate>
+										<DataTemplate>
+											<TextBlock>
+												<Run Text="{ Binding Path=Grado, Converter={ StaticResource ResourceKey=grado }, Mode=OneWay }"/><Run Text=" · "/><Run Text="{ Binding Path=NivelEducativo, Mode=OneWay }"/>
+											</TextBlock>
+										</DataTemplate>
+									</ComboBox.ItemTemplate>
+								</ComboBox>
+							</StackPanel>
+
+							<StackPanel Margin="0 0 20 0">
+								<Label Content="División (opcional)"
+									   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+									   Target="{ Binding ElementName=CampoDivision }"/>
+								<ComboBox x:Name="CampoDivision"
+										  DisplayMemberPath="Descripcion"
+										  ItemsSource="{ Binding Path=Divisiones, Mode=OneWay }"
+										  SelectedItem="{ Binding Path=Division, Mode=TwoWay }"
+										  Style="{ StaticResource ResourceKey=ComboBoxStyle }"
+										  Width="120"/>
+							</StackPanel>
+
+							<Button Command="{ Binding Path=QuitarFiltroCommand }"
+									Content="Quitar filtro"
+									Style="{ StaticResource ResourceKey=Btn.Terciario }"
+									ToolTip="Volver al alcance de institución completa"
+									VerticalAlignment="Bottom"/>
+						</StackPanel>
+
+						<Border Margin="0 14 0 0"
+								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								HorizontalAlignment="Left">
+							<TextBlock MaxWidth="700"
+									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+									   Text="{ Binding Path=Mensaje }"
+									   TextWrapping="Wrap"/>
+						</Border>
+					</StackPanel>
+					<!--#endregion-->
+
+					<Rectangle Grid.Row="1"
+							   Margin="0 22"
+							   Style="{ StaticResource ResourceKey=Regla }"/>
+
+					<!--#region REPORTES-->
+					<StackPanel Grid.Row="2">
+						<TextBlock Margin="0 0 0 12"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="EMITIR"/>
+
+						<WrapPanel Orientation="Horizontal">
+							<Button Command="{ Binding Path=MatriculasCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Primario }"
+									ToolTip="Nómina de inscriptos por curso y división">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="Users" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Reporte de matrículas" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+
+							<Button Command="{ Binding Path=CalificacionesCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Parcial, recuperatorio y condición por alumno y materia">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="TableList" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Reporte de calificaciones" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+
+							<Button Command="{ Binding Path=MateriasPendientesCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Espacios curriculares sin aprobar, por alumno">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="ListUl" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Reporte de materias pendientes" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+
+							<Button Command="{ Binding Path=TrayectoriasCommandAsync }"
+									Margin="0 0 10 10"
+									MinWidth="250"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Materias aprobadas, pendientes y avance por alumno">
+								<StackPanel Orientation="Horizontal">
+									<fa:IconBlock FontSize="11" Icon="ChartLine" Margin="0 0 8 0" VerticalAlignment="Center"/>
+									<TextBlock Text="Reporte de trayectorias académicas" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+						</WrapPanel>
+
+						<!--#region REPORTE DE ASISTENCIAS-->
+						<Border Margin="0 10 0 0"
+								Style="{ StaticResource ResourceKey=Superficie.Seccion }">
+							<StackPanel>
+								<TextBlock Margin="0 0 0 4"
+										   Style="{ StaticResource ResourceKey=Txt.CuerpoFuerte }"
+										   Text="Reporte de asistencias"/>
+								<TextBlock Margin="0 0 0 12"
+										   MaxWidth="700"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="Computa las planillas del rango: presentes, ausencias, inasistencias, tardanzas y porcentaje de asistencia. La tardanza cuenta como concurrencia."
+										   TextWrapping="Wrap"/>
+
+								<StackPanel Orientation="Horizontal">
+									<StackPanel Margin="0 0 16 0">
+										<Label Content="Desde"
+											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+											   Target="{ Binding ElementName=CampoDesde }"/>
+										<DatePicker x:Name="CampoDesde"
+													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+													SelectedDate="{ Binding Path=Desde, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+													Style="{ StaticResource ResourceKey=DatePicker }"
+													Width="160"/>
+									</StackPanel>
+
+									<StackPanel Margin="0 0 16 0">
+										<Label Content="Hasta"
+											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+											   Target="{ Binding ElementName=CampoHasta }"/>
+										<DatePicker x:Name="CampoHasta"
+													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+													SelectedDate="{ Binding Path=Hasta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+													Style="{ StaticResource ResourceKey=DatePicker }"
+													Width="160"/>
+									</StackPanel>
+
+									<Button Command="{ Binding Path=AsistenciasCommandAsync }"
+											Content="Emitir reporte"
+											Style="{ StaticResource ResourceKey=Btn.Primario }"
+											VerticalAlignment="Bottom"/>
+								</StackPanel>
+							</StackPanel>
+						</Border>
+						<!--#endregion-->
+					</StackPanel>
+					<!--#endregion-->
+				</Grid>
+			</ScrollViewer>
+		</Border>
+	</Grid>
+</UserControl>

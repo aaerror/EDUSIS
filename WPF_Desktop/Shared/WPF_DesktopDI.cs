@@ -9,6 +9,7 @@ using Core.ServicioDocentes;
 using Core.ServicioCursantes;
 using Core.ServicioDocumentos;
 using Core.ServicioMaterias;
+using Core.ServicioReportes;
 using Core.ServicioUsuarios;
 using Core.Shared.Seguridad;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,8 @@ using System;
 using WPF_Desktop.Security;
 using WPF_Desktop.Navigation.NavigationServices.Cursos;
 using WPF_Desktop.Navigation.NavigationServices.Docentes;
+using WPF_Desktop.Navigation.NavigationServices.Documentacion;
+using WPF_Desktop.Navigation.NavigationServices.Reportes;
 using WPF_Desktop.Navigation.NavigationServices.Modal;
 using WPF_Desktop.Navigation.NavigationServices.Usuarios;
 using WPF_Desktop.Navigation.NavigationServices;
@@ -28,6 +31,8 @@ using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 using WPF_Desktop.ViewModels.Cursos.Curriculas;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Cursos;
+using WPF_Desktop.ViewModels.Documentacion;
+using WPF_Desktop.ViewModels.Reportes;
 using WPF_Desktop.ViewModels.Docentes.Licencias;
 using WPF_Desktop.ViewModels.Docentes.Puestos;
 using WPF_Desktop.ViewModels.Docentes;
@@ -93,10 +98,11 @@ internal static class WPF_DesktopDI
 				new MainViewModel(provider.GetRequiredService<MainWindowNavigationStore>(),
 								  provider.GetRequiredService<ModalWindowNavigationStore>(),
 								  provider.GetRequiredService<IServicioUsuario>(),
-								  provider.GetRequiredService<IServicioDocumento>(),
 								  CreateGestionDocentesNavigationService(provider),
 								  CreateGestionAlumnosNavigationService(provider),
 								  CreateGestionCursosNavigationService(provider),
+								  CreateGestionDocumentacionNavigationService(provider),
+								  CreateGestionReportesNavigationService(provider),
 								  provider.GetRequiredService<ISesionUsuario>(),
 								  provider.GetRequiredService<IDialogService>(),
 								  provider.GetRequiredService<IMessenger>()));
@@ -199,6 +205,23 @@ internal static class WPF_DesktopDI
 												 provider.GetRequiredService<CatedraStore>()));
 		#endregion
 
+		#region Documentación y reportes
+		services.AddTransient<GestionDocumentacionViewModel>(provider =>
+			new GestionDocumentacionViewModel(provider.GetRequiredService<IServicioAlumno>(),
+											  provider.GetRequiredService<IServicioDocumento>(),
+											  provider.GetRequiredService<IArchivoService>(),
+											  provider.GetRequiredService<IDialogService>(),
+											  provider.GetRequiredService<CicloLectivoStore>()));
+
+		services.AddTransient<GestionReportesViewModel>(provider =>
+			new GestionReportesViewModel(provider.GetRequiredService<IServicioReporte>(),
+										 provider.GetRequiredService<IServicioCurso>(),
+										 provider.GetRequiredService<IServicioDivision>(),
+										 provider.GetRequiredService<IArchivoService>(),
+										 provider.GetRequiredService<IDialogService>(),
+										 provider.GetRequiredService<CicloLectivoStore>()));
+		#endregion
+
 		#region Usuarios
 		services.AddTransient<RegistrarUsuarioViewModel>();
 
@@ -216,6 +239,7 @@ internal static class WPF_DesktopDI
 	private static IServiceCollection AddNavigationServices(IServiceCollection services)
 	{
 		services.AddSingleton<IDialogService, DialogService>();
+		services.AddSingleton<IArchivoService, ArchivoService>();
 		services.AddSingleton<INavigationService>(provider =>
 			CreateMainNavigationService(provider));
 
@@ -315,6 +339,20 @@ internal static class WPF_DesktopDI
 	private static INavigationService CreateGestionSituacionRevistaNavigationService(IServiceProvider serviceProvider) =>
 		new GestionSituacionRevistaNavigationService<GestionSituacionRevistaViewModel>(() =>
 			serviceProvider.GetRequiredService<GestionSituacionRevistaViewModel>(),
+			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
+	#endregion
+
+	#region DocumentacionNavigationService
+	private static INavigationService CreateGestionDocumentacionNavigationService(IServiceProvider serviceProvider) =>
+		new GestionDocumentacionNavigationService<GestionDocumentacionViewModel>(() =>
+			serviceProvider.GetRequiredService<GestionDocumentacionViewModel>(),
+			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
+	#endregion
+
+	#region ReportesNavigationService
+	private static INavigationService CreateGestionReportesNavigationService(IServiceProvider serviceProvider) =>
+		new GestionReportesNavigationService<GestionReportesViewModel>(() =>
+			serviceProvider.GetRequiredService<GestionReportesViewModel>(),
 			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
 	#endregion
 
