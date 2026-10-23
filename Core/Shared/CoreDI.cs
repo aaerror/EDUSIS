@@ -10,6 +10,7 @@ using Core.ServicioDocentes;
 using Core.ServicioDocumentos;
 using Core.ServicioLicencias;
 using Core.ServicioMaterias;
+using Core.ServicioReportes;
 using Core.ServicioSecurity;
 using Core.ServicioUsuarios;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,7 @@ public static class CoreDI
         services.AddScoped<IServicioSeguridad, ServicioSeguridad>();
         services.AddScoped<IServicioUsuario, ServicioUsuario>();
         services.AddScoped<IServicioDocumento, ServicioDocumento>();
+        services.AddScoped<IServicioReporte, ServicioReporte>();
         services.AddScoped<IServicioMateria, ServicioMateria>();
         services.AddScoped<IServicioCatedra, ServicioCatedra>();
 

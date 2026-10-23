@@ -6,8 +6,10 @@ using Core.ServicioCursantes;
 using Core.ServicioCursos;
 using Core.ServicioDivisiones;
 using Core.ServicioDocentes;
+using Core.ServicioDocumentos;
 using Core.ServicioLicencias;
 using Core.ServicioMaterias;
+using Core.ServicioReportes;
 using Core.ServicioUsuarios;
 using Core.Shared.Seguridad;
 using Core.UnitTests.Infraestructura;
@@ -21,7 +23,7 @@ namespace Core.UnitTests.Shared;
 
 /// <summary>
 /// Guardas de autorización de los casos de uso de escritura (plan RBAC, Fase 5, decisión #2:
-/// "la interfaz guía y <c>Core</c> garantiza"). Cubre los diez permisos con un caso de uso
+/// "la interfaz guía y <c>Core</c> garantiza"). Cubre todos los permisos con un caso de uso
 /// representativo de cada uno, los bordes de la sesión, y las dos decisiones de alcance que
 /// conviene que estén afirmadas y no sólo escritas en el plan: las lecturas quedan abiertas y
 /// el login no exige permiso.
@@ -151,6 +153,24 @@ public class AutorizacionDeCasosDeUsoTests
 
 		await Should.ThrowAsync<PermisoDenegadoException>(
 			() => host.Resolver<IServicioLicencia>().SolicitarLicencia(null!));
+	}
+
+	[Fact]
+	public async Task GenerarCertificadoAlumnoRegularAsync_sin_GenerarDocumentos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocumento>().GenerarCertificadoAlumnoRegularAsync(null!));
+	}
+
+	[Fact]
+	public async Task GenerarReporteMatriculasAsync_sin_GenerarReportes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioReporte>().GenerarReporteMatriculasAsync(null!));
 	}
 	#endregion
 
