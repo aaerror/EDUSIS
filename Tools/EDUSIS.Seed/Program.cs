@@ -193,7 +193,7 @@ static void Informar(ResumenDeSiembra resumen, TimeSpan duracion)
 	Console.WriteLine($"  Duración: {duracion.TotalSeconds:F1} s");
 	Console.WriteLine();
 	Console.WriteLine($"  Usuarios (contraseña: {Sembradora.PASSWORD_DEMO})");
-	Console.WriteLine("    admin@edu.ar       — Administrador (los diez permisos)");
+	Console.WriteLine("    admin@edu.ar       — Administrador (todos los permisos)");
 	Console.WriteLine("    direccion@edu.ar   — Dirección (los ocho académicos)");
 	Console.WriteLine("    secretaria@edu.ar  — Secretaria (docentes, alumnos, inscripciones)");
 	Console.WriteLine("    docente@edu.ar     — Docente (calificaciones y asistencia)");

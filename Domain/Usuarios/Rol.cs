@@ -30,7 +30,9 @@ public class Rol : Enumeration
 			Permiso.CargarCalificaciones,
 			Permiso.TomarAsistencia,
 			Permiso.AdministrarUsuarios,
-			Permiso.AsignarRoles
+			Permiso.AsignarRoles,
+			Permiso.GenerarDocumentos,
+			Permiso.GenerarReportes
 		},
 		[Direccion.Id] = new[]
 		{

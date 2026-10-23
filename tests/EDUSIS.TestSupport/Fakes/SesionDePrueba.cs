@@ -39,7 +39,7 @@ public sealed class SesionDePrueba : ISesionActual
 
 	#region Fábricas
 	/// <summary>
-	/// Sesión abierta con los diez permisos. Es la que usan los fixtures para que las pruebas
+	/// Sesión abierta con todos los permisos. Es la que usan los fixtures para que las pruebas
 	/// que ejercitan un caso de uso —y no la autorización— no tengan que saber qué permiso pide.
 	/// </summary>
 	public static SesionDePrueba ConTodosLosPermisos() =>

@@ -24,6 +24,8 @@ public class Permiso : Enumeration
 	public static readonly Permiso TomarAsistencia = new(8, "Tomar asistencia");
 	public static readonly Permiso AdministrarUsuarios = new(9, "Administrar usuarios");
 	public static readonly Permiso AsignarRoles = new(10, "Asignar roles");
+	public static readonly Permiso GenerarDocumentos = new(11, "Generar documentos");
+	public static readonly Permiso GenerarReportes = new(12, "Generar reportes");
 
 
 	#region CONSTRUCTOR

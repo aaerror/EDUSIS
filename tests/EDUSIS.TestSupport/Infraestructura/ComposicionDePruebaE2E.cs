@@ -41,7 +41,7 @@ public static class ComposicionDePruebaE2E
 		// La sesión es la segunda sustitución respecto de producción, donde la provee
 		// WPF_Desktop (SesionUsuario). Va ANTES de AddServices() sólo por legibilidad: los
 		// servicios de Core la piden por constructor y el contenedor la resuelve igual.
-		// Por omisión concede los diez permisos: las pruebas E2E recorren casos de uso, no
+		// Por omisión concede todos los permisos: las pruebas E2E recorren casos de uso, no
 		// autorización.
 		servicios.AddSingleton(sesion ?? SesionDePrueba.ConTodosLosPermisos());
 

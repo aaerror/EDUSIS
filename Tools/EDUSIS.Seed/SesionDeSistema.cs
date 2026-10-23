@@ -5,7 +5,7 @@ using Domain.Usuarios;
 namespace EDUSIS.Seed;
 
 /// <summary>
-/// Sesión del proceso de siembra: concede los diez permisos. No hay un usuario humano detrás de
+/// Sesión del proceso de siembra: concede todos los permisos. No hay un usuario humano detrás de
 /// una corrida del seeder, y la herramienta corre con la base entera a su disposición de todos
 /// modos.
 /// </summary>
