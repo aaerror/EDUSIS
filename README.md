@@ -94,7 +94,8 @@ Rutas y credenciales fijas en código a tener en cuenta:
 | Qué | Dónde | Valor |
 | :--- | :--- | :--- |
 | Cadena de conexión | `Infrastructure/InfrastructureDI.cs` | `localhost` / `EdusisDB`, Integrated Security |
-| Salida de PDFs | `Infrastructure/InfrastructureDI.cs` | `C:\edusis\docs\` |
+
+La documentación y los reportes ya no se escriben en una ruta fija: se generan en memoria y la pantalla pregunta dónde guardarlos. Los datos del establecimiento que llevan impresos salen de la sección `<institucion>` de `WPF_Desktop/App.config`.
 
 ## Migraciones EF Core
 
