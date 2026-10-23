@@ -20,6 +20,11 @@ public sealed class CursanteRepositorioFake : RepositorioEnMemoria<Cursante>, IC
 			.Where(x => x.DivisionID.Equals(divisionID) && x.CicloLectivo.Periodo == cicloLectivo.Periodo)
 			.ToList());
 
+	public Task<IReadOnlyCollection<Cursante>> BuscarPorCicloLectivoAsync(CicloLectivo cicloLectivo) =>
+		Task.FromResult((IReadOnlyCollection<Cursante>)_entidades
+			.Where(x => x.CicloLectivo.Periodo == cicloLectivo.Periodo)
+			.ToList());
+
 	public Task<IReadOnlyCollection<Guid>> BuscarInscriptosEnFechaAsync(Guid divisionID, DateTime fecha) =>
 		Task.FromResult((IReadOnlyCollection<Guid>)_entidades
 			.Where(x => x.DivisionID.Equals(divisionID) &&

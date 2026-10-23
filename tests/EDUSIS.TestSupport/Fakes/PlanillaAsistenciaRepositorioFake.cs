@@ -16,4 +16,16 @@ public sealed class PlanillaAsistenciaRepositorioFake : RepositorioEnMemoria<Pla
 		Task.FromResult(_entidades
 			.SelectMany(p => p.Registros)
 			.Count(r => r.CursanteID.Equals(cursanteID) && r.Tipo == tipo));
+
+	public Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorDivisionYRangoAsync(Guid divisionID, DateTime desde, DateTime hasta) =>
+		Task.FromResult((IReadOnlyCollection<PlanillaAsistencia>)_entidades
+			.Where(x => x.DivisionID.Equals(divisionID) && x.Fecha >= desde.Date && x.Fecha <= hasta.Date)
+			.OrderBy(x => x.Fecha)
+			.ToList());
+
+	public Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorRangoAsync(DateTime desde, DateTime hasta) =>
+		Task.FromResult((IReadOnlyCollection<PlanillaAsistencia>)_entidades
+			.Where(x => x.Fecha >= desde.Date && x.Fecha <= hasta.Date)
+			.OrderBy(x => x.Fecha)
+			.ToList());
 }

@@ -6,7 +6,16 @@ namespace Domain.Cursantes.Calificaciones;
 public sealed class Calificacion : Entity
 {
 	private const int MAX_OBSERVACION = 140;
-	private const double NOTA_APROBACION = 6;
+
+	/// <summary>
+	/// Calificación mínima de aprobación.
+	/// </summary>
+	/// <remarks>
+	/// Pública porque la documentación que informa calificaciones —boletín y constancias de
+	/// materias— tiene que declarar el umbral que aplicó, y tenerlo escrito también allá
+	/// significaría dos números que pueden divergir: el que decide y el que se imprime.
+	/// </remarks>
+	public const double NOTA_APROBACION = 6;
 
 	public Guid MateriaID { get; private set; }
 	public DateTime Fecha { get; private set; }

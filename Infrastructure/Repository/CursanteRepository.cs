@@ -30,6 +30,11 @@ internal class CursanteRepository : Repository<Cursante>, ICursanteRepository
 			.Where(x => x.DivisionID == divisionID && x.CicloLectivo.Periodo == cicloLectivo.Periodo)
 			.ToListAsync();
 
+	public async Task<IReadOnlyCollection<Cursante>> BuscarPorCicloLectivoAsync(CicloLectivo cicloLectivo) =>
+		await Consulta()
+			.Where(x => x.CicloLectivo.Periodo == cicloLectivo.Periodo)
+			.ToListAsync();
+
 	public async Task<IReadOnlyCollection<Guid>> BuscarInscriptosEnFechaAsync(Guid divisionID, DateTime fecha) =>
 		await _context.Cursantes
 			.Where(x => x.DivisionID == divisionID && x.FechaInicio.Date <= fecha.Date && (x.FechaFin == null || x.FechaFin.Value.Date >= fecha.Date))

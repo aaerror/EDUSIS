@@ -26,4 +26,16 @@ internal class PlanillaAsistenciaRepository : Repository<PlanillaAsistencia>, IP
 		await _context.PlanillasAsistencia
 			.SelectMany(p => p.Registros)
 			.CountAsync(r => r.CursanteID == cursanteID && r.Tipo == tipo);
+
+	public async Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorDivisionYRangoAsync(Guid divisionID, DateTime desde, DateTime hasta) =>
+		await Consulta()
+			.Where(x => x.DivisionID == divisionID && x.Fecha >= desde.Date && x.Fecha <= hasta.Date)
+			.OrderBy(x => x.Fecha)
+			.ToListAsync();
+
+	public async Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorRangoAsync(DateTime desde, DateTime hasta) =>
+		await Consulta()
+			.Where(x => x.Fecha >= desde.Date && x.Fecha <= hasta.Date)
+			.OrderBy(x => x.Fecha)
+			.ToListAsync();
 }
