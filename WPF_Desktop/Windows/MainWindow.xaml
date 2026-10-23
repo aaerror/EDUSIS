@@ -134,11 +134,13 @@
 					<Button Command="{ Binding Path=GestionDocumentacionCommand }"
 							Content="Documentación"
 							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Documentación }"
 							ToolTip="Certificados, constancias y boletín de un alumno"/>
 
 					<Button Command="{ Binding Path=GestionReportesCommand }"
 							Content="Reportes"
 							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Reportes }"
 							ToolTip="Matrículas, asistencias, calificaciones, materias pendientes y trayectorias"/>
 				</StackPanel>
 				<!--#endregion-->
