@@ -1,120 +1,70 @@
-﻿using iText.Layout.Element;
+﻿namespace Infrastructure.Documentos.Content;
 
-namespace Infrastructure.Documentos.Content;
-
-public class Documento
+/// <summary>Orientación de la hoja.</summary>
+/// <remarks>
+/// Los reportes tabulares salen apaisados: diez columnas en A4 vertical dejan celdas de dos
+/// centímetros en las que ningún apellido entra.
+/// </remarks>
+public enum Orientacion
 {
-	#region Content
-	private List<IBlockElement> _elementos;
-	#endregion
+	Vertical,
+	Apaisada
+}
 
-	#region Document
-	private readonly string _tituloDocumento = string.Empty;
-	private string _subtituloDocumento = string.Empty;
-	#endregion
+/// <summary>
+/// Documento listo para renderizar: su título, su orientación y la secuencia de bloques del
+/// cuerpo.
+/// </summary>
+/// <remarks>
+/// No conoce iText más allá de los bloques que contiene, y no sabe en qué se va a imprimir:
+/// quién lo recorre es <see cref="PortableDocumentFormat"/>.
+/// </remarks>
+public sealed class Documento
+{
+	private readonly List<IContenido> _contenidos = new();
 
-	public IReadOnlyCollection<IBlockElement> Elementos => _elementos.AsReadOnly();
+	/// <summary>Título del documento; va en el encabezado de cada página y en los metadatos.</summary>
+	public string Titulo { get; }
+
+	/// <summary>Línea de contexto bajo el título. Opcional.</summary>
+	public string? Subtitulo { get; }
+
+	public Orientacion Orientacion { get; }
+
+	public IReadOnlyCollection<IContenido> Contenidos => _contenidos.AsReadOnly();
 
 
-	private Documento(string tituloDocumento)
+	private Documento(string titulo, string? subtitulo, Orientacion orientacion)
 	{
-		if (string.IsNullOrWhiteSpace(tituloDocumento))
+		if (string.IsNullOrWhiteSpace(titulo))
 		{
-			throw new ArgumentException("Debe agregar el título del documento.", nameof(tituloDocumento));
+			throw new ArgumentException("Debe especificar el título del documento.", nameof(titulo));
 		}
-		_tituloDocumento = tituloDocumento;
 
-		_elementos = new List<IBlockElement>();
+		Titulo = titulo;
+		Subtitulo = subtitulo;
+		Orientacion = orientacion;
 	}
 
-	private Documento(string tituloDocumento, string? subtituloDocumento)
-		: this(tituloDocumento)
+	public static Documento Crear(string titulo, string? subtitulo = null, Orientacion orientacion = Orientacion.Vertical) =>
+		new(titulo, subtitulo, orientacion);
+
+	public Documento Agregar(IContenido contenido)
 	{
-		_subtituloDocumento = subtituloDocumento;
+		ArgumentNullException.ThrowIfNull(contenido);
+
+		_contenidos.Add(contenido);
+
+		return this;
 	}
 
-	public static Documento Create(string tituloDocumento) =>
-		new(tituloDocumento);
-
-	public static Documento Create(string tituloDocumento, string? subtituloDocumento) =>
-		new(tituloDocumento, subtituloDocumento);
-
-	public void AgregarContenido(IContenido contenido)
+	public Documento Agregar(IEnumerable<IContenido> contenidos)
 	{
-		var elemento = contenido.CrearContenido();
-		_elementos.Add(elemento);
+		foreach (var contenido in contenidos)
+		{
+			Agregar(contenido);
+		}
+
+		return this;
 	}
-
-	internal void AgregarContenido(IBlockElement parrafo)
-	{
-		throw new NotImplementedException();
-	}
-	/*
-   public IContenidoBuilder AgregarParrafo(string texto)
-   {
-	   var text = new Text(texto)
-		   .SetFontFamily(StandardFontFamilies.HELVETICA)
-		   .SetFontSize(12);
-	   var parrafo = new Paragraph(text)
-		   .SetTextAlignment(TextAlignment.JUSTIFIED);
-
-	   _elementos.Add(parrafo);
-
-	   return this;
-   }
-
-   public IContenidoBuilder AgregarTabla(int cantidadColumnas, string[] encabezadoTabla, List<List<string>> data)
-   {
-	   _tabla = new Table(cantidadColumnas, false)
-		   .UseAllAvailableWidth()
-		   .SetHorizontalAlignment(HorizontalAlignment.CENTER)
-		   .SetTextAlignment(TextAlignment.CENTER)
-		   .SetVerticalAlignment(VerticalAlignment.MIDDLE);
-
-	   if (!encabezadoTabla.IsNullOrEmpty())
-	   {
-		   if (cantidadColumnas != encabezadoTabla.Count())
-		   {
-			   throw new ArgumentException("La cantidad de columnas y la cantidad de nombres de encabezados no coinciden.");
-		   }
-
-		   foreach (var encabezado in encabezadoTabla)
-		   {
-			   var celda = new Cell()
-				   .SetHorizontalAlignment(HorizontalAlignment.CENTER)
-				   .SetTextAlignment(TextAlignment.CENTER)
-				   .SetVerticalAlignment(VerticalAlignment.MIDDLE);
-
-			   var textoEncabezado = new Text(encabezado)
-				   .SetFontFamily(StandardFonts.HELVETICA_BOLD)
-				   .SetFontSize(12);
-
-			   celda.Add(new Paragraph(textoEncabezado));
-
-			   _tabla.AddHeaderCell(celda);
-		   }
-	   }
-
-	   foreach (var fila in data)
-	   {
-		   foreach (var campo in fila)
-		   {
-			   var celda = new Cell()
-				   .SetHorizontalAlignment(HorizontalAlignment.CENTER)
-				   .SetTextAlignment(TextAlignment.CENTER)
-				   .SetVerticalAlignment(VerticalAlignment.MIDDLE);
-
-			   var texto = new Text(campo)
-				   .SetFontFamily(StandardFonts.HELVETICA_BOLD)
-				   .SetFontSize(12);
-
-			   celda.Add(new Paragraph(texto));
-		   }
-	   }
-
-	   _elementos.Add(_tabla);
-
-	   return this;
-   }
-*/
 }

@@ -1,5 +1,6 @@
 using Core.Shared.Documentos;
 using Infrastructure.Documentos;
+using Infrastructure.Documentos.Configuracion;
 using Domain.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -31,11 +32,17 @@ public static class InfrastructureDI
 			new UnitOfWork(provider.GetRequiredService<EdusisDBContext>(), 
 			provider.GetRequiredService<IMediator>()));
 
+		// DOCUMENTOS
+		// Los datos del establecimiento salen de la sección <institucion> de App.config y no
+		// cambian durante la ejecución: Singleton para leer el archivo una sola vez.
+		services.AddSingleton<IDatosInstitucionales, DatosInstitucionalesConfigurados>();
+
 		services.AddScoped<IPortableDocumentFormat>(provider =>
-			new PortableDocumentFormat(@"C:\\edusis\docs\"));
+			new PortableDocumentFormat(provider.GetRequiredService<IDatosInstitucionales>()));
 
 		services.AddScoped<IGeneradorDocumentos>(provider =>
-			new GeneradorDocumentos(provider.GetRequiredService<IPortableDocumentFormat>()));
+			new GeneradorDocumentos(provider.GetRequiredService<IPortableDocumentFormat>(),
+									provider.GetRequiredService<IDatosInstitucionales>()));
 
 		return services;
 	}

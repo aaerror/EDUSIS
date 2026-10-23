@@ -1,100 +1,85 @@
-﻿using Infrastructure.Documentos.Events;
-using iText.IO.Font.Constants;
-using iText.Kernel.Font;
+﻿using Core.Shared.Documentos;
+using Infrastructure.Documentos.Content;
+using Infrastructure.Documentos.Events;
 using iText.Kernel.Geom;
-using iText.Kernel.Pdf.Event;
 using iText.Kernel.Pdf;
-using iText.Layout.Element;
-using iText.Layout.Font;
-using iText.Layout.Properties;
+using iText.Kernel.Pdf.Event;
 using iText.Layout;
 
-//https://github.com/nazuke/SEOMacroscope/tree/master
 namespace Infrastructure.Documentos;
 
-internal class PdfCreator
+/// <summary>
+/// Ciclo de vida del documento iText: abre el escritor, fija los márgenes y los metadatos,
+/// engancha el encabezado y el pie de página, y escribe los bloques del
+/// <see cref="Documento"/>.
+/// </summary>
+/// <remarks>
+/// Los márgenes superior e inferior son generosos porque el encabezado y el pie se dibujan
+/// FUERA del área de contenido, con un <c>Canvas</c> propio en el evento de cierre de página: si
+/// el margen no les reserva lugar, el cuerpo se imprime encima.
+/// </remarks>
+internal sealed class PdfCreator : IDisposable
 {
-	private readonly PageSize _pageSize = PageSize.A4;
-	private readonly MemoryStream _memoryStream;
+	private const float MARGEN_SUPERIOR = 96f;
+	private const float MARGEN_INFERIOR = 72f;
+	private const float MARGEN_LATERAL = 56f;
 
-	#region iText
-	private readonly PdfHelper _pdfHelper;
+	private readonly Fuentes _fuentes;
 	private readonly PdfDocument _pdf;
 	private readonly Document _document;
-	#endregion
 
-	
-	private PdfCreator(string title, MemoryStream memoryStream)
+
+	public PdfCreator(Documento documento, Stream salida, IDatosInstitucionales institucion)
 	{
-		if (string.IsNullOrWhiteSpace(title))
+		var escritor = new PdfWriter(salida);
+
+		// El flujo lo administra quien lo creó: cerrarlo acá impediría leer los bytes después.
+		escritor.SetCloseStream(false);
+
+		_pdf = new PdfDocument(escritor);
+		_fuentes = Fuentes.Estandar();
+
+		EstablecerMetadatos(documento, institucion);
+
+		var tamano = documento.Orientacion == Orientacion.Apaisada
+			? PageSize.A4.Rotate()
+			: PageSize.A4;
+
+		_document = new Document(_pdf, tamano);
+		_document.SetMargins(MARGEN_SUPERIOR, MARGEN_LATERAL, MARGEN_INFERIOR, MARGEN_LATERAL);
+
+		_pdf.AddEventHandler(PdfDocumentEvent.END_PAGE, new HeaderEventHandler(institucion.Nombre, documento.Titulo, _fuentes));
+		_pdf.AddEventHandler(PdfDocumentEvent.END_PAGE, new FooterEventHandler($"{ institucion.Nombre } · CUE { institucion.CUE }", _fuentes));
+	}
+
+	/// <summary>Escribe los bloques del documento, en orden.</summary>
+	public void Renderizar(Documento documento)
+	{
+		foreach (var contenido in documento.Contenidos)
 		{
-			throw new ArgumentException("Se debe especificar un título para el documento.");
+			_document.Add(contenido.CrearContenido(_fuentes));
 		}
-
-		_memoryStream = memoryStream;
-
-		_pdfHelper = PdfHelper.Create(_memoryStream);
-		_pdf = _pdfHelper.OpenWriter();
-		_pdf.AddFont(PdfFontFactory.CreateFont(StandardFontFamilies.HELVETICA));
-
-		_document = new Document(_pdf, _pageSize);
-		_document.SetMargins(80, 60, 80, 60);
-		AgregarFuentes();
 	}
 
-	public static PdfCreator Create(string title, MemoryStream memoryStream) =>
-		new(title, memoryStream);
-
-	private void AgregarFuentes()
+	private void EstablecerMetadatos(Documento documento, IDatosInstitucionales institucion)
 	{
-		var provider = new FontProvider();
-		provider.AddStandardPdfFonts();
+		var info = _pdf.GetDocumentInfo();
+		info.SetTitle(documento.Titulo);
+		info.SetAuthor(institucion.Nombre);
+		info.SetCreator("EDUSIS");
 
-		_document.SetFontProvider(provider);
+		if (!string.IsNullOrWhiteSpace(documento.Subtitulo))
+		{
+			info.SetSubject(documento.Subtitulo);
+		}
 	}
 
-	#region Páginas
-	public PdfPage AgregarNuevaPagina() =>
-		_pdf.AddNewPage();
-
-	public PdfPage AgregarNuevaPagina(int numeroPagina) =>
-		_pdf.AddNewPage(numeroPagina);
-
-	public void BorrarPagina(int numeroPagina) =>
-		_pdf.RemovePage(numeroPagina);
-	#endregion
-
-	#region Contenido
-	public void AgregarContenido(IBlockElement element)
+	public void Dispose()
 	{
-		var text = new Text("content")
-			.SetFontFamily(StandardFontFamilies.HELVETICA)
-			.SetFontSize(12);
-		var body = new Paragraph(text)
-			.SetTextAlignment(TextAlignment.JUSTIFIED);
-
-		_document.Add(element);
-	}
-
-	public void AgregarContenido(Paragraph parrafo)
-	{
-		_document.Add(parrafo);
-	}
-	#endregion
-
-	#region Encabezado & Pie Página
-	public void EstablecerEncabezadoYPiePagina(string subtitulo)
-	{
-		_pdf.AddEventHandler(PdfDocumentEvent.END_PAGE, new HeaderEventHandler(subtitulo));
-		_pdf.AddEventHandler(PdfDocumentEvent.END_PAGE, new FooterEventHandler());
-	}
-	#endregion
-
-	public void Cerrar()
-	{
+		// Close() del Document cierra también el PdfDocument y descarga el contenido al flujo.
 		if (!_pdf.IsClosed())
 		{
-			_pdf.Close();
+			_document.Close();
 		}
 	}
 }

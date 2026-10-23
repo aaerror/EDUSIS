@@ -1,5 +1,6 @@
 using Core.ServicioSecurity;
 using Core.Shared;
+using Core.Shared.Documentos;
 using Core.Shared.Seguridad;
 using EDUSIS.TestSupport.Fakes;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,8 +25,15 @@ internal sealed class HostDeServicios : IDisposable
 	public UnitOfWorkFake UnidadDeTrabajo { get; }
 
 	/// <summary>
+	/// Doble del puerto de renderizado. <c>CoreDI</c> no lo registra —lo provee
+	/// <c>Infrastructure</c>—, así que sin esta pieza los servicios de documentación y reportes
+	/// no se pueden resolver. Queda expuesto para afirmar sobre el documento que recibió.
+	/// </summary>
+	public GeneradorDocumentosFake Generador { get; }
+
+	/// <summary>
 	/// <paramref name="sesion"/> es el doble de <see cref="ISesionActual"/> que reciben los
-	/// servicios. Por omisión concede los diez permisos, para que las pruebas que ejercitan un
+	/// servicios. Por omisión concede todos los permisos, para que las pruebas que ejercitan un
 	/// caso de uso no tengan que saber qué permiso pide; las pruebas de autorización pasan una
 	/// <see cref="SesionDePrueba"/> acotada.
 	/// </summary>
@@ -34,10 +42,14 @@ internal sealed class HostDeServicios : IDisposable
 		UnidadDeTrabajo = new UnitOfWorkFake();
 		sembrar?.Invoke(UnidadDeTrabajo);
 
+		Generador = new GeneradorDocumentosFake();
+
 		var servicios = new ServiceCollection();
 		servicios.AddLogging();
 		servicios.AddSingleton<Domain.Shared.IUnitOfWork>(UnidadDeTrabajo);
 		servicios.AddSingleton(sesion ?? SesionDePrueba.ConTodosLosPermisos());
+		servicios.AddSingleton<IGeneradorDocumentos>(Generador);
+		servicios.AddSingleton<IDatosInstitucionales, DatosInstitucionalesDePrueba>();
 		servicios.AddServices();
 
 		_provider = servicios.BuildServiceProvider();

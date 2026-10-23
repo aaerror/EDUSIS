@@ -23,11 +23,25 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0"/>
+		<!-- Lee la sección <institucion> de App.config: ConfigurationManager no viene en el SDK base fuera de .NET Framework. -->
+		<PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0"/>
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Core\Core.csproj"/>
 		<ProjectReference Include="..\Domain\Domain.csproj"/>
+	</ItemGroup>
+
+	<!--
+		Mismo criterio que Core.csproj: el renderizado de documentación (`GeneradorDocumentos`,
+		`PortableDocumentFormat`) es `internal` porque fuera de esta capa sólo se consume por el
+		puerto `IGeneradorDocumentos`, y la prueba que verifica que el PDF sale bien formado y con
+		el contenido esperado necesita construirlo sin pasar por `InfrastructureDI` —que exigiría
+		una base de datos y una sección de configuración que la prueba no tiene—.
+		Sólo metadatos de assembly; no cambia comportamiento ni el binario distribuible.
+	-->
+	<ItemGroup>
+		<InternalsVisibleTo Include="Infrastructure.IntegrationTests"/>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,83 +1,81 @@
-﻿using iText.IO.Font.Constants;
+﻿using Infrastructure.Documentos.Content;
 using iText.Kernel.Colors;
-using iText.Kernel.Font;
 using iText.Kernel.Geom;
+using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas;
 using iText.Kernel.Pdf.Event;
-using iText.Kernel.Pdf;
+using iText.Layout;
 using iText.Layout.Borders;
 using iText.Layout.Element;
-using iText.Layout.Font;
 using iText.Layout.Properties;
-using iText.Layout;
 
 namespace Infrastructure.Documentos.Events;
 
+/// <summary>
+/// Pie de cada página: establecimiento emisor a la izquierda, número de página a la derecha.
+/// </summary>
+/// <remarks>
+/// Dice "Página N" y no "Página N de M" porque el total no se conoce al cerrar cada página:
+/// saberlo exige una segunda pasada sobre el documento o un XObject de relleno diferido. Con el
+/// número solo, una hoja suelta sigue siendo ubicable, que es para lo que está.
+/// </remarks>
 internal class FooterEventHandler : AbstractPdfDocumentEventHandler
 {
+	private const float TAMANO = 8.5f;
+	private const float ALTO = 28f;
+
+	private static readonly Color LINEA = new DeviceRgb(150, 150, 150);
+
+	private readonly string _emisor;
+	private readonly Fuentes _fuentes;
+
+
+	public FooterEventHandler(string emisor, Fuentes fuentes)
+	{
+		_emisor = emisor;
+		_fuentes = fuentes;
+	}
+
 	protected override void OnAcceptedEvent(AbstractPdfDocumentEvent @event)
 	{
-		PdfDocumentEvent documentEvent = (PdfDocumentEvent) @event;
-		PdfDocument pdfDocument = documentEvent.GetDocument();
-		PdfPage page = documentEvent.GetPage();
+		var documentEvent = (PdfDocumentEvent) @event;
+		var pdfDocument = documentEvent.GetDocument();
+		var page = documentEvent.GetPage();
 
-		Rectangle pageSize = page.GetPageSize();
-		PdfCanvas pdfCanvas = new PdfCanvas(page.NewContentStreamBefore(), page.GetResources(), pdfDocument);
+		var pageSize = page.GetPageSize();
+		var pdfCanvas = new PdfCanvas(page.NewContentStreamBefore(), page.GetResources(), pdfDocument);
 
-		var footerArea = new Rectangle(60f, pageSize.GetBottom() + 40f, pageSize.GetWidth() - 120f, 40f);
-		var canvas = new Canvas(pdfCanvas, footerArea);
-		
-		var fontProvider = new FontProvider();
-		fontProvider.AddStandardPdfFonts();
+		var area = new Rectangle(pageSize.GetLeft() + 56f,
+								 pageSize.GetBottom() + 30f,
+								 pageSize.GetWidth() - 112f,
+								 ALTO);
 
-		canvas.SetFontProvider(fontProvider);
-		canvas.SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA));
+		using var canvas = new Canvas(pdfCanvas, area);
+		canvas.Add(Pie(pdfDocument.GetPageNumber(page)));
 
-		var footerContent = CreateFooterTable(pdfDocument.GetPageNumber(page));
-		canvas.Add(footerContent);
-
-/*
-		pdfCanvas.SetStrokeColor(ColorConstants.GRAY)
-			.SetLineWidth(1)
-			.MoveTo(pageSize.GetWidth(), pageSize.GetBottom() + 30)
-			.LineTo(pageSize.GetWidth(), pageSize.GetHeight() + 30)
-			.Stroke();
-
-		pdfCanvas.BeginText()
-			.SetFontAndSize(Regular, 10)
-			.MoveText(pageSize.GetWidth() / 2 - 10, pageSize.GetBottom() + 20)
-			.ShowText($"Página {pageNumber}")
-			.EndText();
-
-		pdfCanvas.Release();*/
+		pdfCanvas.Release();
 	}
 
-	private Table CreateFooterTable(int pageNumber)
+	private Table Pie(int numeroPagina)
 	{
-		var columnWidth = UnitValue.CreatePercentArray(new float[] { 100f });
-		var table = new Table(columnWidth)
-			.SetBorderTop(new SolidBorder(ColorConstants.BLACK, 1f))
-			.UseAllAvailableWidth();
+		var tabla = new Table(UnitValue.CreatePercentArray(new[] { 70f, 30f }))
+			.UseAllAvailableWidth()
+			.SetBorderTop(new SolidBorder(LINEA, 0.75f));
 
-		// Número Página
-		var numberText = new Text(pageNumber.ToString())
-			.SetFontFamily(StandardFonts.HELVETICA)
-			.SetFontSize(10f);
-		var content = new Paragraph(numberText);
+		tabla.AddCell(Celda(_emisor, TextAlignment.LEFT));
+		tabla.AddCell(Celda($"Página { numeroPagina }", TextAlignment.RIGHT));
 
-		var cellStyle = new Style()
-			.SetBorder(Border.NO_BORDER)
-			.SetHorizontalAlignment(HorizontalAlignment.RIGHT)
-			.SetVerticalAlignment(VerticalAlignment.MIDDLE)
-			.SetTextAlignment(TextAlignment.RIGHT);
-
-
-		// Column
-		var column = new Cell()
-			.Add(content)
-			.AddStyle(cellStyle);
-		table.AddCell(column);
-
-		return table;
+		return tabla;
 	}
+
+	private Cell Celda(string texto, TextAlignment alineacion) =>
+		new Cell()
+			.Add(new Paragraph(texto)
+				.SetFont(_fuentes.Regular)
+				.SetFontSize(TAMANO)
+				.SetMargin(0)
+				.SetTextAlignment(alineacion))
+			.SetBorder(Border.NO_BORDER)
+			.SetPaddingTop(5f)
+			.SetVerticalAlignment(VerticalAlignment.TOP);
 }
