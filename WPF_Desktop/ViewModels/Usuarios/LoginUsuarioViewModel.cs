@@ -5,6 +5,7 @@ using Core.ServicioAutenticaciones.DTOs.Requests;
 using Core.ServicioAutenticaciones;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Net;
 using System.Security;
 using System.Threading.Tasks;
@@ -34,8 +35,25 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar la clave de acceso para continuar.")]
 	private SecureString _clave;
 
-	[ObservableProperty]
-	private string _mensajeError = string.Empty;
+	/// <summary>
+	/// Los mensajes de validación vigentes, en una sola cadena para el aviso del formulario.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Era una <c>[ObservableProperty]</c> que NADIE asignaba nunca: arrancaba en
+	/// <see cref="string.Empty"/> y se quedaba ahí, porque los errores salían por
+	/// <c>MessageBox</c>. La vista, en cambio, enlaza la visibilidad del aviso contra
+	/// <c>HasErrors</c>, que sí se enciende solo —lo pone <see cref="ObservableValidator"/>
+	/// cuando falla un atributo de validación—. Resultado: aparecía el recuadro vacío, porque
+	/// el texto y la visibilidad del mismo aviso venían de dos fuentes sin relación.
+	/// </para>
+	/// <para>
+	/// Ahora las dos leen lo mismo. Se calcula en lugar de guardarse para que no haya un
+	/// segundo estado que pueda quedar desfasado de los errores reales.
+	/// </para>
+	/// </remarks>
+	public string MensajeError =>
+		string.Join(Environment.NewLine, GetErrors().Select(error => error.ErrorMessage));
 
 	#region Commands
 	public IAsyncRelayCommand RegistrarCommandAsync { get; }
@@ -49,6 +67,9 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 		_sesion = sesion;
 
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
+
+		// MensajeError se deriva de los errores, así que se avisa cuando ellos cambian.
+		ErrorsChanged += (_, _) => OnPropertyChanged(nameof(MensajeError));
 	}
 
 	/*
@@ -100,18 +121,6 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 		{
 			_clave = value;
 			OnPropertyChanged(nameof(Clave));
-		}
-	}
-	*/
-
-	/*
-	public string MensajeError
-	{
-		get { return _mensajeError; }
-		set
-		{
-			_mensajeError = value;
-			SetProperty(ref _mensajeError, value);
 		}
 	}
 	*/
