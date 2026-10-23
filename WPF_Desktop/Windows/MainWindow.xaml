@@ -111,16 +111,19 @@
 					<Button Command="{ Binding Path=GestionDocentesCommand }"
 							Content="Docentes"
 							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Docentes }"
 							ToolTip="Legajos, puestos y licencias del personal docente"/>
 
 					<Button Command="{ Binding Path=GestionAlumnosCommand }"
 							Content="Alumnos"
 							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Alumnos }"
 							ToolTip="Legajos de alumnos e inscripciones"/>
 
 					<Button Command="{ Binding Path=GestionCursosCommand }"
 							Content="Cursos"
 							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Cursos }"
 							ToolTip="Cursos, divisiones, currículas y cátedras"/>
 				</StackPanel>
 				<!--#endregion-->
