@@ -180,7 +180,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 	public async Task CargarMateriasAsync()
 	{
 		Materias.Clear();
-		if (Curriculas.Count is not 0)
+		if (Curricula is not null)
 		{
 			try
 			{
@@ -280,7 +280,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 
 						HabilitarRegistrarMateria = false;
 
-						await CargarCurriculasAsync();
+						await CargarMateriasAsync();
 					}
 					catch (Exception ex)
 					{
@@ -383,7 +383,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 						_dialogService.MostrarInformacion(messageBoxText, caption);
 
 						HabilitarEditarMateria = false;
-						await CargarMateriasAsync();
+						await CargarCurriculasAsync();
 					}
 					catch (Exception ex)
 					{
@@ -467,7 +467,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 			case "Nueva":
 				HabilitarRegistrarMateria = false;
 
-				await CargarCurriculasAsync();
+				await CargarMateriasAsync();
 				break;
 
 			case "Editar":
