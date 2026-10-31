@@ -138,6 +138,22 @@ public class HorarioTests
 
 		horario.DuracionHoraCatedra().ShouldBe(50);
 	}
+
+	[Theory]
+	[InlineData(60)]
+	[InlineData(80)]
+	public void DuracionHoraCatedra_devuelve_la_duracion_total_tambien_cuando_pasa_de_la_hora(int duracion)
+	{
+		// Regresión (AS-2): el cálculo usaba (HoraFin - HoraInicio).Minutes, el componente de
+		// minutos del TimeSpan y no su duración total, así que 60 devolvía 0 y 80 devolvía 20. El
+		// caso de 50 minutos de arriba no lo detectaba porque ahí los dos valores coinciden.
+		var horario = new HorarioBuilder()
+			.ConHoraInicio(new TimeOnly(8, 0))
+			.ConDuracionHoraCatedra(duracion)
+			.Build();
+
+		horario.DuracionHoraCatedra().ShouldBe(duracion);
+	}
 	#endregion
 
 	#region Superposición

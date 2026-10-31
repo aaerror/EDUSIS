@@ -8,7 +8,7 @@ public enum TipoConstanciaMaterias
 }
 
 /// <summary>Una materia de la currícula tal como se informa en la constancia.</summary>
-public sealed record MateriaInformada(string Materia, int HorasCatedra, string Condicion);
+public sealed record MateriaInformada(string Materia, int? HorasCatedra, string Condicion);
 
 /// <summary>
 /// Informa las materias aprobadas o pendientes del estudiante en el ciclo lectivo indicado.

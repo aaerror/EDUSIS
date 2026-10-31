@@ -50,7 +50,10 @@ public class Horario : ValueObject
 		return new(turno, diaSemana, horaInicio, duracionHoraCatedra);
 	}
 
-	public int DuracionHoraCatedra() => (HoraFin - HoraInicio).Minutes;
+	// TotalMinutes, no Minutes: Minutes es el componente de minutos del TimeSpan, así que una hora
+	// cátedra de 60 minutos devolvía 0 y una de 80 devolvía 20. No se notaba porque la duración
+	// máxima del enumerado DuracionHoraCatedra es 50, donde los dos valores coinciden.
+	public int DuracionHoraCatedra() => (int)(HoraFin - HoraInicio).TotalMinutes;
 
 	public bool SeSuperponeCon(Horario otro) =>
 		DiaSemana.Equals(otro.DiaSemana) && HoraInicio < otro.HoraFin && otro.HoraInicio < HoraFin;
