@@ -13,6 +13,13 @@ internal class AlumnoRepository : PersonaRepository<Alumno>, IAlumnoRepository
 	public async Task<bool> EsLegajoInvalidoAsync(string legajo) =>
 		await _context.Alumnos.AnyAsync(x => EF.Functions.Like(x.Legajo, legajo));
 
+	// Proyección del legajo: el agregado hidratado no hace falta para derivar el siguiente (CORE-13).
+	public async Task<string?> BuscarUltimoLegajoAsync() =>
+		await _context.Alumnos
+			.Select(x => x.Legajo)
+			.OrderByDescending(x => x)
+			.FirstOrDefaultAsync();
+
 	// Replica DatosPersonales.NombreCompleto() ("Apellido, Nombre") sobre columnas mapeadas:
 	// el método del dominio no es traducible a SQL (H-020).
 	public async Task<Alumno?> BuscarPorNombreCompletoAsync(string nombreCompleto) =>

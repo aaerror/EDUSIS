@@ -135,7 +135,7 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 				pais: request.Pais);
 
 			var unAlumno = new Alumno(
-				Guid.NewGuid().ToString().GetHashCode().ToString("x"),
+				Alumno.SiguienteLegajo(await _unitOfWork.Alumnos.BuscarUltimoLegajoAsync()),
 				datosPersonales,
 				domicilio,
 				request.Email,

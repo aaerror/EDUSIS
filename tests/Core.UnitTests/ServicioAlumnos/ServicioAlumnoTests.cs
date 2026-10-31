@@ -118,7 +118,7 @@ public class ServicioAlumnoTests
 	#endregion
 
 	#region Alta
-	[Fact(Skip = "H-024: ServicioAlumno.RegistrarAlumnoAsync genera el legajo con Guid.NewGuid().ToString().GetHashCode().ToString(\"x\"), que nunca matchea ^([A-Z]{2}\\d{4})$ (Alumno.ctor); el alta revienta siempre con FormatException. Ver hallazgos.md.")]
+	[Fact]
 	public async Task RegistrarAlumnoAsync_da_de_alta_al_alumno_y_persiste_los_cambios()
 	{
 		var id = await _servicio.RegistrarAlumnoAsync(RegistroValido());
@@ -126,6 +126,17 @@ public class ServicioAlumnoTests
 		id.ShouldNotBe(Guid.Empty);
 		_host.UnidadDeTrabajo.AlumnosFake.Elementos.ShouldHaveSingleItem();
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task RegistrarAlumnoAsync_asigna_legajos_correlativos_en_dos_altas_seguidas()
+	{
+		await _servicio.RegistrarAlumnoAsync(RegistroValido());
+		await _servicio.RegistrarAlumnoAsync(RegistroValido() with { DNI = "40222334" });
+
+		var legajos = _host.UnidadDeTrabajo.AlumnosFake.Elementos.Select(x => x.Legajo).ToList();
+
+		legajos.ShouldBe(new[] { "AL0001", "AL0002" });
 	}
 
 	[Fact]

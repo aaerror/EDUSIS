@@ -42,6 +42,28 @@ public class AlumnoTests
 	}
 	#endregion
 
+	#region Legajo
+	[Fact]
+	public void SiguienteLegajo_sin_legajos_previos_devuelve_el_primero()
+	{
+		Domain.Alumnos.Alumno.SiguienteLegajo(null).ShouldBe("AL0001");
+	}
+
+	[Fact]
+	public void SiguienteLegajo_incrementa_en_uno_los_cuatro_digitos_del_ultimo_legajo()
+	{
+		Domain.Alumnos.Alumno.SiguienteLegajo("AL0009").ShouldBe("AL0010");
+	}
+
+	[Fact]
+	public void SiguienteLegajo_pasado_el_ultimo_legajo_posible_lanza_LegajosAgotadosException()
+	{
+		var ex = Should.Throw<Exception>(() => Domain.Alumnos.Alumno.SiguienteLegajo("AL9999"));
+
+		ex.GetType().Name.ShouldBe("LegajosAgotadosException");
+	}
+	#endregion
+
 	#region Baja institucional
 	[Fact]
 	public void Desinscribir_cierra_el_periodo_con_la_fecha_de_hoy()

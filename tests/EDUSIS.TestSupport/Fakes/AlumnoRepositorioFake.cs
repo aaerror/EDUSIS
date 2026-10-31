@@ -11,6 +11,9 @@ public sealed class AlumnoRepositorioFake : RepositorioDePersonasEnMemoria<Alumn
 	public Task<bool> EsLegajoInvalidoAsync(string legajo) =>
 		Task.FromResult(LegajosInvalidos.Contains(legajo) || _entidades.Any(x => x.Legajo == legajo));
 
+	public Task<string?> BuscarUltimoLegajoAsync() =>
+		Task.FromResult<string?>(_entidades.Select(x => x.Legajo).OrderByDescending(x => x).FirstOrDefault());
+
 	public Task<Alumno?> BuscarPorNombreCompletoAsync(string nombreCompleto) =>
 		Task.FromResult(_entidades.FirstOrDefault(x =>
 			string.Equals(x.DatosPersonales.NombreCompleto(), nombreCompleto.Trim(), StringComparison.OrdinalIgnoreCase)));
