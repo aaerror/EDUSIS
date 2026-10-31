@@ -3,7 +3,9 @@ using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias.Exceptions;
 using Core.UnitTests.Infraestructura;
 using Domain.Curriculas;
+using Domain.Curriculas.Exceptions;
 using Domain.Materias;
+using Domain.Materias.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -46,6 +48,62 @@ public class ServicioMateriaTests
 		return materia;
 	}
 
+	private Curricula SembrarCurriculaDesafectada(Guid? cursoID = null)
+	{
+		var curricula = new CurriculaBuilder()
+			.ConCurso(cursoID ?? Guid.NewGuid())
+			.ConFechaInicio(DateTime.Today.AddYears(-1))
+			.ConFechaFin(DateTime.Today.AddDays(-1))
+			.Build();
+		_host.UnidadDeTrabajo.CurriculasFake.Sembrar(curricula);
+		return curricula;
+	}
+
+	#region Vigencia de la currícula
+	// Una currícula desafectada es el registro histórico de un diseño que ya no rige: se puede
+	// consultar, pero no editar. Antes no se verificaba y las tres mutaciones la aceptaban.
+	[Fact]
+	public async Task RegistrarMateriaAsync_en_una_curricula_desafectada_lanza_CurriculaNoVigenteException()
+	{
+		var curricula = SembrarCurriculaDesafectada();
+
+		await Should.ThrowAsync<CurriculaNoVigenteException>(() => _servicio.RegistrarMateriaAsync(
+			new RegistrarMateriaRequest(curricula.CursoID, curricula.Id, "Matemática", 4)));
+	}
+
+	[Fact]
+	public async Task ModificarMateriaAsync_en_una_curricula_desafectada_lanza_CurriculaNoVigenteException()
+	{
+		var curricula = SembrarCurriculaDesafectada();
+		var materia = SembrarMateria(curricula.Id);
+
+		await Should.ThrowAsync<CurriculaNoVigenteException>(() => _servicio.ModificarMateriaAsync(
+			new ModificarMateriaRequest(curricula.CursoID, curricula.Id, materia.Id, "Lengua", 6)));
+	}
+
+	[Fact]
+	public async Task EliminarMateriaAsync_en_una_curricula_desafectada_lanza_CurriculaNoVigenteException()
+	{
+		var curricula = SembrarCurriculaDesafectada();
+		var materia = SembrarMateria(curricula.Id);
+
+		await Should.ThrowAsync<CurriculaNoVigenteException>(() => _servicio.EliminarMateriaAsync(
+			new EliminarMateriaRequest(curricula.CursoID, curricula.Id, materia.Id)));
+	}
+
+	[Fact]
+	public async Task ListarMateriasSegunCurriculaAsync_en_una_curricula_desafectada_devuelve_el_historico()
+	{
+		var curricula = SembrarCurriculaDesafectada();
+		SembrarMateria(curricula.Id);
+
+		var materias = await _servicio.ListarMateriasSegunCurriculaAsync(
+			new ListarMateriasSegunCurriculaRequest(curricula.CursoID, curricula.Id));
+
+		materias.Count.ShouldBe(1);
+	}
+	#endregion
+
 	#region ListarMateriasSegunCurriculaAsync
 	[Fact]
 	public async Task ListarMateriasSegunCurriculaAsync_lista_las_materias_de_la_curricula()
@@ -63,9 +121,9 @@ public class ServicioMateriaTests
 	}
 
 	[Fact]
-	public async Task ListarMateriasSegunCurriculaAsync_con_una_curricula_inexistente_lanza_ArgumentNullException()
+	public async Task ListarMateriasSegunCurriculaAsync_con_una_curricula_inexistente_lanza_CurriculaNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.ListarMateriasSegunCurriculaAsync(
+		await Should.ThrowAsync<CurriculaNoEncontradaException>(() => _servicio.ListarMateriasSegunCurriculaAsync(
 			new ListarMateriasSegunCurriculaRequest(Guid.NewGuid(), Guid.NewGuid())));
 	}
 	#endregion
@@ -86,9 +144,9 @@ public class ServicioMateriaTests
 	}
 
 	[Fact]
-	public async Task RegistrarMateriaAsync_con_una_curricula_inexistente_lanza_ArgumentNullException()
+	public async Task RegistrarMateriaAsync_con_una_curricula_inexistente_lanza_CurriculaNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.RegistrarMateriaAsync(
+		await Should.ThrowAsync<CurriculaNoEncontradaException>(() => _servicio.RegistrarMateriaAsync(
 			new RegistrarMateriaRequest(Guid.NewGuid(), Guid.NewGuid(), "Matemática", 4)));
 	}
 
@@ -142,9 +200,9 @@ public class ServicioMateriaTests
 	}
 
 	[Fact]
-	public async Task ModificarMateriaAsync_con_una_curricula_inexistente_lanza_ArgumentNullException()
+	public async Task ModificarMateriaAsync_con_una_curricula_inexistente_lanza_CurriculaNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.ModificarMateriaAsync(
+		await Should.ThrowAsync<CurriculaNoEncontradaException>(() => _servicio.ModificarMateriaAsync(
 			new ModificarMateriaRequest(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Matemática", 4)));
 	}
 
@@ -174,13 +232,17 @@ public class ServicioMateriaTests
 		await _servicio.EliminarMateriaAsync(new EliminarMateriaRequest(curricula.CursoID, curricula.Id, materia.Id));
 
 		_host.UnidadDeTrabajo.MateriasFake.Elementos.ShouldBeEmpty();
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
+
+		// Dos guardados, no uno: el primero despacha MateriaEliminadaEvent para que las cátedras
+		// huérfanas se limpien con la materia todavía viva, y recién el segundo la borra. Invertir
+		// ese orden rompe contra SQL Server con "the association ... has been severed".
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(2);
 	}
 
 	[Fact]
-	public async Task EliminarMateriaAsync_con_una_curricula_inexistente_lanza_ArgumentNullException()
+	public async Task EliminarMateriaAsync_con_una_curricula_inexistente_lanza_CurriculaNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.EliminarMateriaAsync(
+		await Should.ThrowAsync<CurriculaNoEncontradaException>(() => _servicio.EliminarMateriaAsync(
 			new EliminarMateriaRequest(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())));
 	}
 	#endregion

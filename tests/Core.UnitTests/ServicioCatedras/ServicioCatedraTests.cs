@@ -3,11 +3,14 @@ using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.Exceptions;
 using Core.UnitTests.Infraestructura;
 using Domain.Catedras;
+using Domain.Catedras.Exceptions;
 using Domain.Catedras.SituacionesRevista;
 using Domain.Curriculas;
 using Domain.Divisiones;
 using Domain.Docentes;
+using Domain.Docentes.Exceptions;
 using Domain.Materias;
+using Domain.Materias.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -103,11 +106,11 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task CrearCatedraAsync_con_una_materia_inexistente_lanza_ArgumentNullException()
+	public async Task CrearCatedraAsync_con_una_materia_inexistente_lanza_MateriaNoEncontradaException()
 	{
 		var division = SembrarDivision();
 
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.CrearCatedraAsync(
+		await Should.ThrowAsync<MateriaNoEncontradaException>(() => _servicio.CrearCatedraAsync(
 			new CrearCatedraRequest(Guid.NewGuid(), division.Id)));
 	}
 
@@ -150,20 +153,20 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task DesignarDocenteAsync_con_una_catedra_inexistente_lanza_ArgumentNullException()
+	public async Task DesignarDocenteAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
 		var docente = SembrarDocente();
 
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.DesignarDocenteAsync(
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.DesignarDocenteAsync(
 			new DesignarDocenteRequest(Guid.NewGuid(), docente.Id, "Titular", DateTime.Today, null, null)));
 	}
 
 	[Fact]
-	public async Task DesignarDocenteAsync_con_un_docente_inexistente_lanza_ArgumentNullException()
+	public async Task DesignarDocenteAsync_con_un_docente_inexistente_lanza_DocenteNoEncontradoException()
 	{
 		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
 
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.DesignarDocenteAsync(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.DesignarDocenteAsync(
 			new DesignarDocenteRequest(catedra.Id, Guid.NewGuid(), "Titular", DateTime.Today, null, null)));
 	}
 
@@ -195,9 +198,9 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task PonerEnFuncionesAsync_con_una_catedra_inexistente_lanza_ArgumentNullException()
+	public async Task PonerEnFuncionesAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.PonerEnFuncionesAsync(
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.PonerEnFuncionesAsync(
 			new PonerEnFuncionesRequest(Guid.NewGuid(), Guid.NewGuid())));
 	}
 
@@ -242,9 +245,9 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task EstablecerFinDeDesignacionAsync_con_una_catedra_inexistente_lanza_ArgumentNullException()
+	public async Task EstablecerFinDeDesignacionAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.EstablecerFinDeDesignacionAsync(
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.EstablecerFinDeDesignacionAsync(
 			new EstablecerFinDeDesignacionRequest(Guid.NewGuid(), Guid.NewGuid(), DateTime.Today.AddDays(30))));
 	}
 
@@ -262,9 +265,9 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task FinalizarDesignacionAsync_con_una_catedra_inexistente_lanza_ArgumentNullException()
+	public async Task FinalizarDesignacionAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.FinalizarDesignacionAsync(
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.FinalizarDesignacionAsync(
 			new FinalizarDesignacionRequest(Guid.NewGuid(), Guid.NewGuid())));
 	}
 	#endregion
@@ -282,9 +285,9 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task AgregarHorarioAsync_con_una_catedra_inexistente_lanza_ArgumentNullException()
+	public async Task AgregarHorarioAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.AgregarHorarioAsync(
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.AgregarHorarioAsync(
 			new AgregarHorarioRequest(Guid.NewGuid(), "Mañana", "Lunes", new TimeOnly(8, 0), 40)));
 	}
 
@@ -341,9 +344,9 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task QuitarHorarioAsync_con_una_catedra_inexistente_lanza_ArgumentNullException()
+	public async Task QuitarHorarioAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.QuitarHorarioAsync(
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.QuitarHorarioAsync(
 			new QuitarHorarioRequest(Guid.NewGuid(), "Mañana", "Lunes", new TimeOnly(8, 0), 40)));
 	}
 
@@ -420,9 +423,9 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task ListarSituacionesRevistaAsync_con_una_catedra_inexistente_lanza_ArgumentNullException()
+	public async Task ListarSituacionesRevistaAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.ListarSituacionesRevistaAsync(
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.ListarSituacionesRevistaAsync(
 			new ListarSituacionesRevistaRequest(Guid.NewGuid())));
 	}
 
@@ -438,9 +441,9 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task ListarHorariosSegunCatedraAsync_con_una_catedra_inexistente_lanza_ArgumentNullException()
+	public async Task ListarHorariosSegunCatedraAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.ListarHorariosSegunCatedraAsync(
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.ListarHorariosSegunCatedraAsync(
 			new ListarHorariosRequest(Guid.NewGuid())));
 	}
 	#endregion

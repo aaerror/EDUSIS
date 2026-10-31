@@ -1,6 +1,7 @@
 using Core.ServicioCurriculas;
 using Core.ServicioCurriculas.DTOs.Requests;
 using Core.UnitTests.Infraestructura;
+using Domain.Curriculas.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -89,9 +90,9 @@ public class ServicioCurriculaTests
 	}
 
 	[Fact]
-	public async Task DesafectarCurriculaAsync_con_una_curricula_inexistente_lanza_ArgumentNullException()
+	public async Task DesafectarCurriculaAsync_con_una_curricula_inexistente_lanza_CurriculaNoEncontradaException()
 	{
-		await Should.ThrowAsync<ArgumentNullException>(() => _servicio.DesafectarCurriculaAsync(
+		await Should.ThrowAsync<CurriculaNoEncontradaException>(() => _servicio.DesafectarCurriculaAsync(
 			new CurriculaRequest(Guid.NewGuid(), Guid.NewGuid())));
 	}
 	#endregion

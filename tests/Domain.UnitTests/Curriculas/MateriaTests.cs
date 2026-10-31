@@ -1,5 +1,6 @@
 using Domain.Materias;
 using Domain.Materias.DomainEvents;
+using Domain.Materias.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -41,15 +42,15 @@ public class MateriaTests
 	}
 
 	[Fact]
-	public void Una_materia_sin_curricula_lanza_ArgumentNullException()
+	public void Una_materia_sin_curricula_lanza_SinDatosCurriculaException()
 	{
-		Should.Throw<ArgumentNullException>(() => new Materia(Guid.Empty, "Matemática", 4));
+		Should.Throw<SinDatosCurriculaException>(() => new Materia(Guid.Empty, "Matemática", 4));
 	}
 
 	[Fact]
-	public void Una_materia_con_menos_de_una_hora_catedra_lanza_ArgumentException()
+	public void Una_materia_con_menos_de_una_hora_catedra_lanza_CargaHorariaInvalidaException()
 	{
-		Should.Throw<ArgumentException>(() => new Materia(Guid.NewGuid(), "Matemática", 0));
+		Should.Throw<CargaHorariaInvalidaException>(() => new Materia(Guid.NewGuid(), "Matemática", 0));
 	}
 
 	[Fact]
@@ -64,11 +65,11 @@ public class MateriaTests
 	}
 
 	[Fact]
-	public void ModificarMateria_con_carga_horaria_no_positiva_lanza_ArgumentException()
+	public void ModificarMateria_con_carga_horaria_no_positiva_lanza_CargaHorariaInvalidaException()
 	{
 		var materia = new MateriaBuilder().Build();
 
-		Should.Throw<ArgumentException>(() => materia.ModificarMateria("Matemática", 0));
+		Should.Throw<CargaHorariaInvalidaException>(() => materia.ModificarMateria("Matemática", 0));
 	}
 	#endregion
 
