@@ -71,6 +71,10 @@ internal static class WPF_DesktopDI
 		services.AddSingleton<CicloLectivoStore>();
 		services.AddSingleton<CatedraStore>();
 
+		// La cola de avisos al pie es estado compartido por toda la ventana, igual que los
+		// stores: la escribe el DialogService desde cualquier pantalla y la dibuja el shell.
+		services.AddSingleton<AvisoStore>();
+
 		// La sesión es estado compartido entre pantallas, como los stores, y Singleton porque hay
 		// un único usuario logueado por proceso.
 		//

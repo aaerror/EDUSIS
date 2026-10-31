@@ -17,6 +17,7 @@
 				<ResourceDictionary Source="/Theme/EDUSIS_Brushes.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_Typography.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_Surfaces.xaml"/>
+				<ResourceDictionary Source="/Theme/EDUSIS_Feedback.xaml"/>
 
 				<!-- CONTROLES -->
 				<ResourceDictionary Source="/Theme/EDUSIS_ButtonStyle.xaml"/>

@@ -12,5 +12,6 @@
 	<conv:InvertBooleanConverter x:Key="negar"/>
 	<conv:NullToBooleanConverter x:Key="noEsNulo"/>
 	<conv:NullToVisibilityConverter x:Key="visibleSiHay"/>
+	<conv:TextoAVisibilidadConverter x:Key="visibleSiHayTexto"/>
 	<conv:IgualdadConverter x:Key="esIgualA"/>
 </ResourceDictionary>

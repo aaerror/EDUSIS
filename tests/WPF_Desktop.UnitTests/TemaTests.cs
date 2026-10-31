@@ -41,6 +41,7 @@ public class TemaTests
 		"Theme/EDUSIS_Brushes.xaml",
 		"Theme/EDUSIS_Typography.xaml",
 		"Theme/EDUSIS_Surfaces.xaml",
+		"Theme/EDUSIS_Feedback.xaml",
 		"Theme/EDUSIS_ButtonStyle.xaml",
 		"Theme/EDUSIS_Labels.xaml",
 		"Theme/EDUSIS_TextBlock.xaml",
