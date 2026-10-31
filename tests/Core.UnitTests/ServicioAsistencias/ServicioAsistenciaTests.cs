@@ -12,7 +12,7 @@ using Xunit;
 namespace Core.UnitTests.ServicioAsistencias;
 
 /// <summary>
-/// <see cref="IServicioAsistencia"/>: los 10 casos de uso con camino feliz y de error. Las
+/// <see cref="IServicioAsistencia"/>: los 11 casos de uso con camino feliz y de error. Las
 /// excepciones de dominio de <c>Domain/Asistencias/Exceptions/</c> son <c>internal</c> (sin
 /// <c>InternalsVisibleTo</c> hacia este assembly), así que se verifican por el nombre del tipo
 /// (mismo idioma que <c>Domain.UnitTests.Shared.ExcepcionesTests</c>), sin referenciarlas.
@@ -306,6 +306,39 @@ public class ServicioAsistenciaTests
 			_servicio.ReabrirPlanillaAsync(new ReabrirPlanillaRequest(planilla.DivisionID, planilla.Fecha)));
 
 		ex.GetType().Name.ShouldBe("PlanillaAbiertaException");
+	}
+	#endregion
+
+	#region EliminarPlanillaAsync
+	[Fact]
+	public async Task EliminarPlanillaAsync_saca_del_repositorio_la_planilla_abierta()
+	{
+		var planilla = SembrarPlanilla(Guid.NewGuid(), DateTime.Today, Guid.NewGuid(), new[] { Guid.NewGuid() });
+
+		await _servicio.EliminarPlanillaAsync(new EliminarPlanillaRequest(planilla.DivisionID, planilla.Fecha));
+
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task EliminarPlanillaAsync_sobre_una_planilla_cerrada_propaga_PlanillaCerradaNoEliminableException_y_no_la_borra()
+	{
+		var planilla = SembrarPlanilla(Guid.NewGuid(), DateTime.Today, Guid.NewGuid(), new[] { Guid.NewGuid() }, cerrada: true);
+
+		var ex = await Should.ThrowAsync<Exception>(() =>
+			_servicio.EliminarPlanillaAsync(new EliminarPlanillaRequest(planilla.DivisionID, planilla.Fecha)));
+
+		ex.GetType().Name.ShouldBe("PlanillaCerradaNoEliminableException");
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Elementos.ShouldHaveSingleItem();
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
+	}
+
+	[Fact]
+	public async Task EliminarPlanillaAsync_con_una_planilla_inexistente_lanza_NullReferenceException()
+	{
+		await Should.ThrowAsync<NullReferenceException>(() =>
+			_servicio.EliminarPlanillaAsync(new EliminarPlanillaRequest(Guid.NewGuid(), DateTime.Today)));
 	}
 	#endregion
 

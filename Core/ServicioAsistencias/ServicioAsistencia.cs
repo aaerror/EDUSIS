@@ -224,6 +224,34 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	}
 	#endregion
 
+	#region Eliminar planilla
+	public async Task EliminarPlanillaAsync(EliminarPlanillaRequest request)
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.TomarAsistencia);
+
+			var planilla = await BuscarPlanillaAsync(request.DivisionID, request.Fecha);
+
+			// La regla ("una planilla cerrada es registro histórico y no se borra") vive en el
+			// dominio: acá sólo se la invoca. Los registro_asistencia hijos los borra la base por
+			// el OnDelete(Cascade) de PlanillasAsistenciaConfiguration, así que no hay que
+			// recorrerlos ni vaciar la colección antes de eliminar la raíz.
+			planilla.ValidarSePuedeEliminar();
+
+			await _unitOfWork.PlanillasAsistencia.EliminarAsync(planilla.Id);
+			var result = await _unitOfWork.GuardarCambiosAsync();
+
+			_logger.LogInformation($"{ result } planilla eliminada correctamente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+	#endregion
+
 	#region Consultas
 	public async Task<PlanillaAsistenciaResponse> ConsultarPlanillaAsync(ConsultarPlanillaRequest request)
 	{

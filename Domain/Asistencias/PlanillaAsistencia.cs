@@ -162,6 +162,25 @@ public sealed class PlanillaAsistencia : Entity
 	#endregion
 
 	#region Validaciones
+	/// <summary>
+	/// Habilita el borrado de la planilla sólo mientras está abierta.
+	/// </summary>
+	/// <remarks>
+	/// Una planilla cerrada es registro histórico de lo que pasó ese día en esa división: se puede
+	/// reabrir para corregirla (<see cref="Reabrir"/>), pero no se borra. Por eso la regla tiene su
+	/// propia excepción, <c>PlanillaCerradaNoEliminableException</c>, y no reusa
+	/// <c>PlanillaCerradaException</c>: esa queda reservada para el marcado de asistencia, donde el
+	/// mensaje correcto es "la planilla está cerrada" y la salida es reabrirla. Acá el mensaje no es
+	/// "reabrila" sino "no se borra", y la UI tiene que poder distinguir los dos casos.
+	/// </remarks>
+	public void ValidarSePuedeEliminar()
+	{
+		if (Cerrada)
+		{
+			throw new PlanillaCerradaNoEliminableException();
+		}
+	}
+
 	private void ValidarPlanillaAbierta()
 	{
 		if (Cerrada)

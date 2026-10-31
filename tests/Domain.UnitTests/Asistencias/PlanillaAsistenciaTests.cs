@@ -327,6 +327,38 @@ public class PlanillaAsistenciaTests
 	}
 	#endregion
 
+	#region Eliminación
+	[Fact]
+	public void ValidarSePuedeEliminar_no_lanza_si_la_planilla_esta_abierta()
+	{
+		var planilla = new PlanillaAsistenciaBuilder().Build();
+
+		Should.NotThrow(() => planilla.ValidarSePuedeEliminar());
+	}
+
+	[Fact]
+	public void ValidarSePuedeEliminar_con_la_planilla_cerrada_lanza_PlanillaCerradaNoEliminableException()
+	{
+		var planilla = new PlanillaAsistenciaBuilder().Cerrada().Build();
+
+		var ex = Should.Throw<Exception>(() => planilla.ValidarSePuedeEliminar());
+
+		// Excepción propia, distinta de PlanillaCerradaException: una planilla cerrada es registro
+		// histórico y no se borra, aunque se la pueda reabrir para corregirla.
+		ex.GetType().Name.ShouldBe("PlanillaCerradaNoEliminableException");
+	}
+
+	[Fact]
+	public void ValidarSePuedeEliminar_vuelve_a_permitir_la_eliminacion_despues_de_reabrir()
+	{
+		var planilla = new PlanillaAsistenciaBuilder().Cerrada().Build();
+
+		planilla.Reabrir();
+
+		Should.NotThrow(() => planilla.ValidarSePuedeEliminar());
+	}
+	#endregion
+
 	#region Consultas
 	[Fact]
 	public void CantidadCon_cuenta_los_registros_por_tipo_de_falta()

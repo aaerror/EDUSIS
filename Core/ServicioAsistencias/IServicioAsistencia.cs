@@ -13,6 +13,7 @@ public interface IServicioAsistencia
 	Task IncorporarCursanteAsync(IncorporarCursanteRequest request);
 	Task CerrarPlanillaAsync(CerrarPlanillaRequest request);
 	Task ReabrirPlanillaAsync(ReabrirPlanillaRequest request);
+	Task EliminarPlanillaAsync(EliminarPlanillaRequest request);
 	Task<PlanillaAsistenciaResponse> ConsultarPlanillaAsync(ConsultarPlanillaRequest request);
 	Task<int> ContarFaltasAsync(ContarFaltasRequest request);
 }
