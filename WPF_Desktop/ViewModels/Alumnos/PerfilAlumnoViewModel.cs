@@ -58,9 +58,12 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator
 		_servicioAlumno = servicioAlumno;
 		_perfilBuscadoStore = perfilBuscadoStore;
 
-		if (string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))
+		// UI-34: la guarda cubre las dos propiedades del store porque se escriben juntas. Con
+		// PersonaID tipado como Guid no nulable, "nadie buscó un alumno" llegaba como Guid.Empty y
+		// el request salía igual hacia Core, que lo rechazaba sin que la pantalla explicara nada.
+		if (_perfilBuscadoStore.PersonaID is null || string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))
 		{
-			throw new ArgumentNullException(nameof(perfilBuscadoStore.Documento), "Error al ver el perfil del alumno. Primero debe buscar un alumno antes de continuar.");
+			throw new ArgumentNullException(nameof(perfilBuscadoStore), "Error al ver el perfil del alumno. Primero debe buscar un alumno antes de continuar.");
 		}
 
 		// _persona = new NotifyTaskCompletion<PersonaConDetallesResponse>(_servicioAlumno.BuscarPorIDAsync(perfilBuscadoStore.Documento));
@@ -73,7 +76,8 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator
 
 	public async void CargarPerfil()
 	{
-		var request = new PersonaRequest(_perfilBuscadoStore.PersonaID);
+		// .Value es seguro: el constructor ya rechaza un store sin persona elegida.
+		var request = new PersonaRequest(_perfilBuscadoStore.PersonaID.Value);
 		var alumno = await _servicioAlumno.BuscarPorIDAsync(request);
 		Alumno = alumno;
 	}

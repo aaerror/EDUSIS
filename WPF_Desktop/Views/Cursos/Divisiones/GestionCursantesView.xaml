@@ -62,6 +62,9 @@
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="Auto"/>
+							<!-- 4 y 5 son la sección de inscripción y el historial (UI-CUR-1). -->
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
 						</Grid.RowDefinitions>
 
 						<!--#region BÚSQUEDA POR CICLO-->
@@ -131,8 +134,177 @@
 											Margin="0 16 0 0"
 											Visibility="{ Binding Path=Cursante, Converter={ StaticResource ResourceKey=visibleSiHay } }"/>
 
+						<!--#region INSCRIPCIÓN-->
+						<!--
+							Las tres operaciones sobre la inscripción del alumno elegido. La
+							condición de recursante es lo único que el dominio deja corregir: la
+							baja y el traslado son operaciones de ciclo de vida, no ediciones.
+							Tildar el checkbox no escribe nada hasta que se guarda.
+						-->
+						<Border Grid.Row="4"
+								Margin="0 16 0 0"
+								Style="{ StaticResource ResourceKey=Superficie.Seccion }"
+								Visibility="{ Binding Path=Cursante, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+							<StackPanel>
+								<TextBlock Margin="0 0 0 12"
+										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="INSCRIPCIÓN"/>
+
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="*"/>
+									</Grid.ColumnDefinitions>
+
+									<CheckBox Grid.Column="0"
+											  Content="Recursante"
+											  IsChecked="{ Binding Path=EsRecursante, Mode=TwoWay }"
+											  Margin="0 0 10 16"
+											  Style="{ StaticResource ResourceKey=Chk.Campo }"
+											  ToolTip="El alumno vuelve a cursar el año"
+											  VerticalAlignment="Bottom"/>
+
+									<Button Grid.Column="1"
+											Command="{ Binding Path=ModificarRecursanteCommandAsync }"
+											Content="Guardar condición"
+											Margin="0 0 24 16"
+											Style="{ StaticResource ResourceKey=Btn.Terciario }"
+											ToolTip="Guardar la condición de recursante del alumno elegido"
+											VerticalAlignment="Bottom"/>
+
+									<HeaderedContentControl Grid.Column="2"
+															Header="Fecha de baja"
+															Style="{ StaticResource ResourceKey=Campo }">
+										<DatePicker SelectedDate="{ Binding Path=FechaBaja, Mode=TwoWay }"
+													Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+									</HeaderedContentControl>
+
+									<Button Grid.Column="3"
+											Command="{ Binding Path=RegistrarBajaCommandAsync }"
+											Content="Dar de baja"
+											Margin="10 0 0 16"
+											Style="{ StaticResource ResourceKey=Btn.Peligro }"
+											ToolTip="Cerrar la inscripción del alumno elegido"
+											VerticalAlignment="Bottom"/>
+								</Grid>
+
+								<Rectangle Margin="0 4 0 12" Style="{ StaticResource ResourceKey=Regla }"/>
+
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="*"/>
+									</Grid.ColumnDefinitions>
+
+									<HeaderedContentControl Grid.Column="0"
+															Header="División de destino"
+															Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+										<ComboBox DisplayMemberPath="Descripcion"
+												  ItemsSource="{ Binding Path=DivisionesDestino, Mode=OneWay }"
+												  SelectedItem="{ Binding Path=DivisionDestino, Mode=TwoWay }"
+												  Style="{ StaticResource ResourceKey=Cmb.Campo }"
+												  Width="160"/>
+									</HeaderedContentControl>
+
+									<HeaderedContentControl Grid.Column="1"
+															Header="Fecha del traslado"
+															Margin="10 0 0 0"
+															Style="{ StaticResource ResourceKey=Campo }">
+										<DatePicker SelectedDate="{ Binding Path=FechaCambio, Mode=TwoWay }"
+													Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+									</HeaderedContentControl>
+
+									<Button Grid.Column="2"
+											Command="{ Binding Path=CambiarDivisionCommandAsync }"
+											Content="Cambiar de división"
+											Margin="10 0 0 16"
+											Style="{ StaticResource ResourceKey=Btn.Secundario }"
+											ToolTip="Cerrar la inscripción actual y abrir una nueva en la división de destino"
+											VerticalAlignment="Bottom"/>
+								</Grid>
+							</StackPanel>
+						</Border>
+						<!--#endregion-->
+
+						<!--#region HISTORIAL DE DIVISIONES-->
+						<Grid Grid.Row="5"
+							  Margin="0 16 0 0"
+							  Visibility="{ Binding Path=Cursante, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+							</Grid.RowDefinitions>
+
+							<Grid Grid.Row="0" Margin="0 0 0 12">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<TextBlock Grid.Column="0"
+										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="HISTORIAL DE DIVISIONES"
+										   VerticalAlignment="Center"/>
+
+								<Button Grid.Column="1"
+										Command="{ Binding Path=CargarHistorialCommandAsync }"
+										Content="Ver historial"
+										Style="{ StaticResource ResourceKey=Btn.Terciario }"
+										ToolTip="Todas las inscripciones del alumno, de cualquier ciclo lectivo"/>
+							</Grid>
+
+							<DataGrid x:Name="DataGrid_Historial"
+									  Grid.Row="1"
+									  ItemsSource="{ Binding Path=Historial, Mode=OneWay }"
+									  MaxHeight="200"
+									  Style="{ StaticResource ResourceKey=Grilla }"
+									  Tag="Sin inscripciones para mostrar. Use &quot;Ver historial&quot;.">
+								<DataGrid.Columns>
+									<DataGridTextColumn Binding="{ Binding Path=CicloLectivo, Mode=OneTime }"
+														Header="CICLO"
+														Width="*"/>
+									<DataGridTextColumn Binding="{ Binding Path=Division, Mode=OneTime }"
+														Header="DIVISIÓN"
+														Width="*"/>
+									<DataGridTextColumn Binding="{ Binding Path=Grado, Mode=OneTime }"
+														Header="AÑO"
+														Width="*"/>
+									<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneTime, StringFormat=d }"
+														Header="DESDE"
+														Width="*"/>
+									<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneTime, StringFormat=d }"
+														Header="HASTA"
+														Width="*"/>
+									<DataGridCheckBoxColumn Binding="{ Binding Path=EsRecursante, Mode=OneWay }"
+															Header="RECURSANTE"
+															IsReadOnly="True"
+															Width="*"/>
+									<DataGridTemplateColumn Header="ESTADO" Width="*">
+										<DataGridTemplateColumn.CellTemplate>
+											<DataTemplate>
+												<!--
+													La inscripción cerrada se marca con la insignia de
+													alerta: es registro histórico y no la vigente.
+												-->
+												<Border Style="{ StaticResource ResourceKey=Insignia.Alerta }">
+													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+															   Text="{ Binding Path=Estado, Mode=OneTime }"/>
+												</Border>
+											</DataTemplate>
+										</DataGridTemplateColumn.CellTemplate>
+									</DataGridTemplateColumn>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+						<!--#endregion-->
+
 						<!--#region CALIFICACIONES-->
-						<Grid Grid.Row="4" Margin="0 8 0 0">
+						<Grid Grid.Row="6" Margin="0 8 0 0">
 							<Grid.RowDefinitions>
 								<RowDefinition Height="Auto"/>
 								<RowDefinition Height="Auto"/>
@@ -191,7 +363,7 @@
 						</Grid>
 						<!--#endregion-->
 
-						<HeaderedContentControl Grid.Row="5" Style="{ StaticResource ResourceKey=Acciones }">
+						<HeaderedContentControl Grid.Row="7" Style="{ StaticResource ResourceKey=Acciones }">
 							<HeaderedContentControl.Header>
 								<Button Command="{ Binding Path=QuitarCalificacionCommandAsync }"
 										Content="Quitar calificación"

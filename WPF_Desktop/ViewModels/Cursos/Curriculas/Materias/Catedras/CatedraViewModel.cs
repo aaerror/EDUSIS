@@ -20,7 +20,7 @@ internal partial class CatedraViewModel : ObservableObject
 	private Guid _divisionID = Guid.Empty;
 
 	[ObservableProperty]
-	private int _cargaHoraria;
+	private int? _cargaHoraria;
 
 	[ObservableProperty]
 	private int _horasAsignadas;

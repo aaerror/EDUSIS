@@ -4,6 +4,8 @@ using Core.ServicioCurriculas.DTOs.Requests;
 using Core.ServicioCurriculas;
 using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes;
+using Core.ServicioDivisiones.DTOs.Requests;
+using Core.ServicioDivisiones;
 using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias;
 using System.Collections.ObjectModel;
@@ -25,6 +27,9 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 	private readonly IServicioCursante _servicioCursante;
 	private readonly IServicioMateria _servicioMateria;
 	private readonly IServicioCurricula _servicioCurricula;
+
+	/// <summary>Las divisiones del curso, que son los destinos posibles de un traslado.</summary>
+	private readonly IServicioDivision _servicioDivision;
 	#endregion
 
 	#region Stores
@@ -51,6 +56,10 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 	[NotifyCanExecuteChangedFor(nameof(QuitarCalificacionCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(ModificarObservacionCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarInasistenciaCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(ModificarRecursanteCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(RegistrarBajaCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(CambiarDivisionCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(CargarHistorialCommandAsync))]
 	[ObservableProperty]
 	private CursanteViewModel? _cursante;
 
@@ -87,6 +96,34 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 	[ObservableProperty]
 	private string? _observacionEdicion;
 
+	#region Inscripción
+	/// <summary>
+	/// Condición de recursante en edición. Arranca con la del alumno elegido y se persiste con
+	/// <c>ModificarRecursanteCommandAsync</c>: tildar el checkbox no escribe nada por sí solo.
+	/// Es lo único que el dominio deja corregir de una inscripción (decisión de CUR-2).
+	/// </summary>
+	[ObservableProperty]
+	private bool _esRecursante;
+
+	/// <summary>Fecha de la baja. La ingresa el usuario; el dominio rechaza una futura o anterior al inicio.</summary>
+	[ObservableProperty]
+	private DateTime _fechaBaja = DateTime.Today;
+
+	/// <summary>Fecha del traslado: cierra la inscripción actual y abre la del destino.</summary>
+	[ObservableProperty]
+	private DateTime _fechaCambio = DateTime.Today;
+
+	[NotifyCanExecuteChangedFor(nameof(CambiarDivisionCommandAsync))]
+	[ObservableProperty]
+	private DivisionViewModel? _divisionDestino;
+
+	[ObservableProperty]
+	private ObservableCollection<DivisionViewModel> _divisionesDestino = new();
+
+	[ObservableProperty]
+	private ObservableCollection<InscripcionHistoricaViewModel> _historial = new();
+	#endregion
+
 	#region Commands
 	public IAsyncRelayCommand CargarCommandAsync { get; }
 	public IAsyncRelayCommand BuscarCommandAsync { get; }
@@ -96,6 +133,11 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 	public IAsyncRelayCommand QuitarCalificacionCommandAsync { get; }
 	public IAsyncRelayCommand ModificarObservacionCommandAsync { get; }
 
+	public IAsyncRelayCommand ModificarRecursanteCommandAsync { get; }
+	public IAsyncRelayCommand RegistrarBajaCommandAsync { get; }
+	public IAsyncRelayCommand CambiarDivisionCommandAsync { get; }
+	public IAsyncRelayCommand CargarHistorialCommandAsync { get; }
+
 	public IRelayCommand NuevaCalificacionCommand { get; }
 	public IRelayCommand CancelarCalificacionCommand { get; }
 	#endregion
@@ -104,6 +146,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 	public GestionCursantesViewModel(IServicioCursante servicioCursante,
 									 IServicioMateria servicioMateria,
 									 IServicioCurricula servicioCurricula,
+									 IServicioDivision servicioDivision,
 									 IDialogService dialogService,
 									 CursoStore cursoStore,
 									 DivisionStore divisionStore,
@@ -112,6 +155,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 		_servicioCursante = servicioCursante;
 		_servicioMateria = servicioMateria;
 		_servicioCurricula = servicioCurricula;
+		_servicioDivision = servicioDivision;
 		_dialogService = dialogService;
 		_cursoStore = cursoStore;
 		_divisionStore = divisionStore;
@@ -124,6 +168,11 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 		RegistrarInasistenciaCommandAsync = new AsyncRelayCommand(RegistrarInasistenciaAsync, CanExecuteGuardarCalificacion);
 		QuitarCalificacionCommandAsync = new AsyncRelayCommand(QuitarCalificacionAsync, CanExecuteCalificacionSeleccionada);
 		ModificarObservacionCommandAsync = new AsyncRelayCommand(ModificarObservacionAsync, CanExecuteCalificacionSeleccionada);
+
+		ModificarRecursanteCommandAsync = new AsyncRelayCommand(ModificarRecursanteAsync, CanExecuteCursanteSeleccionado);
+		RegistrarBajaCommandAsync = new AsyncRelayCommand(RegistrarBajaAsync, CanExecuteCursanteSeleccionado);
+		CambiarDivisionCommandAsync = new AsyncRelayCommand(CambiarDivisionAsync, CanExecuteCambiarDivision);
+		CargarHistorialCommandAsync = new AsyncRelayCommand(CargarHistorialAsync, CanExecuteCursanteSeleccionado);
 
 		NuevaCalificacionCommand = new RelayCommand(ExecuteNuevaCalificacion, CanExecuteNuevaCalificacion);
 		CancelarCalificacionCommand = new RelayCommand(ExecuteCancelarCalificacion, CanExecuteCancelarCalificacion);
@@ -148,6 +197,15 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 		Calificaciones = new ObservableCollection<CalificacionViewModel>();
 		CalificacionSeleccionada = null;
 		CancelarCalificacionCommand.Execute(null);
+
+		// El historial y el destino son del alumno elegido: se limpian al cambiar de alumno para no
+		// dejar en pantalla datos del anterior. El historial no se recarga solo —es una consulta
+		// aparte y se pide con su botón—, a diferencia de las calificaciones.
+		Historial = new ObservableCollection<InscripcionHistoricaViewModel>();
+		DivisionDestino = null;
+		EsRecursante = value?.EsRecursante ?? false;
+		FechaBaja = DateTime.Today;
+		FechaCambio = DateTime.Today;
 
 		if (value is not null)
 		{
@@ -183,6 +241,27 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 		catch (Exception ex)
 		{
 			_dialogService.MostrarError(ex.Message, "Error al cargar las materias");
+		}
+
+		await CargarDivisionesDestinoAsync();
+	}
+
+	/// <summary>
+	/// Las divisiones del curso que pueden recibir un traslado. Va en su propio <c>try</c> y
+	/// después de las materias: que falle no tiene que impedir cargar calificaciones, que es el
+	/// trabajo principal de esta pantalla.
+	/// </summary>
+	private async Task CargarDivisionesDestinoAsync()
+	{
+		try
+		{
+			var divisiones = await _servicioDivision.ListarDivisionesAsync(new ListarDivisionesRequest(_cursoStore.Curso.CursoID, CicloLectivo));
+			DivisionesDestino = new ObservableCollection<DivisionViewModel>(divisiones.Select(x => new DivisionViewModel(x)));
+		}
+		catch (Exception ex)
+		{
+			DivisionesDestino = new ObservableCollection<DivisionViewModel>();
+			_dialogService.MostrarAdvertencia($"No se pudieron cargar las divisiones de destino: no se van a poder registrar traslados.\nError: { ex.Message }", "Divisiones no disponibles");
 		}
 	}
 
@@ -234,6 +313,130 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 		catch (Exception ex)
 		{
 			_dialogService.MostrarError(ex.Message, "Error al cargar las calificaciones");
+		}
+	}
+	#endregion
+
+	#region Inscripción: recursante, baja, traslado e historial
+	private bool CanExecuteCursanteSeleccionado()
+	{
+		return Cursante is not null;
+	}
+
+	/// <remarks>
+	/// Lo único que el dominio deja corregir de una inscripción. El resto de las "modificaciones"
+	/// son operaciones de ciclo de vida: la baja cierra la inscripción y el traslado la cierra y
+	/// abre otra. No hay forma de editar la fecha de inicio ni la división en el lugar.
+	/// </remarks>
+	private async Task ModificarRecursanteAsync()
+	{
+		if (Cursante is null)
+		{
+			return;
+		}
+
+		try
+		{
+			await _servicioCursante.ModificarCondicionDeRecursanteAsync(new ModificarCondicionRecursanteRequest(Cursante.CursanteID, EsRecursante));
+
+			_dialogService.MostrarInformacion("La condición de recursante se actualizó correctamente.", "Operación exitosa");
+			await BuscarCursantesAsync();
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "Error en la operación");
+		}
+	}
+
+	private async Task RegistrarBajaAsync()
+	{
+		if (Cursante is null)
+		{
+			return;
+		}
+
+		var mensaje = $"Se va a dar de baja la inscripción de { Cursante.NombreCompleto } con fecha { FechaBaja.ToString("d") }.\n" +
+					  $"El alumno deja de figurar en el listado de la división y la inscripción queda como registro histórico.\n\n" +
+					  $"¿Desea continuar?";
+
+		if (!_dialogService.Confirmar(mensaje, "Dar de baja al alumno"))
+		{
+			return;
+		}
+
+		try
+		{
+			await _servicioCursante.RegistrarBajaDeCursanteAsync(new RegistrarBajaCursanteRequest(Cursante.CursanteID, FechaBaja));
+
+			_dialogService.MostrarInformacion("La baja se registró correctamente.", "Operación exitosa");
+			await BuscarCursantesAsync();
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "Error en la operación");
+		}
+	}
+
+	/// <summary>
+	/// Deshabilitado cuando el destino es la división donde el alumno ya está: el dominio lo
+	/// rechaza con <c>DivisionDestinoInvalidaException</c>, y es mejor no habilitar la acción que
+	/// mostrar el error después.
+	/// </summary>
+	private bool CanExecuteCambiarDivision()
+	{
+		return Cursante is not null
+			&& DivisionDestino is not null
+			&& DivisionDestino.DivisionID != _divisionStore.Division?.DivisionID;
+	}
+
+	private async Task CambiarDivisionAsync()
+	{
+		if (Cursante is null || DivisionDestino is null)
+		{
+			return;
+		}
+
+		var mensaje = $"Se va a trasladar a { Cursante.NombreCompleto } a la división { DivisionDestino.Descripcion } con fecha { FechaCambio.ToString("d") }.\n" +
+					  $"La inscripción actual se cierra y se abre una nueva en la división de destino. " +
+					  $"Las calificaciones ya cargadas quedan en la inscripción cerrada y siguen saliendo impresas en el boletín.\n\n" +
+					  $"¿Desea continuar?";
+
+		if (!_dialogService.Confirmar(mensaje, "Cambiar de división"))
+		{
+			return;
+		}
+
+		try
+		{
+			await _servicioCursante.CambiarDeDivisionAsync(new CambiarDivisionCursanteRequest(Cursante.AlumnoID,
+																							   _periodoListado,
+																							   DivisionDestino.DivisionID,
+																							   FechaCambio));
+
+			_dialogService.MostrarInformacion("El traslado se registró correctamente.", "Operación exitosa");
+			await BuscarCursantesAsync();
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "Error en la operación");
+		}
+	}
+
+	private async Task CargarHistorialAsync()
+	{
+		if (Cursante is null)
+		{
+			return;
+		}
+
+		try
+		{
+			var inscripciones = await _servicioCursante.ConsultarHistorialDeDivisionesAsync(new ConsultarHistorialRequest(Cursante.AlumnoID));
+			Historial = new ObservableCollection<InscripcionHistoricaViewModel>(inscripciones.Select(x => new InscripcionHistoricaViewModel(x)));
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "Error al cargar el historial");
 		}
 	}
 	#endregion

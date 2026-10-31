@@ -20,7 +20,16 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 	private readonly IServicioLicencia _servicioLicencia;
 	#endregion
 
-	private LegajoStore _perfilBuscadoStore;
+	/// <summary>
+	/// Docente cuyas licencias se gestionan, fijado una sola vez al construir.
+	/// </summary>
+	/// <remarks>
+	/// UI-34: <c>LegajoStore.PersonaID</c> pasó a ser <c>Guid?</c>, y la guarda va acá una vez en
+	/// lugar de repetir un <c>.Value</c> en los seis sitios que arman requests. Llegar a esta
+	/// pantalla sin docente elegido es un defecto de navegación y no un estado de la pantalla:
+	/// <c>GestionDocentesViewModel</c> escribe el store antes de navegar.
+	/// </remarks>
+	private readonly Guid _docenteID;
 
 	[ObservableProperty]
 	[NotifyCanExecuteChangedFor(nameof(CancelarCommandAsync))]
@@ -74,7 +83,8 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 	public GestionLicenciasViewModel(IServicioLicencia servicioLicencia, LegajoStore perfilBuscadoStore)
 	{
 		_servicioLicencia = servicioLicencia;
-		_perfilBuscadoStore = perfilBuscadoStore;
+		_docenteID = perfilBuscadoStore.PersonaID
+			?? throw new ArgumentNullException(nameof(perfilBuscadoStore), "Error al gestionar las licencias. Primero debe buscar un docente antes de continuar.");
 
 		CargarLicenciasCommandAsync = new AsyncRelayCommand(ExecuteCargarLicenciasCommand);
 		CancelarCommandAsync = new AsyncRelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
@@ -89,7 +99,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 
 	public async Task ExecuteCargarLicenciasCommand()
 	{
-		var request = new DocenteIDRequest(_perfilBuscadoStore.PersonaID);
+		var request = new DocenteIDRequest(_docenteID);
 		var licencias = await _servicioLicencia.BuscarLicenciasSegunDocenteAsync(request);
 
 		if (licencias.IsNullOrEmpty())
@@ -186,7 +196,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 					try
 					{
 						var request = new ActualizarEstadoLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
-																		  DocenteID: _perfilBuscadoStore.PersonaID,
+																		  DocenteID: _docenteID,
 																		  Observacion: LicenciaSeleccionada.Observacion);
 						await _servicioLicencia.AprobarLicencia(request);
 
@@ -213,7 +223,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 					try
 					{
 						var request = new ActualizarEstadoLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
-																		  DocenteID: _perfilBuscadoStore.PersonaID,
+																		  DocenteID: _docenteID,
 																		  Observacion: LicenciaSeleccionada.Observacion);
 						await _servicioLicencia.RechazarLicencia(request);
 
@@ -238,7 +248,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 				{
 					try
 					{
-						var request = new ModificarLicenciaRequest(DocenteID: _perfilBuscadoStore.PersonaID,
+						var request = new ModificarLicenciaRequest(DocenteID: _docenteID,
 																   LicenciaID: LicenciaSeleccionada.LicenciaID,
 																   Articulo: LicenciaSeleccionada.Articulo,
 																   Dias: LicenciaSeleccionada.Dias,
@@ -272,7 +282,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 				{
 					try
 					{
-						var request = new NuevaSolicitudLicenciaRequest(DocenteID: _perfilBuscadoStore.PersonaID,
+						var request = new NuevaSolicitudLicenciaRequest(DocenteID: _docenteID,
 																		Articulo: LicenciaSeleccionada.Articulo,
 																		FechaInicio: LicenciaSeleccionada.FechaInicio,
 																		Dias: LicenciaSeleccionada.Dias,
@@ -306,7 +316,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 					try
 					{
 						var request = new EliminarLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
-																  DocenteID: _perfilBuscadoStore.PersonaID);
+																  DocenteID: _docenteID);
 						await _servicioLicencia.EliminarLicencia(request);
 
 						messageBoxText = $"Cambios guardados exitósamente.";

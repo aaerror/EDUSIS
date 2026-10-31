@@ -45,7 +45,7 @@ public class GestionCurriculasViewModelTests
 
 		public Contexto()
 		{
-			CursoStore.Curso = new CursoViewModel(new CursoResponse(CursoID, Grado.Primero, NivelEducativo.Secundaria));
+			CursoStore.Curso = new CursoSeleccionado(CursoID, Grado.Primero.ToString(), NivelEducativo.Secundaria.ToString());
 
 			DevolverCurriculas(new CurriculaResponse(CursoID, CurriculaID, new DateTime(2024, 3, 1), null));
 			DevolverMaterias();
@@ -448,7 +448,7 @@ public class GestionCurriculasViewModelTests
 
 		_ = contexto.ServicioMateria.Received(1).ListarMateriasSegunCurriculaAsync(new ListarMateriasSegunCurriculaRequest(contexto.CursoID, contexto.CurriculaID));
 		contexto.ViewModel.Materias.Select(m => m.Descripcion).ShouldBe(new[] { "A", "B" });
-		contexto.ViewModel.Materias.Select(m => m.HorasCatedra).ShouldBe(new[] { 1, 2 });
+		contexto.ViewModel.Materias.Select(m => m.HorasCatedra).ShouldBe(new int?[] { 1, 2 });
 	}
 
 	[Fact]

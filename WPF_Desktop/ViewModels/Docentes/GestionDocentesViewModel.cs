@@ -249,7 +249,9 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 				_gestionLicenciasNavigationService.Navigate();
 				break;
 			case "Perfil":
-				WeakReferenceMessenger.Default.Send(new DocenteSeleccionadoMessage(_perfilBuscadoStore.PersonaID));
+				// El ID sale del elegido y no del store: acá ya está garantizado no nulo por la
+				// guarda de arriba, y el store lo expone como Guid? desde UI-34.
+				WeakReferenceMessenger.Default.Send(new DocenteSeleccionadoMessage(LegajoDocenteSeleccionado.DocenteID));
 				_perfilDocenteNavigationService.Navigate();
 				break;
 			case "Puesto":

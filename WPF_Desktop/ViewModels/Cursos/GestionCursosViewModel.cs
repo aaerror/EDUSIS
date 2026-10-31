@@ -128,14 +128,48 @@ internal partial class GestionCursosViewModel : ObservableObject
 				_registrarCursoNavigationService.Navigate();
 				break;
 			case "Division":
-				_cursoStore.Curso = Curso;
+				if (!ElegirCursoParaNavegar())
+				{
+					break;
+				}
+
 				_gestionDivisionesNavigationService.Navigate();
 				break;
 			case "Materia":
-				_cursoStore.Curso = Curso;
+				if (!ElegirCursoParaNavegar())
+				{
+					break;
+				}
+
 				_registrarMateriaNavigationService.Navigate();
 				break;
 		}
+	}
+
+	/// <summary>
+	/// Deja el curso elegido en el store y devuelve si se puede navegar al destino.
+	/// </summary>
+	/// <remarks>
+	/// La guarda hace falta porque <c>CanExecuteNavigationCommand</c> está comentado —ver el
+	/// constructor—, así que los dos botones quedan habilitados sin curso elegido. Antes esto
+	/// escribía <c>null</c> en el store y la pantalla destino moría al construirse:
+	/// <c>GestionDivisionesViewModel</c> lee <c>_cursoStore.Curso.Grado</c> en su constructor, y una
+	/// excepción ahí sube por la factory de <c>NavigationService</c>, donde no hay nada que la
+	/// atrape ni UI que la muestre.
+	/// </remarks>
+	private bool ElegirCursoParaNavegar()
+	{
+		if (Curso is null)
+		{
+			Message = "Debe seleccionar un curso del listado para continuar.";
+			HabilitarMessage = true;
+
+			return false;
+		}
+
+		_cursoStore.Curso = new CursoSeleccionado(Curso.CursoID, Curso.Grado, Curso.NivelEducativo);
+
+		return true;
 	}
 	#endregion
 

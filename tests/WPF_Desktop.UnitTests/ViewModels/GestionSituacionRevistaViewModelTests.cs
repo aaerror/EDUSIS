@@ -56,7 +56,7 @@ public class GestionSituacionRevistaViewModelTests
 
 		public Contexto()
 		{
-			MateriaStore.Materia = new MateriaViewModel(new MateriaResponse(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Matematica", 4));
+			MateriaStore.Materia = new MateriaSeleccionada(Guid.NewGuid(), Guid.NewGuid(), "Matematica");
 			CatedraStore.Catedra = CatedraID;
 
 			ServicioCatedra.ListarSituacionesRevistaAsync(Arg.Any<ListarSituacionesRevistaRequest>())

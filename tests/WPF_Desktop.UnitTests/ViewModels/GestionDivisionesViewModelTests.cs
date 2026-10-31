@@ -35,6 +35,12 @@ public class GestionDivisionesViewModelTests
 		public NavegacionFalsa NavegarACursantes { get; } = new();
 
 		/// <summary>
+		/// La asistencia de la división es el tercer destino del drill-down: su servicio de navegación
+		/// es el tercero de los cuatro <c>INavigationService</c> del constructor.
+		/// </summary>
+		public NavegacionFalsa NavegarAAsistencias { get; } = new();
+
+		/// <summary>
 		/// El buscador de docentes vive en el modal: la pantalla ya no busca, sólo lo abre. Por eso
 		/// acá no hay más <c>IServicioDocente</c>, y en su lugar se espía la navegación al modal.
 		/// </summary>
@@ -49,7 +55,7 @@ public class GestionDivisionesViewModelTests
 
 		public Contexto()
 		{
-			CursoStore.Curso = new CursoViewModel(new CursoResponse(CursoID, Grado.Primero, NivelEducativo.Secundaria));
+			CursoStore.Curso = new CursoSeleccionado(CursoID, Grado.Primero.ToString(), NivelEducativo.Secundaria.ToString());
 			CicloLectivoStore.CicloLectivo = CicloDelStore;
 
 			DevolverDivisiones();
@@ -57,6 +63,7 @@ public class GestionDivisionesViewModelTests
 			ViewModel = new GestionDivisionesViewModel(ServicioDivision,
 													   NavegarACursos,
 													   NavegarACursantes,
+													   NavegarAAsistencias,
 													   NavegarAlBuscador,
 													   CursoStore,
 													   DivisionStore,
@@ -75,6 +82,11 @@ public class GestionDivisionesViewModelTests
 	private static DivisionResponse CrearDivision(string letra = "A", Guid? preceptorID = null, string? preceptor = null, int cursantes = 0)
 	{
 		return new DivisionResponse(Guid.NewGuid(), letra, preceptorID, preceptor, cursantes);
+	}
+
+	private static LegajoDocenteViewModel CrearDocente(Guid docenteID, string nombreCompleto = "Luna, Juan")
+	{
+		return new LegajoDocenteViewModel(new LegajoDocenteResponse(docenteID, nombreCompleto, "30111222", "20301112229", "L-2", new DateTime(2021, 3, 1), null, true));
 	}
 
 	#region ListarDivisionesAsync
@@ -213,12 +225,79 @@ public class GestionDivisionesViewModelTests
 	[Trait("Categoria", "Unidad")]
 	public async Task Registrar_una_division_llama_a_AgregarDivisionAsync_con_el_curso_del_store()
 	{
+		// UI-DIV-1: la letra que viaja en el request es la del formulario, no la que propone Core.
+		// La propuesta sólo precarga el campo; acá se escribe otra para distinguir las dos cosas.
 		var contexto = new Contexto();
+		contexto.ViewModel.Descripcion = "C";
 
 		await contexto.ViewModel.RegistrarCommandAsync.ExecuteAsync("Division");
 
-		_ = contexto.ServicioDivision.Received(1).AgregarDivisionAsync(new AgregarDivisionRequest(contexto.CursoID));
+		_ = contexto.ServicioDivision.Received(1).AgregarDivisionAsync(new AgregarDivisionRequest(contexto.CursoID, "C"));
 		contexto.Dialogos.Informaciones.Count.ShouldBe(1);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cargar_precarga_la_letra_que_propone_el_dominio()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioDivision
+			.ProponerDescripcionDivisionAsync(new ProponerDescripcionRequest(contexto.CursoID))
+			.Returns(Task.FromResult("D"));
+
+		await contexto.ViewModel.CargarDivisionesCommandAsync.ExecuteAsync(null);
+
+		contexto.ViewModel.Descripcion.ShouldBe("D");
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cargar_sin_divisiones_tambien_precarga_la_letra()
+	{
+		// El curso vacío es justamente donde más sirve la propuesta ("A"), y es el camino que corta
+		// con un return temprano: si la precarga quedara después, acá llegaría vacía.
+		var contexto = new Contexto();
+		contexto.DevolverDivisiones();
+		contexto.ServicioDivision
+			.ProponerDescripcionDivisionAsync(Arg.Any<ProponerDescripcionRequest>())
+			.Returns(Task.FromResult("A"));
+
+		await contexto.ViewModel.CargarDivisionesCommandAsync.ExecuteAsync(null);
+
+		contexto.ViewModel.HabilitarDivisiones.ShouldBeFalse();
+		contexto.ViewModel.Descripcion.ShouldBe("A");
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Quedarse_sin_letras_no_impide_ver_las_divisiones_que_ya_existen()
+	{
+		var contexto = new Contexto();
+		contexto.DevolverDivisiones(CrearDivision("A"));
+		contexto.ServicioDivision
+			.ProponerDescripcionDivisionAsync(Arg.Any<ProponerDescripcionRequest>())
+			.Returns<string>(_ => throw new InvalidOperationException("No hay más letras disponibles."));
+
+		await contexto.ViewModel.CargarDivisionesCommandAsync.ExecuteAsync(null);
+
+		contexto.ViewModel.HabilitarDivisiones.ShouldBeTrue();
+		contexto.ViewModel.TotalDivisiones.ShouldBe(1);
+		contexto.ViewModel.Descripcion.ShouldBeEmpty();
+	}
+
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData("", false)]
+	[InlineData("AB", false)]
+	[InlineData("1", false)]
+	[InlineData("B", true)]
+	public void Registrar_una_division_exige_que_la_letra_sea_una_sola_letra(string descripcion, bool habilitado)
+	{
+		var contexto = new Contexto();
+
+		contexto.ViewModel.Descripcion = descripcion;
+
+		contexto.ViewModel.RegistrarCommandAsync.CanExecute("Division").ShouldBe(habilitado);
 	}
 
 	[Fact]
@@ -320,6 +399,114 @@ public class GestionDivisionesViewModelTests
 		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("B", Guid.NewGuid(), "Perez, Ana"));
 		contexto.ViewModel.EliminarCommandAsync.CanExecute("Preceptor").ShouldBeTrue();
 	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Asignar_y_cambiar_preceptor_son_excluyentes_segun_el_cargo_este_vacante_u_ocupado()
+	{
+		// UI-DIV-1: el bug era que "Asignar preceptor" estaba habilitado con el cargo ocupado, así
+		// que el recorrido terminaba en CargoPreceptorNoDisponibleException mostrada como error.
+		var contexto = new Contexto();
+
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", preceptorID: null, preceptor: null));
+		contexto.ViewModel.RegistrarCommandAsync.CanExecute("Docente").ShouldBeTrue();
+		contexto.ViewModel.ModificarPreceptorCommand.CanExecute(null).ShouldBeFalse();
+
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("B", Guid.NewGuid(), "Perez, Ana"));
+		contexto.ViewModel.RegistrarCommandAsync.CanExecute("Docente").ShouldBeFalse();
+		contexto.ViewModel.ModificarPreceptorCommand.CanExecute(null).ShouldBeTrue();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Asignar_preceptor_sin_division_elegida_no_esta_habilitado()
+	{
+		var contexto = new Contexto();
+
+		contexto.ViewModel.RegistrarCommandAsync.CanExecute("Docente").ShouldBeFalse();
+		contexto.ViewModel.ModificarPreceptorCommand.CanExecute(null).ShouldBeFalse();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Cambiar_preceptor_abre_la_tarjeta_y_el_buscador_igual_que_asignar()
+	{
+		var contexto = new Contexto();
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", Guid.NewGuid(), "Perez, Ana"));
+
+		contexto.ViewModel.ModificarPreceptorCommand.Execute(null);
+
+		contexto.ViewModel.HabilitarRegistrarDocente.ShouldBeTrue();
+		contexto.ViewModel.ModificandoPreceptor.ShouldBeTrue();
+		contexto.NavegarAlBuscador.Llamadas.ShouldBe(1);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Guardar_despues_de_cambiar_llama_a_ModificarPreceptorAsync_y_no_a_AsignarPreceptorAsync()
+	{
+		var contexto = new Contexto();
+		var division = CrearDivision("A", Guid.NewGuid(), "Perez, Ana");
+		contexto.ViewModel.Division = new DivisionViewModel(division);
+		var docenteID = Guid.NewGuid();
+		contexto.ViewModel.ModificarPreceptorCommand.Execute(null);
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(docenteID)));
+
+		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync(null);
+
+		_ = contexto.ServicioDivision.Received(1).ModificarPreceptorAsync(new ModificarPreceptorRequest(contexto.CursoID, division.DivisionID, docenteID));
+		_ = contexto.ServicioDivision.DidNotReceive().AsignarPreceptorAsync(Arg.Any<RegistrarPreceptorRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Guardar_sin_haber_pedido_el_cambio_sigue_asignando()
+	{
+		// El mismo botón cierra los dos recorridos: si el flag se quedara pegado en true, una
+		// asignación común llamaría al caso de uso equivocado.
+		var contexto = new Contexto();
+		var division = CrearDivision("A", preceptorID: null, preceptor: null);
+		contexto.ViewModel.Division = new DivisionViewModel(division);
+		var docenteID = Guid.NewGuid();
+		await contexto.ViewModel.RegistrarCommandAsync.ExecuteAsync("Docente");
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(docenteID)));
+
+		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync(null);
+
+		_ = contexto.ServicioDivision.Received(1).AsignarPreceptorAsync(new RegistrarPreceptorRequest(contexto.CursoID, division.DivisionID, docenteID));
+		_ = contexto.ServicioDivision.DidNotReceive().ModificarPreceptorAsync(Arg.Any<ModificarPreceptorRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cambiar_el_preceptor_sin_confirmar_no_llega_al_servicio()
+	{
+		var contexto = new Contexto();
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", Guid.NewGuid(), "Perez, Ana"));
+		contexto.Dialogos.RespuestaDeConfirmacion = false;
+		contexto.ViewModel.ModificarPreceptorCommand.Execute(null);
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(Guid.NewGuid())));
+
+		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync(null);
+
+		_ = contexto.ServicioDivision.DidNotReceive().ModificarPreceptorAsync(Arg.Any<ModificarPreceptorRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Cancelar_cierra_la_tarjeta_y_descarta_la_intencion_de_cambio()
+	{
+		var contexto = new Contexto();
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", Guid.NewGuid(), "Perez, Ana"));
+		contexto.ViewModel.ModificarPreceptorCommand.Execute(null);
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(Guid.NewGuid())));
+
+		contexto.ViewModel.CancelarCommand.Execute(null);
+
+		contexto.ViewModel.HabilitarRegistrarDocente.ShouldBeFalse();
+		contexto.ViewModel.ModificandoPreceptor.ShouldBeFalse();
+		contexto.ViewModel.Docente.ShouldBeNull();
+	}
 	#endregion
 
 	#region Navegacion
@@ -330,14 +517,19 @@ public class GestionDivisionesViewModelTests
 		var contexto = new Contexto();
 		var division = new DivisionViewModel(CrearDivision("A"));
 		contexto.ViewModel.Division = division;
-		DivisionViewModel? divisionAlNavegar = null;
+		// Se compara por identificador y no con ShouldBeSameAs: desde la violación 14 el store
+		// guarda un DivisionSeleccionada y no el DivisionViewModel de la lista, así que no hay una
+		// misma instancia que comparar. Lo que el test fija sigue siendo lo mismo: que la división
+		// quede escrita ANTES de llamar a Navigate().
+		DivisionSeleccionada? divisionAlNavegar = null;
 		contexto.NavegarACursantes.AlNavegar = () => divisionAlNavegar = contexto.DivisionStore.Division;
 
 		contexto.ViewModel.NavigationCommand.Execute("Cursantes");
 
 		contexto.NavegarACursantes.Llamadas.ShouldBe(1);
-		divisionAlNavegar.ShouldBeSameAs(division);
-		contexto.DivisionStore.Division.ShouldBeSameAs(division);
+		divisionAlNavegar.ShouldNotBeNull();
+		divisionAlNavegar.DivisionID.ShouldBe(division.DivisionID);
+		contexto.DivisionStore.Division.DivisionID.ShouldBe(division.DivisionID);
 	}
 
 	[Fact]
@@ -365,6 +557,55 @@ public class GestionDivisionesViewModelTests
 		contexto.NavegarACursos.Llamadas.ShouldBe(1);
 		contexto.NavegarACursantes.Llamadas.ShouldBe(0);
 		contexto.DivisionStore.Division.ShouldBeNull();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Navegar_a_asistencias_deja_la_division_en_el_DivisionStore_antes_de_llamar_a_Navigate()
+	{
+		// La pantalla de asistencia lee DivisionStore en su constructor y nace dentro de Navigate():
+		// si el store se escribiera despues, la planilla arrancaria sin division.
+		var contexto = new Contexto();
+		var division = new DivisionViewModel(CrearDivision("A"));
+		contexto.ViewModel.Division = division;
+		DivisionSeleccionada? divisionAlNavegar = null;
+		contexto.NavegarAAsistencias.AlNavegar = () => divisionAlNavegar = contexto.DivisionStore.Division;
+
+		contexto.ViewModel.NavigationCommand.Execute("Asistencias");
+
+		contexto.NavegarAAsistencias.Llamadas.ShouldBe(1);
+		divisionAlNavegar.ShouldNotBeNull();
+		divisionAlNavegar.DivisionID.ShouldBe(division.DivisionID);
+		contexto.DivisionStore.Division.DivisionID.ShouldBe(division.DivisionID);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Navegar_a_asistencias_usa_el_servicio_de_asistencias_y_no_el_de_cursantes_ni_el_de_cursos()
+	{
+		// Los cuatro INavigationService se distinguen solo por su orden en el constructor.
+		var contexto = new Contexto();
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A"));
+
+		contexto.ViewModel.NavigationCommand.Execute("Asistencias");
+
+		contexto.NavegarAAsistencias.Llamadas.ShouldBe(1);
+		contexto.NavegarACursantes.Llamadas.ShouldBe(0);
+		contexto.NavegarACursos.Llamadas.ShouldBe(0);
+		contexto.NavegarAlBuscador.Llamadas.ShouldBe(0);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Navegar_a_asistencias_sin_division_seleccionada_no_esta_habilitado()
+	{
+		var contexto = new Contexto();
+
+		contexto.ViewModel.NavigationCommand.CanExecute("Asistencias").ShouldBeFalse();
+
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A"));
+
+		contexto.ViewModel.NavigationCommand.CanExecute("Asistencias").ShouldBeTrue();
 	}
 
 	[Fact]

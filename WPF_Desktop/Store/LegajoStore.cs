@@ -2,39 +2,20 @@
 
 namespace WPF_Desktop.Store;
 
+/// <summary>
+/// Persona elegida en la pantalla de alumnos o de docentes, para que la pantalla de perfil y la de
+/// inscripción sepan de quién se trata.
+/// </summary>
+/// <remarks>
+/// <c>PersonaID</c> es <c>Guid?</c> y no <c>Guid</c>: tipado como <c>Guid</c> nacía en
+/// <c>Guid.Empty</c>, un valor que significa lo mismo que <c>null</c> pero que el compilador no
+/// distingue, así que "nadie eligió una persona" era indistinguible de una persona real y el
+/// request salía igual hacia <c>Core</c>. Es UI-34 de <c>docs/todos.md</c>; la guarda que lo
+/// acompaña vive en cada ViewModel que lee el store.
+/// </remarks>
 internal class LegajoStore
 {
-	private Guid _personaID;
-	private string _documento;
+	public Guid? PersonaID { get; set; }
 
-	public event Action PerfilStoreChanged;
-
-
-	public Guid PersonaID
-	{
-		get
-		{
-			return _personaID;
-		}
-
-		set
-		{
-			_personaID = value;
-			PerfilStoreChanged?.Invoke();
-		}
-	}
-
-	public string Documento
-	{
-		get
-		{
-			return _documento;
-		}
-
-		set
-		{
-			_documento = value;
-			PerfilStoreChanged?.Invoke();
-		}
-	}
+	public string Documento { get; set; }
 }

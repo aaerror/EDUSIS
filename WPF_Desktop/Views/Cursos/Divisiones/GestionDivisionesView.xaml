@@ -66,6 +66,21 @@
 					</StackPanel>
 				</Button>
 
+				<!--
+					La letra viene precargada con la que propone el dominio y el usuario la puede
+					cambiar (DIV-1). El campo es angosto a propósito: entra una sola letra, y la
+					validación de ObservableValidator deshabilita el botón si no es así.
+				-->
+				<HeaderedContentControl Header="Letra"
+										Margin="0 0 8 0"
+										Style="{ StaticResource ResourceKey=Campo }"
+										ToolTip="Letra de la división nueva. El sistema propone la siguiente libre.">
+					<TextBox MaxLength="1"
+							 Style="{ StaticResource ResourceKey=Txb.Campo }"
+							 Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+							 Width="56"/>
+				</HeaderedContentControl>
+
 				<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
 						CommandParameter="Division"
 						Style="{ StaticResource ResourceKey=Btn.Primario }"
@@ -172,11 +187,24 @@
 
 				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
 					<HeaderedContentControl.Header>
-						<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
-								CommandParameter="Preceptor"
-								Content="Quitar preceptor"
-								Style="{ StaticResource ResourceKey=Btn.Peligro }"
-								ToolTip="Quitar el preceptor de la división elegida"/>
+						<StackPanel Orientation="Horizontal">
+							<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
+									CommandParameter="Preceptor"
+									Content="Quitar preceptor"
+									Margin="0 0 8 0"
+									Style="{ StaticResource ResourceKey=Btn.Peligro }"
+									ToolTip="Quitar el preceptor de la división elegida"/>
+							<!--
+								Cambiar y asignar son excluyentes: este se habilita con el cargo
+								ocupado y "Asignar preceptor" con el cargo vacante. Antes el de
+								asignar estaba siempre habilitado y con el cargo ocupado terminaba
+								en una excepción de dominio mostrada como error.
+							-->
+							<Button Command="{ Binding Path=ModificarPreceptorCommand }"
+									Content="Cambiar preceptor"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Reemplazar al preceptor de la división elegida"/>
+						</StackPanel>
 					</HeaderedContentControl.Header>
 
 					<StackPanel Orientation="Horizontal">
@@ -186,6 +214,12 @@
 								Margin="0 0 8 0"
 								Style="{ StaticResource ResourceKey=Btn.Terciario }"
 								ToolTip="Alumnos y calificaciones de la división"/>
+						<Button Command="{ Binding Path=NavigationCommand }"
+								CommandParameter="Asistencias"
+								Content="Tomar asistencia"
+								Margin="0 0 8 0"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								ToolTip="Planilla de asistencia diaria de la división"/>
 						<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
 								CommandParameter="Docente"
 								Content="Asignar preceptor"

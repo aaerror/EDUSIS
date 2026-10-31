@@ -21,7 +21,15 @@ internal partial class GestionPuestosViewModel : ObservableObject
 	private readonly IServicioDocente _servicioDocentes;
 	#endregion
 
-	private LegajoStore _perfilBuscadoStore;
+	/// <summary>
+	/// Docente cuyos puestos se gestionan, fijado una sola vez al construir.
+	/// </summary>
+	/// <remarks>
+	/// UI-34: <c>LegajoStore.PersonaID</c> pasó a ser <c>Guid?</c> y la guarda va acá. Llegar a esta
+	/// pantalla sin docente elegido es un defecto de navegación y no un estado de la pantalla:
+	/// <c>GestionDocentesViewModel</c> escribe el store antes de navegar.
+	/// </remarks>
+	private readonly Guid _docenteID;
 
 
 	[ObservableProperty]
@@ -76,7 +84,8 @@ internal partial class GestionPuestosViewModel : ObservableObject
 	public GestionPuestosViewModel(IServicioDocente servicioDocentes, LegajoStore perfilBuscadoStore)
 	{
 		_servicioDocentes = servicioDocentes;
-		_perfilBuscadoStore = perfilBuscadoStore;
+		_docenteID = perfilBuscadoStore.PersonaID
+			?? throw new ArgumentNullException(nameof(perfilBuscadoStore), "Error al gestionar los puestos. Primero debe buscar un docente antes de continuar.");
 
 
 		CargarPuestosCommandAsync = new AsyncRelayCommand(ExecuteCargarPuestosDocentesAsync);
@@ -94,7 +103,7 @@ internal partial class GestionPuestosViewModel : ObservableObject
 
 	private async Task ExecuteCargarPuestosDocentesAsync()
 	{
-		var docenteID = new DocenteIDRequest(_perfilBuscadoStore.PersonaID);
+		var docenteID = new DocenteIDRequest(_docenteID);
 		_legajoDocenteResponse = await _servicioDocentes.MostrarLegajoDocenteAsync(docenteID);
 		NombreCompleto = _legajoDocenteResponse.NombreCompleto;
 		Legajo = _legajoDocenteResponse.Legajo;

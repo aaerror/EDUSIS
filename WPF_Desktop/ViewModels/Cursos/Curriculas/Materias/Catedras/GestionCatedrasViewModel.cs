@@ -24,6 +24,7 @@ internal partial class GestionCatedrasViewModel : ObservableObject
 	private readonly IDialogService _dialogService;
 	private readonly INavigationService _gestionMateriasNavigationService;
 	private readonly INavigationService _gestionSituacionRevistaNavigationService;
+	private readonly INavigationService _gestionHorariosNavigationService;
 	#endregion
 
 	#region Store
@@ -33,7 +34,7 @@ internal partial class GestionCatedrasViewModel : ObservableObject
 	#endregion
 
 	[ObservableProperty]
-	private MateriaViewModel? _materia;
+	private MateriaSeleccionada? _materia;
 
 	[ObservableProperty]
 	private ObservableCollection<CatedraViewModel> _catedras = new();
@@ -49,18 +50,21 @@ internal partial class GestionCatedrasViewModel : ObservableObject
 	public IAsyncRelayCommand CargarCommand { get; }
 	public IAsyncRelayCommand CrearCatedraCommand { get; }
 	public IRelayCommand<CatedraViewModel> SeleccionarCatedraCommand { get; }
+	public IRelayCommand<CatedraViewModel> VerHorariosCommand { get; }
 	public IRelayCommand VolverCommand { get; }
 	#endregion
 
 
 	/// <remarks>
-	/// ORDEN DE LOS DOS <see cref="INavigationService"/> (violación #7 del plan, no corregida): ambos son del mismo tipo
-	/// y la factory lambda de <c>WPF_DesktopDI</c> los distingue SÓLO por posición. Invertirlos compila y rompe la
+	/// ORDEN DE LOS TRES <see cref="INavigationService"/> (violación #7 del plan, no corregida): los tres son del mismo
+	/// tipo y la factory lambda de <c>WPF_DesktopDI</c> los distingue SÓLO por posición. Invertirlos compila y rompe la
 	/// navegación en silencio. Orden obligatorio: 1) <paramref name="gestionMateriasNavigationService"/> (volver a materias),
-	/// 2) <paramref name="gestionSituacionRevistaNavigationService"/> (ir a situación de revista).
+	/// 2) <paramref name="gestionSituacionRevistaNavigationService"/> (ir a situación de revista),
+	/// 3) <paramref name="gestionHorariosNavigationService"/> (ir a los horarios de la cátedra).
 	/// </remarks>
 	public GestionCatedrasViewModel(INavigationService gestionMateriasNavigationService,
 									INavigationService gestionSituacionRevistaNavigationService,
+									INavigationService gestionHorariosNavigationService,
 									IServicioCatedra servicioCatedra,
 									IServicioDivision servicioDivision,
 									MateriaStore materiaStore,
@@ -70,6 +74,7 @@ internal partial class GestionCatedrasViewModel : ObservableObject
 	{
 		_gestionMateriasNavigationService = gestionMateriasNavigationService;
 		_gestionSituacionRevistaNavigationService = gestionSituacionRevistaNavigationService;
+		_gestionHorariosNavigationService = gestionHorariosNavigationService;
 		_servicioCatedra = servicioCatedra;
 		_servicioDivision = servicioDivision;
 
@@ -83,6 +88,7 @@ internal partial class GestionCatedrasViewModel : ObservableObject
 		CargarCommand = new AsyncRelayCommand(ExecuteCargarCommand, CanExecuteCargarCommand);
 		CrearCatedraCommand = new AsyncRelayCommand(ExecuteCrearCatedraCommand, CanExecuteCrearCatedraCommand);
 		SeleccionarCatedraCommand = new RelayCommand<CatedraViewModel>(ExecuteSeleccionarCatedraCommand, CanExecuteSeleccionarCatedraCommand);
+		VerHorariosCommand = new RelayCommand<CatedraViewModel>(ExecuteVerHorariosCommand, CanExecuteVerHorariosCommand);
 		VolverCommand = new RelayCommand(ExecuteVolverCommand, CanExecuteVolverCommand);
 	}
 
@@ -174,6 +180,21 @@ internal partial class GestionCatedrasViewModel : ObservableObject
 	{
 		_catedraStore.Catedra = catedra.CatedraID;
 		_gestionSituacionRevistaNavigationService.Navigate();
+	}
+	#endregion
+
+	#region VerHorariosCommand
+	private bool CanExecuteVerHorariosCommand(CatedraViewModel catedra)
+	{
+		return catedra is not null && catedra.CatedraID != Guid.Empty;
+	}
+
+	private void ExecuteVerHorariosCommand(CatedraViewModel catedra)
+	{
+		// El store se escribe ANTES de navegar: GestionHorariosViewModel es Transient y lee la cátedra en su
+		// constructor, que corre dentro de Navigate(). Si se invierte, la pantalla nace con Guid.Empty.
+		_catedraStore.Catedra = catedra.CatedraID;
+		_gestionHorariosNavigationService.Navigate();
 	}
 	#endregion
 

@@ -46,6 +46,12 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject
 	[ObservableProperty]
 	private bool _esRecursante;
 
+	/// <summary>
+	/// Fecha de inicio de la cursada: la ingresa el usuario, con la de hoy precargada.
+	/// </summary>
+	[ObservableProperty]
+	private DateTime _fechaInicio = DateTime.Today;
+
 	public ObservableCollection<CursoViewModel> Cursos { get; } = new();
 	public ObservableCollection<DivisionViewModel> Divisiones { get; } = new();
 
@@ -139,15 +145,25 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject
 			return;
 		}
 
+		// UI-34: con PersonaID tipado como Guid no nulable, llegar acá sin alumno elegido mandaba
+		// Guid.Empty a Core, que lo rechazaba con un mensaje que no explicaba que faltaba el alumno.
+		if (_legajoStore.PersonaID is null)
+		{
+			MostrarMensaje("Debe buscar y seleccionar un alumno antes de inscribirlo en una división.");
+
+			return;
+		}
+
 		try
 		{
 			// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
-			var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, _legajoStore.PersonaID, Periodo, EsRecursante);
+			var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, _legajoStore.PersonaID.Value, Periodo, FechaInicio, EsRecursante);
 			await _servicioCursantes.InscribirCursanteAsync(request);
 
 			MostrarMensaje("Se ha inscripto el alumno en la división correctamente.");
 
 			EsRecursante = false;
+			FechaInicio = DateTime.Today;
 			Curso = null;
 		}
 		catch (Exception ex)

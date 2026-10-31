@@ -5,6 +5,7 @@ using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
 using Core.Shared.DTOs.Personas.Requests;
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
@@ -23,6 +24,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	private readonly IServicioDivision _servicioDivision;
 	private readonly INavigationService _gestionCursosNavigationService;
 	private readonly INavigationService _gestionCursantesNavigationService;
+	private readonly INavigationService _gestionAsistenciasNavigationService;
 	private readonly INavigationService _buscarDocenteModalNavigationService;
 	#endregion
 
@@ -52,6 +54,22 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 
 	private ObservableCollection<DivisionViewModel> _divisiones;
 
+	#region Formulario
+	/// <summary>
+	/// La letra de la división nueva. El sistema la propone al cargar la pantalla
+	/// (<c>ProponerDescripcionDivisionAsync</c>) y el usuario la puede cambiar: es la decisión de
+	/// DIV-1. La validación de acá es de forma —una sola letra— y no reemplaza a la del dominio:
+	/// que esa letra no esté ya registrada en el curso lo decide <c>AgregarDivisionAsync</c> con
+	/// <c>DivisionDuplicadaException</c>, porque es una regla que depende del estado de la base.
+	/// </summary>
+	[NotifyCanExecuteChangedFor(nameof(RegistrarCommandAsync))]
+	[NotifyDataErrorInfo]
+	[Required(ErrorMessage = "Indique la letra de la división.")]
+	[RegularExpression(@"^[A-Za-z]$", ErrorMessage = "La división se identifica con una sola letra.")]
+	[ObservableProperty]
+	private string _descripcion = string.Empty;
+	#endregion
+
 	[ObservableProperty]
 	private int _totalDivisiones;
 	[ObservableProperty]
@@ -67,8 +85,18 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(ModificarPreceptorCommand))]
 	[ObservableProperty]
 	private bool _habilitarRegistrarDocente;
+
+	/// <summary>
+	/// Distingue si la tarjeta de asignación se abrió para asignar un preceptor a un cargo vacante
+	/// o para reemplazar al que ya está. Hace falta porque el buscador vive en el modal y devuelve
+	/// el docente por <c>DocenteElegidoMessage</c> sin saber quién lo abrió: la intención se
+	/// registra acá antes de navegar y <c>GuardarCommandAsync</c> la lee para elegir el caso de uso.
+	/// </summary>
+	[ObservableProperty]
+	private bool _modificandoPreceptor;
 	#endregion
 
 	#region Notificaciones
@@ -80,6 +108,8 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
+	[NotifyCanExecuteChangedFor(nameof(RegistrarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(ModificarPreceptorCommand))]
 	[ObservableProperty]
 	private DivisionViewModel _division;
 	[ObservableProperty]
@@ -91,15 +121,27 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	public IRelayCommand BuscarDocenteCommand { get; }
 	public IAsyncRelayCommand GuardarCommandAsync { get; }
 	public IAsyncRelayCommand RegistrarCommandAsync { get; }
+	public IRelayCommand ModificarPreceptorCommand { get; }
 
 	public IRelayCommand CancelarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	#endregion
 
 
+	/// <remarks>
+	/// ORDEN DE LOS CUATRO <see cref="INavigationService"/>: los cuatro son del mismo tipo y la factory
+	/// lambda de <c>WPF_DesktopDI</c> los distingue SÓLO por posición. Invertirlos compila y rompe la
+	/// navegación en silencio. Orden obligatorio: 1) <paramref name="gestionCursosNavigationService"/>
+	/// (volver a cursos), 2) <paramref name="gestionCursantesNavigationService"/> (ir a los alumnos de
+	/// la división), 3) <paramref name="gestionAsistenciasNavigationService"/> (ir a la asistencia de
+	/// la división), 4) <paramref name="buscarDocenteModalNavigationService"/> (abrir el buscador de
+	/// docentes en el modal). Los tres primeros son los destinos del drill-down y van agrupados; el del
+	/// modal queda último porque no es una pantalla de este recorrido.
+	/// </remarks>
 	public GestionDivisionesViewModel(IServicioDivision servicioDivisiones,
 									  INavigationService gestionCursosNavigationService,
 									  INavigationService gestionCursantesNavigationService,
+									  INavigationService gestionAsistenciasNavigationService,
 									  INavigationService buscarDocenteModalNavigationService,
 									  CursoStore cursoStore,
 									  DivisionStore divisionStore,
@@ -110,6 +152,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		_servicioDivision = servicioDivisiones;
 		_gestionCursosNavigationService = gestionCursosNavigationService;
 		_gestionCursantesNavigationService = gestionCursantesNavigationService;
+		_gestionAsistenciasNavigationService = gestionAsistenciasNavigationService;
 		_buscarDocenteModalNavigationService = buscarDocenteModalNavigationService;
 		_cursoStore = cursoStore;
 		_divisionStore = divisionStore;
@@ -126,6 +169,8 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
 		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, CanExecuteRegistrarCommand);
+
+		ModificarPreceptorCommand = new RelayCommand(ExecuteModificarPreceptorCommand, CanExecuteModificarPreceptorCommand);
 
 		BuscarDocenteCommand = new RelayCommand(ExecuteBuscarDocenteCommand, () => HabilitarRegistrarDocente);
 		CancelarCommand = new RelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
@@ -156,6 +201,11 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 			var divisiones = await _servicioDivision.ListarDivisionesAsync(new ListarDivisionesRequest(_cursoStore.Curso.CursoID, _cicloLectivoStore.CicloLectivo));
 			TotalDivisiones = divisiones.Count;
 
+			// La propuesta va antes del corte por lista vacía: el curso sin divisiones es justamente
+			// el caso donde más sirve tener la letra precargada ("A"), y después del return no se
+			// ejecutaría nada.
+			await ProponerDescripcionAsync();
+
 			if (divisiones.Count is 0)
 			{
 				HabilitarDivisiones = false;
@@ -181,6 +231,25 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		}
 	}
 
+	/// <summary>
+	/// Precarga la letra que propone el dominio. Va en su propio <c>try</c> y no en el de
+	/// <c>CargarDivisionesAsync</c> a propósito: quedarse sin letras —el curso llegó a la "Z",
+	/// <c>SinLetrasDisponiblesException</c>— no tiene que impedir ver ni administrar las divisiones
+	/// que ya existen, que es todo lo demás que hace esta pantalla. El usuario se enterará al
+	/// intentar registrar, con el mensaje del dominio, que es donde la regla vive.
+	/// </summary>
+	private async Task ProponerDescripcionAsync()
+	{
+		try
+		{
+			Descripcion = await _servicioDivision.ProponerDescripcionDivisionAsync(new ProponerDescripcionRequest(_cursoStore.Curso.CursoID));
+		}
+		catch (Exception)
+		{
+			Descripcion = string.Empty;
+		}
+	}
+
 	#region CancelarCommand
 	private bool CanExecuteCancelarCommand(object obj) =>
 		HabilitarRegistrarDocente;
@@ -188,6 +257,26 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	private void ExecuteCancelarCommand(object obj)
 	{
 		HabilitarRegistrarDocente = false;
+		ModificandoPreceptor = false;
+		Docente = null;
+	}
+	#endregion
+
+	#region ModificarPreceptorCommand
+	/// <summary>
+	/// Abre la misma tarjeta y el mismo buscador que la asignación; lo único que cambia es el caso
+	/// de uso que ejecuta <c>GuardarCommandAsync</c> después. No lleva el sufijo <c>Async</c>
+	/// porque no hace trabajo asincrónico: deja la intención registrada y navega al modal. El
+	/// trabajo contra <c>Core</c> ocurre al guardar, cuando ya hay un docente elegido.
+	/// </summary>
+	private bool CanExecuteModificarPreceptorCommand() =>
+		!HabilitarRegistrarDocente && Division is not null && Division.PreceptorID is not null;
+
+	private void ExecuteModificarPreceptorCommand()
+	{
+		ModificandoPreceptor = true;
+		HabilitarRegistrarDocente = true;
+		ExecuteBuscarDocenteCommand();
 	}
 	#endregion
 
@@ -261,6 +350,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	{
 		"Curso" => !HabilitarRegistrarDocente,
 		"Cursantes" => Division is not null && !HabilitarRegistrarDocente,
+		"Asistencias" => Division is not null && !HabilitarRegistrarDocente,
 		_ => false
 	};
 
@@ -273,18 +363,32 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 				break;
 
 			case "Cursantes":
-				_divisionStore.Division = Division;
+				_divisionStore.Division = new DivisionSeleccionada(Division.DivisionID);
 				_gestionCursantesNavigationService.Navigate();
+				break;
+
+			case "Asistencias":
+				// La división es el parámetro de navegación: se escribe ANTES de navegar porque el
+				// ViewModel destino la lee en su constructor, y el destino nace recién en Navigate().
+				_divisionStore.Division = new DivisionSeleccionada(Division.DivisionID);
+				_gestionAsistenciasNavigationService.Navigate();
 				break;
 		}
 	}
 	#endregion
 
 	#region RegistrarCommandAsync
+	/// <remarks>
+	/// El caso "Docente" exige que el cargo esté <strong>vacante</strong>. Antes pedía sólo
+	/// <c>!HabilitarRegistrarDocente</c>, así que "Asignar preceptor" quedaba habilitado con el
+	/// cargo ya ocupado y el recorrido terminaba en un <c>CargoPreceptorNoDisponibleException</c>
+	/// mostrado como error: el usuario descubría la regla chocándose con ella. Para reemplazar al
+	/// preceptor está <c>ModificarPreceptorCommand</c>, que se habilita con la condición inversa.
+	/// </remarks>
 	private bool CanExecuteRegistrarCommand(object obj) => obj switch
 	{
-		"Division" => _cursoStore is not null,
-		"Docente" => !HabilitarRegistrarDocente,
+		"Division" => !HabilitarRegistrarDocente && !string.IsNullOrWhiteSpace(Descripcion) && !HasErrors,
+		"Docente" => !HabilitarRegistrarDocente && Division is not null && Division.PreceptorID is null,
 		_ => false
 	};
 
@@ -297,19 +401,20 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		{
 			case "Docente":
 				// Abre la tarjeta de asignacion y, encima, el buscador en el modal.
+				ModificandoPreceptor = false;
 				HabilitarRegistrarDocente = true;
 				ExecuteBuscarDocenteCommand();
 				break;
 
 			case "Division":
-				messageBoxText = $"Se va a registrar una nueva división en { _cursoStore.Curso.Grado.ToLower() } año de { _cursoStore.Curso.NivelEducativo.ToLower() }.\n\n" +
+				messageBoxText = $"Se va a registrar la división { Descripcion.ToUpper() } en { _cursoStore.Curso.Grado.ToLower() } año de { _cursoStore.Curso.NivelEducativo.ToLower() }.\n\n" +
 								 $"¿Desea continuar?";
 				caption = "Registrar División";
 				if (_dialogService.Confirmar(messageBoxText, caption))
 				{
 					try
 					{
-						await _servicioDivision.AgregarDivisionAsync(new AgregarDivisionRequest(_cursoStore.Curso.CursoID));
+						await _servicioDivision.AgregarDivisionAsync(new AgregarDivisionRequest(_cursoStore.Curso.CursoID, Descripcion));
 						_dialogService.MostrarInformacion("Datos guardados correctamente", "Operación exitosa");
 						await CargarDivisionesAsync();
 					}
@@ -328,32 +433,23 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 	private bool CanExecuteGuardarCommand(object obj) =>
 		Docente is not null;
 
+	/// <summary>
+	/// Un solo botón "Guardar" cierra los dos recorridos, porque los dos terminan con un docente
+	/// elegido en el modal: <c>ModificandoPreceptor</c> decide cuál. Reemplazar al preceptor no es
+	/// quitar y volver a asignar —eso dejaría el cargo vacante en el medio— sino
+	/// <c>ModificarPreceptorAsync</c>, una sola unidad de trabajo.
+	/// </summary>
 	private async Task ExecuteGuardarCommandAsync(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
 		try
 		{
-			messageBoxText = $"Se va asignar al docente { Docente.NombreCompleto } como preceptor de la división { Division.Descripcion } de { Curso } año ({ NivelEducativo })\n\n¿Desea continuar?";
-			caption = "Asignar Preceptor";
-			if (_dialogService.Confirmar(messageBoxText, caption))
+			if (ModificandoPreceptor)
 			{
-				try
-				{
-					var request = new RegistrarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
-																DivisionID: Division.DivisionID,
-																DocenteID: Docente.DocenteID);
-
-					await _servicioDivision.AsignarPreceptorAsync(request);
-					
-					_dialogService.MostrarInformacion("Datos guardados correctamente", "Operación exitosa");
-					await CargarDivisionesAsync();
-				}
-				catch (Exception ex)
-				{
-					_dialogService.MostrarError(ex.Message, "Error en la operación");
-				}
+				await ModificarPreceptorAsync();
+			}
+			else
+			{
+				await AsignarPreceptorAsync();
 			}
 
 			Docente = null;
@@ -362,6 +458,61 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		{
 			_dialogService.MostrarError(ex.Message, "Error en la operación");
 		}
+	}
+
+	private async Task AsignarPreceptorAsync()
+	{
+		var messageBoxText = $"Se va asignar al docente { Docente.NombreCompleto } como preceptor de la división { Division.Descripcion } de { Curso } año ({ NivelEducativo })\n\n¿Desea continuar?";
+		var caption = "Asignar Preceptor";
+
+		if (_dialogService.Confirmar(messageBoxText, caption))
+		{
+			try
+			{
+				var request = new RegistrarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
+															DivisionID: Division.DivisionID,
+															DocenteID: Docente.DocenteID);
+
+				await _servicioDivision.AsignarPreceptorAsync(request);
+
+				_dialogService.MostrarInformacion("Datos guardados correctamente", "Operación exitosa");
+				await CargarDivisionesAsync();
+			}
+			catch (Exception ex)
+			{
+				_dialogService.MostrarError(ex.Message, "Error en la operación");
+			}
+		}
+	}
+
+	private async Task ModificarPreceptorAsync()
+	{
+		var messageBoxText = $"La división { Division.Descripcion } de { Curso } año ({ NivelEducativo }) pasa a estar a cargo del docente { Docente.NombreCompleto }.\n" +
+							 $"El preceptor actual, { Division.Preceptor }, deja el cargo.\n\n" +
+							 $"¿Desea continuar?";
+		var caption = "Cambiar Preceptor";
+
+		if (_dialogService.Confirmar(messageBoxText, caption))
+		{
+			try
+			{
+				var request = new ModificarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
+															DivisionID: Division.DivisionID,
+															DocenteID: Docente.DocenteID);
+
+				await _servicioDivision.ModificarPreceptorAsync(request);
+
+				_dialogService.MostrarInformacion("Se cambió correctamente el preceptor de la división", "Operación exitosa");
+				await CargarDivisionesAsync();
+			}
+			catch (Exception ex)
+			{
+				_dialogService.MostrarError(ex.Message, "Error en la operación");
+			}
+		}
+
+		ModificandoPreceptor = false;
+		HabilitarRegistrarDocente = false;
 	}
 	#endregion
 }

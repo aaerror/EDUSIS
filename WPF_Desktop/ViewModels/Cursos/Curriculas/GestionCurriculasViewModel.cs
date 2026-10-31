@@ -227,7 +227,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 				break;
 
 			case "Catedras":
-				_materiaStore.Materia = Materia;
+				_materiaStore.Materia = new MateriaSeleccionada(Materia.CursoID, Materia.MateriaID, Materia.Descripcion);
 				_gestionCatedrasNavigationService.Navigate();
 				break;
 		}
@@ -307,7 +307,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 																  CurriculaID: Curricula.CurriculaID,
 																  MateriaID: Materia.MateriaID,
 																  Descripcion: Materia.Descripcion,
-																  HorasCatedra: Materia.HorasCatedra);
+																  HorasCatedra: Materia.HorasCatedra.HasValue ? Materia.HorasCatedra.Value : 0);
 						await _servicioMateria.ModificarMateriaAsync(request);
 
 						messageBoxText = $"Cambios guardados exitósamente.";

@@ -18,7 +18,7 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 /// <summary>
 /// Cubre la pantalla nueva <see cref="GestionCatedrasViewModel"/>: una sola consulta de divisiones por carga,
 /// <c>CrearCatedraAsync(MateriaID, DivisionID)</c>, el <see cref="Guid"/> de la catedra en <see cref="CatedraStore"/>
-/// antes de navegar, el orden de los dos <c>INavigationService</c> y que no se exponga ningun DTO de Core.
+/// antes de navegar, el orden de los TRES <c>INavigationService</c> y que no se exponga ningun DTO de Core.
 /// </summary>
 public class GestionCatedrasViewModelTests
 {
@@ -30,6 +30,7 @@ public class GestionCatedrasViewModelTests
 		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
 		public NavegacionFalsa NavegarAMaterias { get; } = new();
 		public NavegacionFalsa NavegarASituacionRevista { get; } = new();
+		public NavegacionFalsa NavegarAHorarios { get; } = new();
 		public MateriaStore MateriaStore { get; } = new();
 		public CatedraStore CatedraStore { get; } = new();
 		public CicloLectivoStore CicloLectivoStore { get; } = new();
@@ -44,13 +45,14 @@ public class GestionCatedrasViewModelTests
 
 			if (conMateria)
 			{
-				MateriaStore.Materia = new MateriaViewModel(new MateriaResponse(CursoID, Guid.NewGuid(), MateriaID, "Matematica", 4));
+				MateriaStore.Materia = new MateriaSeleccionada(CursoID, MateriaID, "Matematica");
 			}
 
 			Devolver(new List<CatedraResponse>(), new List<DivisionResponse>());
 
 			ViewModel = new GestionCatedrasViewModel(NavegarAMaterias,
 													 NavegarASituacionRevista,
+													 NavegarAHorarios,
 													 ServicioCatedra,
 													 ServicioDivision,
 													 MateriaStore,
@@ -314,6 +316,37 @@ public class GestionCatedrasViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
+	public void Ver_horarios_deja_el_Guid_de_la_catedra_en_el_CatedraStore_antes_de_llamar_a_Navigate()
+	{
+		// GestionHorariosViewModel es Transient y lee la catedra en su constructor, que corre dentro de Navigate():
+		// si el store se escribiera despues, la pantalla naceria con Guid.Empty.
+		var contexto = new Contexto();
+		var catedra = new CatedraViewModel(CrearCatedra(contexto.MateriaID, Guid.NewGuid()));
+		Guid catedraAlNavegar = Guid.Empty;
+		contexto.NavegarAHorarios.AlNavegar = () => catedraAlNavegar = contexto.CatedraStore.Catedra;
+
+		contexto.ViewModel.VerHorariosCommand.Execute(catedra);
+
+		contexto.NavegarAHorarios.Llamadas.ShouldBe(1);
+		contexto.NavegarAMaterias.Llamadas.ShouldBe(0);
+		contexto.NavegarASituacionRevista.Llamadas.ShouldBe(0);
+		catedraAlNavegar.ShouldBe(catedra.CatedraID);
+		contexto.CatedraStore.Catedra.ShouldBe(catedra.CatedraID);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Ver_horarios_de_una_catedra_nula_o_sin_identidad_no_esta_habilitado()
+	{
+		var contexto = new Contexto();
+		var sinIdentidad = new CatedraViewModel(null!);
+
+		contexto.ViewModel.VerHorariosCommand.CanExecute(null).ShouldBeFalse();
+		contexto.ViewModel.VerHorariosCommand.CanExecute(sinIdentidad).ShouldBeFalse();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
 	public void Volver_navega_a_materias_y_no_a_situacion_de_revista_ni_toca_el_CatedraStore()
 	{
 		var contexto = new Contexto();
@@ -322,6 +355,7 @@ public class GestionCatedrasViewModelTests
 
 		contexto.NavegarAMaterias.Llamadas.ShouldBe(1);
 		contexto.NavegarASituacionRevista.Llamadas.ShouldBe(0);
+		contexto.NavegarAHorarios.Llamadas.ShouldBe(0);
 		contexto.CatedraStore.Catedra.ShouldBe(Guid.Empty);
 	}
 	#endregion

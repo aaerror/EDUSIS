@@ -157,7 +157,36 @@ public class AlumnosInscripcionViewModelTests
 		await viewModel.InscribirCommand.ExecuteAsync(null);
 
 		await contexto.ServicioCursantes.Received(1).InscribirCursanteAsync(
-			new RegistrarCursanteRequest(contexto.Primero.CursoID, contexto.DivisionB.DivisionID, contexto.AlumnoID, CicloDelStore, true));
+			new RegistrarCursanteRequest(contexto.Primero.CursoID, contexto.DivisionB.DivisionID, contexto.AlumnoID, CicloDelStore, DateTime.Today, true));
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void La_fecha_de_inicio_viene_precargada_con_la_de_hoy()
+	{
+		var contexto = new Contexto();
+
+		var viewModel = contexto.CrearInscripcion();
+
+		viewModel.FechaInicio.ShouldBe(DateTime.Today);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Inscribir_manda_la_fecha_de_inicio_que_ingreso_el_usuario_y_no_la_de_hoy()
+	{
+		// CUR-1: la fecha de inicio la decide el usuario. Antes la forzaba Core con DateTime.Today.
+		var contexto = new Contexto();
+		var viewModel = contexto.CrearInscripcion();
+		viewModel.Curso = viewModel.Cursos[0];
+		viewModel.Division = viewModel.Divisiones[0];
+		var fecha = DateTime.Today.AddDays(-30);
+		viewModel.FechaInicio = fecha;
+
+		await viewModel.InscribirCommand.ExecuteAsync(null);
+
+		await contexto.ServicioCursantes.Received(1).InscribirCursanteAsync(
+			Arg.Is<RegistrarCursanteRequest>(r => r.FechaInicio == fecha));
 	}
 
 	[Fact]

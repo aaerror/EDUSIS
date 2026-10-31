@@ -64,6 +64,12 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	[ObservableProperty]
 	private string _periodo = string.Empty;
 
+	/// <summary>
+	/// Fecha de inicio de la cursada: la ingresa el usuario, con la de hoy precargada.
+	/// </summary>
+	[ObservableProperty]
+	private DateTime _fechaInicio = DateTime.Today;
+
 	[ObservableProperty]
 	private int _tab = 0;
 
@@ -331,7 +337,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 			try
 			{
 				// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
-				var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo);
+				var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo, FechaInicio);
 				await _servicioCursantes.InscribirCursanteAsync(request);
 
 				messageBoxText = $"Se han inscripto el alumno en el curso correctamente .";
@@ -344,6 +350,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 				Contacto = new(null);
 
 				Curso = null;
+				FechaInicio = DateTime.Today;
 				Periodo = _cicloLectivoStore.CicloLectivo;
 
 				await ActualizarCursos();

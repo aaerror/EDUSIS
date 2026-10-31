@@ -6,6 +6,8 @@ using Core.ServicioCursantes;
 using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes.DTOs.Responses;
 using Core.ServicioCursos.DTOs.Responses;
+using Core.ServicioDivisiones;
+using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioMaterias;
 using Core.ServicioMaterias.DTOs.Requests;
@@ -39,6 +41,9 @@ public class GestionCursantesViewModelTests
 		public IServicioCursante ServicioCursante { get; } = Substitute.For<IServicioCursante>();
 		public IServicioMateria ServicioMateria { get; } = Substitute.For<IServicioMateria>();
 		public IServicioCurricula ServicioCurricula { get; } = Substitute.For<IServicioCurricula>();
+
+		/// <summary>UI-CUR-1: la pantalla lista las divisiones del curso para poblar el destino del traslado.</summary>
+		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
 		public DialogServiceFalso Dialogos { get; } = new();
 		public CursoStore CursoStore { get; } = new();
 		public DivisionStore DivisionStore { get; } = new();
@@ -51,12 +56,12 @@ public class GestionCursantesViewModelTests
 
 		public Contexto(bool conDivision = true)
 		{
-			CursoStore.Curso = new CursoViewModel(new CursoResponse(CursoID, Grado.Primero, NivelEducativo.Secundaria));
+			CursoStore.Curso = new CursoSeleccionado(CursoID, Grado.Primero.ToString(), NivelEducativo.Secundaria.ToString());
 			CicloLectivoStore.CicloLectivo = CicloDelStore;
 
 			if (conDivision)
 			{
-				DivisionStore.Division = new DivisionViewModel(new DivisionResponse(DivisionID, "A", null, null, 0));
+				DivisionStore.Division = new DivisionSeleccionada(DivisionID);
 			}
 
 			DevolverCurriculas(new CurriculaResponse(CursoID, CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31)),
@@ -64,14 +69,29 @@ public class GestionCursantesViewModelTests
 			DevolverMaterias(CrearMateria("Matematica"), CrearMateria("Lengua"));
 			DevolverCursantes();
 			DevolverCalificaciones();
+			DevolverDivisiones();
+			DevolverHistorial();
 
 			ViewModel = new GestionCursantesViewModel(ServicioCursante,
 													  ServicioMateria,
 													  ServicioCurricula,
+													  ServicioDivision,
 													  Dialogos,
 													  CursoStore,
 													  DivisionStore,
 													  CicloLectivoStore);
+		}
+
+		public void DevolverDivisiones(params DivisionResponse[] divisiones)
+		{
+			ServicioDivision.ListarDivisionesAsync(Arg.Any<ListarDivisionesRequest>())
+							.Returns(Task.FromResult<IReadOnlyCollection<DivisionResponse>>(divisiones.ToList()));
+		}
+
+		public void DevolverHistorial(params InscripcionHistoricaResponse[] inscripciones)
+		{
+			ServicioCursante.ConsultarHistorialDeDivisionesAsync(Arg.Any<ConsultarHistorialRequest>())
+							.Returns(Task.FromResult<IReadOnlyCollection<InscripcionHistoricaResponse>>(inscripciones.ToList()));
 		}
 
 		public MateriaResponse CrearMateria(string descripcion)
@@ -577,8 +597,15 @@ public class GestionCursantesViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void El_unico_comando_de_modificacion_es_el_de_la_observacion()
+	public void Los_unicos_comandos_de_modificacion_son_la_observacion_y_la_condicion_de_recursante()
 	{
+		// La lista es cerrada a propósito y cada entrada corresponde a una corrección que el
+		// dominio realmente ofrece: la observación de una calificación (lo único editable de una
+		// nota) y la condición de recursante (lo único editable de una inscripción, CUR-2).
+		// Lo que NO se puede modificar sigue sin comando: la nota, y la fecha de inicio o la
+		// división de una inscripción, porque la baja la cierra y el traslado la cierra y abre otra
+		// (de ahí que se llamen RegistrarBaja y CambiarDivision, y no "ModificarInscripcion").
+		// Un "Modificar*" nuevo acá exige poder nombrar el método de dominio que lo respalda.
 		var comandosDeModificacion = typeof(GestionCursantesViewModel)
 			.GetProperties(BindingFlags.Public | BindingFlags.Instance)
 			.Where(p => typeof(IRelayCommand).IsAssignableFrom(p.PropertyType))
@@ -586,7 +613,11 @@ public class GestionCursantesViewModelTests
 			.Where(n => n.Contains("Modificar") || n.Contains("Editar"))
 			.ToList();
 
-		comandosDeModificacion.ShouldBe(new[] { nameof(GestionCursantesViewModel.ModificarObservacionCommandAsync) });
+		comandosDeModificacion.ShouldBe(new[]
+		{
+			nameof(GestionCursantesViewModel.ModificarObservacionCommandAsync),
+			nameof(GestionCursantesViewModel.ModificarRecursanteCommandAsync)
+		});
 	}
 
 	[Fact]
@@ -698,6 +729,210 @@ public class GestionCursantesViewModelTests
 
 		vm.CancelarCalificacionCommand.Execute(null);
 		vm.GuardarCalificacionCommandAsync.CanExecute(null).ShouldBeFalse();
+	}
+	#endregion
+
+	#region UI-CUR-1: recursante, baja, traslado e historial
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Los_cuatro_comandos_de_inscripcion_exigen_un_alumno_elegido()
+	{
+		var contexto = new Contexto();
+		var vm = contexto.ViewModel;
+
+		vm.ModificarRecursanteCommandAsync.CanExecute(null).ShouldBeFalse();
+		vm.RegistrarBajaCommandAsync.CanExecute(null).ShouldBeFalse();
+		vm.CambiarDivisionCommandAsync.CanExecute(null).ShouldBeFalse();
+		vm.CargarHistorialCommandAsync.CanExecute(null).ShouldBeFalse();
+
+		await contexto.BuscarYSeleccionarAsync();
+
+		vm.ModificarRecursanteCommandAsync.CanExecute(null).ShouldBeTrue();
+		vm.RegistrarBajaCommandAsync.CanExecute(null).ShouldBeTrue();
+		vm.CargarHistorialCommandAsync.CanExecute(null).ShouldBeTrue();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Elegir_un_alumno_trae_su_condicion_de_recursante_al_formulario()
+	{
+		var contexto = new Contexto();
+		contexto.DevolverCursantes(new CursanteResponse(Guid.NewGuid(), Guid.NewGuid(), "Perez, Ana", "30111222", 15, true));
+		await contexto.ViewModel.BuscarCommandAsync.ExecuteAsync(null);
+
+		contexto.ViewModel.Cursante = contexto.ViewModel.Cursantes[0];
+
+		contexto.ViewModel.EsRecursante.ShouldBeTrue();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Modificar_la_condicion_de_recursante_llega_al_servicio_con_el_cursante_elegido()
+	{
+		var contexto = new Contexto();
+		var cursante = await contexto.BuscarYSeleccionarAsync();
+		contexto.ViewModel.EsRecursante = true;
+
+		await contexto.ViewModel.ModificarRecursanteCommandAsync.ExecuteAsync(null);
+
+		_ = contexto.ServicioCursante.Received(1).ModificarCondicionDeRecursanteAsync(new ModificarCondicionRecursanteRequest(cursante.CursanteID, true));
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Dar_de_baja_llega_al_servicio_con_la_fecha_que_eligio_el_usuario()
+	{
+		var contexto = new Contexto();
+		var cursante = await contexto.BuscarYSeleccionarAsync();
+		var baja = DateTime.Today.AddDays(-10);
+		contexto.ViewModel.FechaBaja = baja;
+
+		await contexto.ViewModel.RegistrarBajaCommandAsync.ExecuteAsync(null);
+
+		_ = contexto.ServicioCursante.Received(1).RegistrarBajaDeCursanteAsync(new RegistrarBajaCursanteRequest(cursante.CursanteID, baja));
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Dar_de_baja_sin_confirmar_no_llega_al_servicio()
+	{
+		// La baja es destructiva: cierra la inscripción y el alumno desaparece del listado.
+		var contexto = new Contexto();
+		await contexto.BuscarYSeleccionarAsync();
+		contexto.Dialogos.RespuestaDeConfirmacion = false;
+
+		await contexto.ViewModel.RegistrarBajaCommandAsync.ExecuteAsync(null);
+
+		_ = contexto.ServicioCursante.DidNotReceive().RegistrarBajaDeCursanteAsync(Arg.Any<RegistrarBajaCursanteRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Dar_de_baja_recarga_el_listado_porque_el_alumno_deja_de_estar_en_la_division()
+	{
+		var contexto = new Contexto();
+		await contexto.BuscarYSeleccionarAsync();
+
+		await contexto.ViewModel.RegistrarBajaCommandAsync.ExecuteAsync(null);
+
+		// Dos veces: la búsqueda inicial y la recarga posterior a la baja.
+		_ = contexto.ServicioCursante.Received(2).ListarCursantesAsync(Arg.Any<BuscarListadoRequest>());
+		contexto.ViewModel.Cursante.ShouldBeNull();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cambiar_de_division_a_la_division_actual_no_esta_habilitado()
+	{
+		// El dominio lo rechaza con DivisionDestinoInvalidaException: es mejor no habilitar la
+		// acción que mostrar el error después de que el usuario la intentó.
+		var contexto = new Contexto();
+		contexto.DevolverDivisiones(new DivisionResponse(contexto.DivisionID, "A", null, null, 10),
+									new DivisionResponse(Guid.NewGuid(), "B", null, null, 8));
+		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
+		await contexto.BuscarYSeleccionarAsync();
+
+		contexto.ViewModel.DivisionDestino = contexto.ViewModel.DivisionesDestino.Single(x => x.Descripcion == "A");
+		contexto.ViewModel.CambiarDivisionCommandAsync.CanExecute(null).ShouldBeFalse();
+
+		contexto.ViewModel.DivisionDestino = contexto.ViewModel.DivisionesDestino.Single(x => x.Descripcion == "B");
+		contexto.ViewModel.CambiarDivisionCommandAsync.CanExecute(null).ShouldBeTrue();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cambiar_de_division_viaja_con_el_alumno_el_periodo_del_listado_y_el_destino()
+	{
+		var contexto = new Contexto();
+		var destinoID = Guid.NewGuid();
+		contexto.DevolverDivisiones(new DivisionResponse(destinoID, "B", null, null, 8));
+		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
+		var cursante = await contexto.BuscarYSeleccionarAsync();
+		var cambio = DateTime.Today.AddDays(-3);
+		contexto.ViewModel.DivisionDestino = contexto.ViewModel.DivisionesDestino[0];
+		contexto.ViewModel.FechaCambio = cambio;
+
+		await contexto.ViewModel.CambiarDivisionCommandAsync.ExecuteAsync(null);
+
+		// AlumnoID y no CursanteID: el traslado abre una inscripción nueva, así que el cursante de
+		// destino todavía no existe. Y el periodo es el del listado, no el del DatePicker.
+		_ = contexto.ServicioCursante.Received(1).CambiarDeDivisionAsync(new CambiarDivisionCursanteRequest(cursante.AlumnoID, CicloDelStore, destinoID, cambio));
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cambiar_de_division_sin_confirmar_no_llega_al_servicio()
+	{
+		var contexto = new Contexto();
+		contexto.DevolverDivisiones(new DivisionResponse(Guid.NewGuid(), "B", null, null, 8));
+		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
+		await contexto.BuscarYSeleccionarAsync();
+		contexto.ViewModel.DivisionDestino = contexto.ViewModel.DivisionesDestino[0];
+		contexto.Dialogos.RespuestaDeConfirmacion = false;
+
+		await contexto.ViewModel.CambiarDivisionCommandAsync.ExecuteAsync(null);
+
+		_ = contexto.ServicioCursante.DidNotReceive().CambiarDeDivisionAsync(Arg.Any<CambiarDivisionCursanteRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task El_historial_expone_las_inscripciones_del_alumno_con_su_estado()
+	{
+		var contexto = new Contexto();
+		var cursante = await contexto.BuscarYSeleccionarAsync();
+		contexto.DevolverHistorial(
+			new InscripcionHistoricaResponse(Guid.NewGuid(), Guid.NewGuid(), "A", "Primero", "Secundaria", "2024", new DateTime(2024, 3, 1), new DateTime(2024, 7, 1), false, false),
+			new InscripcionHistoricaResponse(Guid.NewGuid(), Guid.NewGuid(), "B", "Primero", "Secundaria", "2024", new DateTime(2024, 7, 1), null, false, true));
+
+		await contexto.ViewModel.CargarHistorialCommandAsync.ExecuteAsync(null);
+
+		_ = contexto.ServicioCursante.Received(1).ConsultarHistorialDeDivisionesAsync(new ConsultarHistorialRequest(cursante.AlumnoID));
+		contexto.ViewModel.Historial.Count.ShouldBe(2);
+		contexto.ViewModel.Historial[0].Division.ShouldBe("A");
+		contexto.ViewModel.Historial[0].EstaActiva.ShouldBeFalse();
+		contexto.ViewModel.Historial[0].Estado.ShouldBe("Cerrada");
+		contexto.ViewModel.Historial[1].EstaActiva.ShouldBeTrue();
+		contexto.ViewModel.Historial[1].Estado.ShouldBe("Vigente");
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cambiar_de_alumno_limpia_el_historial_y_el_destino_del_anterior()
+	{
+		var contexto = new Contexto();
+		contexto.DevolverDivisiones(new DivisionResponse(Guid.NewGuid(), "B", null, null, 8));
+		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
+		contexto.DevolverCursantes(new CursanteResponse(Guid.NewGuid(), Guid.NewGuid(), "Perez, Ana", "30111222", 15, true),
+								   new CursanteResponse(Guid.NewGuid(), Guid.NewGuid(), "Luna, Juan", "30111223", 16, false));
+		contexto.DevolverHistorial(new InscripcionHistoricaResponse(Guid.NewGuid(), Guid.NewGuid(), "A", "Primero", "Secundaria", "2024", new DateTime(2024, 3, 1), null, false, true));
+		await contexto.ViewModel.BuscarCommandAsync.ExecuteAsync(null);
+		contexto.ViewModel.Cursante = contexto.ViewModel.Cursantes[0];
+		contexto.ViewModel.DivisionDestino = contexto.ViewModel.DivisionesDestino[0];
+		await contexto.ViewModel.CargarHistorialCommandAsync.ExecuteAsync(null);
+		contexto.ViewModel.Historial.ShouldNotBeEmpty();
+
+		contexto.ViewModel.Cursante = contexto.ViewModel.Cursantes[1];
+
+		contexto.ViewModel.Historial.ShouldBeEmpty();
+		contexto.ViewModel.DivisionDestino.ShouldBeNull();
+		contexto.ViewModel.EsRecursante.ShouldBeFalse();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Si_fallan_las_divisiones_de_destino_la_pantalla_avisa_y_sigue_cargando_las_materias()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioDivision
+				.ListarDivisionesAsync(Arg.Any<ListarDivisionesRequest>())
+				.Returns<IReadOnlyCollection<DivisionResponse>>(_ => throw new InvalidOperationException("sin divisiones"));
+
+		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
+
+		contexto.ViewModel.Materias.Count.ShouldBe(2);
+		contexto.ViewModel.DivisionesDestino.ShouldBeEmpty();
+		contexto.Dialogos.Advertencias.Count.ShouldBe(1);
 	}
 	#endregion
 }

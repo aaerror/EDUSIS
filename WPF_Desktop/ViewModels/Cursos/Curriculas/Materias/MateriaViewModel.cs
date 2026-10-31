@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioMaterias.DTOs.Responses;
 using System.ComponentModel.DataAnnotations;
 using System;
@@ -29,7 +29,7 @@ internal partial class MateriaViewModel : ObservableValidator
 
 	[Required]
 	[ObservableProperty]
-	private int _horasCatedra;
+	private int? _horasCatedra;
 
 
 	public MateriaViewModel(MateriaResponse materiaResponse)

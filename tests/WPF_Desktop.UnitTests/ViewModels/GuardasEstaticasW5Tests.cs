@@ -281,7 +281,9 @@ public class GuardasEstaticasW5Tests
 	public void El_ItemsSource_de_las_grillas_de_GestionCurriculas_y_GestionCursantes_son_propiedades_del_ViewModel()
 	{
 		DebenExistirEn(typeof(GestionCurriculasViewModel), new[] { "Curriculas", "Materias", "Curricula", "Materia", "CargarCurriculasCommandAsync", "CargarMateriasCommandAsync", "NavigationCommand" });
-		DebenExistirEn(typeof(GestionCursantesViewModel), new[] { "Cursantes", "Cursante", "Calificaciones", "CalificacionSeleccionada", "Materias", "Materia", "Calificacion", "ObservacionEdicion", "MostrarCalificacionView", "CicloLectivo", "CargarCommandAsync", "BuscarCommandAsync", "NuevaCalificacionCommand", "ModificarObservacionCommandAsync", "QuitarCalificacionCommandAsync", "GuardarCalificacionCommandAsync", "RegistrarInasistenciaCommandAsync", "CancelarCalificacionCommand" });
+		DebenExistirEn(typeof(GestionCursantesViewModel), new[] { "Cursantes", "Cursante", "Calificaciones", "CalificacionSeleccionada", "Materias", "Materia", "Calificacion", "ObservacionEdicion", "MostrarCalificacionView", "CicloLectivo", "CargarCommandAsync", "BuscarCommandAsync", "NuevaCalificacionCommand", "ModificarObservacionCommandAsync", "QuitarCalificacionCommandAsync", "GuardarCalificacionCommandAsync", "RegistrarInasistenciaCommandAsync", "CancelarCalificacionCommand",
+			// UI-CUR-1: la sección de inscripción y el historial de divisiones.
+			"EsRecursante", "FechaBaja", "FechaCambio", "DivisionDestino", "DivisionesDestino", "Historial", "ModificarRecursanteCommandAsync", "RegistrarBajaCommandAsync", "CambiarDivisionCommandAsync", "CargarHistorialCommandAsync" });
 		DebenExistirEn(typeof(CalificacionViewModel), new[] { "Instancia", "Fecha", "Nota", "Observacion" });
 	}
 
@@ -309,6 +311,15 @@ public class GuardasEstaticasW5Tests
 		var columnasCalificacion = ColumnasBindeadas(calificaciones);
 		columnasCalificacion.ShouldBe(new[] { "Materia", "Fecha", "Instancia", "Rindio", "Nota", "Aprobado", "Observacion" });
 		DebenExistirEn(typeof(CalificacionViewModel), columnasCalificacion);
+
+		// UI-CUR-1. "Estado" no es columna bindeada sino el texto de la insignia, así que se
+		// verifica aparte: la columna es un DataGridTemplateColumn y no declara Binding.
+		var historial = documento.Descendants().Single(e => e.Name.LocalName == "DataGrid" && (string?) e.Attribute(Xaml + "Name") == "DataGrid_Historial");
+		((string) historial.Attribute("ItemsSource")!).ShouldContain("Historial");
+		var columnasHistorial = ColumnasBindeadas(historial);
+		columnasHistorial.ShouldBe(new[] { "CicloLectivo", "Division", "Grado", "FechaInicio", "FechaFin", "EsRecursante" });
+		DebenExistirEn(typeof(InscripcionHistoricaViewModel), columnasHistorial);
+		DebenExistirEn(typeof(InscripcionHistoricaViewModel), new[] { "Estado", "EstaActiva" });
 	}
 
 	private static List<string> ColumnasBindeadas(XElement grilla)

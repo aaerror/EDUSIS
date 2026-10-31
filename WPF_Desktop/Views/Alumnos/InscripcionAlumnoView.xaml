@@ -51,6 +51,7 @@
 						<Grid.RowDefinitions>
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
 						</Grid.RowDefinitions>
 
 						<HeaderedContentControl Grid.Column="0" Grid.Row="0"
@@ -100,6 +101,15 @@
 								  IsChecked="{ Binding Path=EsRecursante, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 								  Margin="10 0 0 16"
 								  Style="{ StaticResource ResourceKey=Chk.Campo.Alineada }"/>
+
+						<!-- La fecha de inicio la ingresa el usuario, con la de hoy precargada por el ViewModel. -->
+						<HeaderedContentControl Grid.Column="0" Grid.Row="2"
+											   Header="Fecha de inicio"
+											   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+							<DatePicker DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+										SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+										Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+						</HeaderedContentControl>
 					</Grid>
 				</GroupBox>
 

@@ -45,7 +45,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 	#region ViewModels
 	[ObservableProperty]
-	private MateriaViewModel _materia;
+	private MateriaSeleccionada _materia;
 
 	[NotifyCanExecuteChangedFor(nameof(SeleccionarCommand))]
 	[ObservableProperty]

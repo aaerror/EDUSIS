@@ -180,13 +180,25 @@
 											</StackPanel>
 										</StackPanel>
 
-										<Button Grid.Column="2"
-												Command="{ Binding Path=DataContext.SeleccionarCatedraCommand, RelativeSource={ RelativeSource AncestorType=UserControl } }"
-												CommandParameter="{ Binding }"
-												Content="Designar docentes"
-												Style="{ StaticResource ResourceKey=Btn.Secundario }"
-												ToolTip="Situación de revista de la cátedra"
-												VerticalAlignment="Center"/>
+										<!-- Los dos drill-down de la cátedra comparten la columna del botón: docentes y horarios. -->
+										<StackPanel Grid.Column="2"
+													Orientation="Horizontal"
+													VerticalAlignment="Center">
+											<Button Command="{ Binding Path=DataContext.SeleccionarCatedraCommand, RelativeSource={ RelativeSource AncestorType=UserControl } }"
+													CommandParameter="{ Binding }"
+													Content="Designar docentes"
+													Margin="0 0 8 0"
+													Style="{ StaticResource ResourceKey=Btn.Secundario }"
+													ToolTip="Situación de revista de la cátedra"
+													VerticalAlignment="Center"/>
+
+											<Button Command="{ Binding Path=DataContext.VerHorariosCommand, RelativeSource={ RelativeSource AncestorType=UserControl } }"
+													CommandParameter="{ Binding }"
+													Content="Ver horarios"
+													Style="{ StaticResource ResourceKey=Btn.Terciario }"
+													ToolTip="Horarios de la cátedra"
+													VerticalAlignment="Center"/>
+										</StackPanel>
 									</Grid>
 								</Border>
 							</DataTemplate>
