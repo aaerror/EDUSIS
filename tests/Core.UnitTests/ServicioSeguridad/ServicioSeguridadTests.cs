@@ -1,5 +1,5 @@
 using System.Security;
-using Core.ServicioSecurity;
+using Core.ServicioSeguridad;
 using Core.UnitTests.Infraestructura;
 using EDUSIS.TestSupport;
 using Shouldly;
@@ -8,7 +8,7 @@ using Xunit;
 namespace Core.UnitTests.ServicioSeguridad;
 
 /// <summary>
-/// <see cref="Core.ServicioSecurity.ServicioSeguridad"/>: derivación PBKDF2 con salt aleatoria y
+/// <see cref="Core.ServicioSeguridad.ServicioSeguridad"/>: derivación PBKDF2 con salt aleatoria y
 /// verificación en tiempo constante. La interfaz es <c>internal</c>; se resuelve por la vía
 /// directa de <see cref="HostDeServicios.Seguridad"/> (InternalsVisibleTo).
 /// </summary>

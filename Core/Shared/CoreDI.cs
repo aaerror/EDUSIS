@@ -11,7 +11,7 @@ using Core.ServicioDocumentos;
 using Core.ServicioLicencias;
 using Core.ServicioMaterias;
 using Core.ServicioReportes;
-using Core.ServicioSecurity;
+using Core.ServicioSeguridad;
 using Core.ServicioUsuarios;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,7 +30,12 @@ public static class CoreDI
         services.AddScoped<IServicioDivision, ServicioDivision>();
         services.AddScoped<IServicioDocente, ServicioDocente>();
         services.AddScoped<IServicioLicencia, ServicioLicencia>();
-        services.AddScoped<IServicioSeguridad, ServicioSeguridad>();
+        // Calificado: el nombre simple `ServicioSeguridad` se resuelve al NAMESPACE
+        // `Core.ServicioSeguridad` —visible desde acá por el contenedor `Core`— y no al tipo
+        // homónimo que vive dentro (CS0118). Es el único módulo donde el segmento del namespace
+        // coincide con su clase: el resto pluraliza (`Core.ServicioAlumnos` → `ServicioAlumno`) y
+        // "Seguridad" no pluraliza con naturalidad.
+        services.AddScoped<IServicioSeguridad, Core.ServicioSeguridad.ServicioSeguridad>();
         services.AddScoped<IServicioUsuario, ServicioUsuario>();
         services.AddScoped<IServicioDocumento, ServicioDocumento>();
         services.AddScoped<IServicioReporte, ServicioReporte>();

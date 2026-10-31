@@ -5,7 +5,7 @@ using System.Security;
 
 // https://gist.github.com/hclewk/a41d937eba12c0388f70429a997cd7ec
 
-namespace Core.ServicioSecurity;
+namespace Core.ServicioSeguridad;
 
 internal class ServicioSeguridad : IServicio, IServicioSeguridad
 {

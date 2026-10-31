@@ -1,5 +1,5 @@
 ﻿using Core.ServicioAutenticaciones.DTOs.Responses;
-using Core.ServicioSecurity;
+using Core.ServicioSeguridad;
 using Core.ServicioUsuarios.DTOs.Requests;
 using Core.Shared;
 using Domain.Usuarios;
