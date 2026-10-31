@@ -20,7 +20,6 @@
 
 				<!-- CONTROLES -->
 				<ResourceDictionary Source="/Theme/EDUSIS_ButtonStyle.xaml"/>
-				<ResourceDictionary Source="/Theme/EDUSIS_ButtonWithIcon.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_Labels.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_TextBlock.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_TextBox.xaml"/>
