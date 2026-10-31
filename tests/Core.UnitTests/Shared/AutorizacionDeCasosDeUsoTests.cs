@@ -84,6 +84,15 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 
 	[Fact]
+	public async Task ModificarPreceptorAsync_sin_GestionarCursos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDivision>().ModificarPreceptorAsync(null!));
+	}
+
+	[Fact]
 	public async Task RegistrarMateriaAsync_sin_GestionarCurriculas_lanza_PermisoDenegado()
 	{
 		using var host = HostSinPermisos();
@@ -111,6 +120,33 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 
 	[Fact]
+	public async Task ModificarCondicionDeRecursanteAsync_sin_InscribirCursantes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioCursante>().ModificarCondicionDeRecursanteAsync(null!));
+	}
+
+	[Fact]
+	public async Task RegistrarBajaDeCursanteAsync_sin_InscribirCursantes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioCursante>().RegistrarBajaDeCursanteAsync(null!));
+	}
+
+	[Fact]
+	public async Task CambiarDeDivisionAsync_sin_InscribirCursantes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioCursante>().CambiarDeDivisionAsync(null!));
+	}
+
+	[Fact]
 	public async Task RegistrarCalificacionAsync_sin_CargarCalificaciones_lanza_PermisoDenegado()
 	{
 		using var host = HostSinPermisos();
@@ -126,6 +162,15 @@ public class AutorizacionDeCasosDeUsoTests
 
 		await Should.ThrowAsync<PermisoDenegadoException>(
 			() => host.Resolver<IServicioAsistencia>().AbrirPlanillaAsync(null!));
+	}
+
+	[Fact]
+	public async Task EliminarPlanillaAsync_sin_TomarAsistencia_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioAsistencia>().EliminarPlanillaAsync(null!));
 	}
 
 	[Fact]

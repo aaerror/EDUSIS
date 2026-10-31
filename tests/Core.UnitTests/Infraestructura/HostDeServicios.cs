@@ -1,4 +1,4 @@
-using Core.ServicioSecurity;
+using Core.ServicioSeguridad;
 using Core.Shared;
 using Core.Shared.Documentos;
 using Core.Shared.Seguridad;

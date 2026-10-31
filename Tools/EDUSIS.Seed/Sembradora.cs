@@ -1,5 +1,5 @@
 using Bogus;
-using Core.ServicioSecurity;
+using Core.ServicioSeguridad;
 using Domain.Alumnos;
 using Domain.Asistencias;
 using Domain.Catedras;
