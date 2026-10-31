@@ -40,31 +40,26 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="Licencias"
-							   Subtitle="Licencias del docente, con su artículo, sus días y su estado"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=RegistrarCommand }"
-					CommandParameter="Nueva"
-					Style="{ StaticResource ResourceKey=Btn.Primario }"
-					ToolTip="Registrar una licencia nueva"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="Plus"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Registrar licencia" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Licencias"
+									Subtitulo="Licencias del docente, con su artículo, sus días y su estado">
+			<components:PaginaComponent.Accion>
+				<Button Command="{ Binding Path=RegistrarCommand }"
+						CommandParameter="Nueva"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Registrar una licencia nueva">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Registrar licencia" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<!--#region AVISO-->
@@ -141,11 +136,16 @@
 					</HeaderedContentControl.Header>
 
 					<StackPanel Orientation="Horizontal">
+						<!--
+							"Editar" abre el formulario de abajo; es la misma acción que en los
+							dos perfiles, y ahí ya era Btn.Secundario. Acá estaba en terciario,
+							el mismo peso que "Cancelar".
+						-->
 						<Button Command="{ Binding Path=EditarCommand }"
 								CommandParameter="Editar"
 								Content="Editar"
 								Margin="0 0 8 0"
-								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
 								ToolTip="Editar la licencia seleccionada"
 								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
@@ -181,7 +181,7 @@
 					</Grid.RowDefinitions>
 
 					<vLicencias:LicenciaView Grid.Row="0"
-											 DataContext="{ Binding Path=LicenciaSeleccionada, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"/>
+											 DataContext="{ Binding Path=LicenciaSeleccionada, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"/>
 
 					<HeaderedContentControl Grid.Row="1" Style="{ StaticResource ResourceKey=Acciones }">
 						<HeaderedContentControl.Header>
@@ -220,5 +220,10 @@
 			</ScrollViewer>
 		</Border>
 		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="4"
+									  EstaCargando="{ Binding Path=CargarLicenciasCommandAsync.IsRunning }"
+									  Leyenda="CARGANDO LAS LICENCIAS"/>
 	</Grid>
 </UserControl>

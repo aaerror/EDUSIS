@@ -37,7 +37,7 @@
 			<HeaderedContentControl Grid.Column="1" Grid.Row="0"
 								   Header="Legajo"
 								   Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<TextBox Text="{ Binding Path=Legajo, FallbackValue='Sin datos', TargetNullValue='Legajo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox Text="{ Binding Path=Legajo, FallbackValue='Sin datos', TargetNullValue='Legajo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
@@ -62,7 +62,7 @@
 							 HorizontalContentAlignment="Center"
 							 MaxLength="2"
 							 Tag="20"
-							 Text="{ Binding Path=PrefijoCuil, FallbackValue='00', TargetNullValue='Prefijo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							 Text="{ Binding Path=PrefijoCuil, FallbackValue='00', TargetNullValue='Prefijo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							 Style="{ StaticResource ResourceKey=Txb.Campo }"
 							 Width="48"/>
 
@@ -88,7 +88,7 @@
 							 HorizontalContentAlignment="Center"
 							 MaxLength="1"
 							 Tag="3"
-							 Text="{ Binding Path=PosfijoCuil, FallbackValue=0, TargetNullValue='Posfijo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							 Text="{ Binding Path=PosfijoCuil, FallbackValue=0, TargetNullValue='Posfijo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							 Style="{ StaticResource ResourceKey=Txb.Campo }"
 							 Width="40"/>
 				</Grid>
@@ -97,10 +97,10 @@
 			<HeaderedContentControl Grid.Column="1" Grid.Row="1"
 								   Header="Fecha de alta"
 								   Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<DatePicker DisplayDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<DatePicker DisplayDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							DisplayDateEnd="{ x:Static sys:DateTime.Now }"
 							DisplayDateStart="01/01/1900"
-							SelectedDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							SelectedDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 			</HeaderedContentControl>
 

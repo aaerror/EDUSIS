@@ -55,37 +55,26 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
+		<!--#region ENCABEZADO
+			El título era el dato: Title="{Binding Curso, Mode=OneTime}" mostraba "3° año" y en
+			ninguna parte aparecía la palabra "diseño curricular". Peor: con Mode=OneTime, si el
+			store se escribía después del primer pintado el título quedaba vacío para siempre.
+			Ahora el curso va en la ruta —que es donde corresponde el contexto— y el título dice
+			qué es esta pantalla.
 
-			<components:Header Grid.Column="0"
-							   Title="{ Binding Path=Curso, Mode=OneTime }"
-							   Subtitle="Diseño curricular: materias del curso y su carga horaria"/>
-
-			<StackPanel Grid.Column="1"
-						Orientation="Horizontal"
-						VerticalAlignment="Center">
-				<Button Command="{ Binding Path=NavigationCommand }"
-						CommandParameter="Cursos"
-						Margin="0 0 8 0"
-						Style="{ StaticResource ResourceKey=Btn.Terciario }"
-						ToolTip="Volver a cursos">
-					<StackPanel Orientation="Horizontal">
-						<fa:IconBlock FontSize="11"
-									  Icon="ArrowLeft"
-									  Margin="0 0 8 0"
-									  VerticalAlignment="Center"/>
-						<TextBlock Text="Volver a cursos" VerticalAlignment="Center"/>
-					</StackPanel>
-				</Button>
-
+			"Nueva currícula" y "Nueva materia" eran dos botones de alta uno al lado del otro, uno
+			secundario y el otro primario. Se mantienen los dos porque abren cosas distintas —un
+			diseño curricular es el contenedor de las materias— pero sólo la materia, que es la
+			operación de todos los días, queda como acción principal.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Diseño curricular"
+									Subtitulo="Materias del curso y su carga horaria, agrupadas por currícula">
+			<components:PaginaComponent.Secundarias>
 				<Button Command="{ Binding Path=RegistrarCommand }"
 						CommandParameter="Curricula"
-						Margin="0 0 8 0"
 						Style="{ StaticResource ResourceKey=Btn.Secundario }"
 						ToolTip="Abrir un diseño curricular nuevo para el curso">
 					<StackPanel Orientation="Horizontal">
@@ -96,7 +85,9 @@
 						<TextBlock Text="Nueva currícula" VerticalAlignment="Center"/>
 					</StackPanel>
 				</Button>
+			</components:PaginaComponent.Secundarias>
 
+			<components:PaginaComponent.Accion>
 				<Button Command="{ Binding Path=RegistrarCommand }"
 						CommandParameter="Materia"
 						Style="{ StaticResource ResourceKey=Btn.Primario }"
@@ -109,8 +100,8 @@
 						<TextBlock Text="Nueva materia" VerticalAlignment="Center"/>
 					</StackPanel>
 				</Button>
-			</StackPanel>
-		</Grid>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<!--#region AVISO-->
@@ -154,7 +145,7 @@
 											Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 						<TextBox MaxLength="30"
 								 Tag="Lengua y Literatura"
-								 Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+								 Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 								 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 					</HeaderedContentControl>
 
@@ -162,7 +153,7 @@
 											Header="Horas cátedra"
 											Style="{ StaticResource ResourceKey=Campo.Derecha }">
 						<ComboBox ItemsSource="{ StaticResource ResourceKey=horasCatedra }"
-								  SelectedItem="{ Binding Path=CargaHoraria, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+								  SelectedItem="{ Binding Path=CargaHoraria, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
 					</HeaderedContentControl>
 				</Grid>
@@ -281,27 +272,22 @@
 										<GridViewColumn DisplayMemberBinding="{ Binding Path=Descripcion, Mode=OneWay }"
 														Header="MATERIA"
 														Width="420"/>
-										<GridViewColumn Header="">
-											<GridViewColumn.CellTemplate>
-												<DataTemplate>
-													<StackPanel Orientation="Horizontal">
-														<Button Command="{ Binding Path=DataContext.EditarCommand, RelativeSource={ RelativeSource AncestorType=UserControl, Mode=FindAncestor } }"
-																CommandParameter="Materia"
-																Margin="0 0 4 0"
-																Style="{ StaticResource ResourceKey=Btn.Icono }"
-																ToolTip="Editar esta materia">
-															<fa:IconBlock FontSize="11" Icon="PenToSquare"/>
-														</Button>
-														<Button Command="{ Binding Path=DataContext.EliminarCommandAsync, IsAsync=True, RelativeSource={ RelativeSource AncestorType=UserControl, Mode=FindAncestor } }"
-																CommandParameter="Materia"
-																Style="{ StaticResource ResourceKey=Btn.Icono }"
-																ToolTip="Quitar esta materia del diseño">
-															<fa:IconBlock FontSize="11" Icon="Trash"/>
-														</Button>
-													</StackPanel>
-												</DataTemplate>
-											</GridViewColumn.CellTemplate>
-										</GridViewColumn>
+										<!--
+											ACÁ HABÍA DOS BOTONES QUE OPERABAN SOBRE OTRA FILA.
+
+											La columna traía un lápiz y un tachito que llamaban a
+											los comandos del ViewModel con CommandParameter
+											"Materia", sin pasar la fila: los comandos trabajan
+											sobre Materia, que es el SelectedItem de la lista. Y un
+											Button dentro de un ListViewItem marca el clic como
+											manejado, así que la fila NO se selecciona al apretarlo:
+											el lápiz de la fila 3 editaba la materia que estuviera
+											seleccionada, que podía ser la 1.
+
+											Editar y quitar pasaron al pie, con etiqueta, sobre la
+											materia elegida —que es la que el formulario de abajo
+											está mostrando—.
+										-->
 									</GridView>
 								</ListView.View>
 							</ListView>
@@ -316,15 +302,29 @@
 
 							<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
 								<HeaderedContentControl.Header>
-									<Button Command="{ Binding Path=CancelarCommand }"
-											CommandParameter="Editar"
-											Content="Cancelar"
-											Style="{ StaticResource ResourceKey=Btn.Terciario }"
-											ToolTip="Descartar los cambios de la materia"
-											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+									<StackPanel Orientation="Horizontal">
+										<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
+												CommandParameter="Materia"
+												Content="Quitar materia"
+												Margin="0 0 8 0"
+												Style="{ StaticResource ResourceKey=Btn.Peligro }"
+												ToolTip="Quitar la materia elegida del diseño curricular"/>
+										<Button Command="{ Binding Path=CancelarCommand }"
+												CommandParameter="Editar"
+												Content="Cancelar"
+												Style="{ StaticResource ResourceKey=Btn.Terciario }"
+												ToolTip="Descartar los cambios de la materia"
+												Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+									</StackPanel>
 								</HeaderedContentControl.Header>
 
 								<StackPanel Orientation="Horizontal">
+									<Button Command="{ Binding Path=EditarCommand }"
+											CommandParameter="Materia"
+											Content="Editar materia"
+											Margin="0 0 8 0"
+											Style="{ StaticResource ResourceKey=Btn.Secundario }"
+											ToolTip="Abrir la materia elegida para editarla"/>
 									<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
 											CommandParameter="Update"
 											Content="Guardar materia"
@@ -346,5 +346,10 @@
 			</ScrollViewer>
 		</Border>
 		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="4"
+									  EstaCargando="{ Binding Path=CargarCurriculasCommandAsync.IsRunning }"
+									  Leyenda="CARGANDO EL DISEÑO CURRICULAR"/>
 	</Grid>
 </UserControl>

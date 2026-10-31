@@ -39,10 +39,10 @@
 		<!--#endregion-->
 
 		<!--#region ENCABEZADO-->
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Reportes"
-						   Subtitle="Matrículas, asistencias, calificaciones, materias pendientes y trayectorias, en PDF"/>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Titulo="Reportes"
+									Subtitulo="Matrículas, asistencias, calificaciones, materias pendientes y trayectorias, en PDF"/>
 		<!--#endregion-->
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
@@ -68,7 +68,7 @@
 									   Target="{ Binding ElementName=CampoCiclo }"/>
 								<TextBox x:Name="CampoCiclo"
 										 Tag="AAAA"
-										 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+										 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 										 Style="{ StaticResource ResourceKey=Txb.Campo }"
 										 Width="110"/>
 							</StackPanel>
@@ -80,7 +80,7 @@
 								<ComboBox x:Name="CampoCurso"
 										  ItemsSource="{ Binding Path=Cursos, Mode=OneWay }"
 										  SelectedItem="{ Binding Path=Curso, Mode=TwoWay }"
-										  Style="{ StaticResource ResourceKey=ComboBoxStyle }"
+										  Style="{ StaticResource ResourceKey=Cmb.Campo }"
 										  Width="190">
 									<ComboBox.ItemTemplate>
 										<DataTemplate>
@@ -100,7 +100,7 @@
 										  DisplayMemberPath="Descripcion"
 										  ItemsSource="{ Binding Path=Divisiones, Mode=OneWay }"
 										  SelectedItem="{ Binding Path=Division, Mode=TwoWay }"
-										  Style="{ StaticResource ResourceKey=ComboBoxStyle }"
+										  Style="{ StaticResource ResourceKey=Cmb.Campo }"
 										  Width="120"/>
 							</StackPanel>
 
@@ -111,9 +111,11 @@
 									VerticalAlignment="Bottom"/>
 						</StackPanel>
 
+						<!-- Igual que en Documentación: sin binding de Visibility se dibujaba vacío. -->
 						<Border Margin="0 14 0 0"
 								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
-								HorizontalAlignment="Left">
+								HorizontalAlignment="Left"
+								Visibility="{ Binding Path=Mensaje, Converter={ StaticResource ResourceKey=visibleSiHayTexto } }">
 							<TextBlock MaxWidth="700"
 									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 									   Text="{ Binding Path=Mensaje }"
@@ -132,11 +134,17 @@
 								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
 								   Text="EMITIR"/>
 
+						<!--
+							Los cuatro reportes son pares, igual que los documentos del alumno:
+							"Reporte de matrículas" era el único verde sin ser más importante que
+							los otros. El verde queda para "Emitir reporte" de abajo, que es la
+							única acción de su bloque.
+						-->
 						<WrapPanel Orientation="Horizontal">
 							<Button Command="{ Binding Path=MatriculasCommandAsync }"
 									Margin="0 0 10 10"
 									MinWidth="250"
-									Style="{ StaticResource ResourceKey=Btn.Primario }"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
 									ToolTip="Nómina de inscriptos por curso y división">
 								<StackPanel Orientation="Horizontal">
 									<fa:IconBlock FontSize="11" Icon="Users" Margin="0 0 8 0" VerticalAlignment="Center"/>
@@ -197,10 +205,10 @@
 											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
 											   Target="{ Binding ElementName=CampoDesde }"/>
 										<DatePicker x:Name="CampoDesde"
-													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+													CalendarStyle="{ StaticResource ResourceKey=Dtp.Calendario }"
 													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
 													SelectedDate="{ Binding Path=Desde, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-													Style="{ StaticResource ResourceKey=DatePicker }"
+													Style="{ StaticResource ResourceKey=Dtp.Campo }"
 													Width="160"/>
 									</StackPanel>
 
@@ -209,10 +217,10 @@
 											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
 											   Target="{ Binding ElementName=CampoHasta }"/>
 										<DatePicker x:Name="CampoHasta"
-													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+													CalendarStyle="{ StaticResource ResourceKey=Dtp.Calendario }"
 													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
 													SelectedDate="{ Binding Path=Hasta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-													Style="{ StaticResource ResourceKey=DatePicker }"
+													Style="{ StaticResource ResourceKey=Dtp.Campo }"
 													Width="160"/>
 									</StackPanel>
 

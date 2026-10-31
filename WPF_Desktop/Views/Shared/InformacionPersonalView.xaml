@@ -31,19 +31,19 @@
 	<GroupBox Header="INFORMACIÓN PERSONAL" Style="{ StaticResource ResourceKey=Seccion }">
 		<StackPanel>
 			<HeaderedContentControl Header="Apellido" Style="{ StaticResource ResourceKey=Campo }">
-				<TextBox Text="{ Binding Path=Apellido, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox Text="{ Binding Path=Apellido, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
 			<HeaderedContentControl Header="Nombre" Style="{ StaticResource ResourceKey=Campo }">
-				<TextBox Text="{ Binding Path=Nombre, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox Text="{ Binding Path=Nombre, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
 			<!-- Mismo texto guía que la búsqueda de Alumnos: el dato se pide igual en los dos lados. -->
 			<HeaderedContentControl Header="Documento" Style="{ StaticResource ResourceKey=Campo }">
 				<TextBox Tag="8 dígitos, sin puntos"
-						 Text="{ Binding Path=DocumentoNacionalIdentidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+						 Text="{ Binding Path=DocumentoNacionalIdentidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
@@ -61,7 +61,7 @@
 			</HeaderedContentControl>
 
 			<HeaderedContentControl Header="Nacionalidad" Style="{ StaticResource ResourceKey=Campo }">
-				<TextBox Text="{ Binding Path=Nacionalidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox Text="{ Binding Path=Nacionalidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 		</StackPanel>

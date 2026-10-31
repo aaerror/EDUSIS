@@ -24,10 +24,11 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Inscribir alumno"
-						   Subtitle="Inscribir al alumno seleccionado en una división"/>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Inscribir alumno"
+									Subtitulo="Inscribir al alumno seleccionado en una división"/>
 
 		<Border Grid.Row="1"
 				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"

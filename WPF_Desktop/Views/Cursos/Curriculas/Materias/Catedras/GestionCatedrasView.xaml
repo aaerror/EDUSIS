@@ -33,31 +33,20 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
+		<!--
+			El título era el nombre de la materia, igual que en Horarios y en Situación de
+			revista: tres pantallas hermanas con el mismo título y sin la palabra que dice qué
+			es cada una. La materia pasó a la ruta, donde es contexto y no nombre de pantalla.
 
-			<components:Header Grid.Column="0"
-							   Title="{ Binding Path=Materia.Descripcion, Mode=OneWay }"
-							   Subtitle="Cátedras de la materia: una por división"
-							   VerticalContentAlignment="Top"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=VolverCommand }"
-					Style="{ StaticResource ResourceKey=Btn.Terciario }"
-					ToolTip="Volver al diseño curricular"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="ArrowLeft"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Volver a materias" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+			También se fue el "Volver a materias": la miga del medio hace eso con el mismo
+			VolverCommand. Y el VerticalContentAlignment que recibía el Header no hacía nada
+			—el componente nunca lo consumió—.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Cátedras"
+									Subtitulo="Cátedras de la materia: una por división, con sus docentes y sus horas"/>
 		<!--#endregion-->
 
 		<!--#region CREAR CÁTEDRA-->
@@ -208,5 +197,10 @@
 			</Grid>
 		</Border>
 		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="3"
+									  EstaCargando="{ Binding Path=CargarCommand.IsRunning }"
+									  Leyenda="CARGANDO LAS CÁTEDRAS"/>
 	</Grid>
 </UserControl>

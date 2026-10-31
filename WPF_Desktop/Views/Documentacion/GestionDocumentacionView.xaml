@@ -26,10 +26,10 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Documentación"
-						   Subtitle="Certificados, constancias y boletín de un alumno, en PDF"/>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Titulo="Documentación"
+									Subtitulo="Certificados, constancias y boletín de un alumno, en PDF"/>
 		<!--#endregion-->
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
@@ -56,7 +56,7 @@
 									   Target="{ Binding ElementName=CampoDocumento }"/>
 								<TextBox x:Name="CampoDocumento"
 										 Tag="8 dígitos, sin puntos"
-										 Text="{ Binding Path=Documento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+										 Text="{ Binding Path=Documento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 										 Style="{ StaticResource ResourceKey=Txb.Campo }"
 										 Width="200"/>
 							</StackPanel>
@@ -69,9 +69,16 @@
 									VerticalAlignment="Bottom"/>
 						</StackPanel>
 
+						<!--
+							El aviso no tenía binding de Visibility: se dibujaba siempre, así que
+							al abrir la pantalla había una caja ámbar vacía debajo del buscador.
+							Ahora aparece cuando hay algo que decir, con el conversor que mira el
+							texto y no la nulidad (una cadena vacía no es nula).
+						-->
 						<Border Margin="0 14 0 0"
 								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
-								HorizontalAlignment="Left">
+								HorizontalAlignment="Left"
+								Visibility="{ Binding Path=Mensaje, Converter={ StaticResource ResourceKey=visibleSiHayTexto } }">
 							<TextBlock MaxWidth="620"
 									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 									   Text="{ Binding Path=Mensaje }"
@@ -97,7 +104,7 @@
 									   Target="{ Binding ElementName=CampoCiclo }"/>
 								<TextBox x:Name="CampoCiclo"
 										 Tag="AAAA"
-										 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+										 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 										 Style="{ StaticResource ResourceKey=Txb.Campo }"
 										 Width="110"/>
 							</StackPanel>
@@ -127,11 +134,20 @@
 								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
 								   Text="EMITIR"/>
 
+						<!--
+							LOS CINCO DOCUMENTOS SON PARES.
+
+							"Certificado de alumno regular" era el único verde, lo que decía que
+							es el documento importante y los otros cuatro alternativas menores.
+							No hay tal jerarquía: el usuario viene a emitir el que le pidieron.
+							Los cinco en secundario, y el verde queda para "Emitir certificado"
+							de abajo, que sí es la única acción de su bloque.
+						-->
 						<WrapPanel Orientation="Horizontal">
 							<Button Command="{ Binding Path=CertificadoAlumnoRegularCommandAsync }"
 									Margin="0 0 10 10"
 									MinWidth="250"
-									Style="{ StaticResource ResourceKey=Btn.Primario }"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
 									ToolTip="Acredita que el alumno cursa regularmente en el ciclo lectivo">
 								<StackPanel Orientation="Horizontal">
 									<fa:IconBlock FontSize="11" Icon="FileLines" Margin="0 0 8 0" VerticalAlignment="Center"/>
@@ -203,10 +219,10 @@
 											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
 											   Target="{ Binding ElementName=CampoDesde }"/>
 										<DatePicker x:Name="CampoDesde"
-													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+													CalendarStyle="{ StaticResource ResourceKey=Dtp.Calendario }"
 													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
 													SelectedDate="{ Binding Path=Desde, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-													Style="{ StaticResource ResourceKey=DatePicker }"
+													Style="{ StaticResource ResourceKey=Dtp.Campo }"
 													Width="160"/>
 									</StackPanel>
 
@@ -215,10 +231,10 @@
 											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
 											   Target="{ Binding ElementName=CampoHasta }"/>
 										<DatePicker x:Name="CampoHasta"
-													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+													CalendarStyle="{ StaticResource ResourceKey=Dtp.Calendario }"
 													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
 													SelectedDate="{ Binding Path=Hasta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-													Style="{ StaticResource ResourceKey=DatePicker }"
+													Style="{ StaticResource ResourceKey=Dtp.Campo }"
 													Width="160"/>
 									</StackPanel>
 

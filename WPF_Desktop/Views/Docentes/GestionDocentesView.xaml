@@ -32,36 +32,32 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region ENCABEZADO DE PANTALLA-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
+		<!--#region ENCABEZADO DE PANTALLA
+			La acción de crear es la primaria de la pantalla y es la única verde. Antes era un
+			botón secundario blanco mientras las tres navegaciones de abajo eran verdes: la
+			jerarquía estaba dada vuelta.
 
-			<components:Header Grid.Column="0"
-							   Title="Docentes"
-							   Subtitle="Legajos del personal docente, con sus puestos y licencias"/>
-
-			<!--
-				La acción de crear es la primaria de la pantalla y es la única verde. Antes
-				era un botón secundario blanco mientras las tres navegaciones de abajo eran
-				verdes: la jerarquía estaba dada vuelta.
-			-->
-			<Button Grid.Column="1"
-					Command="{ Binding Path=RegistrarCommand }"
-					Style="{ StaticResource ResourceKey=Btn.Primario }"
-					ToolTip="Dar de alta un docente nuevo"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="Plus"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Registrar docente" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+			Sin ruta: es una pantalla de primer nivel, y una miga que dijera "DOCENTES" arriba
+			del título "Docentes" sería la misma palabra dos veces.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Titulo="Docentes"
+									Subtitulo="Legajos del personal docente, con sus puestos y licencias">
+			<components:PaginaComponent.Accion>
+				<Button Command="{ Binding Path=RegistrarCommand }"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Dar de alta un docente nuevo">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Registrar docente" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<!--#region CUERPO-->
@@ -281,6 +277,16 @@
 					</Grid>
 				</Grid>
 				<!--#endregion-->
+
+				<!--
+					El velo de carga cubre las tres columnas: mientras el listado viaja, ni el
+					índice ni la ficha tienen nada que decir. Se liga al IsRunning del propio
+					comando de carga, que CommunityToolkit ya expone en todo AsyncRelayCommand.
+				-->
+				<components:CargandoComponent Grid.Column="0"
+											  Grid.ColumnSpan="3"
+											  EstaCargando="{ Binding Path=CargarCommandAsync.IsRunning }"
+											  Leyenda="CARGANDO LOS LEGAJOS"/>
 			</Grid>
 		</Border>
 		<!--#endregion-->

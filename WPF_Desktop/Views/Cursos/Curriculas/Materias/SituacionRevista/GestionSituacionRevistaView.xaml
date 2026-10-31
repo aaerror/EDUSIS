@@ -44,34 +44,12 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="{ Binding Path=Materia.Descripcion, Mode=OneWay }"
-							   Subtitle="Docentes designados en la cátedra, con su cargo y su período"
-							   VerticalContentAlignment="Top"/>
-
-			<StackPanel Grid.Column="1"
-						Orientation="Horizontal"
-						VerticalAlignment="Center">
-				<Button Command="{ Binding Path=NavigationCommand }"
-						CommandParameter="Materias"
-						Margin="0 0 8 0"
-						Style="{ StaticResource ResourceKey=Btn.Terciario }"
-						ToolTip="Volver al diseño curricular">
-					<StackPanel Orientation="Horizontal">
-						<fa:IconBlock FontSize="11"
-									  Icon="ArrowLeft"
-									  Margin="0 0 8 0"
-									  VerticalAlignment="Center"/>
-						<TextBlock Text="Volver a materias" VerticalAlignment="Center"/>
-					</StackPanel>
-				</Button>
-
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Docentes de la cátedra"
+									Subtitulo="Docentes designados en la cátedra, con su cargo y su período">
+			<components:PaginaComponent.Accion>
 				<Button Command="{ Binding Path=RegistrarCommand }"
 						CommandParameter="SituacionRevista"
 						Style="{ StaticResource ResourceKey=Btn.Primario }"
@@ -84,8 +62,8 @@
 						<TextBlock Text="Designar docente" VerticalAlignment="Center"/>
 					</StackPanel>
 				</Button>
-			</StackPanel>
-		</Grid>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<!--#region AVISO-->
@@ -177,27 +155,6 @@
 								<DataGridCheckBoxColumn Binding="{ Binding Path=EnFunciones }"
 														Header="EN AULA"
 														Width="Auto"/>
-								<DataGridTemplateColumn Header="" Width="Auto">
-									<DataGridTemplateColumn.CellTemplate>
-										<DataTemplate>
-											<StackPanel Orientation="Horizontal">
-												<Button Command="{ Binding Path=DataContext.EditarCommand, RelativeSource={ RelativeSource AncestorType=UserControl } }"
-														CommandParameter="Docente"
-														Margin="0 0 4 0"
-														Style="{ StaticResource ResourceKey=Btn.Icono }"
-														ToolTip="Quitar de funciones">
-													<fa:IconBlock FontSize="11" Icon="UserAltSlash"/>
-												</Button>
-												<Button Command="{ Binding Path=DataContext.EditarCommand, RelativeSource={ RelativeSource AncestorType=UserControl } }"
-														CommandParameter="Rescindir"
-														Style="{ StaticResource ResourceKey=Btn.Icono }"
-														ToolTip="Establecer el fin de la designación">
-													<fa:IconBlock FontSize="11" Icon="Ban"/>
-												</Button>
-											</StackPanel>
-										</DataTemplate>
-									</DataGridTemplateColumn.CellTemplate>
-								</DataGridTemplateColumn>
 							</DataGrid.Columns>
 						</DataGrid>
 
@@ -207,20 +164,52 @@
 													IsEnabled="False"
 													Margin="0 16 0 0"/>
 
+						<!--
+							LAS DOS ACCIONES QUE ESTABAN EN ÍCONOS, AHORA CON NOMBRE.
+
+							La grilla traía una columna con un UserAltSlash ("quitar de
+							funciones") y un Ban ("establecer el fin de la designación"): dos
+							operaciones de ciclo de vida de una designación representadas con un
+							ícono sin etiqueta. Además llamaban al comando con un parámetro fijo
+							y sin pasar la fila, y los comandos trabajan sobre la fila
+							SELECCIONADA: como un Button dentro de una celda marca el clic como
+							manejado, la fila no llegaba a seleccionarse y el ícono de una fila
+							operaba sobre otra.
+
+							Las cuatro acciones de la designación elegida viven ahora juntas en
+							el pie, que es donde el detalle de arriba muestra a quién se le van a
+							aplicar.
+						-->
 						<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
 							<HeaderedContentControl.Header>
-								<Button Command="{ Binding Path=EliminarCommand }"
-										CommandParameter="Docente"
-										Content="Finalizar designación"
-										Style="{ StaticResource ResourceKey=Btn.Peligro }"
-										ToolTip="Dar de baja la designación elegida"/>
+								<StackPanel Orientation="Horizontal">
+									<Button Command="{ Binding Path=EliminarCommand }"
+											CommandParameter="Docente"
+											Content="Finalizar designación"
+											Margin="0 0 8 0"
+											Style="{ StaticResource ResourceKey=Btn.Peligro }"
+											ToolTip="Dar de baja la designación elegida"/>
+									<Button Command="{ Binding Path=EditarCommand }"
+											CommandParameter="Rescindir"
+											Content="Poner fin de designación"
+											Style="{ StaticResource ResourceKey=Btn.Peligro }"
+											ToolTip="Establecer la fecha de fin de la designación elegida"/>
+								</StackPanel>
 							</HeaderedContentControl.Header>
 
-							<Button Command="{ Binding Path=GuardarCommand }"
-									CommandParameter="Docente"
-									Content="Poner en aula"
-									Style="{ StaticResource ResourceKey=Btn.Primario }"
-									ToolTip="Establecer al docente elegido como docente de aula"/>
+							<StackPanel Orientation="Horizontal">
+								<Button Command="{ Binding Path=EditarCommand }"
+										CommandParameter="Docente"
+										Content="Quitar del aula"
+										Margin="0 0 8 0"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Relevar de funciones al docente elegido"/>
+								<Button Command="{ Binding Path=GuardarCommand }"
+										CommandParameter="Docente"
+										Content="Poner en aula"
+										Style="{ StaticResource ResourceKey=Btn.Primario }"
+										ToolTip="Establecer al docente elegido como docente de aula"/>
+							</StackPanel>
 						</HeaderedContentControl>
 					</Grid>
 				</Border>

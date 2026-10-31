@@ -37,31 +37,11 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="{ Binding Path=Materia.Descripcion, Mode=OneWay }"
-							   Subtitle="Horarios de la cátedra: turno, día, hora de inicio y duración de la hora cátedra"
-							   VerticalContentAlignment="Top"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=VolverCommand }"
-					Style="{ StaticResource ResourceKey=Btn.Terciario }"
-					ToolTip="Volver a las cátedras de la materia"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="ArrowLeft"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Volver a cátedras" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Horarios"
+									Subtitulo="Horarios de la cátedra: turno, día, hora de inicio y duración de la hora cátedra"/>
 		<!--#endregion-->
 
 		<!--#region AGREGAR HORARIO-->
@@ -190,5 +170,10 @@
 			</Grid>
 		</Border>
 		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="3"
+									  EstaCargando="{ Binding Path=CargarCommand.IsRunning }"
+									  Leyenda="CARGANDO LOS HORARIOS"/>
 	</Grid>
 </UserControl>

@@ -38,31 +38,16 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="Asistencia de la división"
-							   Subtitle="Planilla del día: presentes, ausencias, inasistencias y tardanzas"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=VolverCommand }"
-					Style="{ StaticResource ResourceKey=Btn.Terciario }"
-					ToolTip="Volver a las divisiones del curso"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="ArrowLeft"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Volver a divisiones" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<!--#region ENCABEZADO
+			El "Volver a divisiones" pasó a ser la miga del medio: el VolverCommand es el mismo,
+			y así la pantalla queda igual que su hermana —los alumnos de la división—, que no
+			tenía ningún botón de volver.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Asistencia de la división"
+									Subtitulo="Planilla del día: presentes, ausencias, inasistencias y tardanzas"/>
 		<!--#endregion-->
 
 		<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -350,29 +335,40 @@
 										 Width="90"/>
 							</HeaderedContentControl>
 
+							<!--
+								LAS CUATRO MARCAS SON PARES Y AHORA SE VEN PARES.
+
+								Estaban en tres pesos distintos —Tardanza e Inasistencia en
+								terciario, Ausencia en secundario y Presente en verde—, lo que
+								decía que marcar presente es la acción importante del día y que
+								registrar una tardanza es algo accesorio. Para el preceptor son
+								cuatro estados del mismo acto: elegir cuál le corresponde a este
+								alumno. Cuatro botones secundarios del mismo peso, en el orden en
+								que se usan.
+							-->
 							<StackPanel Grid.Column="2"
 										Orientation="Horizontal"
 										VerticalAlignment="Bottom">
+								<Button Command="{ Binding Path=MarcarPresenteCommand }"
+										Content="Presente"
+										Margin="0 0 8 16"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Volver a marcar presente al alumno elegido"/>
 								<Button Command="{ Binding Path=MarcarTardanzaCommand }"
 										Content="Tardanza"
 										Margin="0 0 8 16"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
 										ToolTip="Registrar la llegada tarde con los minutos indicados"/>
-								<Button Command="{ Binding Path=MarcarInasistenciaCommand }"
-										Content="Inasistencia"
-										Margin="0 0 8 16"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Falta sin justificar"/>
 								<Button Command="{ Binding Path=MarcarAusenciaCommand }"
 										Content="Ausencia"
 										Margin="0 0 8 16"
 										Style="{ StaticResource ResourceKey=Btn.Secundario }"
 										ToolTip="Falta justificada"/>
-								<Button Command="{ Binding Path=MarcarPresenteCommand }"
-										Content="Presente"
+								<Button Command="{ Binding Path=MarcarInasistenciaCommand }"
+										Content="Inasistencia"
 										Margin="0 0 0 16"
-										Style="{ StaticResource ResourceKey=Btn.Primario }"
-										ToolTip="Volver a marcar presente al alumno elegido"/>
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Falta sin justificar"/>
 							</StackPanel>
 						</Grid>
 
@@ -417,5 +413,9 @@
 				<!--#endregion-->
 			</StackPanel>
 		</ScrollViewer>
+
+		<components:CargandoComponent Grid.Row="1"
+									  EstaCargando="{ Binding Path=CargarCommand.IsRunning }"
+									  Leyenda="CARGANDO LA PLANILLA"/>
 	</Grid>
 </UserControl>

@@ -44,31 +44,18 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="Cursos"
-							   Subtitle="Alta de un curso nuevo"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=NavigationCommand }"
-					CommandParameter="Curso"
-					Style="{ StaticResource ResourceKey=Btn.Terciario }"
-					ToolTip="Volver al listado de cursos"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<TextBlock Text="Ir a cursos" VerticalAlignment="Center"/>
-					<fa:IconBlock FontSize="11"
-								  Icon="ArrowRightLong"
-								  Margin="8 0 0 0"
-								  VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<!--
+			El botón de volver se fue del encabezado: la ruta de arriba ya lleva a Cursos, y ese
+			botón estaba mal de tres maneras —decía "Ir a cursos" donde el resto de la aplicación
+			dice "Volver a…", llevaba la flecha ArrowRightLong apuntando para adelante, y la
+			ponía DESPUÉS del texto—. Tampoco competía por lugar con la acción principal: era lo
+			único que había a la derecha del título en una pantalla cuya acción es "Guardar".
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Registrar curso"
+									Subtitulo="Alta de un curso nuevo: su grado y su nivel educativo"/>
 
 		<Border Grid.Row="1"
 				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
@@ -90,7 +77,7 @@
 
 				<Border Style="{ StaticResource ResourceKey=Superficie.Seccion }">
 					<Button Command="{ Binding Path=RegistrarCommand }"
-							Content="Guardar"
+							Content="Registrar curso"
 							HorizontalAlignment="Right"
 							Style="{ StaticResource ResourceKey=Btn.Primario }"
 							ToolTip="Dar de alta el curso"/>

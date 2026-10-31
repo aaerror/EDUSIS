@@ -39,7 +39,7 @@
 			<HeaderedContentControl Grid.Column="0" Grid.Row="0"
 								   Header="Calle"
 								   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-				<TextBox Text="{ Binding Path=Calle, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox Text="{ Binding Path=Calle, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
@@ -47,7 +47,7 @@
 								   Header="Altura"
 								   Style="{ StaticResource ResourceKey=Campo.Derecha }">
 				<TextBox Tag="1234"
-						 Text="{ Binding Path=Altura, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+						 Text="{ Binding Path=Altura, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
@@ -62,21 +62,21 @@
 			<HeaderedContentControl Grid.Column="1" Grid.Row="1"
 								   Header="Localidad"
 								   Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<TextBox Text="{ Binding Path=Localidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox Text="{ Binding Path=Localidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
 			<HeaderedContentControl Grid.Column="0" Grid.Row="2"
 								   Header="Provincia"
 								   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-				<TextBox Text="{ Binding Path=Provincia, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox Text="{ Binding Path=Provincia, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
 			<HeaderedContentControl Grid.Column="1" Grid.Row="2"
 								   Header="País"
 								   Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<TextBox Text="{ Binding Path=Pais, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox Text="{ Binding Path=Pais, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 

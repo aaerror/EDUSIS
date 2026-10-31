@@ -36,30 +36,24 @@
 				Height="34"
 				VerticalAlignment="Top"
 				Width="34">
-			<TextBlock FontFamily="{ StaticResource ResourceKey=Fuente.Display }"
-					   FontSize="14"
-					   FontStretch="SemiCondensed"
-					   FontWeight="Bold"
-					   Foreground="#FFFFFF"
-					   HorizontalAlignment="Center"
-					   Text="{ Binding Path=Iniciales, FallbackValue=— }"
-					   VerticalAlignment="Center"/>
+			<!--
+				Era la única vista que fijaba familia, tamaño, peso y color a mano en cada
+				TextBlock. Ahora usa los tres estilos del rail, que viven en el tema junto al
+				resto de la escala tipográfica.
+			-->
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.SobrePizarra.Inicial }"
+					   Text="{ Binding Path=Iniciales, FallbackValue=— }"/>
 		</Border>
 
 		<StackPanel Grid.Column="1"
 					Margin="11 0 0 0"
 					VerticalAlignment="Center">
-			<TextBlock FontFamily="{ StaticResource ResourceKey=Fuente.Cuerpo }"
-					   FontSize="13"
-					   FontWeight="SemiBold"
-					   Foreground="{ StaticResource ResourceKey=SobrePizarra }"
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.SobrePizarra }"
 					   Text="{ Binding Path=NombreCompleto, FallbackValue='Sesión sin iniciar', TargetNullValue='Sesión sin iniciar' }"
 					   TextTrimming="CharacterEllipsis"
 					   ToolTip="{ Binding Path=NombreCompleto }"/>
-			<TextBlock FontFamily="{ StaticResource ResourceKey=Fuente.Dato }"
-					   FontSize="11.5"
-					   Foreground="{ StaticResource ResourceKey=SobrePizarraMedia }"
-					   Margin="0 2 0 0"
+			<TextBlock Margin="0 2 0 0"
+					   Style="{ StaticResource ResourceKey=Txt.SobrePizarra.Dato }"
 					   Text="{ Binding Path=Username, FallbackValue='—', TargetNullValue='—' }"
 					   TextTrimming="CharacterEllipsis"
 					   ToolTip="{ Binding Path=Username }"/>

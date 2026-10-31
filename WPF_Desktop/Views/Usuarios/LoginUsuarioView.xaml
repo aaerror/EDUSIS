@@ -14,6 +14,22 @@
 		desconfiar de todos los demás.
 	-->
 	<StackPanel>
+		<!--#region ENCABEZADO
+			Las dos pantallas del acceso no tenían título: se entraba a un formulario de dos
+			campos sin una línea que dijera qué hace. No llevan el componente Pagina —no hay
+			ruta ni acciones de encabezado dentro de una ventana de 430px— pero sí la misma voz
+			tipográfica que el resto de la aplicación.
+		-->
+		<StackPanel Margin="0 0 0 20">
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+					   Text="Entrar"/>
+			<TextBlock Margin="0 2 0 0"
+					   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+					   Text="Usá el usuario y la contraseña de tu legajo."
+					   TextWrapping="Wrap"/>
+		</StackPanel>
+		<!--#endregion-->
+
 		<!--#region USUARIO-->
 		<StackPanel Margin="0 0 0 16">
 			<Label Content="Usuario"
@@ -21,7 +37,7 @@
 				   Target="{ Binding ElementName=CampoUsuario }"/>
 			<TextBox x:Name="CampoUsuario"
 					 Tag="nombre@edu.ar"
-					 Text="{ Binding Path=Usuario, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+					 Text="{ Binding Path=Usuario, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 		</StackPanel>
 		<!--#endregion-->
@@ -30,7 +46,7 @@
 		<StackPanel Margin="0 0 0 20">
 			<Label Content="Contraseña"
 				   Style="{ StaticResource ResourceKey=Lbl.Campo }"/>
-			<components:PasswordComponent Clave="{ Binding Path=Clave, ValidatesOnDataErrors=True }"/>
+			<components:PasswordComponent Clave="{ Binding Path=Clave, ValidatesOnNotifyDataErrors=True }"/>
 		</StackPanel>
 		<!--#endregion-->
 
@@ -41,10 +57,10 @@
 		<Border Margin="0 0 0 16"
 				Style="{ StaticResource ResourceKey=Superficie.Error }"
 				Visibility="{ Binding Path=HasErrors, Converter={ StaticResource ResourceKey=visibilidad }, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }">
-			<TextBlock Foreground="{ StaticResource ResourceKey=Alerta }"
-					   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-					   Text="{ Binding Path=MensajeError, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-					   TextWrapping="Wrap"/>
+			<!-- Txt.Error.Campo: el texto de error del sistema, en lugar de teñir a mano un Txt.Cuerpo. -->
+			<TextBlock Margin="0"
+					   Style="{ StaticResource ResourceKey=Txt.Error.Campo }"
+					   Text="{ Binding Path=MensajeError, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
 		</Border>
 		<!--#endregion-->
 

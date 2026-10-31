@@ -23,9 +23,14 @@
 		Se usa el converter visibilidad del tema en lugar de declarar un
 		BooleanToVisibilityConverter por vista.
 	-->
+	<!--
+		La carga se dispara con el mismo idioma que el perfil del docente: un comando, no un
+		CallMethodAction contra un método suelto. Las dos pantallas son la misma sobre otra
+		entidad y no tenían motivo para arrancar de dos maneras distintas.
+	-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
-			<behaviors:CallMethodAction MethodName="CargarPerfil" TargetObject="{ Binding }"/>
+			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarPerfilCommandAsync }"/>
 		</behaviors:EventTrigger>
 	</behaviors:Interaction.Triggers>
 
@@ -35,12 +40,14 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Perfil del alumno"
-						   Subtitle="Datos personales, contacto y domicilio. Cada bloque se edita por separado."/>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Perfil del alumno"
+									Subtitulo="Datos personales, contacto y domicilio. Cada bloque se edita por separado."/>
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid>
 			<ScrollViewer VerticalScrollBarVisibility="Auto">
 				<StackPanel Margin="28 4 28 24">
 					<!--#region INFORMACIÓN PERSONAL-->
@@ -151,6 +158,10 @@
 					<!--#endregion-->
 				</StackPanel>
 			</ScrollViewer>
+
+			<components:CargandoComponent EstaCargando="{ Binding Path=CargarPerfilCommandAsync.IsRunning }"
+										  Leyenda="CARGANDO EL PERFIL"/>
+			</Grid>
 		</Border>
 	</Grid>
 </UserControl>

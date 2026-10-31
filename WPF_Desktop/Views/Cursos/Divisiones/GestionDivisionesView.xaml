@@ -38,63 +38,54 @@
 			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
-		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
+		<!--#region ENCABEZADO
+			El botón "Volver a cursos" se fue: la ruta de arriba lleva a Cursos, y era uno de los
+			siete botones de volver con siete redacciones distintas.
 
-			<components:Header Grid.Column="0"
-							   Title="Divisiones"
-							   Subtitle="Divisiones del curso, con su preceptor y sus alumnos"/>
+			La letra se queda al lado de su botón, y es a propósito: es el único dato que la
+			acción principal necesita, así que el campo y el botón son UN grupo de acción. Las
+			pantallas cuya alta necesita un formulario entero —cátedras, horarios— lo tienen en
+			su propia tarjeta y dejan el encabezado sin acción que compita.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Divisiones"
+									Subtitulo="Divisiones del curso, con su preceptor y sus alumnos">
+			<components:PaginaComponent.Accion>
+				<StackPanel Orientation="Horizontal">
+					<!--
+						La letra viene precargada con la que propone el dominio y el usuario la
+						puede cambiar (DIV-1). El campo es angosto a propósito: entra una sola
+						letra, y la validación de ObservableValidator deshabilita el botón si no
+						es así.
+					-->
+					<HeaderedContentControl Header="Letra"
+											Margin="0 0 8 0"
+											Style="{ StaticResource ResourceKey=Campo }"
+											ToolTip="Letra de la división nueva. El sistema propone la siguiente libre.">
+						<TextBox MaxLength="1"
+								 Style="{ StaticResource ResourceKey=Txb.Campo }"
+								 Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+								 Width="56"/>
+					</HeaderedContentControl>
 
-			<StackPanel Grid.Column="1"
-						Orientation="Horizontal"
-						VerticalAlignment="Center">
-				<Button Command="{ Binding Path=NavigationCommand }"
-						CommandParameter="Curso"
-						Margin="0 0 8 0"
-						Style="{ StaticResource ResourceKey=Btn.Terciario }"
-						ToolTip="Volver a cursos">
-					<StackPanel Orientation="Horizontal">
-						<fa:IconBlock FontSize="11"
-									  Icon="ArrowLeft"
-									  Margin="0 0 8 0"
-									  VerticalAlignment="Center"/>
-						<TextBlock Text="Volver a cursos" VerticalAlignment="Center"/>
-					</StackPanel>
-				</Button>
-
-				<!--
-					La letra viene precargada con la que propone el dominio y el usuario la puede
-					cambiar (DIV-1). El campo es angosto a propósito: entra una sola letra, y la
-					validación de ObservableValidator deshabilita el botón si no es así.
-				-->
-				<HeaderedContentControl Header="Letra"
-										Margin="0 0 8 0"
-										Style="{ StaticResource ResourceKey=Campo }"
-										ToolTip="Letra de la división nueva. El sistema propone la siguiente libre.">
-					<TextBox MaxLength="1"
-							 Style="{ StaticResource ResourceKey=Txb.Campo }"
-							 Text="{ Binding Path=Descripcion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
-							 Width="56"/>
-				</HeaderedContentControl>
-
-				<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
-						CommandParameter="Division"
-						Style="{ StaticResource ResourceKey=Btn.Primario }"
-						ToolTip="Crear una división nueva en el curso">
-					<StackPanel Orientation="Horizontal">
-						<fa:IconBlock FontSize="11"
-									  Icon="Plus"
-									  Margin="0 0 8 0"
-									  VerticalAlignment="Center"/>
-						<TextBlock Text="Nueva división" VerticalAlignment="Center"/>
-					</StackPanel>
-				</Button>
-			</StackPanel>
-		</Grid>
+					<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
+							CommandParameter="Division"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Crear una división nueva en el curso"
+							VerticalAlignment="Bottom">
+						<StackPanel Orientation="Horizontal">
+							<fa:IconBlock FontSize="11"
+										  Icon="Plus"
+										  Margin="0 0 8 0"
+										  VerticalAlignment="Center"/>
+							<TextBlock Text="Nueva división" VerticalAlignment="Center"/>
+						</StackPanel>
+					</Button>
+				</StackPanel>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<!--#region AVISO-->
@@ -170,18 +161,20 @@
 						<DataGridTextColumn Binding="{ Binding Path=Cursantes, FallbackValue='Sin datos', TargetNullValue='Sin datos', StringFormat={}{0} alumnos }"
 											Header="INSCRIPTOS"
 											Width="*"/>
-						<DataGridTemplateColumn Header="" Width="Auto">
-							<DataGridTemplateColumn.CellTemplate>
-								<DataTemplate>
-									<Button Command="{ Binding Path=DataContext.EliminarCommandAsync, IsAsync=True, RelativeSource={ RelativeSource Mode=FindAncestor, AncestorType={ x:Type TypeName=UserControl } } }"
-											CommandParameter="Division"
-											Style="{ StaticResource ResourceKey=Btn.Icono }"
-											ToolTip="Eliminar esta división">
-										<fa:IconBlock FontSize="11" Icon="Trash"/>
-									</Button>
-								</DataTemplate>
-							</DataGridTemplateColumn.CellTemplate>
-						</DataGridTemplateColumn>
+						<!--
+							ACÁ ESTABA UN BOTÓN QUE BORRABA LA FILA EQUIVOCADA.
+
+							La columna traía un tachito que llamaba al comando del ViewModel con
+							CommandParameter="Division" y sin pasar la fila: el comando opera sobre
+							Division, que es el SelectedItem de la grilla. Clickear el tachito de
+							una fila no seleccionada eliminaba la división seleccionada, que es
+							otra. Y además era el segundo idioma visual para borrar en la misma
+							pantalla: un ícono sin etiqueta arriba y un Btn.Peligro con texto en
+							el pie.
+
+							Ahora eliminar vive una sola vez, en el pie, con etiqueta y sobre la
+							división elegida, que es la que la ficha de arriba está mostrando.
+						-->
 					</DataGrid.Columns>
 				</DataGrid>
 
@@ -189,21 +182,16 @@
 					<HeaderedContentControl.Header>
 						<StackPanel Orientation="Horizontal">
 							<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
-									CommandParameter="Preceptor"
-									Content="Quitar preceptor"
+									CommandParameter="Division"
+									Content="Eliminar división"
 									Margin="0 0 8 0"
 									Style="{ StaticResource ResourceKey=Btn.Peligro }"
+									ToolTip="Eliminar la división elegida, con sus planillas de asistencia"/>
+							<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
+									CommandParameter="Preceptor"
+									Content="Quitar preceptor"
+									Style="{ StaticResource ResourceKey=Btn.Peligro }"
 									ToolTip="Quitar el preceptor de la división elegida"/>
-							<!--
-								Cambiar y asignar son excluyentes: este se habilita con el cargo
-								ocupado y "Asignar preceptor" con el cargo vacante. Antes el de
-								asignar estaba siempre habilitado y con el cargo ocupado terminaba
-								en una excepción de dominio mostrada como error.
-							-->
-							<Button Command="{ Binding Path=ModificarPreceptorCommand }"
-									Content="Cambiar preceptor"
-									Style="{ StaticResource ResourceKey=Btn.Secundario }"
-									ToolTip="Reemplazar al preceptor de la división elegida"/>
 						</StackPanel>
 					</HeaderedContentControl.Header>
 
@@ -220,10 +208,25 @@
 								Margin="0 0 8 0"
 								Style="{ StaticResource ResourceKey=Btn.Terciario }"
 								ToolTip="Planilla de asistencia diaria de la división"/>
+						<!--
+							Cambiar y asignar son excluyentes: el primero se habilita con el cargo
+							ocupado y el segundo con el cargo vacante. Antes el de asignar estaba
+							siempre habilitado y con el cargo ocupado terminaba en una excepción de
+							dominio mostrada como error.
+
+							Los dos son secundarios: la acción primaria de la pantalla es crear una
+							división, y está arriba. Antes "Asignar preceptor" era el segundo botón
+							verde de la misma pantalla.
+						-->
+						<Button Command="{ Binding Path=ModificarPreceptorCommand }"
+								Content="Cambiar preceptor"
+								Margin="0 0 8 0"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
+								ToolTip="Reemplazar al preceptor de la división elegida"/>
 						<Button Command="{ Binding Path=RegistrarCommandAsync, IsAsync=True }"
 								CommandParameter="Docente"
 								Content="Asignar preceptor"
-								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
 								ToolTip="Buscar un docente y asignarlo como preceptor"/>
 					</StackPanel>
 				</HeaderedContentControl>
@@ -293,6 +296,7 @@
 								ToolTip="Dejar la división sin cambios"/>
 					</HeaderedContentControl.Header>
 
+					<!-- Dentro de la tarjeta de asignación sí es la acción principal: es la única. -->
 					<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
 							CommandParameter="Insert"
 							Content="Asignar preceptor"
@@ -302,5 +306,10 @@
 			</Grid>
 		</Border>
 		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="4"
+									  EstaCargando="{ Binding Path=CargarDivisionesCommandAsync.IsRunning }"
+									  Leyenda="CARGANDO LAS DIVISIONES"/>
 	</Grid>
 </UserControl>

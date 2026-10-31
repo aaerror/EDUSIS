@@ -29,12 +29,15 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Alumnos"
-						   Subtitle="Alta de un alumno nuevo, en dos pasos"/>
+		<!-- El título era "Alumnos", igual que el índice del que se viene. -->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Registrar alumno"
+									Subtitulo="Alta de un alumno nuevo, en dos pasos: primero la persona, después su inscripción"/>
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid>
 			<TabControl Margin="28 20 28 24"
 						SelectedIndex="{ Binding Path=Tab, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 						Style="{ StaticResource ResourceKey=Pestanas }">
@@ -56,19 +59,21 @@
 								<RowDefinition Height="Auto"/>
 							</Grid.RowDefinitions>
 
+							<!--
+								Sin Validation.ErrorTemplate="{x:Null}", igual que en el alta de
+								docente: el error del campo tiene que verse mientras se escribe y
+								no al apretar "Continuar".
+							-->
 							<shared:InformacionPersonalView Grid.Column="0" Grid.Row="0"
 															DataContext="{ Binding Path=InformacionPersonal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-															Validation.ErrorTemplate="{ x:Null }"
 															VerticalAlignment="Top"/>
 
 							<shared:DomicilioView Grid.Column="2" Grid.Row="0"
 												  DataContext="{ Binding Path=Domicilio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-												  Validation.ErrorTemplate="{ x:Null }"
 												  VerticalAlignment="Top"/>
 
 							<shared:ContactoView Grid.ColumnSpan="3" Grid.Row="1"
-												 DataContext="{ Binding Path=Contacto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-												 Validation.ErrorTemplate="{ x:Null }"/>
+												 DataContext="{ Binding Path=Contacto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
 
 							<!--#region ACCIONES-->
 							<Border Grid.ColumnSpan="3" Grid.Row="2"
@@ -200,10 +205,10 @@
 
 									<Button Grid.Column="1"
 											Command="{ Binding Path=GuardarCommand }"
-											Content="Guardar"
+											Content="Inscribir alumno"
 											HorizontalAlignment="Right"
 											Style="{ StaticResource ResourceKey=Btn.Primario }"
-											ToolTip="Dar de alta el alumno con esta inscripción"/>
+											ToolTip="Inscribir el alumno en el curso y la división elegidos"/>
 								</Grid>
 							</Border>
 							<!--#endregion-->
@@ -212,6 +217,12 @@
 				</TabItem>
 				<!--#endregion-->
 			</TabControl>
+
+			<components:CargandoComponent EstaCargando="{ Binding Path=ContinuarCommand.IsRunning }"
+										  Leyenda="REGISTRANDO EL ALUMNO"/>
+			<components:CargandoComponent EstaCargando="{ Binding Path=GuardarCommand.IsRunning }"
+										  Leyenda="INSCRIBIENDO EL ALUMNO"/>
+			</Grid>
 		</Border>
 	</Grid>
 </UserControl>
