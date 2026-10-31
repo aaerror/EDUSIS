@@ -489,8 +489,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("varchar(50)")
                         .HasColumnName("descripcion");
 
-                    b.Property<byte>("HorasCatedra")
-                        .HasColumnType("tinyint")
+                    b.Property<int>("HorasCatedra")
+                        .HasColumnType("int")
                         .HasColumnName("horas_catedra");
 
                     b.HasKey("Id")

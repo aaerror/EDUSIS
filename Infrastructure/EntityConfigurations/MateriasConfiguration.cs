@@ -54,9 +54,12 @@ internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 			   .IsUnicode(false)
 			   .IsRequired();
 
+		// La columna era 'tinyint' mientras HorasCatedra fue 'byte'. Al ensancharse la propiedad a
+		// 'int' el tipo de almacenamiento quedó desalineado: SQL Server promueve SUM(tinyint) a int,
+		// y TotalHorasCatedraSegunCurriculaAsync fallaba al leer el agregado. No volver a fijar el
+		// tipo de columna a mano: que lo resuelva la convención según el tipo CLR.
 		builder.Property(x => x.HorasCatedra)
 			   .HasColumnName("horas_catedra")
-			   .HasColumnType("tinyint")
 			   .IsRequired();
 
 		// ÍNDICE ÚNICO
