@@ -4,8 +4,12 @@ using Core.ServicioCatedras.Exceptions;
 using Core.Shared;
 using Core.Shared.Seguridad;
 using Domain.Catedras;
+using Domain.Catedras.Exceptions;
 using Domain.Catedras.Horarios;
 using Domain.Catedras.SituacionesRevista;
+using Domain.Divisiones.Exceptions;
+using Domain.Docentes.Exceptions;
+using Domain.Materias.Exceptions;
 using Domain.Shared;
 using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
@@ -32,7 +36,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		var catedra = await _unitOfWork.Catedras.BuscarPorIDAsync(unaCatedra);
 		if (catedra is null)
 		{
-			throw new ArgumentNullException(nameof(unaCatedra), "No se encontró la cátedra.");
+			throw new CatedraNoEncontradaException(nameof(unaCatedra));
 		}
 
 		return catedra;
@@ -62,13 +66,13 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 			var materia = await _unitOfWork.Materias.BuscarPorIDAsync(request.MateriaID);
 			if (materia is null)
 			{
-				throw new ArgumentNullException(nameof(request.MateriaID), "No se encontró la materia.");
+				throw new MateriaNoEncontradaException(nameof(request.MateriaID));
 			}
 
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new ArgumentNullException(nameof(request.DivisionID), "No se encontró la división.");
+				throw new DivisionNoEncontradaException(nameof(request.DivisionID));
 			}
 
 			// Punto de congelamiento: la carga horaria de la cátedra es una instantánea de la
@@ -114,7 +118,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 			var existeDocente = await _unitOfWork.Docentes.ExisteIDAsync(request.DocenteID);
 			if (!existeDocente)
 			{
-				throw new ArgumentNullException(nameof(request.DocenteID), "No se encontró el docente.");
+				throw new DocenteNoEncontradoException(nameof(request.DocenteID));
 			}
 
 			// NOTA (violación DDD, ver informe): SituacionRevista.Crear(string) es la factoría que

@@ -3,6 +3,7 @@ using Core.ServicioCurriculas.DTOs.Responses;
 using Core.Shared;
 using Core.Shared.Seguridad;
 using Domain.Curriculas;
+using Domain.Curriculas.Exceptions;
 using Domain.Shared;
 using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
@@ -33,7 +34,7 @@ internal class ServicioCurricula : IServicio, IServicioCurricula
 		{
 			_logger.LogInformation($"No se encontró la currícula del curso.");
 
-			throw new ArgumentNullException("No se encontró la currícula del curso.");
+			throw new CurriculaNoEncontradaException();
 		}
 
 		return unaCurricula;
