@@ -1,4 +1,5 @@
 using Domain.Materias.DomainEvents;
+using Domain.Materias.Exceptions;
 using Domain.Shared;
 
 namespace Domain.Materias;
@@ -26,8 +27,7 @@ public sealed class Materia : Entity
 	{
 		if (Guid.Empty.Equals(curriculaID))
 		{
-			var msg = "Se debe especificar la currícula de la materia.";
-			throw new ArgumentNullException(nameof(curriculaID), msg);
+			throw new SinDatosCurriculaException(nameof(curriculaID));
 		}
 
 		if (string.IsNullOrWhiteSpace(descripcion))
@@ -38,8 +38,7 @@ public sealed class Materia : Entity
 
 		if (horasCatedra < 1)
 		{
-			var msg = "La materia debe tener al menos una hora cátedra.";
-			throw new ArgumentException(msg, nameof(horasCatedra));
+			throw new CargaHorariaInvalidaException(nameof(horasCatedra));
 		}
 
 		CurriculaID = curriculaID;
@@ -72,8 +71,7 @@ public sealed class Materia : Entity
 		// TODO: Comprobar que la carga horaria sea divisor de 5 o 10
 		if (horasCatedra <= 0)
 		{
-			var msg = "La cantidad de horas cátedras debe ser mayor a cero.";
-			throw new ArgumentException(msg, nameof(horasCatedra));
+			throw new CargaHorariaInvalidaException(nameof(horasCatedra));
 		}
 
 		HorasCatedra = horasCatedra;
