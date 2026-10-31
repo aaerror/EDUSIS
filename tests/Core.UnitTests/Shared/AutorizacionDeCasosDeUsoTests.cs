@@ -2,6 +2,7 @@ using Core.ServicioAlumnos;
 using Core.ServicioAsistencias;
 using Core.ServicioAutenticaciones;
 using Core.ServicioCatedras;
+using Core.ServicioCurriculas;
 using Core.ServicioCursantes;
 using Core.ServicioCursos;
 using Core.ServicioDivisiones;
@@ -293,6 +294,32 @@ public class AutorizacionDeCasosDeUsoTests
 			() => host.Resolver<IServicioAutenticacion>().Login(null!));
 
 		excepcion.ShouldNotBeOfType<PermisoDenegadoException>();
+	}
+	#endregion
+
+	#region La guarda corre antes de abrir la transacción (CORE-19)
+	[Fact]
+	public async Task RegistrarCurriculaAsync_sin_permiso_no_toca_la_transaccion()
+	{
+		// RegistrarCurriculaAsync es el ÚNICO caso de uso de Core que abre una transacción
+		// explícita, y por eso es el único donde la guarda de permiso y el manejo de transacción
+		// pueden pisarse. Tenía un solo catch alrededor de todo el método que llamaba siempre a
+		// RollbackTransactionAsync: con la guarda fallando no había transacción iniciada, el
+		// rollback reventaba con InvalidOperationException("No hay una transacción iniciada.")
+		// desde UnitOfWork.TransaccionActual, y el PermisoDenegadoException llegaba al ViewModel
+		// disfrazado de error de transacción.
+		//
+		// Esta prueba afirma la SECUENCIA, no el tipo de excepción, y la distinción es el punto:
+		// UnitOfWorkFake tiene las transacciones como no-op y su rollback NO lanza, así que una
+		// prueba que sólo esperara PermisoDenegadoException pasaba en verde con el bug puesto.
+		// El fake es más indulgente que el UnitOfWork real; lo que delata el defecto es que el
+		// rollback se haya llamado. Ver CORE-19 en docs/todos.md.
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioCurricula>().RegistrarCurriculaAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
 	}
 	#endregion
 }

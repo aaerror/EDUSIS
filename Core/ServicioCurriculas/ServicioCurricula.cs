@@ -71,34 +71,47 @@ internal class ServicioCurricula : IServicio, IServicioCurricula
 
 			await _unitOfWork.BeginTransactionAsync();
 
-			var curriculas = await _unitOfWork.Curriculas.CurriculasSegunCursoAsync(request.CursoID);
-			if (curriculas.Count() > 0)
+			// El rollback va en un try PROPIO que arranca después de BeginTransactionAsync, y el
+			// tramo no es decorativo. UnitOfWork.RollbackTransactionAsync pasa por TransaccionActual,
+			// que lanza InvalidOperationException("No hay una transacción iniciada.") si no hay
+			// ninguna: con un solo catch alrededor de todo el método, un PermisoDenegadoException de
+			// la guarda de arriba —o un "Ya hay una transacción iniciada" del propio Begin— entraba
+			// al rollback, reventaba ahí y llegaba al ViewModel disfrazado de error de transacción.
+			// Justo la clase de fallo que conviene que llegue nítido: es RBAC. Ver CORE-19.
+			try
 			{
-				var hayActivas = curriculas.Where(x => x.Periodo.EsIndeterminado())
-										   .Any();
-				if (hayActivas)
+				var curriculas = await _unitOfWork.Curriculas.CurriculasSegunCursoAsync(request.CursoID);
+				if (curriculas.Count() > 0)
 				{
-					foreach (var curricula in curriculas)
+					var hayActivas = curriculas.Where(x => x.Periodo.EsIndeterminado())
+											   .Any();
+					if (hayActivas)
 					{
-						curricula.Desafectar();
+						foreach (var curricula in curriculas)
+						{
+							curricula.Desafectar();
+						}
 					}
 				}
+
+				var nuevaCurricula = new Curricula(request.CursoID, request.FechaInicio, request.FechaFin);
+
+				_unitOfWork.Curriculas.ModificarRango(curriculas);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				await _unitOfWork.Curriculas.AgregarAsync(nuevaCurricula);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				await _unitOfWork.CommitTransactionAsync();
 			}
-
-			var nuevaCurricula = new Curricula(request.CursoID, request.FechaInicio, request.FechaFin);
-
-			_unitOfWork.Curriculas.ModificarRango(curriculas);
-			await _unitOfWork.GuardarCambiosAsync();
-
-			await _unitOfWork.Curriculas.AgregarAsync(nuevaCurricula);
-			await _unitOfWork.GuardarCambiosAsync();
-
-			await _unitOfWork.CommitTransactionAsync();
+			catch
+			{
+				await _unitOfWork.RollbackTransactionAsync();
+				throw;
+			}
 		}
 		catch (Exception ex)
 		{
-			await _unitOfWork.RollbackTransactionAsync();
-
 			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
 			throw;
 		}
