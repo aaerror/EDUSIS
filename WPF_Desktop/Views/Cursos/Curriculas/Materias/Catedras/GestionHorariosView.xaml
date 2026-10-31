@@ -1,0 +1,194 @@
+<UserControl x:Class="WPF_Desktop.Views.Cursos.Curriculas.Materias.Catedras.GestionHorariosView"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.Catedras"
+			 xmlns:components="clr-namespace:WPF_Desktop.Components"
+			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+	<!--
+		HORARIOS DE LA CÁTEDRA — segundo nivel, se entra desde Cátedras.
+
+		MODIFICAR UN HORARIO ES QUITAR + AGREGAR: el dominio tiene operaciones de ciclo de vida
+		(agregar/quitar) y Core no tiene una de corrección, así que la pantalla no tiene botón de
+		"editar". Elegir una fila de la grilla copia sus datos al formulario; el usuario los corrige
+		ahí y confirma los DOS pasos, en este orden: primero "Quitar horario", después "Agregar
+		horario". Al revés el horario nuevo choca con el viejo y el dominio lo rechaza por
+		superposición.
+
+		El combo de día ofrece lunes a viernes solamente. Es presentación: la regla que rechaza
+		sábado y domingo vive en el dominio y no se duplica acá. Lo mismo con los límites de cada
+		turno, la superposición en la división y el docente en dos aulas a la vez: eso lo decide
+		AgregarHorarioAsync y llega como mensaje de error.
+	-->
+	<behaviors:Interaction.Triggers>
+		<behaviors:EventTrigger EventName="Loaded">
+			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarCommand }"/>
+		</behaviors:EventTrigger>
+	</behaviors:Interaction.Triggers>
+
+	<Grid Margin="28 24 28 24">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!--#region ENCABEZADO-->
+		<Grid Grid.Row="0" Margin="0 0 0 20">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
+			</Grid.ColumnDefinitions>
+
+			<components:Header Grid.Column="0"
+							   Title="{ Binding Path=Materia.Descripcion, Mode=OneWay }"
+							   Subtitle="Horarios de la cátedra: turno, día, hora de inicio y duración de la hora cátedra"
+							   VerticalContentAlignment="Top"/>
+
+			<Button Grid.Column="1"
+					Command="{ Binding Path=VolverCommand }"
+					Style="{ StaticResource ResourceKey=Btn.Terciario }"
+					ToolTip="Volver a las cátedras de la materia"
+					VerticalAlignment="Center">
+				<StackPanel Orientation="Horizontal">
+					<fa:IconBlock FontSize="11"
+								  Icon="ArrowLeft"
+								  Margin="0 0 8 0"
+								  VerticalAlignment="Center"/>
+					<TextBlock Text="Volver a cátedras" VerticalAlignment="Center"/>
+				</StackPanel>
+			</Button>
+		</Grid>
+		<!--#endregion-->
+
+		<!--#region AGREGAR HORARIO-->
+		<Border Grid.Row="1"
+				Margin="0 0 0 16"
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid Margin="20 18">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<HeaderedContentControl Grid.Column="0"
+										Header="Turno"
+										Style="{ StaticResource ResourceKey=Campo.Izquierda }"
+										ToolTip="Turno de la cátedra. Cada turno tiene sus propios límites de horario.">
+					<ComboBox ItemsSource="{ Binding Path=Turnos, Mode=OneWay }"
+							  MinWidth="140"
+							  SelectedItem="{ Binding Path=Turno, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+				</HeaderedContentControl>
+
+				<HeaderedContentControl Grid.Column="1"
+										Header="Día"
+										Style="{ StaticResource ResourceKey=Campo.Centro }"
+										ToolTip="Día de la semana. Sólo de lunes a viernes.">
+					<ComboBox ItemsSource="{ Binding Path=Dias, Mode=OneWay }"
+							  MinWidth="140"
+							  SelectedItem="{ Binding Path=Dia, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+				</HeaderedContentControl>
+
+				<HeaderedContentControl Grid.Column="2"
+										Header="Hora de inicio"
+										Style="{ StaticResource ResourceKey=Campo.Centro }"
+										ToolTip="Hora de inicio escrita como HH:mm, por ejemplo 08:00.">
+					<TextBox MaxLength="5"
+							 Style="{ StaticResource ResourceKey=Txb.Campo }"
+							 Text="{ Binding Path=HoraInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+							 Width="96"/>
+				</HeaderedContentControl>
+
+				<HeaderedContentControl Grid.Column="3"
+										Header="Duración (minutos)"
+										Style="{ StaticResource ResourceKey=Campo.Centro }"
+										ToolTip="Duración de la hora cátedra en minutos. Múltiplo de cinco y no menos de treinta.">
+					<TextBox MaxLength="3"
+							 Style="{ StaticResource ResourceKey=Txb.Campo }"
+							 Text="{ Binding Path=DuracionMinutos, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+							 Width="96"/>
+				</HeaderedContentControl>
+
+				<Button Grid.Column="4"
+						Command="{ Binding Path=AgregarHorarioCommand }"
+						HorizontalAlignment="Right"
+						Margin="0 0 0 16"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Agregar el horario a la cátedra"
+						VerticalAlignment="Bottom">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Agregar horario" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+			</Grid>
+		</Border>
+		<!--#endregion-->
+
+		<!--#region HORARIOS CARGADOS-->
+		<Border Grid.Row="2" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid Margin="20 18">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
+
+				<TextBlock Grid.Row="0"
+						   Margin="0 0 0 12"
+						   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+						   Text="HORARIOS CARGADOS"/>
+
+				<DataGrid Grid.Row="1"
+						  ItemsSource="{ Binding Path=Horarios, Mode=OneWay }"
+						  MinHeight="160"
+						  SelectedItem="{ Binding Path=Horario, Mode=TwoWay }"
+						  Style="{ StaticResource ResourceKey=Grilla }"
+						  Tag="Esta cátedra todavía no tiene horarios. Completá el formulario de arriba y agregá el primero.">
+					<DataGrid.Columns>
+						<DataGridTextColumn Binding="{ Binding Path=Turno, Mode=OneWay }"
+											Header="TURNO"
+											Width="*"/>
+						<DataGridTextColumn Binding="{ Binding Path=Dia, Mode=OneWay }"
+											Header="DÍA"
+											Width="*"/>
+						<DataGridTextColumn Binding="{ Binding Path=HoraInicio, Mode=OneWay }"
+											Header="DESDE"
+											Width="*"/>
+						<DataGridTextColumn Binding="{ Binding Path=HoraFin, Mode=OneWay }"
+											Header="HASTA"
+											Width="*"/>
+						<DataGridTextColumn Binding="{ Binding Path=DuracionMinutos, Mode=OneWay }"
+											Header="DURACIÓN"
+											Width="*"/>
+					</DataGrid.Columns>
+				</DataGrid>
+
+				<!--
+					El pie lleva sólo el destructivo, así que va en el Header del estilo Acciones:
+					ahí es donde se lee lo que saca algo del flujo.
+				-->
+				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+					<HeaderedContentControl.Header>
+						<Button Command="{ Binding Path=QuitarHorarioCommand }"
+								Content="Quitar horario"
+								Style="{ StaticResource ResourceKey=Btn.Peligro }"
+								ToolTip="Quitar de la cátedra el horario seleccionado"/>
+					</HeaderedContentControl.Header>
+				</HeaderedContentControl>
+			</Grid>
+		</Border>
+		<!--#endregion-->
+	</Grid>
+</UserControl>

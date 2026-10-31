@@ -6,6 +6,8 @@ using Shouldly;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.Store.NavigationStore;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
+using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.Shared;
@@ -123,4 +125,52 @@ public class ComposicionDelContenedorTests
 
 		lector.CicloLectivo.ShouldBe("2031");
 	}
+
+	#region Pantallas nuevas
+	/// <summary>
+	/// Resuelve del host los dos ViewModels de las pantallas nuevas (B6 y B7 del plan de casos de
+	/// uso pendientes).
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Los tests de arriba NO cubren esto, y es importante entender por qué: construir el host sólo
+	/// valida que la <c>IServiceCollection</c> se arme, y las factory lambda de los
+	/// <c>AddTransient</c> se evalúan recién cuando alguien <b>resuelve</b> el tipo. Un
+	/// <c>AddTransient&lt;XViewModel&gt;</c> que falta, o una lambda que pide un servicio no
+	/// registrado, pasa desapercibido hasta que el usuario abre esa pantalla exacta y la ve en
+	/// blanco. La única forma de detectarlo sin levantar la UI es resolver el ViewModel acá.
+	/// </para>
+	/// <para>
+	/// Los stores se siembran antes de resolver porque los ViewModels leen el parámetro de
+	/// navegación <b>en el constructor</b> —es la convención de este repo, ver el comentario de
+	/// <c>CursoStore</c>—, así que un store vacío revienta en el <c>new</c> por una razón que no
+	/// tiene nada que ver con lo que esta prueba quiere afirmar.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void GestionAsistenciasViewModel_se_resuelve_del_contenedor_real()
+	{
+		using var host = ConstruirHost();
+		host.Services.GetRequiredService<CursoStore>().Curso = new CursoSeleccionado(Guid.NewGuid(), "Primero", "Secundario");
+		host.Services.GetRequiredService<DivisionStore>().Division = new DivisionSeleccionada(Guid.NewGuid());
+
+		var viewModel = host.Services.GetRequiredService<GestionAsistenciasViewModel>();
+
+		viewModel.ShouldNotBeNull();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void GestionHorariosViewModel_se_resuelve_del_contenedor_real()
+	{
+		using var host = ConstruirHost();
+		host.Services.GetRequiredService<MateriaStore>().Materia = new MateriaSeleccionada(Guid.NewGuid(), Guid.NewGuid(), "Matematica");
+		host.Services.GetRequiredService<CatedraStore>().Catedra = Guid.NewGuid();
+
+		var viewModel = host.Services.GetRequiredService<GestionHorariosViewModel>();
+
+		viewModel.ShouldNotBeNull();
+	}
+	#endregion
 }

@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioAlumnos;
+using Core.ServicioAsistencias;
 using Core.ServicioAutenticaciones;
 using Core.ServicioCatedras;
 using Core.ServicioCurriculas;
@@ -154,6 +155,7 @@ internal static class WPF_DesktopDI
 			new GestionCursantesViewModel(provider.GetRequiredService<IServicioCursante>(),
 										  provider.GetRequiredService<IServicioMateria>(),
 										  provider.GetRequiredService<IServicioCurricula>(),
+										  provider.GetRequiredService<IServicioDivision>(),
 										  provider.GetRequiredService<IDialogService>(),
 										  provider.GetRequiredService<CursoStore>(),
 										  provider.GetRequiredService<DivisionStore>(),
@@ -164,16 +166,32 @@ internal static class WPF_DesktopDI
 									   CreateGestionDivisionesNavigationService(provider),
 									   CreateGestionDisenoCurricularNavigationService(provider),
 									   provider.GetRequiredService<CursoStore>()));
+		// Los CUATRO INavigationService de esta pantalla son del mismo tipo y acá se distinguen
+		// SÓLO por posición: cursos (volver), cursantes, asistencias y el modal de búsqueda de
+		// docentes, en ese orden. Invertir dos compila y aterriza en la pantalla equivocada sin un
+		// solo error. El <remarks> del constructor de GestionDivisionesViewModel es la otra mitad
+		// de esta advertencia.
 		services.AddTransient<GestionDivisionesViewModel>(provider =>
 			new GestionDivisionesViewModel(provider.GetRequiredService<IServicioDivision>(),
 										   CreateGestionCursosNavigationService(provider),
 										   CreateGestionCursantesNavigationService(provider),
+										   CreateGestionAsistenciasNavigationService(provider),
 										   CreateBuscarDocenteModalNavigationService(provider),
 										   provider.GetRequiredService<CursoStore>(),
 										   provider.GetRequiredService<DivisionStore>(),
 										   provider.GetRequiredService<CicloLectivoStore>(),
 										   provider.GetRequiredService<IDialogService>(),
 										   provider.GetRequiredService<IMessenger>()));
+
+		services.AddTransient<GestionAsistenciasViewModel>(provider =>
+			new GestionAsistenciasViewModel(CreateGestionDivisionesNavigationService(provider),
+											provider.GetRequiredService<IServicioAsistencia>(),
+											provider.GetRequiredService<IServicioCursante>(),
+											provider.GetRequiredService<IServicioDivision>(),
+											provider.GetRequiredService<CursoStore>(),
+											provider.GetRequiredService<DivisionStore>(),
+											provider.GetRequiredService<CicloLectivoStore>(),
+											provider.GetRequiredService<IDialogService>()));
 		#endregion
 
 		#region Materias
@@ -188,14 +206,25 @@ internal static class WPF_DesktopDI
 		#endregion
 
 		#region Catedras
+		// Los TRES INavigationService de esta pantalla son del mismo tipo y acá se distinguen SÓLO
+		// por posición: diseño curricular (volver), situación de revista y horarios, en ese orden.
+		// Ver el <remarks> del constructor de GestionCatedrasViewModel.
 		services.AddTransient<GestionCatedrasViewModel>(provider =>
 			new GestionCatedrasViewModel(CreateGestionDisenoCurricularNavigationService(provider),
 										 CreateGestionSituacionRevistaNavigationService(provider),
+										 CreateGestionHorariosNavigationService(provider),
 										 provider.GetRequiredService<IServicioCatedra>(),
 										 provider.GetRequiredService<IServicioDivision>(),
 										 provider.GetRequiredService<MateriaStore>(),
 										 provider.GetRequiredService<CatedraStore>(),
 										 provider.GetRequiredService<CicloLectivoStore>(),
+										 provider.GetRequiredService<IDialogService>()));
+
+		services.AddTransient<GestionHorariosViewModel>(provider =>
+			new GestionHorariosViewModel(CreateGestionCatedrasNavigationService(provider),
+										 provider.GetRequiredService<IServicioCatedra>(),
+										 provider.GetRequiredService<MateriaStore>(),
+										 provider.GetRequiredService<CatedraStore>(),
 										 provider.GetRequiredService<IDialogService>()));
 		#endregion
 
@@ -326,6 +355,10 @@ internal static class WPF_DesktopDI
 		new GestionCursantesNavigationService<GestionCursantesViewModel>(() =>
 			serviceProvider.GetRequiredService<GestionCursantesViewModel>(),
 			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
+	private static INavigationService CreateGestionAsistenciasNavigationService(IServiceProvider serviceProvider) =>
+		new GestionAsistenciasNavigationService<GestionAsistenciasViewModel>(() =>
+			serviceProvider.GetRequiredService<GestionAsistenciasViewModel>(),
+			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
 	#endregion
 
 	#region MateriasNavigationServices
@@ -339,6 +372,13 @@ internal static class WPF_DesktopDI
 	private static INavigationService CreateGestionCatedrasNavigationService(IServiceProvider serviceProvider) =>
 		new GestionCatedrasNavigationService<GestionCatedrasViewModel>(() =>
 			serviceProvider.GetRequiredService<GestionCatedrasViewModel>(),
+			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
+	#endregion
+
+	#region HorariosNavigationService
+	private static INavigationService CreateGestionHorariosNavigationService(IServiceProvider serviceProvider) =>
+		new GestionHorariosNavigationService<GestionHorariosViewModel>(() =>
+			serviceProvider.GetRequiredService<GestionHorariosViewModel>(),
 			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
 	#endregion
 

@@ -157,6 +157,14 @@
 	<DataTemplate DataType="{ x:Type vmDivisiones:GestionCursantesViewModel }">
 		<vDivisiones:GestionCursantesView/>
 	</DataTemplate>
+
+	<!--
+		La asistencia es hermana de los cursantes: las dos son drill-down de una división y viven
+		en el mismo namespace, así que entran acá sin un xmlns nuevo.
+	-->
+	<DataTemplate DataType="{ x:Type vmDivisiones:GestionAsistenciasViewModel }">
+		<vDivisiones:GestionAsistenciasView/>
+	</DataTemplate>
 	<!--#endregion-->
 
 	<!--#region DISEÑO CURRICULAR-->
@@ -181,6 +189,10 @@
 	<!--#region CÁTEDRAS-->
 	<DataTemplate DataType="{ x:Type vmCatedras:GestionCatedrasViewModel }">
 		<vCatedras:GestionCatedrasView/>
+	</DataTemplate>
+
+	<DataTemplate DataType="{ x:Type vmCatedras:GestionHorariosViewModel }">
+		<vCatedras:GestionHorariosView/>
 	</DataTemplate>
 	<!--#endregion-->
 
