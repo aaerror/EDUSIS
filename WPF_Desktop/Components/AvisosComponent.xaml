@@ -1,0 +1,79 @@
+<UserControl x:Class="WPF_Desktop.Components.AvisosComponent"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Components"
+			 xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+			 x:Name="raiz"
+			 HorizontalAlignment="Right"
+			 VerticalAlignment="Bottom"
+			 Margin="0 0 24 24"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<!--
+		AVISOS AL PIE — la respuesta de la aplicación que no interrumpe.
+
+		Abajo a la derecha, apilados, el más nuevo abajo. Ahí porque es donde termina la lectura
+		de cualquier pantalla de esta aplicación (el pie de acciones de cada tarjeta está a la
+		derecha), así que el aviso aparece donde el ojo ya está.
+
+		ANCLADO AL CONTENIDO, NO EXTENDIDO SOBRE ÉL. El control se alinea abajo a la derecha y
+		mide lo que miden sus avisos: si cubriera toda el área, se comería los clics de la
+		pantalla que tiene debajo. Cuando no hay avisos no ocupa nada.
+	-->
+	<ItemsControl ItemsSource="{ Binding Path=Avisos, ElementName=raiz }">
+		<ItemsControl.ItemTemplate>
+			<DataTemplate>
+				<Border Margin="0 8 0 0" Style="{ StaticResource ResourceKey=Aviso.Tarjeta }">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="Auto"/>
+						</Grid.ColumnDefinitions>
+
+						<!--
+							La barra de color del tipo. El mismo gesto de Superficie.Aviso y
+							Superficie.Error dentro de los formularios: tres píxeles a la
+							izquierda. El color refuerza, el texto dice.
+						-->
+						<Rectangle Grid.Column="0" Width="3">
+							<Rectangle.Style>
+								<Style TargetType="{ x:Type Rectangle }">
+									<Setter Property="Fill" Value="{ StaticResource ResourceKey=Primario }"/>
+									<Style.Triggers>
+										<DataTrigger Binding="{ Binding Path=Tipo }" Value="Advertencia">
+											<Setter Property="Fill" Value="{ StaticResource ResourceKey=Aviso }"/>
+										</DataTrigger>
+									</Style.Triggers>
+								</Style>
+							</Rectangle.Style>
+						</Rectangle>
+
+						<StackPanel Grid.Column="1" Margin="14 12 8 13">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Aviso.Titulo }"
+									   Text="{ Binding Path=Titulo }"/>
+							<TextBlock Margin="0 3 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.Aviso.Cuerpo }"
+									   Text="{ Binding Path=Mensaje }"
+									   Visibility="{ Binding Path=TieneMensaje, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						</StackPanel>
+
+						<!--
+							Se descarta solo, pero también a mano: un aviso que tapa justo el dato
+							que el usuario está mirando no tiene que esperar cinco segundos.
+						-->
+						<Button Grid.Column="2"
+								Command="{ Binding Path=DescartarCommand }"
+								Margin="0 4 4 0"
+								Style="{ StaticResource ResourceKey=Btn.Icono }"
+								ToolTip="Descartar este aviso"
+								VerticalAlignment="Top">
+							<fa:IconBlock FontSize="11" Icon="Xmark"/>
+						</Button>
+					</Grid>
+				</Border>
+			</DataTemplate>
+		</ItemsControl.ItemTemplate>
+	</ItemsControl>
+</UserControl>

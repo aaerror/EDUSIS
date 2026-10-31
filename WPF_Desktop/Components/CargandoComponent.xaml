@@ -1,0 +1,31 @@
+<UserControl x:Class="WPF_Desktop.Components.CargandoComponent"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Components"
+			 x:Name="raiz"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<!--
+		CARGANDO — el velo sobre la tarjeta que está esperando.
+
+		La aplicación disparaba unas quince cargas asíncronas desde el evento Loaded de las
+		vistas y no mostraba ninguna: la pantalla aparecía vacía, y entre "todavía no llegó" y
+		"no hay nada" no había diferencia visible. Es el peor malentendido posible en un índice,
+		porque los dos estados se ven igual y uno de los dos invita a cargar algo que ya existe.
+
+		Papel al 72% en lugar de tapar del todo: se ve la silueta de lo que había —o de lo que
+		va a haber— y queda claro que es la misma pantalla esperando, no otra pantalla.
+
+		Se coloca como última hija de la grilla de la tarjeta, de modo que la cubra entera.
+	-->
+	<Border Style="{ StaticResource ResourceKey=Superficie.Cargando }"
+			Visibility="{ Binding Path=EstaCargando, ElementName=raiz, Converter={ StaticResource ResourceKey=visibilidad } }">
+		<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+			<ProgressBar Style="{ StaticResource ResourceKey=Progreso.Tiza }"/>
+			<TextBlock Margin="0 12 0 0"
+					   Style="{ StaticResource ResourceKey=Txt.Cargando }"
+					   Text="{ Binding Path=Leyenda, ElementName=raiz }"/>
+		</StackPanel>
+	</Border>
+</UserControl>

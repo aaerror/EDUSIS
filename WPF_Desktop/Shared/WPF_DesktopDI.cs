@@ -110,6 +110,7 @@ internal static class WPF_DesktopDI
 								  CreateGestionReportesNavigationService(provider),
 								  provider.GetRequiredService<ISesionUsuario>(),
 								  provider.GetRequiredService<IDialogService>(),
+								  provider.GetRequiredService<AvisoStore>(),
 								  provider.GetRequiredService<IMessenger>()));
 
 		services.AddTransient<BuscarViewModel>(provider =>

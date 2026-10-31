@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioUsuarios;
 using Domain.Usuarios;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System;
@@ -20,6 +21,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	private readonly IServicioUsuario _servicioUsuario;
 	private readonly ISesionUsuario _sesion;
 	private readonly IDialogService _dialogos;
+	private readonly AvisoStore _avisos;
 
 	private MainWindowNavigationStore _navigationStore;
 	private ModalWindowNavigationStore _modalNavigationStore;
@@ -28,6 +30,12 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	public ObservableObject ModalViewModelActual => _modalNavigationStore.ViewModel;
 
 	public bool ModalEstaAbierto => _modalNavigationStore.EstaAbierto;
+
+	/// <summary>
+	/// Los avisos al pie. Los escribe <c>DialogService</c> desde cualquier pantalla y los dibuja
+	/// el shell, que es el único lugar de la aplicación que sobrevive a la navegación.
+	/// </summary>
+	public ObservableCollection<Aviso> Avisos => _avisos.Avisos;
 
 	/// <summary>
 	/// Hay una sección abierta. Mientras sea falso, la ventana muestra la bienvenida en lugar
@@ -69,6 +77,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 						 INavigationService reportesNavigationService,
 						 ISesionUsuario sesion,
 						 IDialogService dialogos,
+						 AvisoStore avisos,
 						 IMessenger messenger)
 		: base(messenger)
 	{
@@ -77,6 +86,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		_servicioUsuario = servicioUsuario;
 		_sesion = sesion;
 		_dialogos = dialogos;
+		_avisos = avisos;
 
 		// Cada entrada del menú se habilita por PERMISO, no por rol: mover una atribución es un
 		// cambio en Domain.Usuarios.Rol y no acá. Sin sesión iniciada no hay permisos, así que
@@ -132,7 +142,11 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	/// </remarks>
 	private void Salir()
 	{
-		if (!_dialogos.Confirmar("¿Cerrar sesión y salir de EDUSIS?", "Salir"))
+		if (!_dialogos.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: "Cerrar la sesión y salir de EDUSIS",
+				consecuencia: "Se cierra la aplicación. Lo que esté a medio cargar en la pantalla abierta se pierde: "
+							+ "sólo queda guardado lo que ya confirmaste.",
+				verbo: "Salir de EDUSIS")))
 		{
 			return;
 		}
