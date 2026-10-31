@@ -1,6 +1,6 @@
 namespace Domain.Asistencias.Exceptions;
 
-internal class PlanillaCerradaException : Exception
+public class PlanillaCerradaException : Exception
 {
 	private const string ERROR = "La planilla está cerrada.";
 

@@ -1,6 +1,6 @@
 namespace Domain.Licencias.Exceptions;
 
-internal class LicenciaInactivaException : Exception
+public class LicenciaInactivaException : Exception
 {
 	private const string ERROR = "La licencia se encuentra inactiva.";
 

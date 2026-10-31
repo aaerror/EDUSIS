@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class DocenteRegistradoException : Exception
+public class DocenteRegistradoException : Exception
 {
 	private const string ERROR = "El docente ya tiene un cargo vigente en la cátedra.";
 

@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class DocenteSinCargoException : Exception
+public class DocenteSinCargoException : Exception
 {
 	private const string ERROR = "El docente no tiene un cargo en la materia.";
 

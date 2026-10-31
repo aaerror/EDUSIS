@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class SituacionRevistaNoEncontradaException : Exception
+public class SituacionRevistaNoEncontradaException : Exception
 {
 	private const string ERROR = "La situación de revista no pertenece a la cátedra.";
 

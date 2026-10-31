@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class SuplenciaSinReemplazoException : Exception
+public class SuplenciaSinReemplazoException : Exception
 {
 	private const string ERROR = "Una suplencia debe indicar a quién reemplaza.";
 

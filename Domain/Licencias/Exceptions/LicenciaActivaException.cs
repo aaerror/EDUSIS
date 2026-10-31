@@ -1,6 +1,6 @@
 namespace Domain.Licencias.Exceptions;
 
-internal class LicenciaActivaException : Exception
+public class LicenciaActivaException : Exception
 {
 	private const string ERROR = "La licencia se encuentra activa.";
 

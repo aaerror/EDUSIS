@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class CargoConFechaFinalizacionException : Exception
+public class CargoConFechaFinalizacionException : Exception
 {
 	private const string ERROR = "El cargo tiene fecha de finalización.";
 

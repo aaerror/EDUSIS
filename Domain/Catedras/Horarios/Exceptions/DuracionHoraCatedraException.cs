@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Horarios.Exceptions;
 
-internal class DuracionHoraCatedraException : Exception
+public class DuracionHoraCatedraException : Exception
 {
 	private const string ERROR = "Duración de hora cátedra inválida.";
 

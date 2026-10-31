@@ -1,6 +1,6 @@
 namespace Domain.Cursantes.Exceptions;
 
-internal class CalificacionNoEncontradaException : Exception
+public class CalificacionNoEncontradaException : Exception
 {
 	private const string ERROR = "Calificación no encontrada.";
 

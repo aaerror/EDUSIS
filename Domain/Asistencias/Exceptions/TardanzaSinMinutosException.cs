@@ -1,6 +1,6 @@
 namespace Domain.Asistencias.Exceptions;
 
-internal class TardanzaSinMinutosException : Exception
+public class TardanzaSinMinutosException : Exception
 {
 	private const string ERROR = "La tardanza debe tener una duración mayor a cero.";
 

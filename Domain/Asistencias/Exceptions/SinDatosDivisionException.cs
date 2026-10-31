@@ -1,6 +1,6 @@
 namespace Domain.Asistencias.Exceptions;
 
-internal class SinDatosDivisionException : Exception
+public class SinDatosDivisionException : Exception
 {
 	private const string ERROR = "División sin especificar.";
 

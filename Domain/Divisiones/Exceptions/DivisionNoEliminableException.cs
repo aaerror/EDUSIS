@@ -1,6 +1,6 @@
 namespace Domain.Divisiones.Exceptions;
 
-internal class DivisionNoEliminableException : Exception
+public class DivisionNoEliminableException : Exception
 {
 	private const string ERROR = "La división no se puede eliminar.";
 

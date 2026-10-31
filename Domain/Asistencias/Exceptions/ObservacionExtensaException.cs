@@ -1,6 +1,6 @@
 namespace Domain.Asistencias.Exceptions;
 
-internal class ObservacionExtensaException : Exception
+public class ObservacionExtensaException : Exception
 {
 	private const string ERROR = "La observación no debe exceder 140 caracteres.";
 

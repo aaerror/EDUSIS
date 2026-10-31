@@ -1,6 +1,6 @@
 namespace Domain.Divisiones.Exceptions;
 
-internal class CargoPreceptorNoDisponibleException : Exception
+public class CargoPreceptorNoDisponibleException : Exception
 {
 	private const string ERROR = "El cargo de preceptor no se encuentra disponible.";
 

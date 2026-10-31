@@ -1,6 +1,6 @@
 namespace Domain.Curriculas.Exceptions;
 
-internal class CurriculaNoVigenteException : Exception
+public class CurriculaNoVigenteException : Exception
 {
 	private const string ERROR = "La currícula no se encuentra vigente.";
 

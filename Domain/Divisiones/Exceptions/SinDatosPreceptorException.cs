@@ -1,6 +1,6 @@
 namespace Domain.Divisiones.Exceptions;
 
-internal class SinDatosPreceptorException : Exception
+public class SinDatosPreceptorException : Exception
 {
 	private const string ERROR = "Sin datos del preceptor.";
 

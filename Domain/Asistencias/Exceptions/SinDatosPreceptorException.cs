@@ -1,6 +1,6 @@
 namespace Domain.Asistencias.Exceptions;
 
-internal class SinDatosPreceptorException : Exception
+public class SinDatosPreceptorException : Exception
 {
 	private const string ERROR = "Preceptor sin especificar.";
 

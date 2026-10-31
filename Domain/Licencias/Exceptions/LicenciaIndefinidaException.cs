@@ -1,6 +1,6 @@
 namespace Domain.Licencias.Exceptions;
 
-internal class LicenciaIndefinidaException : Exception
+public class LicenciaIndefinidaException : Exception
 {
 	private const string ERROR = "La licencia no tiene una fecha de finalización prevista.";
 

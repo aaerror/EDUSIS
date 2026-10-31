@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class HorarioNoAsignadoException : Exception
+public class HorarioNoAsignadoException : Exception
 {
 	private const string ERROR = "El horario no se encuentra asignado a la cátedra.";
 

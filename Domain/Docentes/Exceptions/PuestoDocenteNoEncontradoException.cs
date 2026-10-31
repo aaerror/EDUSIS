@@ -1,6 +1,6 @@
 namespace Domain.Docentes.Exceptions;
 
-internal class PuestoDocenteNoEncontradoException : Exception
+public class PuestoDocenteNoEncontradoException : Exception
 {
 	private const string ERROR = "El puesto docente no se encuentra asignado al docente.";
 

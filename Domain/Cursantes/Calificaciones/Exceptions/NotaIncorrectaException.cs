@@ -1,6 +1,6 @@
 namespace Domain.Cursantes.Calificaciones.Exceptions;
 
-internal class NotaIncorrectaException : Exception
+public class NotaIncorrectaException : Exception
 {
 	private const string ERROR = "Nota inválida. La nota mínima es un uno (1) y la nota máxima es un diez (10).";
 

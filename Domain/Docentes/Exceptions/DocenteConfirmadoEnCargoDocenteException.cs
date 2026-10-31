@@ -1,6 +1,6 @@
 namespace Domain.Docentes.Exceptions;
 
-internal class DocenteConfirmadoEnCargoDocenteException : Exception
+public class DocenteConfirmadoEnCargoDocenteException : Exception
 {
 	private const string ERROR = "El docente ya se encuentra confirmado en el cargo docente.";
 

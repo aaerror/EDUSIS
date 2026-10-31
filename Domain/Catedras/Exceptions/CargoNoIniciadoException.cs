@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class CargoNoIniciadoException : Exception
+public class CargoNoIniciadoException : Exception
 {
 	private const string ERROR = "El cargo docente no ha iniciado.";
 

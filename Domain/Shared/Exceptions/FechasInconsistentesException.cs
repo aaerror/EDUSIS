@@ -1,6 +1,6 @@
 namespace Domain.Shared.Exceptions;
 
-internal class FechasInconsistentesException : Exception
+public class FechasInconsistentesException : Exception
 {
     private const string ERROR = "Existen incoherencias entre las fechas.";
 

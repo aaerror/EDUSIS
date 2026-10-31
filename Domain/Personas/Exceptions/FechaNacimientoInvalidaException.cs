@@ -1,6 +1,6 @@
 namespace Domain.Personas.Exceptions;
 
-internal class FechaNacimientoInvalidaException : Exception
+public class FechaNacimientoInvalidaException : Exception
 {
     private const string ERROR = "La fecha de nacimiento es inválida.";
 

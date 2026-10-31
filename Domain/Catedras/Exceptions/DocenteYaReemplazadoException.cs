@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class DocenteYaReemplazadoException : Exception
+public class DocenteYaReemplazadoException : Exception
 {
 	private const string ERROR = "El docente ya tiene una suplencia vigente.";
 

@@ -1,6 +1,6 @@
 namespace Domain.Divisiones.Exceptions;
 
-internal class SinDatosCursoException : Exception
+public class SinDatosCursoException : Exception
 {
 	private const string ERROR = "Curso sin especificar.";
 

@@ -1,6 +1,6 @@
 namespace Domain.Asistencias.Exceptions;
 
-internal class PlanillaSinCursantesException : Exception
+public class PlanillaSinCursantesException : Exception
 {
 	private const string ERROR = "La planilla debe contener al menos un cursante.";
 

@@ -1,6 +1,6 @@
 namespace Domain.Cursantes.Exceptions;
 
-internal class SinDatosAlumnoException : Exception
+public class SinDatosAlumnoException : Exception
 {
 	private const string ERROR = "Alumno sin especificar.";
 

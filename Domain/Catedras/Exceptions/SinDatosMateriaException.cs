@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class SinDatosMateriaException : Exception
+public class SinDatosMateriaException : Exception
 {
 	private const string ERROR = "Materia sin especificar.";
 

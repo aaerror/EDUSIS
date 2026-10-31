@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class DocenteEnFuncionesException : Exception
+public class DocenteEnFuncionesException : Exception
 {
 	private const string ERROR = "El docente ya se encuentra como docente de aula.";
 

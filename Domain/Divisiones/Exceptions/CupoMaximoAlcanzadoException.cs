@@ -1,6 +1,6 @@
 namespace Domain.Divisiones.Exceptions;
 
-internal class CupoMaximoAlcanzadoException : Exception
+public class CupoMaximoAlcanzadoException : Exception
 {
 	private const string ERROR = "Se alcanzó el cupo máximo de alumnos de la división.";
 

@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class CargoNoVigenteException : Exception
+public class CargoNoVigenteException : Exception
 {
 	private const string ERROR = "El cargo no se encuentra vigente.";
 

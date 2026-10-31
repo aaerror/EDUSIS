@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class CargaHorariaInvalidaException : Exception
+public class CargaHorariaInvalidaException : Exception
 {
 	private const string ERROR = "La carga horaria de la cátedra debe ser mayor a cero.";
 

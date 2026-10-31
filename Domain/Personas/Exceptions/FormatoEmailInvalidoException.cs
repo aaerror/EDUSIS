@@ -1,6 +1,6 @@
 namespace Domain.Personas.Exceptions;
 
-internal class FormatoEmailInvalidoException : Exception
+public class FormatoEmailInvalidoException : Exception
 {
     private const string ERROR = "El formato de e-mail es inválido .";
 

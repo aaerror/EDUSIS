@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class CargoOcupadoException : Exception
+public class CargoOcupadoException : Exception
 {
 	private const string ERROR = "El cargo ya se encuentra ocupado.";
 

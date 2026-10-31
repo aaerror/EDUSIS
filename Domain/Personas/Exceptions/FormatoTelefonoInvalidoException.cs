@@ -1,6 +1,6 @@
 namespace Domain.Personas.Exceptions;
 
-internal class FormatoTelefonoInvalidoException : Exception
+public class FormatoTelefonoInvalidoException : Exception
 {
     private const string ERROR = "El formato de teléfono es inválido .";
 

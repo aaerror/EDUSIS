@@ -1,6 +1,6 @@
 namespace Domain.Materias.Exceptions;
 
-internal class LimiteCantidadHorasCatedrasException : Exception
+public class LimiteCantidadHorasCatedrasException : Exception
 {
 	private const string ERROR = "Límite de cantidad de horas cátedras alcanzado.";
 

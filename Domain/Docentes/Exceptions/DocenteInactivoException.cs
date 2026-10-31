@@ -1,6 +1,6 @@
 namespace Domain.Docentes.Exceptions;
 
-internal class DocenteInactivoException : Exception
+public class DocenteInactivoException : Exception
 {
 	private const string ERROR = "El docente se encuentra inactivo.";
 

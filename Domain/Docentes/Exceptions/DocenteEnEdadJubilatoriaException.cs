@@ -1,6 +1,6 @@
 namespace Domain.Docentes.Exceptions;
 
-internal class DocenteEnEdadJubilatoriaException : Exception
+public class DocenteEnEdadJubilatoriaException : Exception
 {
 	private const string ERROR = "El docente se encuentra en edad jubilatoria.";
 

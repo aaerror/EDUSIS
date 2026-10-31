@@ -1,6 +1,6 @@
 namespace Domain.Docentes.Exceptions;
 
-internal class DocenteMenorDeEdadException : Exception
+public class DocenteMenorDeEdadException : Exception
 {
 	private const string ERROR = "El docente no cumplió la mayoría de edad.";
 

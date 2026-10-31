@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Horarios.Exceptions;
 
-internal class HorarioDuplicadoException : Exception
+public class HorarioDuplicadoException : Exception
 {
 	private const string ERROR = "El horario ya se encuentra asignado.";
 

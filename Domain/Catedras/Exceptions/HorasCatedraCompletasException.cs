@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class HorasCatedraCompletasException : Exception
+public class HorasCatedraCompletasException : Exception
 {
 	private const string ERROR = "La cátedra ya tiene sus horas cátedra completas.";
 

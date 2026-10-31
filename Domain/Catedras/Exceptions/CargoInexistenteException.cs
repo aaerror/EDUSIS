@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class CargoInexistenteException : Exception
+public class CargoInexistenteException : Exception
 {
 	private const string ERROR = "Cargo docente es inexistente.";
 

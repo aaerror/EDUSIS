@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class OcupanteConReemplazoException : Exception
+public class OcupanteConReemplazoException : Exception
 {
 	private const string ERROR = "Un cargo titular o interino no reemplaza a otra designación.";
 

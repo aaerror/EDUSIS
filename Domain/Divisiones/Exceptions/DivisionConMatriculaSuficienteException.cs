@@ -1,6 +1,6 @@
 namespace Domain.Divisiones.Exceptions;
 
-internal class DivisionConMatriculaSuficienteException : Exception
+public class DivisionConMatriculaSuficienteException : Exception
 {
 	private const string ERROR = "La división cuenta con matrícula suficiente y no se puede eliminar.";
 

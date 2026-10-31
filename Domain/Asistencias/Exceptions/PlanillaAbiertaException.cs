@@ -1,6 +1,6 @@
 namespace Domain.Asistencias.Exceptions;
 
-internal class PlanillaAbiertaException : Exception
+public class PlanillaAbiertaException : Exception
 {
 	private const string ERROR = "La planilla está abierta.";
 

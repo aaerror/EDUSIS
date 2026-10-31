@@ -1,6 +1,6 @@
 namespace Domain.Docentes.Exceptions;
 
-internal class PuestoDocenteAsignadoException : Exception
+public class PuestoDocenteAsignadoException : Exception
 {
 	private const string ERROR = "El puesto docente ya se encuentra activo y asignado al docente.";
 

@@ -1,6 +1,6 @@
 namespace Domain.Catedras.Exceptions;
 
-internal class CargoTemporalSinFechaFinalizacionException : Exception
+public class CargoTemporalSinFechaFinalizacionException : Exception
 {
 	private const string ERROR = "El cargo temporal debe poseer una fecha de finalización.";
 

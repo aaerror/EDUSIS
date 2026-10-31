@@ -1,6 +1,6 @@
 namespace Domain.Asistencias.Exceptions;
 
-internal class CursanteNoIncluidoException : Exception
+public class CursanteNoIncluidoException : Exception
 {
 	private const string ERROR = "El cursante no está incluido en la planilla.";
 
