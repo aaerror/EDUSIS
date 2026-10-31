@@ -46,9 +46,17 @@ public sealed class RegistroDeCursoConDivisionesTests : BaseE2E
 			sp.GetRequiredService<IServicioDivision>().ListarDivisionesAsync(new ListarDivisionesRequest(cursoID, cicloLectivo)));
 		divisionesIniciales.ShouldBeEmpty();
 
-		// Cada alta de división es un request independiente: su propio scope / su propia UoW.
-		await EnUnScope(sp => sp.GetRequiredService<IServicioDivision>().AgregarDivisionAsync(new AgregarDivisionRequest(cursoID)));
-		await EnUnScope(sp => sp.GetRequiredService<IServicioDivision>().AgregarDivisionAsync(new AgregarDivisionRequest(cursoID)));
+		// Cada alta de división es un request independiente: su propio scope / su propia UoW. La
+		// letra sale de ProponerDescripcionDivisionAsync, que es lo que hace la pantalla: la
+		// propone y el usuario la confirma o la cambia.
+		foreach (var _ in Enumerable.Range(0, 2))
+		{
+			var descripcion = await EnUnScope(sp =>
+				sp.GetRequiredService<IServicioDivision>().ProponerDescripcionDivisionAsync(new ProponerDescripcionRequest(cursoID)));
+
+			await EnUnScope(sp =>
+				sp.GetRequiredService<IServicioDivision>().AgregarDivisionAsync(new AgregarDivisionRequest(cursoID, descripcion)));
+		}
 
 		var divisiones = await EnUnScope(sp =>
 			sp.GetRequiredService<IServicioDivision>().ListarDivisionesAsync(new ListarDivisionesRequest(cursoID, cicloLectivo)));

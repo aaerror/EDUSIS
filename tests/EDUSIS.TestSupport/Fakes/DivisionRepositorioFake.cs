@@ -8,10 +8,10 @@ public sealed class DivisionRepositorioFake : RepositorioEnMemoria<Division>, ID
 {
 	/// <summary>
 	/// Fuerza que <see cref="ExisteDivisionConDescripcionAsync"/> devuelva <see langword="true"/>
-	/// sin importar el estado del repo. <c>Division.Siguiente</c> ya evita colisiones contra las
-	/// descripciones que recibe, así que el camino normal nunca dispara la excepción de `Core`
-	/// que protege esa invariante (una carrera entre dos altas concurrentes); esta bandera
-	/// simula esa carrera para poder probarla.
+	/// sin importar el estado del repo. Desde DIV-1 la letra la elige el usuario, así que una
+	/// descripción repetida es alcanzable sembrando la división y se prueba sin la bandera; lo que
+	/// la bandera sigue cubriendo es la carrera entre dos altas concurrentes, que registran la
+	/// misma letra entre la propuesta de <c>Division.Siguiente</c> y el alta.
 	/// </summary>
 	public bool ForzarExisteDivisionConDescripcion { get; set; }
 

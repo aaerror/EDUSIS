@@ -9,7 +9,7 @@ namespace Domain.UnitTests.Divisiones;
 
 /// <summary>
 /// Agregado <see cref="Division"/>: alta, numeración automática (<see cref="Division.Siguiente"/>),
-/// cargo de preceptor y las validaciones de cupo/baja. La gestión de cursantes por división pasó
+/// cargo de preceptor (asignar, cambiar y quitar) y las validaciones de cupo/baja. La gestión de cursantes por división pasó
 /// a <see cref="Domain.Cursantes.Cursante"/> (con conteos vía <c>ICursanteRepository</c>), así
 /// que no vive más acá. Las excepciones del módulo son <c>internal</c>: se verifican por el
 /// nombre del tipo.
@@ -70,14 +70,23 @@ public class DivisionTests
 	}
 
 	[Fact]
-	public void Siguiente_despues_de_Z_no_tiene_tope_y_hoy_lanza_ArgumentException()
+	public void Siguiente_hasta_la_Z_sigue_proponiendo_la_letra_siguiente()
 	{
-		// TODO conocido (Domain/Divisiones/Division.cs, Siguiente): "sin tope tras 'Z'".
-		// char.ConvertFromUtf32('Z' + 1) da '[', que el constructor de Division rechaza por no
-		// ser una letra (regex ^[a-zA-Z]{1}$). El síntoma hoy es un ArgumentException genérico
-		// ("la división del curso debe ser una letra") en vez de una regla de negocio explícita
-		// sobre el máximo de divisiones por curso. Este test documenta ese estado actual.
-		Should.Throw<ArgumentException>(() => Division.Siguiente(Guid.NewGuid(), new[] { "Z" }));
+		var division = Division.Siguiente(Guid.NewGuid(), new[] { "X", "Y" });
+
+		division.Descripcion.ShouldBe("Z");
+	}
+
+	[Fact]
+	public void Siguiente_despues_de_Z_lanza_SinLetrasDisponiblesException()
+	{
+		// Cierra el TODO "sin tope tras 'Z'" de Division.Siguiente: char.ConvertFromUtf32('Z' + 1)
+		// daba "[", que el constructor rechazaba con un ArgumentException genérico ("la división
+		// del curso debe ser una letra"). Ahora la regla de negocio —el curso agotó sus letras—
+		// tiene excepción propia y mensaje que explica el límite.
+		var ex = Should.Throw<Exception>(() => Division.Siguiente(Guid.NewGuid(), new[] { "Z" }));
+
+		ex.GetType().Name.ShouldBe("SinLetrasDisponiblesException");
 	}
 	#endregion
 
@@ -113,6 +122,53 @@ public class DivisionTests
 		var ex = Should.Throw<Exception>(() => division.AsignarPreceptor(Guid.Empty));
 
 		ex.GetType().Name.ShouldBe("SinDatosPreceptorException");
+	}
+
+	[Fact]
+	public void CambiarPreceptor_reemplaza_al_preceptor_del_cargo_ocupado()
+	{
+		var division = new DivisionBuilder().Build();
+		var anterior = Guid.NewGuid();
+		var nuevo = Guid.NewGuid();
+		division.AsignarPreceptor(anterior);
+
+		division.CambiarPreceptor(nuevo);
+
+		division.Preceptor.ShouldBe(nuevo);
+		division.EstaCargoPreceptorVacante().ShouldBeFalse();
+	}
+
+	[Fact]
+	public void CambiarPreceptor_sobre_un_cargo_vacante_lanza_CargoPreceptorDisponibleException()
+	{
+		var division = new DivisionBuilder().Build();
+
+		var ex = Should.Throw<Exception>(() => division.CambiarPreceptor(Guid.NewGuid()));
+
+		ex.GetType().Name.ShouldBe("CargoPreceptorDisponibleException");
+	}
+
+	[Fact]
+	public void CambiarPreceptor_con_Guid_vacio_lanza_SinDatosPreceptorException()
+	{
+		var division = new DivisionBuilder().Build();
+		division.AsignarPreceptor(Guid.NewGuid());
+
+		var ex = Should.Throw<Exception>(() => division.CambiarPreceptor(Guid.Empty));
+
+		ex.GetType().Name.ShouldBe("SinDatosPreceptorException");
+	}
+
+	[Fact]
+	public void CambiarPreceptor_con_el_preceptor_que_ya_tiene_lanza_PreceptorSinCambiosException()
+	{
+		var division = new DivisionBuilder().Build();
+		var preceptor = Guid.NewGuid();
+		division.AsignarPreceptor(preceptor);
+
+		var ex = Should.Throw<Exception>(() => division.CambiarPreceptor(preceptor));
+
+		ex.GetType().Name.ShouldBe("PreceptorSinCambiosException");
 	}
 
 	[Fact]
@@ -168,12 +224,28 @@ public class DivisionTests
 	#endregion
 
 	#region Baja
-	[Fact]
-	public void ValidarSePuedeEliminar_de_secundaria_lanza_DivisionNoEliminableException()
+	// Las dos reglas conviven (decisión de B2/DIV-2): una división vacía se elimina siempre, de
+	// cualquier nivel, y el nivel sólo decide cuando quedan cursantes. Antes de DIV-2 estos casos
+	// afirmaban que Secundaria rechazaba el borrado incluso con la división vacía.
+	[Theory]
+	[InlineData(NivelEducativo.Secundaria)]
+	[InlineData(NivelEducativo.Primaria)]
+	public void ValidarSePuedeEliminar_sin_cursantes_no_lanza_en_ningun_nivel(NivelEducativo nivel)
 	{
 		var division = new DivisionBuilder().Build();
 
-		var ex = Should.Throw<Exception>(() => division.ValidarSePuedeEliminar(NivelEducativo.Secundaria, 0));
+		Should.NotThrow(() => division.ValidarSePuedeEliminar(nivel, 0));
+	}
+
+	[Fact]
+	public void ValidarSePuedeEliminar_de_secundaria_con_cursantes_lanza_DivisionNoEliminableException()
+	{
+		// Rama inalcanzable desde la aplicación —ServicioDivision.EliminarDivisionAsync exige la
+		// división vacía de inscripciones antes de llegar acá— y afirmada a propósito: es la regla
+		// de negocio del dominio y lo único que la mantiene viva (ver el <remarks> del método).
+		var division = new DivisionBuilder().Build();
+
+		var ex = Should.Throw<Exception>(() => division.ValidarSePuedeEliminar(NivelEducativo.Secundaria, 1));
 
 		ex.GetType().Name.ShouldBe("DivisionNoEliminableException");
 	}

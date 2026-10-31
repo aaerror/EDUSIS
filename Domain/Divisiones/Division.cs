@@ -43,12 +43,29 @@ public sealed class Division : Entity
 		Descripcion = descripcion.ToUpper().Trim();
 	}
 
+	/// <summary>
+	/// Propone la división que sigue a la última del curso: "A" si no hay ninguna, y la letra
+	/// siguiente a la mayor existente en los demás casos. El tope es "Z": pasada esa letra no hay
+	/// descripción válida posible y lanza <c>SinLetrasDisponiblesException</c>.
+	/// </summary>
 	public static Division Siguiente(Guid cursoID, IEnumerable<string> descripcionesExistentes)
 	{
 		var ultima = descripcionesExistentes.OrderDescending().FirstOrDefault();
-		var siguiente = ultima is null ? "A" : char.ConvertFromUtf32(char.Parse(ultima.Trim()) + 1);
-		// TODO: sin tope tras 'Z'
-		return new Division(cursoID, siguiente);
+		if (ultima is null)
+		{
+			return new Division(cursoID, "A");
+		}
+
+		// El tope cierra el TODO "sin tope tras 'Z'": char.ConvertFromUtf32('Z' + 1) da "[", que el
+		// constructor rechazaba con un ArgumentException genérico ("debe ser una letra") en vez de
+		// nombrar la regla de negocio que se está violando.
+		var ultimaLetra = char.ToUpperInvariant(char.Parse(ultima.Trim()));
+		if (ultimaLetra >= 'Z')
+		{
+			throw new SinLetrasDisponiblesException();
+		}
+
+		return new Division(cursoID, char.ConvertFromUtf32(ultimaLetra + 1));
 	}
 	#endregion
 
@@ -65,6 +82,31 @@ public sealed class Division : Entity
 		if (Guid.Empty.Equals(unPreceptor))
 		{
 			throw new SinDatosPreceptorException();
+		}
+
+		Preceptor = unPreceptor;
+	}
+
+	/// <summary>
+	/// Corrige quién es el preceptor de una división que ya tiene el cargo ocupado. No es
+	/// <see cref="QuitarPreceptor"/> + <see cref="AsignarPreceptor"/>: el cargo nunca queda
+	/// vacante, así que no hay un estado intermedio en el que la división pierda su preceptor.
+	/// </summary>
+	public void CambiarPreceptor(Guid unPreceptor)
+	{
+		if (EstaCargoPreceptorVacante())
+		{
+			throw new CargoPreceptorDisponibleException();
+		}
+
+		if (Guid.Empty.Equals(unPreceptor))
+		{
+			throw new SinDatosPreceptorException();
+		}
+
+		if (Preceptor.Equals(unPreceptor))
+		{
+			throw new PreceptorSinCambiosException();
 		}
 
 		Preceptor = unPreceptor;
@@ -88,8 +130,38 @@ public sealed class Division : Entity
 			throw new CupoMaximoAlcanzadoException();
 	}
 
+	/// <summary>
+	/// Una división vacía se elimina siempre, de cualquier nivel. Con cursantes, el nivel decide:
+	/// en Secundaria no se elimina nunca y en Primaria se exige que la matrícula haya caído por
+	/// debajo del mínimo que justifica mantener la división abierta.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <paramref name="cantidadCursantes"/> es la <em>matrícula vigente</em> del ciclo lectivo, no
+	/// el total histórico de inscripciones: una división sin alumnos cursando llega acá con cero
+	/// aunque arrastre inscripciones cerradas de ciclos anteriores. Esas las frena después una
+	/// guarda de integridad de <c>ServicioDivision.EliminarDivisionAsync</c>, porque
+	/// <c>FK_CURSANTE_DIVISION</c> está declarada con <c>OnDelete(DeleteBehavior.Restrict)</c> y el
+	/// borrado reventaría en SQL Server con una violación de clave ajena en lugar de una excepción
+	/// de dominio.
+	/// </para>
+	/// <para>
+	/// <strong>El orden de esa guarda respecto de esta validación importa</strong>, y está elegido
+	/// para que estas dos ramas sigan vivas: "toda inscripción" contiene a "matrícula vigente", así
+	/// que si la guarda de integridad corriera primero, <paramref name="cantidadCursantes"/>
+	/// llegaría siempre en cero y ni <c>DivisionNoEliminableException</c> ni
+	/// <c>DivisionConMatriculaSuficienteException</c> se dispararían nunca en producción. La
+	/// decisión está documentada en <c>docs/plan/casos-uso-pendientes.md</c>, "La decisión sobre la
+	/// clave ajena de división", y el motivo del orden, en el propio caso de uso.
+	/// </para>
+	/// </remarks>
 	public void ValidarSePuedeEliminar(NivelEducativo nivel, int cantidadCursantes)
 	{
+		if (cantidadCursantes == 0)
+		{
+			return;
+		}
+
 		if (nivel == NivelEducativo.Secundaria)
 		{
 			throw new DivisionNoEliminableException();
