@@ -18,7 +18,7 @@ using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
-internal partial class GestionAsistenciasViewModel : ObservableObject
+internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacion
 {
 	/// <summary>Título único de todos los diálogos de la pantalla.</summary>
 	private const string TITULO = "Asistencia";
@@ -244,7 +244,17 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 			Curso = _cursoStore.Curso.Grado;
 			NivelEducativo = _cursoStore.Curso.NivelEducativo;
 		}
+
+		Ruta = new[]
+		{
+			Migaja.Contexto("CURSOS"),
+			Migaja.Hacia($"{ Curso?.ToUpper() } AÑO · DIVISIONES", VolverCommand),
+			Migaja.Actual("ASISTENCIA")
+		};
 	}
+
+	/// <summary>Ruta hasta la planilla del día. El "Volver a divisiones" del encabezado era su único equivalente.</summary>
+	public IReadOnlyList<Migaja> Ruta { get; }
 
 	#region CargarCommand
 	private bool CanExecuteCargarCommand()
@@ -592,18 +602,17 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 				return;
 			}
 
-			var mensaje = $"Se va a cerrar la planilla de asistencia del { Fecha.ToString("D") }.\n" +
-						  $"Con la planilla cerrada no se puede marcar asistencia ni incorporar alumnos.\n\n" +
-						  $"¿Desea continuar?";
-
-			if (_dialogService.Confirmar(mensaje, TITULO))
+			if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+					titulo: $"Cerrar la planilla del { Fecha.ToString("D") }",
+					mensaje: $"Quedan firmados { Presentes } presentes, { Ausencias } ausencias, { Inasistencias } inasistencias y { Tardanzas } tardanzas. "
+						   + "Con la planilla cerrada no se puede marcar asistencia ni incorporar alumnos; se puede reabrir después.",
+					verbo: "Cerrar planilla")))
 			{
 				await _servicioAsistencia.CerrarPlanillaAsync(new CerrarPlanillaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																						Fecha: Fecha));
 
-				_dialogService.MostrarInformacion("Planilla de asistencia cerrada correctamente", "Operación exitosa");
-
 				await CargarPlanillaAsync();
+				_dialogService.MostrarInformacion($"Planilla del { Fecha.ToString("d") }: { Presentes } presentes y { Ausencias + Inasistencias } ausencias.", "Planilla cerrada");
 			}
 		}
 		catch (Exception ex)
@@ -619,6 +628,11 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 		return HayPlanilla && Cerrada;
 	}
 
+	/// <remarks>
+	/// Reabrir era la única operación de la pantalla que no preguntaba nada: un clic deshacía la
+	/// firma del preceptor sin aviso. No borra registros, así que no va en rojo, pero sí cambia
+	/// el estado de un documento que ya estaba cerrado.
+	/// </remarks>
 	private async Task ExecuteReabrirPlanillaCommand()
 	{
 		try
@@ -628,10 +642,20 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 				return;
 			}
 
+			if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+					titulo: $"Reabrir la planilla del { Fecha.ToString("D") }",
+					mensaje: "La planilla vuelve a aceptar marcas y la firma del cierre deja de valer. "
+						   + "Los registros ya cargados se conservan.",
+					verbo: "Reabrir planilla")))
+			{
+				return;
+			}
+
 			await _servicioAsistencia.ReabrirPlanillaAsync(new ReabrirPlanillaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																					  Fecha: Fecha));
 
 			await CargarPlanillaAsync();
+			_dialogService.MostrarInformacion($"La planilla del { Fecha.ToString("d") } vuelve a aceptar marcas.", "Planilla reabierta");
 		}
 		catch (Exception ex)
 		{
@@ -661,18 +685,19 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 				return;
 			}
 
-			var mensaje = $"Se va a eliminar la planilla de asistencia del { Fecha.ToString("D") } y todos sus registros.\n\n" +
-						  $"¿Desea continuar?";
-
-			if (_dialogService.Confirmar(mensaje, TITULO))
+			if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+					titulo: $"Eliminar la planilla del { Fecha.ToString("D") }",
+					consecuencia: $"Se borran los { Presentes + Ausencias + Inasistencias + Tardanzas } registros del día "
+								+ "y las inasistencias dejan de contar para el legajo de los alumnos. "
+								+ "Esta acción no se puede deshacer: la planilla hay que volver a abrirla y marcarla de cero.",
+					verbo: "Eliminar planilla")))
 			{
 				await _servicioAsistencia.EliminarPlanillaAsync(new EliminarPlanillaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																							Fecha: Fecha));
 
-				_dialogService.MostrarInformacion("Planilla de asistencia eliminada correctamente", "Operación exitosa");
-
 				// Deja la pantalla en estado "sin planilla": es lo que corresponde después de eliminarla.
 				await CargarPlanillaAsync();
+				_dialogService.MostrarInformacion($"Planilla del { Fecha.ToString("d") }.", "Planilla eliminada");
 			}
 		}
 		catch (Exception ex)

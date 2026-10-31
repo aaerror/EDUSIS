@@ -45,6 +45,9 @@ public class GestionCursantesViewModelTests
 		/// <summary>UI-CUR-1: la pantalla lista las divisiones del curso para poblar el destino del traslado.</summary>
 		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
 		public DialogServiceFalso Dialogos { get; } = new();
+
+		/// <summary>Salida de la pantalla: la ruta vuelve a las divisiones del curso.</summary>
+		public NavegacionFalsa NavegarADivisiones { get; } = new();
 		public CursoStore CursoStore { get; } = new();
 		public DivisionStore DivisionStore { get; } = new();
 		public CicloLectivoStore CicloLectivoStore { get; } = new();
@@ -77,6 +80,7 @@ public class GestionCursantesViewModelTests
 													  ServicioCurricula,
 													  ServicioDivision,
 													  Dialogos,
+													  NavegarADivisiones,
 													  CursoStore,
 													  DivisionStore,
 													  CicloLectivoStore);

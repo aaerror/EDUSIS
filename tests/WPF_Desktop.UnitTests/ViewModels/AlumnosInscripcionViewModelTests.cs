@@ -22,8 +22,11 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 /// (<see cref="RegistrarAlumnoViewModel"/>): la inscripcion llega a <see cref="IServicioCursante.InscribirCursanteAsync"/>,
 /// el periodo sale de <see cref="CicloLectivoStore"/>, el alumno de <see cref="LegajoStore"/> y la UI no reimplementa la
 /// validacion de cupo (la hace <c>Core</c>: la UI solo muestra la excepcion).
-/// <c>RegistrarAlumnoViewModel.GuardarCommand</c> conserva <c>MessageBox.Show</c> (decision #2), asi que su flujo de
-/// guardado se cubre por guarda sobre el codigo fuente y no por ejecucion.
+/// <para>
+/// <c>RegistrarAlumnoViewModel</c> ya no usa <c>MessageBox.Show</c>: avisa por <c>IDialogService</c>, que acá se dobla
+/// con <see cref="Dobles.DialogServiceFalso"/>. El comentario anterior decia que su guardado solo se podia cubrir por
+/// guarda sobre el codigo fuente justamente porque el MessageBox bloqueaba el hilo de la prueba.
+/// </para>
 /// </summary>
 public class AlumnosInscripcionViewModelTests
 {
@@ -36,6 +39,14 @@ public class AlumnosInscripcionViewModelTests
 		public IServicioDivision ServicioDivisiones { get; } = Substitute.For<IServicioDivision>();
 		public LegajoStore LegajoStore { get; } = new();
 		public CicloLectivoStore CicloLectivoStore { get; } = new();
+
+		/// <summary>
+		/// Doble del servicio de diálogos: las dos pantallas pasaron a avisar por acá en lugar de
+		/// abrir un <c>MessageBox</c>, así que la prueba puede leer lo que le dijeron al usuario.
+		/// </summary>
+		public DialogServiceFalso Dialogos { get; } = new();
+
+		public NavegacionFalsa NavegarAAlumnos { get; } = new();
 
 		public Guid AlumnoID { get; } = Guid.NewGuid();
 		public CursoResponse Primero { get; } = new(Guid.NewGuid(), Grado.Primero, NivelEducativo.Secundaria);
@@ -56,12 +67,12 @@ public class AlumnosInscripcionViewModelTests
 
 		public InscripcionAlumnoViewModel CrearInscripcion()
 		{
-			return new InscripcionAlumnoViewModel(ServicioCursos, ServicioCursantes, ServicioDivisiones, LegajoStore, CicloLectivoStore);
+			return new InscripcionAlumnoViewModel(ServicioCursos, ServicioCursantes, ServicioDivisiones, Dialogos, NavegarAAlumnos, LegajoStore, CicloLectivoStore);
 		}
 
 		public RegistrarAlumnoViewModel CrearRegistro()
 		{
-			return new RegistrarAlumnoViewModel(Substitute.For<IServicioAlumno>(), ServicioCursos, ServicioCursantes, ServicioDivisiones, CicloLectivoStore);
+			return new RegistrarAlumnoViewModel(Substitute.For<IServicioAlumno>(), ServicioCursos, ServicioCursantes, ServicioDivisiones, Dialogos, NavegarAAlumnos, CicloLectivoStore);
 		}
 	}
 
@@ -215,8 +226,11 @@ public class AlumnosInscripcionViewModelTests
 
 		await viewModel.InscribirCommand.ExecuteAsync(null);
 
-		viewModel.HabilitarMessage.ShouldBeTrue();
-		viewModel.Message.ShouldContain("inscripto");
+		// El éxito dejó de escribirse en el aviso ámbar de la pantalla —donde se veía igual que
+		// un error— y sale como aviso al pie, que se va solo.
+		contexto.Dialogos.Informaciones.ShouldHaveSingleItem().Titulo.ShouldBe("Alumno inscripto");
+		viewModel.HabilitarMessage.ShouldBeFalse();
+		viewModel.Message.ShouldBeEmpty();
 		viewModel.Curso.ShouldBeNull();
 		viewModel.Division.ShouldBeNull();
 		viewModel.EsRecursante.ShouldBeFalse();
@@ -238,8 +252,11 @@ public class AlumnosInscripcionViewModelTests
 			await viewModel.InscribirCommand.ExecuteAsync(null);
 		});
 
-		viewModel.HabilitarMessage.ShouldBeTrue();
-		viewModel.Message.ShouldBe("La division no tiene cupo disponible.");
+		// El rechazo de Core va al diálogo, que exige acuse: un aviso al pie que se desvanece a
+		// los cinco segundos es lo último que conviene para la única pista de por qué no se
+		// pudo inscribir.
+		contexto.Dialogos.Errores.ShouldHaveSingleItem().Mensaje.ShouldBe("La division no tiene cupo disponible.");
+		contexto.Dialogos.Informaciones.ShouldBeEmpty();
 	}
 
 	[Fact]

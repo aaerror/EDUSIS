@@ -9,32 +9,29 @@ using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using System;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Cursos;
+using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Shared;
 
 namespace WPF_Desktop.ViewModels.Alumnos;
 
-internal partial class RegistrarAlumnoViewModel : ObservableValidator
+internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacion
 {
 	private readonly IServicioAlumno _servicioAlumnos;
 	private readonly IServicioCurso _servicioCursos;
 	private readonly IServicioCursante _servicioCursantes;
 	private readonly IServicioDivision _servicioDivisiones;
+	private readonly IDialogService _dialogService;
 	private readonly CicloLectivoStore _cicloLectivoStore;
-
-	#region Request
-	private RegistrarDatosPersonalesRequest _informacionPersonalRequest;
-	private RegistrarContactoRequest _contactoRequest;
-	private RegistrarDomicilioRequest _domicilioRequest;
-	#endregion
 
 	#region ViewModels
 	[ObservableProperty]
@@ -79,18 +76,28 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 
 	#region Commands
 	public IRelayCommand AtrasCommand { get; }
-	public IRelayCommand ContinuarCommand { get; }
+	public IAsyncRelayCommand ContinuarCommand { get; }
 	public IAsyncRelayCommand GuardarCommand { get; }
+	public IRelayCommand VolverCommand { get; }
 	#endregion
+
+	public IReadOnlyList<Migaja> Ruta { get; }
 
 	#region AsyncCommands
 	public IAsyncRelayCommand ActualizarCursosAsyncCommand; 
 	#endregion
 
 
-	public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumnos, IServicioCurso servicioCursos, IServicioCursante servicioCursantes, IServicioDivision servicioDivisiones, CicloLectivoStore cicloLectivoStore)
+	public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumnos,
+									IServicioCurso servicioCursos,
+									IServicioCursante servicioCursantes,
+									IServicioDivision servicioDivisiones,
+									IDialogService dialogService,
+									INavigationService gestionAlumnosNavigationService,
+									CicloLectivoStore cicloLectivoStore)
 	{
 		_servicioAlumnos = servicioAlumnos;
+		_dialogService = dialogService;
 		_servicioCursos = servicioCursos;
 		_servicioCursantes = servicioCursantes;
 		_servicioDivisiones = servicioDivisiones;
@@ -100,8 +107,16 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 		_domicilio = new(null);
 		_contacto = new(null);
 
+		VolverCommand = new RelayCommand(gestionAlumnosNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Hacia("ALUMNOS", VolverCommand),
+			Migaja.Actual("ALTA")
+		};
+
 		AtrasCommand = new RelayCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
-		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
+		ContinuarCommand = new AsyncRelayCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
 		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
 
 		ActualizarCursosAsyncCommand = new AsyncRelayCommand(ActualizarCursos);
@@ -127,7 +142,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "No se pudieron cargar los cursos");
 		}
 	}
 
@@ -162,7 +177,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "No se pudieron cargar las divisiones del curso");
 		}
 	}
 	#endregion
@@ -179,111 +194,78 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	private bool CanExecuteContinuarCommand() =>
 		!InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
 
-	private async void ExecuteContinuarCommand()
+	/// <summary>
+	/// Paso 1: da de alta la persona y pasa al paso de la inscripción.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Tres cosas cambiaron. Era <c>async void</c>, así que una excepción fuera del try apagaba
+	/// la aplicación en medio de un alta. Si faltaba un campo, reemplazaba los tres ViewModels
+	/// del paso por instancias vacías: avisaba de un dato faltante y borraba todos los demás.
+	/// Y además el aviso decía "Error al Registrar un Docente" en la pantalla de alumnos.
+	/// </para>
+	/// <para>
+	/// También se fue el "¿Está seguro que desea registrar…?": el botón dice "Continuar" y lo
+	/// que hace es seguir; preguntarlo de nuevo no agregaba nada.
+	/// </para>
+	/// </remarks>
+	private async Task ExecuteContinuarCommand()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
+		var faltantes = new List<string>();
 
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonal.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad) || string.IsNullOrWhiteSpace(Domicilio.Calle) || string.IsNullOrWhiteSpace(Domicilio.Localidad) || string.IsNullOrWhiteSpace(Domicilio.Provincia) || string.IsNullOrWhiteSpace(Contacto.Telefono) || string.IsNullOrWhiteSpace(Contacto.Email))
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido)) { faltantes.Add("apellido"); }
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.Nombre)) { faltantes.Add("nombre"); }
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad)) { faltantes.Add("documento"); }
+		if (string.IsNullOrWhiteSpace(Domicilio.Calle)) { faltantes.Add("calle"); }
+		if (string.IsNullOrWhiteSpace(Domicilio.Localidad)) { faltantes.Add("localidad"); }
+		if (string.IsNullOrWhiteSpace(Domicilio.Provincia)) { faltantes.Add("provincia"); }
+		if (string.IsNullOrWhiteSpace(Contacto.Telefono)) { faltantes.Add("teléfono"); }
+		if (string.IsNullOrWhiteSpace(Contacto.Email)) { faltantes.Add("correo"); }
+
+		if (faltantes.Count > 0)
 		{
-			messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
-			caption = "Error al Registrar un Docente";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-			InformacionPersonal = new InformacionPersonalViewModel(
-				new DatosPersonalesResponse(
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					"",
-					DateTime.Now,
-					string.Empty));
-
-			Domicilio = new DomicilioViewModel(
-				new DomicilioResponse(
-					string.Empty,
-					string.Empty,
-					"",
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					string.Empty));
-
-			Contacto = new ContactoViewModel(
-				new ContactoResponse(string.Empty, string.Empty));
+			_dialogService.MostrarAdvertencia($"Falta completar: { string.Join(", ", faltantes) }.", "Datos incompletos");
 
 			return;
 		}
-		else
+
+		try
 		{
-			messageBoxText = $"¿Está seguro que desea registrar los datos del alumno { InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }?";
-			caption = "Registrar Alumno";
-			result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-			if (result is MessageBoxResult.Yes)
+			string documento = InformacionPersonal.DocumentoNacionalIdentidad;
+
+			var esDocumentoInvalido = await _servicioAlumnos.EsDocumentoInvalidoAsync(new DocumentoRequest(documento));
+			if (esDocumentoInvalido)
 			{
-				var requestInformacionPersonal = new RegistrarDatosPersonalesRequest(
-					InformacionPersonal.Apellido,
-					InformacionPersonal.Nombre,
-					InformacionPersonal.DocumentoNacionalIdentidad,
-					InformacionPersonal.Sexo.ToString(),
-					InformacionPersonal.FechaNacimiento,
-					InformacionPersonal.Nacionalidad);
+				_dialogService.MostrarAdvertencia($"El documento { documento } ya está registrado con otra persona. Revisá el número o buscá el alumno en el índice.", "Documento repetido");
 
-				var requestDomicilio = new RegistrarDomicilioRequest(
-					Domicilio.Calle,
-					Domicilio.Altura,
-					Domicilio.Vivienda.ToString(),
-					Domicilio.Observaciones,
-					Domicilio.Localidad,
-					Domicilio.Provincia,
-					Domicilio.Pais);
-
-				var requestContacto = new RegistrarContactoRequest(Contacto.Telefono, Contacto.Email);
-
-				try
-				{
-					var esDocumentoInvalido = await _servicioAlumnos.EsDocumentoInvalidoAsync(new DocumentoRequest(requestInformacionPersonal.Documento));
-					if (esDocumentoInvalido)
-					{
-						messageBoxText = $"El número de documento ({ requestInformacionPersonal.Documento }) ya se encuentra registrado con otra persona.";
-						caption = "Error";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
-						InformacionPersonal.DocumentoNacionalIdentidad = string.Empty;
-
-						return;
-					}
-
-					var request = new RegistrarAlumnoRequest(
-						Apellido: InformacionPersonal.Apellido,
-						Nombre: InformacionPersonal.Nombre,
-						DNI: InformacionPersonal.DocumentoNacionalIdentidad,
-						Sexo: InformacionPersonal.Sexo.ToString(),
-						FechaNacimiento: InformacionPersonal.FechaNacimiento,
-						Nacionalidad: InformacionPersonal.Nacionalidad,
-						Telefono: Contacto.Telefono,
-						Email: Contacto.Email,
-						Calle: Domicilio.Calle,
-						Altura: Domicilio.Altura,
-						Vivienda: Domicilio.Vivienda.ToString(),
-						Observacion: Domicilio.Observaciones,
-						Localidad: Domicilio.Localidad,
-						Provincia: Domicilio.Provincia,
-						Pais: Domicilio.Pais);
-					alumnoID = await _servicioAlumnos.RegistrarAlumnoAsync(request);
-
-					messageBoxText = $"Se han registrado los datos de un nuevo alumno.";
-					caption = "Operación Exitosa";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-
-					Tab = 1;
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-				}
+				return;
 			}
+
+			var request = new RegistrarAlumnoRequest(
+				Apellido: InformacionPersonal.Apellido,
+				Nombre: InformacionPersonal.Nombre,
+				DNI: InformacionPersonal.DocumentoNacionalIdentidad,
+				Sexo: InformacionPersonal.Sexo.ToString(),
+				FechaNacimiento: InformacionPersonal.FechaNacimiento,
+				Nacionalidad: InformacionPersonal.Nacionalidad,
+				Telefono: Contacto.Telefono,
+				Email: Contacto.Email,
+				Calle: Domicilio.Calle,
+				Altura: Domicilio.Altura,
+				Vivienda: Domicilio.Vivienda.ToString(),
+				Observacion: Domicilio.Observaciones,
+				Localidad: Domicilio.Localidad,
+				Provincia: Domicilio.Provincia,
+				Pais: Domicilio.Pais);
+			alumnoID = await _servicioAlumnos.RegistrarAlumnoAsync(request);
+
+			Tab = 1;
+
+			_dialogService.MostrarInformacion($"{ InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }. Falta inscribirlo en una división.", "Alumno registrado");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo registrar el alumno");
 		}
 	}
 	#endregion
@@ -292,12 +274,20 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	private bool CanExecuteGuardarCommand() =>
 		!HasErrors && Curso is not null && Division is not null;
 
+	/// <summary>
+	/// Paso 2: inscribe el alumno recién registrado en una división.
+	/// </summary>
+	/// <remarks>
+	/// La confirmación se queda, y es de las pocas que vale la pena: el alumno queda inscripto
+	/// en un curso, una división y un ciclo lectivo determinados, y moverlo después es otro
+	/// trámite —"Cambiar de división" en la pantalla de cursantes—. El diálogo repite esos tres
+	/// datos porque son los que no se pueden corregir con un clic.
+	///
+	/// Lo que se fue: el "Periodo = string.Empty" que borraba el ciclo lectivo cargado cuando
+	/// el aviso era justamente que faltaba el ciclo lectivo.
+	/// </remarks>
 	private async Task ExecuteGuardarCommandAsync()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
 		if (Curso is null || Division is null)
 		{
 			return;
@@ -305,62 +295,56 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 
 		if (string.IsNullOrWhiteSpace(Periodo))
 		{
-			messageBoxText = "Se deben completar todos los campos necesarios para poder registrar el alumno en el curso.";
-			caption = "Error";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-			Periodo = string.Empty;
+			_dialogService.MostrarAdvertencia("Indicá el ciclo lectivo de la inscripción.", "Falta el ciclo lectivo");
 
 			return;
 		}
 
 		if (alumnoID.Equals(Guid.Empty))
 		{
-			messageBoxText = "Antes de inscribir el alumno en el curso debe estar registrado previamente.";
-			caption = "Error";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
 			Tab = 0;
+			_dialogService.MostrarAdvertencia("Primero completá el paso de datos personales para dar de alta el alumno.", "El alumno todavía no está registrado");
 
 			return;
 		}
 
-		messageBoxText = $"Está a punto de inscribir a { InformacionPersonal.Apellido } { InformacionPersonal.Nombre } en:\n" +
-						 $"\tCurso: { Curso.Grado }° Año ({ Curso.NivelEducativo })\n"+
-						 $"\tDivisión: { Division.Descripcion }\n"+
-						 $"\tCiclo Lectivo: { Periodo }\n\n"+
-						 $"¿Desea continuar?";
-		caption = "Inscripción del Alumno";
-		result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-		if (result is MessageBoxResult.Yes)
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+				titulo: $"Inscribir a { InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }",
+				mensaje: $"Curso: { Curso.Grado }° año ({ Curso.NivelEducativo }). "
+					   + $"División: { Division.Descripcion }. Ciclo lectivo: { Periodo }. "
+					   + "Para moverlo después hay que darlo de baja y cambiarlo de división desde Cursantes.",
+				verbo: "Inscribir alumno")))
 		{
-			try
-			{
-				// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
-				var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo, FechaInicio);
-				await _servicioCursantes.InscribirCursanteAsync(request);
+			return;
+		}
 
-				messageBoxText = $"Se han inscripto el alumno en el curso correctamente .";
-				caption = "Operación Exitosa";
-				MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+		try
+		{
+			// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
+			var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo, FechaInicio);
+			await _servicioCursantes.InscribirCursanteAsync(request);
 
-				alumnoID = Guid.Empty;
-				InformacionPersonal = new(null);
-				Domicilio = new(null);
-				Contacto = new(null);
+			string inscripto = $"{ InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }";
+			string destino = $"{ Curso.Grado }° { Division.Descripcion } ({ Periodo })";
 
-				Curso = null;
-				FechaInicio = DateTime.Today;
-				Periodo = _cicloLectivoStore.CicloLectivo;
+			alumnoID = Guid.Empty;
+			InformacionPersonal = new(null);
+			Domicilio = new(null);
+			Contacto = new(null);
 
-				await ActualizarCursos();
+			Curso = null;
+			FechaInicio = DateTime.Today;
+			Periodo = _cicloLectivoStore.CicloLectivo;
 
-				Tab = 0;
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-			}
+			await ActualizarCursos();
+
+			Tab = 0;
+
+			_dialogService.MostrarInformacion($"{ inscripto } quedó inscripto en { destino }.", "Alumno inscripto");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo inscribir el alumno");
 		}
 	}
 	#endregion

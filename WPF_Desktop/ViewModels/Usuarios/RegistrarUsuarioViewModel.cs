@@ -8,8 +8,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using System;
+using WPF_Desktop.Shared;
 using WPF_Desktop.ViewModels.Docentes;
 
 namespace WPF_Desktop.ViewModels.Usuarios;
@@ -19,6 +19,7 @@ internal partial class RegistrarUsuarioViewModel : ObservableValidator
 {
 	private readonly IServicioUsuario _servicioUsuario;
 	private readonly IServicioDocente _servicioDocente;
+	private readonly IDialogService _dialogService;
 
 	[ObservableProperty]
 	[NotifyDataErrorInfo]
@@ -42,32 +43,37 @@ internal partial class RegistrarUsuarioViewModel : ObservableValidator
 	#endregion
 
 
-	public RegistrarUsuarioViewModel(IServicioUsuario servicioUsuario, IServicioDocente servicioDocente)
+	public RegistrarUsuarioViewModel(IServicioUsuario servicioUsuario,
+									 IServicioDocente servicioDocente,
+									 IDialogService dialogService)
 	{
 		_servicioUsuario = servicioUsuario;
 		_servicioDocente = servicioDocente;
+		_dialogService = dialogService;
 
 		RegistrarAsyncCommand = new AsyncRelayCommand(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
 		UpdateListaDocentesAsyncCommand = new AsyncRelayCommand(UpdateListaDocentesAsync);
 	}
 
+	/// <remarks>
+	/// Sin cartel cuando no hay docentes: la pantalla ya muestra el aviso en línea que lo
+	/// explica y deshabilita los campos. Un MessageBox encima del mismo mensaje, apenas se abre
+	/// la ventana de acceso, era un clic de más para leer algo que ya estaba a la vista.
+	/// </remarks>
 	public async Task UpdateListaDocentesAsync()
 	{
-		var response = await _servicioDocente.ListarDocentesActivosAsync();
-		if (response.IsNullOrEmpty())
+		try
 		{
-			string messageBoxText = string.Empty;
-			string caption = string.Empty;
-			MessageBoxResult result;
-
-			messageBoxText = "No hay docentes registrados en el sistema.";
-			caption = "Alerta";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+			var response = await _servicioDocente.ListarDocentesActivosAsync();
+			if (!response.IsNullOrEmpty())
+			{
+				Docentes = new ObservableCollection<LegajoDocenteViewModel>(response.Select(x => new LegajoDocenteViewModel(x)));
+				ExistenDocentesActivos = true;
+			}
 		}
-		else
+		catch (Exception ex)
 		{
-			Docentes = new ObservableCollection<LegajoDocenteViewModel>(response.Select(x => new LegajoDocenteViewModel(x)));
-			ExistenDocentesActivos = true;
+			_dialogService.MostrarError(ex.Message, "No se pudo cargar el listado de docentes");
 		}
 	}
 
@@ -158,18 +164,11 @@ internal partial class RegistrarUsuarioViewModel : ObservableValidator
 
 	private async Task ExecuteRegistrarCommand()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
 		try
 		{
 			if (string.IsNullOrWhiteSpace(Legajo))
 			{
-				messageBoxText = "Debe ingresar el legajo del docente para continuar.";
-				caption = "Error en la operación";
-				MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-				Legajo = string.Empty;
+				_dialogService.MostrarAdvertencia("Escribí el número de legajo del docente.", "Falta el legajo");
 
 				return;
 			}
@@ -177,16 +176,16 @@ internal partial class RegistrarUsuarioViewModel : ObservableValidator
 			var request = new SolicitarAccesoRequest(Docente.DocenteID, Legajo);
 			await _servicioUsuario.SolicitarAccesoAsync(request);
 
-			messageBoxText = $"Se ha generado el usuario para el docente:\n" +
-							 $"\tDocente: {Docente.NombreCompleto}\n" +
-							 $"\tLegajo: {Docente.Legajo}\n\n" +
-							 $"Para ingresar al sistema debe utilizar su correo electrónico como usuario y su documento como clave de acceso.";
-			caption = "Operación Exitosa";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+			// Las credenciales iniciales no son un aviso al pie que se va solo: es lo único que
+			// el docente necesita para entrar la primera vez, así que el diálogo exige acuse.
+			_dialogService.ConfirmarAccion(SolicitudDeDialogo.Aviso(
+				titulo: $"Usuario creado para { Docente.NombreCompleto }",
+				mensaje: $"Legajo { Docente.Legajo }. Para entrar la primera vez se usa el correo como usuario "
+					   + "y el número de documento como contraseña."));
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "No se pudo crear el usuario");
 		}
 	}
 	#endregion

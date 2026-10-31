@@ -7,9 +7,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows.Data;
-using System.Windows;
 using System;
 using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Shared.Messages;
 
@@ -19,6 +19,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 {
 	#region Servicios
 	private readonly IServicioDocente _servicioDocentes;
+	private readonly IDialogService _dialogService;
 	#endregion
 
 	#region NavigationService
@@ -92,6 +93,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 
 
 	public GestionDocentesViewModel(IServicioDocente servicioDocentes,
+									IDialogService dialogService,
 									INavigationService registrarDocenteNavigationService,
 									INavigationService perfilDocenteNavigationService,
 									INavigationService gestionPuestoNavigationService,
@@ -99,6 +101,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 									LegajoStore perfilBuscadoStore)
 	{
 		_servicioDocentes = servicioDocentes;
+		_dialogService = dialogService;
 		_registrarDocenteNavigationService = registrarDocenteNavigationService;
 		_perfilDocenteNavigationService = perfilDocenteNavigationService;
 		_gestionPuestosNavigationService = gestionPuestoNavigationService;
@@ -179,7 +182,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "No se pudo cargar el listado de docentes", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "No se pudo cargar el listado de docentes");
 		}
 		finally
 		{
@@ -201,12 +204,17 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 		}
 
 		string nombre = LegajoDocenteSeleccionado.NombreCompleto;
+		string legajo = LegajoDocenteSeleccionado.Legajo;
 
-		var result = MessageBox.Show($"¿Quitar a { nombre } del listado de docentes?",
-									 "Quitar docente",
-									 MessageBoxButton.YesNo,
-									 MessageBoxImage.Question);
-		if (result is not MessageBoxResult.Yes)
+		// La confirmación dice QUÉ se lleva puesto. Antes preguntaba "¿Quitar a X del listado
+		// de docentes?", que suena a esconder una fila: lo que hace es dar de baja el legajo,
+		// y con él las designaciones en las cátedras donde ese docente estaba en funciones.
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: $"Quitar a { nombre } del personal docente",
+				consecuencia: $"El legajo { legajo } queda fuera del listado y de las búsquedas. "
+							+ "Las cátedras donde esté designado quedan sin docente en funciones. "
+							+ "Sus licencias y puestos ya registrados se conservan.",
+				verbo: "Quitar docente")))
 		{
 			return;
 		}
@@ -220,11 +228,11 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 			// alguien vuelva a operar sobre un registro que ya no existe.
 			await ExecuteCargarCommandAsync();
 
-			MessageBox.Show($"Se quitó a { nombre }.", "Docente quitado", MessageBoxButton.OK, MessageBoxImage.Information);
+			_dialogService.MostrarInformacion($"{ nombre } ya no figura en el listado.", "Docente quitado");
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "No se pudo quitar el docente", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "No se pudo quitar el docente");
 		}
 	}
 	#endregion

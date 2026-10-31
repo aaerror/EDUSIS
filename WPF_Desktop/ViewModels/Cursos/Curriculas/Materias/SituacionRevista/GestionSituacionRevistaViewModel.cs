@@ -7,6 +7,7 @@ using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes;
 using Core.Shared.DTOs.Personas.Requests;
 using Microsoft.IdentityModel.Tokens;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
@@ -21,7 +22,7 @@ using WPF_Desktop.ViewModels.Shared.Messages;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
-internal partial class GestionSituacionRevistaViewModel : ObservableValidator
+internal partial class GestionSituacionRevistaViewModel : ObservableValidator, IUbicacion
 {
 	#region Services
 	private readonly INavigationService _gestionMateriasNavigationService;
@@ -162,7 +163,27 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 		// Va después de los comandos: el setter generado notifica a los comandos que declaran [NotifyCanExecuteChangedFor].
 		Materia = _materiaStore.Materia;
+
+		// Sin parámetro, a diferencia de NavigationCommand: la miga ejecuta el comando con null
+		// y el switch por string no haría nada.
+		VolverCommand = new RelayCommand(gestionMateriasNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Contexto("CURSOS"),
+			Migaja.Hacia("DISEÑO CURRICULAR", VolverCommand),
+			Migaja.Actual($"{ Materia?.Descripcion?.ToUpper() } · DOCENTES")
+		};
 	}
+
+	/// <summary>
+	/// Ruta hasta los docentes de la cátedra. La materia era el título de la pantalla —el mismo
+	/// que en Cátedras y en Horarios—, así que las tres se llamaban igual.
+	/// </summary>
+	public IReadOnlyList<Migaja> Ruta { get; }
+
+	/// <summary>Vuelve al diseño curricular. Es el destino del viejo botón "Volver a materias".</summary>
+	public IRelayCommand VolverCommand { get; }
 
 	#region BuscarDocenteCommand
 	/// <summary>
@@ -305,62 +326,26 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 	private async Task ExecuteEditarCommandAsync(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		/*
-		case "Docente":
-			messageBoxText = $"¿Está seguro que desea cambiar de situación de revista al docente {SituacionRevistaUPDATE.Docente} " +
-							 $"de la materia {_materiaStore.Materia.Descripcion}? Se va a quitar de funciones al docente del cargo {SituacionRevistaUPDATE.Cargo} " +
-							 $"(Fecha Alta: {SituacionRevistaUPDATE.FechaAlta.ToString("D")})";
-			caption = "Cambio de Situación de Revista";
-			result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-			if (result is MessageBoxResult.Yes)
-			{
-				try
-				{
-					var request = new EliminarSituacionRevistaRequest(CursoID: _cursoStore.Curso.CursoID,
-																	  MateriaID: _materiaStore.Materia.MateriaID,
-																	  DocenteID: SituacionRevistaUPDATE.DocenteID);
-					await _servicioCurricula.RescindirCargoDocenteDeMateriaAsync(request);
-					CargarSituacionRevistas();
-
-					messageBoxText = $"Se quitó del cargo al docente correctamente.";
-					caption = "Operación Exitosa";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-				}
-			}
-
-			SituacionRevistaUPDATE = null;
-			break;
-
-			"Rescindir":
-				break;
-		}*/
-
 		switch (obj)
 		{
 			case "Docente":
-				messageBoxText = $"¿Está seguro que desea quitar de funciones al docente { SituacionRevistaUPDATE.Docente }? El cargo docente de { SituacionRevistaUPDATE.Cargo.ToLower() } continúa asignado al docente aunque el mismo no se encuentre en funciónes.";
-				caption = "Quitar docente de funciones";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+						titulo: $"Quitar del aula a { SituacionRevistaUPDATE.Docente }",
+						consecuencia: $"La cátedra queda sin docente en funciones y { SituacionRevistaUPDATE.Docente } deja de figurar "
+									+ $"frente al curso. El cargo de { SituacionRevistaUPDATE.Cargo.ToLower() } sigue siendo suyo: "
+									+ "para liberarlo hay que poner fin a la designación.",
+						verbo: "Quitar del aula")))
 				{
 					try
 					{
 						var request = new RelevarDeFuncionesRequest(CatedraID: _catedraStore.Catedra);
 						await _servicioCatedra.RelevarDeFuncionesAsync(request);
 
-						messageBoxText = $"Se relevó correctamente al docente de la materia.";
-						caption = "Operación Exitosa";
-						_dialogService.MostrarInformacion(messageBoxText, caption);
+						_dialogService.MostrarInformacion($"{ SituacionRevistaUPDATE.Docente } ya no está en funciones.", "Docente relevado");
 					}
 					catch (Exception ex)
 					{
-						_dialogService.MostrarError(ex.Message, "Error en la operación");
+						_dialogService.MostrarError(ex.Message, "No se pudo quitar del aula al docente");
 					}
 				}
 
@@ -368,12 +353,12 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 				break;
 
 			case "Rescindir":
-				messageBoxText = $"¿Está seguro que desea rescindir el cargo docente de { SituacionRevistaUPDATE.Cargo } al docente { SituacionRevistaUPDATE.Docente }? El cargo docente se encontrará disponible en la asignatura.\n" +
-								 $"\nFecha Alta: { SituacionRevistaUPDATE.FechaInicio.ToString("D") }" +
-								 $"\nFecha Cargo: { DateTime.Today.ToString("D") }";
-				caption = "Rescindir Cargo Docente";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+						titulo: $"Poner fin a la designación de { SituacionRevistaUPDATE.Docente }",
+						consecuencia: $"La designación de { SituacionRevistaUPDATE.Cargo.ToLower() }, vigente desde el "
+									+ $"{ SituacionRevistaUPDATE.FechaInicio.ToString("D") }, se cierra hoy "
+									+ $"({ DateTime.Today.ToString("D") }) y el cargo vuelve a estar disponible en la cátedra.",
+						verbo: "Poner fin")))
 				{
 					try
 					{
@@ -383,13 +368,11 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 						await _servicioCatedra.EstablecerFinDeDesignacionAsync(request);
 						await CargarSituacionRevistasAsync();
 
-						messageBoxText = $"Docente liberado correctamente del cargo docente en la materia.";
-						caption = "Operación Exitosa";
-						_dialogService.MostrarInformacion(messageBoxText, caption);
+						_dialogService.MostrarInformacion($"El cargo de { SituacionRevistaUPDATE.Cargo.ToLower() } vuelve a estar disponible.", "Designación con fecha de fin");
 					}
 					catch (Exception ex)
 					{
-						_dialogService.MostrarError(ex.Message, "Error en la operación");
+						_dialogService.MostrarError(ex.Message, "No se pudo poner fin a la designación");
 					}
 				}
 
@@ -408,18 +391,14 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 	private async Task ExecuteEliminarCommandAsync(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
 		switch (obj)
 		{
 			case "Docente":
-				messageBoxText = $"¿Está seguro que desea finalizar la designación del cargo docente asignado al docente { SituacionRevistaUPDATE.Docente }?\n" +
-								 $"La designación queda finalizada y el cargo deja de estar vigente en la materia.\n" +
-								 $"Fecha Alta: { SituacionRevistaUPDATE.FechaInicio.ToString("D") }";
-				caption = "Finalizar Designación";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+						titulo: $"Finalizar la designación de { SituacionRevistaUPDATE.Docente }",
+						consecuencia: $"La designación vigente desde el { SituacionRevistaUPDATE.FechaInicio.ToString("D") } queda finalizada "
+									+ "y el cargo deja de estar vigente en la cátedra. Las horas que ocupaba vuelven a estar sin asignar.",
+						verbo: "Finalizar designación")))
 				{
 					try
 					{
@@ -428,13 +407,11 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 						await _servicioCatedra.FinalizarDesignacionAsync(request);
 						await CargarSituacionRevistasAsync();
 
-						messageBoxText = $"Se finalizó correctamente la designación del cargo docente.";
-						caption = "Operación Exitosa";
-						_dialogService.MostrarInformacion(messageBoxText, caption);
+						_dialogService.MostrarInformacion($"{ SituacionRevistaUPDATE.Docente } ya no está designado en la cátedra.", "Designación finalizada");
 					}
 					catch (Exception ex)
 					{
-						_dialogService.MostrarError(ex.Message, "Error en la operación");
+						_dialogService.MostrarError(ex.Message, "No se pudo finalizar la designación");
 					}
 				}
 
@@ -454,26 +431,26 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 
 	private async Task ExecuteGuardarCommandAsync(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
 		switch (obj)
 		{
 			case "Docente":
-				messageBoxText = $"¿Está seguro que desea establecer como docente de aula a { SituacionRevistaUPDATE.Docente } en la asignatura de { _materiaStore.Materia.Descripcion } con el cargo de { SituacionRevistaUPDATE.Cargo }?";
-				caption = "Establecer docente de aula";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Poner en aula a { SituacionRevistaUPDATE.Docente }",
+						mensaje: $"Pasa a estar frente al curso en { _materiaStore.Materia.Descripcion } con el cargo de "
+							   + $"{ SituacionRevistaUPDATE.Cargo.ToLower() }. Si ya había alguien en funciones, lo reemplaza.",
+						verbo: "Poner en aula")))
 				{
 					try
 					{
 						var request = new PonerEnFuncionesRequest(CatedraID: _catedraStore.Catedra,
 																  SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID);
 						await _servicioCatedra.PonerEnFuncionesAsync(request);
+
+						_dialogService.MostrarInformacion($"{ SituacionRevistaUPDATE.Docente } está frente al curso.", "Docente en aula");
 					}
 					catch (Exception ex)
 					{
-						_dialogService.MostrarError(ex.Message, "Error en la operación");
+						_dialogService.MostrarError(ex.Message, "No se pudo poner en aula al docente");
 					}
 				}
 
@@ -483,16 +460,15 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 			case "Insert":
 				if (HabilitarReemplazaA && SituacionRevistaINSERT.ReemplazaA is null)
 				{
-					_dialogService.MostrarAdvertencia("Debe seleccionar a quién reemplaza el docente suplente.", "Cambio de Situación Revista");
+					_dialogService.MostrarAdvertencia("Elegí a quién reemplaza el docente suplente.", "Falta a quién reemplaza");
 					return;
 				}
 
-				messageBoxText = $"¿Está seguro que desea realizar un cambio en la situación de revista del docente {SituacionRevistaINSERT.Docente}?\n" +
-								 $"Materia: {_materiaStore.Materia.Descripcion}\n" +
-								 $"Cargo: {SituacionRevistaINSERT.Cargo}\n\n";
-				caption = "Cambio de Situación Revista";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Designar a { SituacionRevistaINSERT.Docente } en { _materiaStore.Materia.Descripcion }",
+						mensaje: $"Cargo: { SituacionRevistaINSERT.Cargo }. Desde el { SituacionRevistaINSERT.FechaInicio.ToString("D") }. "
+							   + "La designación ocupa horas de la cátedra.",
+						verbo: "Designar docente")))
 				{
 					try
 					{
@@ -511,13 +487,11 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator
 																									 SituacionRevistaID: situacionRevistaID));
 						}
 
-						messageBoxText = $"Cambios guardados exitósamente.";
-						caption = "Operación Exitosa";
-						_dialogService.MostrarInformacion(messageBoxText, caption);
+						_dialogService.MostrarInformacion($"{ SituacionRevistaINSERT.Docente } como { SituacionRevistaINSERT.Cargo.ToLower() }.", "Docente designado");
 					}
 					catch (Exception ex)
 					{
-						_dialogService.MostrarError(ex.Message, "Error en la operación");
+						_dialogService.MostrarError(ex.Message, "No se pudo designar el docente");
 					}
 					finally
 					{

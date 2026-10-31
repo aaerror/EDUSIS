@@ -8,18 +8,20 @@ using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
 using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
-internal partial class GestionCursantesViewModel : ObservableValidator
+internal partial class GestionCursantesViewModel : ObservableValidator, IUbicacion
 {
 	private const string INSTANCIA_POR_DEFECTO = "Parcial";
 
@@ -140,7 +142,10 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 
 	public IRelayCommand NuevaCalificacionCommand { get; }
 	public IRelayCommand CancelarCalificacionCommand { get; }
+	public IRelayCommand VolverCommand { get; }
 	#endregion
+
+	public IReadOnlyList<Migaja> Ruta { get; }
 
 
 	public GestionCursantesViewModel(IServicioCursante servicioCursante,
@@ -148,6 +153,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 									 IServicioCurricula servicioCurricula,
 									 IServicioDivision servicioDivision,
 									 IDialogService dialogService,
+									 INavigationService gestionDivisionesNavigationService,
 									 CursoStore cursoStore,
 									 DivisionStore divisionStore,
 									 CicloLectivoStore cicloLectivoStore)
@@ -180,6 +186,18 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 		// Va después de crear los comandos: el setter de CicloLectivo notifica a BuscarCommandAsync (NotifyCanExecuteChangedFor)
 		// sin comprobar null, y siempre entra al bloque de cambio porque el campo arranca vacío.
 		CicloLectivo = _cicloLectivoStore.CicloLectivo;
+
+		// Esta pantalla era la única del drill-down sin ninguna salida: su hermana —la planilla
+		// de asistencia de la misma división— traía un "Volver a divisiones" y acá no había
+		// nada. La ruta la provee, y de paso dice de qué división son estos alumnos.
+		VolverCommand = new RelayCommand(gestionDivisionesNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Contexto("CURSOS"),
+			Migaja.Hacia($"{ _cursoStore.Curso.Grado.ToUpper() } AÑO · DIVISIONES", VolverCommand),
+			Migaja.Actual("ALUMNOS")
+		};
 	}
 
 	#region Cambios de propiedad
@@ -335,16 +353,30 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 			return;
 		}
 
+		// Se confirma aunque no borre nada: la condición de recursante sale impresa en el
+		// boletín y en los reportes de trayectoria, así que marcarla por error cambia un
+		// documento que la escuela entrega. Era la única escritura de la pantalla que no
+		// preguntaba.
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+				titulo: EsRecursante
+					? $"Marcar a { Cursante.NombreCompleto } como recursante"
+					: $"Quitar la condición de recursante de { Cursante.NombreCompleto }",
+				mensaje: "La condición sale impresa en el boletín y en el reporte de trayectoria académica.",
+				verbo: "Guardar condición")))
+		{
+			return;
+		}
+
 		try
 		{
 			await _servicioCursante.ModificarCondicionDeRecursanteAsync(new ModificarCondicionRecursanteRequest(Cursante.CursanteID, EsRecursante));
 
-			_dialogService.MostrarInformacion("La condición de recursante se actualizó correctamente.", "Operación exitosa");
 			await BuscarCursantesAsync();
+			_dialogService.MostrarInformacion($"{ Cursante.NombreCompleto }{ (EsRecursante ? " figura como recursante." : " ya no figura como recursante.") }", "Condición guardada");
 		}
 		catch (Exception ex)
 		{
-			_dialogService.MostrarError(ex.Message, "Error en la operación");
+			_dialogService.MostrarError(ex.Message, "No se pudo guardar la condición");
 		}
 	}
 
@@ -355,11 +387,12 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 			return;
 		}
 
-		var mensaje = $"Se va a dar de baja la inscripción de { Cursante.NombreCompleto } con fecha { FechaBaja.ToString("d") }.\n" +
-					  $"El alumno deja de figurar en el listado de la división y la inscripción queda como registro histórico.\n\n" +
-					  $"¿Desea continuar?";
-
-		if (!_dialogService.Confirmar(mensaje, "Dar de baja al alumno"))
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: $"Dar de baja a { Cursante.NombreCompleto }",
+				consecuencia: $"La inscripción se cierra con fecha { FechaBaja.ToString("d") }. El alumno deja de figurar "
+							+ "en el listado de la división y de sus planillas de asistencia; la inscripción queda como "
+							+ "registro histórico con sus calificaciones.",
+				verbo: "Dar de baja")))
 		{
 			return;
 		}
@@ -396,12 +429,12 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 			return;
 		}
 
-		var mensaje = $"Se va a trasladar a { Cursante.NombreCompleto } a la división { DivisionDestino.Descripcion } con fecha { FechaCambio.ToString("d") }.\n" +
-					  $"La inscripción actual se cierra y se abre una nueva en la división de destino. " +
-					  $"Las calificaciones ya cargadas quedan en la inscripción cerrada y siguen saliendo impresas en el boletín.\n\n" +
-					  $"¿Desea continuar?";
-
-		if (!_dialogService.Confirmar(mensaje, "Cambiar de división"))
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: $"Pasar a { Cursante.NombreCompleto } a la división { DivisionDestino.Descripcion }",
+				consecuencia: $"La inscripción actual se cierra con fecha { FechaCambio.ToString("d") } y se abre una nueva "
+							+ "en la división de destino. Las calificaciones ya cargadas quedan en la inscripción cerrada "
+							+ "y siguen saliendo impresas en el boletín.",
+				verbo: "Cambiar de división")))
 		{
 			return;
 		}
@@ -561,7 +594,11 @@ internal partial class GestionCursantesViewModel : ObservableValidator
 			return;
 		}
 
-		if (!_dialogService.Confirmar("¿Desea quitar la calificación seleccionada? Para corregir una nota hay que quitarla y volver a cargarla.", "Quitar calificación"))
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: $"Quitar la calificación de { CalificacionSeleccionada.Materia }",
+				consecuencia: "La nota se borra de la inscripción y deja de salir en el boletín. "
+							+ "Para corregir una nota hay que quitarla y volver a cargarla.",
+				verbo: "Quitar calificación")))
 		{
 			return;
 		}

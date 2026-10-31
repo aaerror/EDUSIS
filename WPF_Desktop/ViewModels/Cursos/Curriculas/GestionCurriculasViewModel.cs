@@ -4,6 +4,7 @@ using Core.ServicioCurriculas.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioCurriculas;
 using Core.ServicioMaterias;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -17,7 +18,7 @@ using WPF_Desktop.ViewModels.Docentes;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas;
 
-internal partial class GestionCurriculasViewModel : ObservableValidator
+internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicacion
 {
 	#region Services
 	private readonly INavigationService _gestionCursosNavigationService;
@@ -141,7 +142,24 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 
 		HabilitarNotificacion = false;
 		HabilitarEditarMateria = false;
+
+		VolverCommand = new RelayCommand(gestionCursosNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Hacia("CURSOS", VolverCommand),
+			Migaja.Actual($"{ Curso } · DISEÑO CURRICULAR")
+		};
 	}
+
+	/// <summary>
+	/// Ruta hasta el diseño curricular. El curso vive acá y no en el título: el título dice qué
+	/// es la pantalla y antes decía el grado, con lo cual la palabra "diseño curricular" no
+	/// aparecía en ninguna parte.
+	/// </summary>
+	public IReadOnlyList<Migaja> Ruta { get; }
+
+	public IRelayCommand VolverCommand { get; }
 
 	public async Task CargarCurriculasAsync()
 	{
@@ -252,18 +270,18 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 			case "Materia":
 				if (string.IsNullOrWhiteSpace(Descripcion))
 				{
-					messageBoxText = $"Error al registrar una materia en el curso. Existen algunos campos vacíos y debe completarlos antes de poder continuar.";
-					caption = "Error al Registrar Materia";
-					_dialogService.MostrarAdvertencia(messageBoxText, caption);
+					_dialogService.MostrarAdvertencia("Escribí el nombre de la materia antes de agregarla.", "Falta el nombre de la materia");
 
 					break;
 				}
 
-				messageBoxText = $"¿Está seguro que desea agregar la materia a la currícula de { _cursoStore.Curso.Grado }° año de la { _cursoStore.Curso.NivelEducativo }?\n\n" +
-								 $"Materia: { Descripcion }\nCarga horaria: { CargaHoraria } horas cátedra";
-				caption = "Registrar Materia";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				// La carga horaria viaja en el texto y la guarda estática W5 lo comprueba: el
+				// número que el usuario lee en el diálogo tiene que ser el que sale en el request.
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Agregar { Descripcion } al diseño curricular",
+						mensaje: $"Queda en { _cursoStore.Curso.Grado }° año de { _cursoStore.Curso.NivelEducativo }. "
+							   + $"Carga horaria: { CargaHoraria } horas cátedra.",
+						verbo: "Agregar materia")))
 				{
 					try
 					{
@@ -273,10 +291,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 																  HorasCatedra: CargaHoraria);
 						await _servicioMateria.RegistrarMateriaAsync(request);
 
-						messageBoxText = $"Nueva materia agregada a la currícula del curso.";
-						caption = "Operación Exitosa";
-
-						_dialogService.MostrarInformacion(messageBoxText, caption);
+						_dialogService.MostrarInformacion($"{ Descripcion }, { CargaHoraria } horas cátedra.", "Materia agregada");
 
 						HabilitarRegistrarMateria = false;
 
@@ -296,10 +311,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 
 				break;
 			case "Update":
-				messageBoxText = $"¿Está seguro que desea guardar los cambios en la materia?";
-				caption = "Guardar Materia";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Guardar los cambios de { Materia.Descripcion }",
+						mensaje: $"Carga horaria: { Materia.HorasCatedra?.ToString() ?? "sin definir" } horas cátedra. "
+							   + "La carga horaria es la que reparten las cátedras de la materia entre sus docentes.",
+						verbo: "Guardar materia")))
 				{
 					try
 					{
@@ -310,10 +326,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 																  HorasCatedra: Materia.HorasCatedra.HasValue ? Materia.HorasCatedra.Value : 0);
 						await _servicioMateria.ModificarMateriaAsync(request);
 
-						messageBoxText = $"Cambios guardados exitósamente.";
-						caption = "Operación Exitosa";
-
-						_dialogService.MostrarInformacion(messageBoxText, caption);
+						_dialogService.MostrarInformacion($"{ Materia.Descripcion }.", "Materia actualizada");
 
 						HabilitarEditarMateria = false;
 						await CargarMateriasAsync();
@@ -363,12 +376,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 		switch (obj)
 		{
 			case "Curricula":
-				string messageBoxText = string.Empty;
-				string caption = string.Empty;
-
-				messageBoxText = $"¿Está seguro que desea crear un nuevo diseño curricular? Se procedera a crear un diseño curricular con fecha inicio desde la fecha de hoy, { DateTime.Today.ToString("D") }. El diseño curricular que se encuentra vigente dejara de estarlo en el día de la fecha.";
-				caption = "Nuevo diseño curricular";
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: "Abrir un diseño curricular nuevo",
+						mensaje: $"Empieza hoy, { DateTime.Today.ToString("D") }, y el diseño curricular vigente se cierra con la fecha de hoy. "
+							   + "Las materias del diseño cerrado quedan como registro de los años anteriores.",
+						verbo: "Crear currícula")))
 				{
 					try
 					{
@@ -377,10 +389,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 																	FechaFin: null);
 						await _servicioCurricula.RegistrarCurriculaAsync(request);
 
-						messageBoxText = $"Cambios guardados exitósamente.";
-						caption = "Operación Exitosa";
-
-						_dialogService.MostrarInformacion(messageBoxText, caption);
+						_dialogService.MostrarInformacion($"Vigente desde hoy, { DateTime.Today.ToString("d") }. Ya podés agregarle materias.", "Currícula creada");
 
 						HabilitarEditarMateria = false;
 						await CargarMateriasAsync();
@@ -418,16 +427,14 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 
 	private async Task ExecuteEliminarCommandAsync(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
 		switch (obj)
 		{
 			case "Materia":
-				messageBoxText = $"¿Está seguro que desea eliminar la materia de {Materia.Descripcion} del diseño curricular del curso?";
-				caption = "Eliminar Materia";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+						titulo: $"Quitar { Materia.Descripcion } del diseño curricular",
+						consecuencia: "La materia deja de figurar en el diseño curricular del curso y no se le podrán cargar "
+									+ "calificaciones. Core rechaza la operación si la materia ya tiene cátedras con docentes designados.",
+						verbo: "Quitar materia")))
 				{
 					try
 					{
@@ -436,9 +443,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator
 																 MateriaID: Materia.MateriaID);
 						await _servicioMateria.EliminarMateriaAsync(request);
 
-						messageBoxText = $"La materia se eliminó correctamente de la currícula del curso.";
-						caption = "Operación Exitosa";
-						_dialogService.MostrarInformacion(messageBoxText, caption);
+						_dialogService.MostrarInformacion($"{ Materia.Descripcion }.", "Materia quitada");
 
 						await CargarMateriasAsync();
 					}

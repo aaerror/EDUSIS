@@ -676,9 +676,14 @@ public class GestionSituacionRevistaViewModelTests
 
 		await contexto.ViewModel.EliminarCommand.ExecuteAsync("Docente");
 
-		contexto.Dialogos.Confirmaciones.Count.ShouldBe(1);
-		contexto.Dialogos.Confirmaciones[0].Titulo.ShouldBe("Finalizar Designación");
-		contexto.Dialogos.Confirmaciones[0].Mensaje.ShouldNotContain("definitivamente");
+		// El diálogo pasó a nombrar la acción y su consecuencia en lugar de titularse con el
+		// nombre de la operación: el verbo del botón es el mismo que el de la pantalla.
+		var solicitud = contexto.Dialogos.Solicitudes.ShouldHaveSingleItem();
+		solicitud.Titulo.ShouldStartWith("Finalizar la designación");
+		solicitud.VerboDeAccion.ShouldBe("Finalizar designación");
+		solicitud.Titulo.ShouldNotContain("definitivamente");
+		solicitud.Consecuencia.ShouldNotContain("definitivamente");
+		solicitud.Consecuencia.ShouldContain("deja de estar vigente");
 	}
 
 	[Fact]

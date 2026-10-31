@@ -14,6 +14,7 @@ using System.Windows;
 using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Security;
+using WPF_Desktop.Shared;
 using WPF_Desktop.ViewModels.Shared.Messages;
 
 namespace WPF_Desktop.ViewModels.Usuarios;
@@ -23,6 +24,7 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 	private readonly IServicioAutenticacion _servicioAutenticacion;
 	private readonly INavigationService _navigationService;
 	private readonly ISesionUsuario _sesion;
+	private readonly IDialogService _dialogService;
 
 	[ObservableProperty]
 	[NotifyDataErrorInfo]
@@ -60,10 +62,14 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 	#endregion
 
 
-	public LoginUsuarioViewModel(INavigationService navigationService, IServicioAutenticacion servicioAutenticacion, ISesionUsuario sesion)
+	public LoginUsuarioViewModel(INavigationService navigationService,
+								 IServicioAutenticacion servicioAutenticacion,
+								 IDialogService dialogService,
+								 ISesionUsuario sesion)
 	{
 		_servicioAutenticacion = servicioAutenticacion;
 		_navigationService = navigationService;
+		_dialogService = dialogService;
 		_sesion = sesion;
 
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
@@ -141,20 +147,15 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 
 	private async Task ExecuteRegistrarCommand(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
 		switch (obj)
 		{
 			case "Login":
 				if (string.IsNullOrWhiteSpace(Usuario) || Clave is null)
 				{
-					messageBoxText = "Se deben completar todos los campos necesarios para poder ingresar.";
-					caption = "Error en la operación";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-					Usuario = string.Empty;
+					// Sin MessageBox y sin borrar el usuario: el aviso de esta pantalla vive
+					// pegado al formulario, y vaciar el campo de usuario cuando lo que faltaba
+					// era la contraseña obligaba a escribirlo de nuevo.
+					_dialogService.MostrarAdvertencia("Completá el usuario y la contraseña para entrar.", "Faltan datos");
 
 					return;
 				}
@@ -182,39 +183,11 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+					_dialogService.MostrarError(ex.Message, "No se pudo entrar");
 				}
 
 				break;
 
-				/*
-			case "RecuperarAcceso":
-				if (string.IsNullOrWhiteSpace(Usuario))
-				{
-					messageBoxText = "Se debe ingresar el usuario para restablecer la contraseña del mismo.";
-					caption = "Error en la operación";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-					Usuario = string.Empty;
-
-					return;
-				}
-
-				try
-				{
-					var request = new RecuperarAccesoRequest(Usuario);
-					_servicioAutenticacion.RecuperarAcceso(request);
-
-					messageBoxText = $"Se restableció correctamente el acceso del usuario { Usuario }. Ahora, debe utilizar su legajo como acceso al mismo.";
-					caption = "Operación exitosa";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-				}
-				break;
-				*/
 		}
 	}
 	#endregion

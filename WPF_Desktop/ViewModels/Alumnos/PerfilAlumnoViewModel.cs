@@ -4,17 +4,20 @@ using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Response;
-using System.Windows;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using System;
+using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels.Alumnos;
 
-internal partial class PerfilAlumnoViewModel : ObservableValidator
+internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 {
 	#region Servicio
 	private readonly IServicioAlumno _servicioAlumno;
+	private readonly IDialogService _dialogService;
 	#endregion
 
 	private LegajoStore _perfilBuscadoStore;
@@ -47,15 +50,24 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator
 	private bool _habilitarEditarSexo = false;
 
 	#region Commands
-	public IRelayCommand CancelarCommand { get; }
+	public IAsyncRelayCommand CargarPerfilCommandAsync { get; }
+	public IAsyncRelayCommand CancelarCommand { get; }
 	public IRelayCommand EditarCommand { get; }
-	public IRelayCommand GuardarCommand { get; }
+	public IAsyncRelayCommand GuardarCommand { get; }
+	public IRelayCommand VolverCommand { get; }
 	#endregion
 
+	/// <summary>Ruta hasta acá. La pantalla no tenía ninguna salida hacia Alumnos.</summary>
+	public IReadOnlyList<Migaja> Ruta { get; }
 
-	public PerfilAlumnoViewModel(IServicioAlumno servicioAlumno, LegajoStore perfilBuscadoStore)
+
+	public PerfilAlumnoViewModel(IServicioAlumno servicioAlumno,
+								 IDialogService dialogService,
+								 INavigationService gestionAlumnosNavigationService,
+								 LegajoStore perfilBuscadoStore)
 	{
 		_servicioAlumno = servicioAlumno;
+		_dialogService = dialogService;
 		_perfilBuscadoStore = perfilBuscadoStore;
 
 		// UI-34: la guarda cubre las dos propiedades del store porque se escriben juntas. Con
@@ -69,17 +81,43 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator
 		// _persona = new NotifyTaskCompletion<PersonaConDetallesResponse>(_servicioAlumno.BuscarPorIDAsync(perfilBuscadoStore.Documento));
 		// _alumno = _persona.Result;
 
+		CargarPerfilCommandAsync = new AsyncRelayCommand(CargarPerfilAsync);
+		VolverCommand = new RelayCommand(gestionAlumnosNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Hacia("ALUMNOS", VolverCommand),
+			Migaja.Actual("PERFIL")
+		};
+
 		EditarCommand = new RelayCommand<string>(EditarCommandExecute, EditarCommandCanExecute);
-		CancelarCommand = new RelayCommand<string>(CancelarCommandExecute, CancelarCommandCanExecute);
-		GuardarCommand = new RelayCommand<string>(GuardarCommandExecute, GuardarCommandCanExecute);
+		CancelarCommand = new AsyncRelayCommand<string>(CancelarCommandExecute, CancelarCommandCanExecute);
+		GuardarCommand = new AsyncRelayCommand<string>(GuardarCommandExecute, GuardarCommandCanExecute);
 	}
 
-	public async void CargarPerfil()
+	/// <summary>
+	/// Trae el perfil del alumno elegido.
+	/// </summary>
+	/// <remarks>
+	/// Era <c>public async void CargarPerfil()</c> y la vista lo llamaba con un
+	/// <c>CallMethodAction</c>. Dos problemas: una excepción adentro de un <c>async void</c> no
+	/// la puede atrapar nadie —se va al manejador global, que apaga la aplicación— y un método
+	/// suelto no tiene <c>IsRunning</c>, así que la pantalla no podía mostrar que estaba
+	/// cargando. Ahora es el mismo comando que usa el perfil del docente, que es la misma
+	/// pantalla sobre otra entidad.
+	/// </remarks>
+	private async Task CargarPerfilAsync()
 	{
-		// .Value es seguro: el constructor ya rechaza un store sin persona elegida.
-		var request = new PersonaRequest(_perfilBuscadoStore.PersonaID.Value);
-		var alumno = await _servicioAlumno.BuscarPorIDAsync(request);
-		Alumno = alumno;
+		try
+		{
+			// .Value es seguro: el constructor ya rechaza un store sin persona elegida.
+			var request = new PersonaRequest(_perfilBuscadoStore.PersonaID.Value);
+			Alumno = await _servicioAlumno.BuscarPorIDAsync(request);
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo cargar el perfil del alumno");
+		}
 	}
 
 	#region Properties
@@ -107,9 +145,9 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator
 		_ => false
 	};
 
-	private void CancelarCommandExecute(object obj)
+	private async Task CancelarCommandExecute(object obj)
 	{
-		CargarPerfil();
+		await CargarPerfilAsync();
 
 		switch (obj as string)
 		{
@@ -154,7 +192,7 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator
 				HabilitarEditarSexo = true;
 				break;
 			default:
-				MessageBox.Show("Error al habilitar la edición.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+				_dialogService.MostrarError("El bloque pedido no existe en esta pantalla.", "No se pudo abrir la edición");
 				break;
 		}
 	}
@@ -169,106 +207,73 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator
 		_ => false
 	};
 
-	private async void GuardarCommandExecute(object obj)
+	/// <summary>
+	/// Guarda el bloque que se estaba editando. Mismo criterio que el perfil del docente: el
+	/// usuario abrió el bloque, lo modificó a la vista y apretó "Guardar cambios"; un cartel
+	/// que le repita lo que tiene delante y le pregunte "¿Desea continuar?" es un paso de más.
+	/// </summary>
+	private async Task GuardarCommandExecute(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
 		switch (obj)
 		{
 			case "Contacto":
-				messageBoxText = $"Se van a registrar los siguientes datos de cambio de contacto:\n" +
-								 $"Email: {PersonaConDetalles.Email}\n" +
-								 $"Teléfono: {PersonaConDetalles.Telefono}\n\n" +
-								 $"¿Desea continuar?";
-				caption = "Actualización de Contacto";
-
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-				if (result is MessageBoxResult.Yes)
+				try
 				{
-					try
-					{
-						var request = new CambiarContactoRequest(Alumno.PersonaID,
-																 PersonaConDetalles.Telefono,
-																 PersonaConDetalles.Email);
-						await _servicioAlumno.ActualizarContacto(request);
+					var request = new CambiarContactoRequest(Alumno.PersonaID,
+															 PersonaConDetalles.Telefono,
+															 PersonaConDetalles.Email);
+					await _servicioAlumno.ActualizarContacto(request);
 
-						MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
-
-						HabilitarEditarContacto = false;
-						CargarPerfil();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					HabilitarEditarContacto = false;
+					await CargarPerfilAsync();
+					_dialogService.MostrarInformacion($"Teléfono { PersonaConDetalles.Telefono } y correo { PersonaConDetalles.Email }.", "Contacto guardado");
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo guardar el contacto");
 				}
 				break;
 
 			case "Domicilio":
-				messageBoxText = $"Se van a registrar los siguientes datos de cambio de domicilio:\n" +
-								 $"Calle con Altura: {PersonaConDetalles.Calle} {PersonaConDetalles.Altura}\n" +
-								 $"Vivienda: {PersonaConDetalles.Vivienda}\n" +
-								 $"Observaciones: {PersonaConDetalles.Observacion}\n" +
-								 $"Localidad: {PersonaConDetalles.Localidad}, {PersonaConDetalles.Provincia}, {PersonaConDetalles.Pais}";
-				caption = "Actualizar domicilio";
-
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-				if (result is MessageBoxResult.Yes)
+				try
 				{
-					try
-					{
-						var request = new CambiarDomicilioRequest(Alumno.PersonaID,
-																  PersonaConDetalles.Calle,
-																  PersonaConDetalles.Altura,
-																  PersonaConDetalles.Vivienda,
-																  PersonaConDetalles.Observacion,
-																  PersonaConDetalles.Localidad,
-																  PersonaConDetalles.Provincia,
-																  PersonaConDetalles.Pais);
-						await _servicioAlumno.ActualizarDomicilio(request);
+					var request = new CambiarDomicilioRequest(Alumno.PersonaID,
+															  PersonaConDetalles.Calle,
+															  PersonaConDetalles.Altura,
+															  PersonaConDetalles.Vivienda,
+															  PersonaConDetalles.Observacion,
+															  PersonaConDetalles.Localidad,
+															  PersonaConDetalles.Provincia,
+															  PersonaConDetalles.Pais);
+					await _servicioAlumno.ActualizarDomicilio(request);
 
-						MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
-
-						HabilitarEditarDomicilio = false;
-						CargarPerfil();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					HabilitarEditarDomicilio = false;
+					await CargarPerfilAsync();
+					_dialogService.MostrarInformacion($"{ PersonaConDetalles.Calle } { PersonaConDetalles.Altura }, { PersonaConDetalles.Localidad }.", "Domicilio guardado");
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo guardar el domicilio");
 				}
 				break;
 
 			case "Sexo":
-				messageBoxText = $"Se van a registrar los siguientes datos de cambio de sexo del alumno:\n" +
-								 $"Nombre Comple: {PersonaConDetalles.Apellido}, {PersonaConDetalles.Nombre}\n" +
-								 $"Sexo: {PersonaConDetalles.Sexo}\n\n" +
-								 $"¿Desea continuar?";
-				caption = "Cambio de Sexo";
-
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-				if (result is MessageBoxResult.Yes)
+				try
 				{
-					try
-					{
-						var request = new CambiarSexoRequest(Alumno.PersonaID,
-															 PersonaConDetalles.Apellido,
-															 PersonaConDetalles.Nombre,
-															 PersonaConDetalles.Sexo);
+					var request = new CambiarSexoRequest(Alumno.PersonaID,
+														 PersonaConDetalles.Apellido,
+														 PersonaConDetalles.Nombre,
+														 PersonaConDetalles.Sexo);
 
-						await _servicioAlumno.ActualizarSexo(request);
+					await _servicioAlumno.ActualizarSexo(request);
 
-						MessageBox.Show("Datos guardados correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
-
-						HabilitarEditarSexo = false;
-						CargarPerfil();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					HabilitarEditarSexo = false;
+					await CargarPerfilAsync();
+					_dialogService.MostrarInformacion($"{ PersonaConDetalles.Apellido }, { PersonaConDetalles.Nombre }.", "Datos personales guardados");
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo guardar los datos personales");
 				}
 				break;
 		}

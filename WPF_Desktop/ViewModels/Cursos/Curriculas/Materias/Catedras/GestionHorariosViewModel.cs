@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCatedras;
 using Core.ServicioCatedras.DTOs.Requests;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 /// EL ORDEN DE LOS DOS PASOS IMPORTA: primero quitar, después agregar. Al revés, el horario nuevo choca con el
 /// viejo —que todavía está cargado— y el dominio lo rechaza por superposición.
 /// </remarks>
-internal partial class GestionHorariosViewModel : ObservableValidator
+internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacion
 {
 	/// <summary>Título de todos los avisos de error de la pantalla.</summary>
 	private const string TituloDeLaPantalla = "Horarios";
@@ -140,7 +141,26 @@ internal partial class GestionHorariosViewModel : ObservableValidator
 		AgregarHorarioCommand = new AsyncRelayCommand(ExecuteAgregarHorarioCommand, CanExecuteAgregarHorarioCommand);
 		QuitarHorarioCommand = new AsyncRelayCommand(ExecuteQuitarHorarioCommand, CanExecuteQuitarHorarioCommand);
 		VolverCommand = new RelayCommand(ExecuteVolverCommand, CanExecuteVolverCommand);
+
+		Ruta = new[]
+		{
+			Migaja.Contexto("CURSOS"),
+			Migaja.Contexto("DISEÑO CURRICULAR"),
+			Migaja.Hacia($"{ Materia?.Descripcion?.ToUpper() } · CÁTEDRAS", VolverCommand),
+			Migaja.Actual("HORARIOS")
+		};
 	}
+
+	/// <summary>
+	/// Ruta hasta los horarios de la cátedra: cuatro niveles, que es exactamente la profundidad
+	/// del drill-down que no tenía ninguna indicación de ubicación.
+	/// </summary>
+	/// <remarks>
+	/// "CURSOS" y "DISEÑO CURRICULAR" van como contexto y no como enlace: esta pantalla sólo
+	/// sabe volver a las cátedras de su materia, que es el único servicio de navegación que
+	/// recibe. Prometer un salto de dos niveles exigiría inyectarle navegación que no usa.
+	/// </remarks>
+	public IReadOnlyList<Migaja> Ruta { get; }
 
 	#region CargarCommand
 	private bool CanExecuteCargarCommand()
@@ -233,11 +253,11 @@ internal partial class GestionHorariosViewModel : ObservableValidator
 				return;
 			}
 
-			string messageBoxText = $"¿Está seguro que desea quitar el horario del día { Horario.Dia } a las { Horario.HoraInicio } " +
-									$"de { Horario.DuracionMinutos } minutos?\n" +
-									$"El horario deja de estar cargado en la cátedra.";
-
-			if (!_dialogService.Confirmar(messageBoxText, "Quitar horario"))
+			if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+					titulo: $"Quitar el horario del { Horario.Dia } a las { Horario.HoraInicio }",
+					consecuencia: $"La cátedra deja de tener esa hora de { Horario.DuracionMinutos } minutos en el turno { Horario.Turno }, "
+								+ "y las horas que queden sin asignar vuelven a estar disponibles para repartir entre los docentes.",
+					verbo: "Quitar horario")))
 			{
 				return;
 			}

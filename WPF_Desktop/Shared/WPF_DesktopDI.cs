@@ -7,6 +7,7 @@ using Core.ServicioCurriculas;
 using Core.ServicioCursos;
 using Core.ServicioDivisiones;
 using Core.ServicioDocentes;
+using Core.ServicioLicencias;
 using Core.ServicioCursantes;
 using Core.ServicioDocumentos;
 using Core.ServicioMaterias;
@@ -122,23 +123,41 @@ internal static class WPF_DesktopDI
 		#region Docentes
 		services.AddTransient<GestionDocentesViewModel>(provider =>
 			new GestionDocentesViewModel(provider.GetRequiredService<IServicioDocente>(),
+										 provider.GetRequiredService<IDialogService>(),
 										 CreateRegistrarDocenteNavigationService(provider),
 										 CreatePerfilDocenteNavigationService(provider),
 										 CreateGestionPuestosNavigationService(provider),
 										 CreateGestionLicenciasNavigationService(provider),
 										 provider.GetRequiredService<LegajoStore>()));
 		services.AddTransient<RegistrarDocenteViewModel>(provider =>
-			new RegistrarDocenteViewModel(provider.GetRequiredService<IServicioDocente>()));
+			new RegistrarDocenteViewModel(provider.GetRequiredService<IServicioDocente>(),
+										  provider.GetRequiredService<IDialogService>(),
+										  CreateGestionDocentesNavigationService(provider)));
 		services.AddTransient<PerfilDocenteViewModel>(provider =>
 			new PerfilDocenteViewModel(provider.GetRequiredService<IServicioDocente>(),
+									   provider.GetRequiredService<IDialogService>(),
+									   CreateGestionDocentesNavigationService(provider),
 									   provider.GetRequiredService<LegajoStore>()));
-		services.AddTransient<GestionPuestosViewModel>();
-		services.AddTransient<GestionLicenciasViewModel>();
+		// Las dos se registran con fábrica y no por reflexión: ahora reciben un
+		// INavigationService, y la resolución automática le pasaría el único INavigationService
+		// registrado —el de la ventana principal—, con lo cual "volver a Docentes" llevaría a
+		// cualquier otra parte sin un solo error de compilación.
+		services.AddTransient<GestionPuestosViewModel>(provider =>
+			new GestionPuestosViewModel(provider.GetRequiredService<IServicioDocente>(),
+										provider.GetRequiredService<IDialogService>(),
+										CreateGestionDocentesNavigationService(provider),
+										provider.GetRequiredService<LegajoStore>()));
+		services.AddTransient<GestionLicenciasViewModel>(provider =>
+			new GestionLicenciasViewModel(provider.GetRequiredService<IServicioLicencia>(),
+										  provider.GetRequiredService<IDialogService>(),
+										  CreateGestionDocentesNavigationService(provider),
+										  provider.GetRequiredService<LegajoStore>()));
 		#endregion
 
 		#region Alumnos
 		services.AddTransient<GestionAlumnosViewModel>(provider =>
 			new GestionAlumnosViewModel(provider.GetRequiredService<IServicioAlumno>(),
+										provider.GetRequiredService<IDialogService>(),
 										CreateRegistrarAlumnoNavigationService(provider),
 										CreateInscripcionAlumnoNavigationService(provider),
 										CreateVerPerfilNavigationService(provider),
@@ -146,14 +165,31 @@ internal static class WPF_DesktopDI
 
 		services.AddTransient<PerfilAlumnoViewModel>(provider =>
 			new PerfilAlumnoViewModel(provider.GetRequiredService<IServicioAlumno>(),
+									  provider.GetRequiredService<IDialogService>(),
+									  CreateGestionAlumnosNavigationService(provider),
 									  provider.GetRequiredService<LegajoStore>()));
-		services.AddTransient<RegistrarAlumnoViewModel>();
-		services.AddTransient<InscripcionAlumnoViewModel>();
+		services.AddTransient<RegistrarAlumnoViewModel>(provider =>
+			new RegistrarAlumnoViewModel(provider.GetRequiredService<IServicioAlumno>(),
+										 provider.GetRequiredService<IServicioCurso>(),
+										 provider.GetRequiredService<IServicioCursante>(),
+										 provider.GetRequiredService<IServicioDivision>(),
+										 provider.GetRequiredService<IDialogService>(),
+										 CreateGestionAlumnosNavigationService(provider),
+										 provider.GetRequiredService<CicloLectivoStore>()));
+		services.AddTransient<InscripcionAlumnoViewModel>(provider =>
+			new InscripcionAlumnoViewModel(provider.GetRequiredService<IServicioCurso>(),
+										   provider.GetRequiredService<IServicioCursante>(),
+										   provider.GetRequiredService<IServicioDivision>(),
+										   provider.GetRequiredService<IDialogService>(),
+										   CreateGestionAlumnosNavigationService(provider),
+										   provider.GetRequiredService<LegajoStore>(),
+										   provider.GetRequiredService<CicloLectivoStore>()));
 		#endregion
 
 		#region Cursos
 		services.AddTransient<RegistrarCursosViewModel>(provider =>
 			new RegistrarCursosViewModel(provider.GetRequiredService<IServicioCurso>(),
+										 provider.GetRequiredService<IDialogService>(),
 										 CreateGestionCursosNavigationService(provider)));
 										 
 		services.AddTransient<GestionCursantesViewModel>(provider =>
@@ -162,11 +198,13 @@ internal static class WPF_DesktopDI
 										  provider.GetRequiredService<IServicioCurricula>(),
 										  provider.GetRequiredService<IServicioDivision>(),
 										  provider.GetRequiredService<IDialogService>(),
+										  CreateGestionDivisionesNavigationService(provider),
 										  provider.GetRequiredService<CursoStore>(),
 										  provider.GetRequiredService<DivisionStore>(),
 										  provider.GetRequiredService<CicloLectivoStore>()));
 		services.AddTransient<GestionCursosViewModel>(provider =>
 			new GestionCursosViewModel(provider.GetRequiredService<IServicioCurso>(),
+									   provider.GetRequiredService<IDialogService>(),
 									   CreateRegistrarCursoNavigationService(provider),
 									   CreateGestionDivisionesNavigationService(provider),
 									   CreateGestionDisenoCurricularNavigationService(provider),
@@ -269,6 +307,7 @@ internal static class WPF_DesktopDI
 		services.AddTransient<LoginUsuarioViewModel>(provider =>
 			new LoginUsuarioViewModel(CreateMainNavigationService(provider),
 									  provider.GetRequiredService<IServicioAutenticacion>(),
+									  provider.GetRequiredService<IDialogService>(),
 									  provider.GetRequiredService<ISesionUsuario>()));
 		#endregion
 

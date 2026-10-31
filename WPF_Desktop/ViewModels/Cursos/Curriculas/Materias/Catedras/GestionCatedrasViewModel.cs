@@ -16,7 +16,7 @@ using WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 
-internal partial class GestionCatedrasViewModel : ObservableObject
+internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 {
 	#region Services
 	private readonly IServicioCatedra _servicioCatedra;
@@ -90,7 +90,20 @@ internal partial class GestionCatedrasViewModel : ObservableObject
 		SeleccionarCatedraCommand = new RelayCommand<CatedraViewModel>(ExecuteSeleccionarCatedraCommand, CanExecuteSeleccionarCatedraCommand);
 		VerHorariosCommand = new RelayCommand<CatedraViewModel>(ExecuteVerHorariosCommand, CanExecuteVerHorariosCommand);
 		VolverCommand = new RelayCommand(ExecuteVolverCommand, CanExecuteVolverCommand);
+
+		Ruta = new[]
+		{
+			Migaja.Contexto("CURSOS"),
+			Migaja.Hacia("DISEÑO CURRICULAR", VolverCommand),
+			Migaja.Actual($"{ Materia?.Descripcion?.ToUpper() } · CÁTEDRAS")
+		};
 	}
+
+	/// <summary>
+	/// Ruta hasta las cátedras de la materia. La materia va acá: era el título de la pantalla,
+	/// el mismo que usaban Horarios y Situación de revista.
+	/// </summary>
+	public IReadOnlyList<Migaja> Ruta { get; }
 
 	#region CargarCommand
 	private bool CanExecuteCargarCommand()

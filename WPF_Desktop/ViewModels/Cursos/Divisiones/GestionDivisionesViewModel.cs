@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
 using Core.Shared.DTOs.Personas.Requests;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -18,7 +19,7 @@ using WPF_Desktop.ViewModels.Shared.Messages;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
-internal partial class GestionDivisionesViewModel : ObservableValidator
+internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicacion
 {
 	#region Service
 	private readonly IServicioDivision _servicioDivision;
@@ -125,7 +126,10 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 
 	public IRelayCommand CancelarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
+	public IRelayCommand VolverCommand { get; }
 	#endregion
+
+	public IReadOnlyList<Migaja> Ruta { get; }
 
 
 	/// <remarks>
@@ -175,6 +179,13 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 		BuscarDocenteCommand = new RelayCommand(ExecuteBuscarDocenteCommand, () => HabilitarRegistrarDocente);
 		CancelarCommand = new RelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
+		VolverCommand = new RelayCommand(gestionCursosNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Hacia("CURSOS", VolverCommand),
+			Migaja.Actual($"{ Curso }° { NivelEducativo.ToUpper() } · DIVISIONES")
+		};
 
 		// El buscador vive en el modal y no conoce a sus llamadores: el elegido vuelve por acá.
 		_messenger.Register<GestionDivisionesViewModel, DocenteElegidoMessage>(this, (receptor, mensaje) =>
@@ -290,54 +301,55 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 
 	private async Task ExecuteEliminarCommandAsync(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
 		switch (obj)
 		{
 			case "Division":
-				messageBoxText = $"Se va a eliminar la división { Division.Descripcion } del curso.\n\n" +
-								 $"¿Desea continuar?";
-				caption = "Eliminar División";
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+						titulo: $"Eliminar la división { Division.Descripcion } de { Curso }° año",
+						consecuencia: $"Se eliminan también sus planillas de asistencia del ciclo { _cicloLectivoStore.CicloLectivo } "
+									+ "y las cátedras asignadas a esta división. Core rechaza la operación si todavía tiene "
+									+ "cursantes inscriptos: primero hay que darlos de baja o cambiarlos de división.",
+						verbo: "Eliminar división")))
 				{
-					try
-					{
-						var request = new EliminarDivisionRequest(_cursoStore.Curso.CursoID, Division.DivisionID, _cicloLectivoStore.CicloLectivo);
-						await _servicioDivision.EliminarDivisionAsync(request);
+					return;
+				}
 
-						_dialogService.MostrarInformacion("División eliminada correctamente", "Operación exitosa");
+				try
+				{
+					var request = new EliminarDivisionRequest(_cursoStore.Curso.CursoID, Division.DivisionID, _cicloLectivoStore.CicloLectivo);
+					await _servicioDivision.EliminarDivisionAsync(request);
 
-						await CargarDivisionesAsync();
-					}
-					catch (Exception ex)
-					{
-						_dialogService.MostrarError(ex.Message, "Error en la operación");
-					}
+					await CargarDivisionesAsync();
+					_dialogService.MostrarInformacion($"División { Division.Descripcion } de { Curso }° año.", "División eliminada");
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo eliminar la división");
 				}
 
 				break;
 
 			case "Preceptor":
-				messageBoxText = $"Se va a quitar el preceptor de la división { Division.Descripcion }.\n\n" +
-								 $"¿Desea continuar?";
-				caption = "Quitar Preceptor";
-
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+						titulo: $"Quitar a { Division.Preceptor } de la división { Division.Descripcion }",
+						consecuencia: "La división queda sin preceptor, y sin preceptor no se puede abrir la planilla "
+									+ "de asistencia del día. Se le puede asignar otro en cualquier momento.",
+						verbo: "Quitar preceptor")))
 				{
-					try
-					{
-						var request = new EliminarPreceptorRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
-						await _servicioDivision.QuitarPreceptorAsync(request);
+					return;
+				}
 
-						_dialogService.MostrarInformacion("Se dio de baja correctamente el preceptor de la división", "Operación exitosa");
+				try
+				{
+					var request = new EliminarPreceptorRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
+					await _servicioDivision.QuitarPreceptorAsync(request);
 
-						await CargarDivisionesAsync();
-					}
-					catch (Exception ex)
-					{
-						_dialogService.MostrarError(ex.Message, "Error en la operación");
-					}
+					await CargarDivisionesAsync();
+					_dialogService.MostrarInformacion($"La división { Division.Descripcion } quedó sin preceptor.", "Preceptor dado de baja");
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo quitar el preceptor");
 				}
 				break;
 		}
@@ -407,21 +419,26 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 				break;
 
 			case "Division":
-				messageBoxText = $"Se va a registrar la división { Descripcion.ToUpper() } en { _cursoStore.Curso.Grado.ToLower() } año de { _cursoStore.Curso.NivelEducativo.ToLower() }.\n\n" +
-								 $"¿Desea continuar?";
-				caption = "Registrar División";
-				if (_dialogService.Confirmar(messageBoxText, caption))
+				// Se confirma porque la letra que se propone no es la que se guarda: el campo
+				// viene precargado con la sugerencia de Core y el usuario pudo escribir otra.
+				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Crear la división { Descripcion.ToUpper() }",
+						mensaje: $"Queda en { _cursoStore.Curso.Grado.ToLower() } año de { _cursoStore.Curso.NivelEducativo.ToLower() }, sin preceptor y sin cursantes.",
+						verbo: "Crear división")))
 				{
-					try
-					{
-						await _servicioDivision.AgregarDivisionAsync(new AgregarDivisionRequest(_cursoStore.Curso.CursoID, Descripcion));
-						_dialogService.MostrarInformacion("Datos guardados correctamente", "Operación exitosa");
-						await CargarDivisionesAsync();
-					}
-					catch (Exception ex)
-					{
-						_dialogService.MostrarError(ex.Message, "Error en la operación");
-					}
+					return;
+				}
+
+				try
+				{
+					await _servicioDivision.AgregarDivisionAsync(new AgregarDivisionRequest(_cursoStore.Curso.CursoID, Descripcion));
+
+					await CargarDivisionesAsync();
+					_dialogService.MostrarInformacion($"División { Descripcion.ToUpper() } de { Curso }° año. Asignale un preceptor para poder tomar asistencia.", "División creada");
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo crear la división");
 				}
 
 				break;
@@ -462,53 +479,58 @@ internal partial class GestionDivisionesViewModel : ObservableValidator
 
 	private async Task AsignarPreceptorAsync()
 	{
-		var messageBoxText = $"Se va asignar al docente { Docente.NombreCompleto } como preceptor de la división { Division.Descripcion } de { Curso } año ({ NivelEducativo })\n\n¿Desea continuar?";
-		var caption = "Asignar Preceptor";
-
-		if (_dialogService.Confirmar(messageBoxText, caption))
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+				titulo: $"Asignar a { Docente.NombreCompleto } como preceptor",
+				mensaje: $"Queda a cargo de la división { Division.Descripcion } de { Curso }° año ({ NivelEducativo }) y podrá abrir y firmar sus planillas de asistencia.",
+				verbo: "Asignar preceptor")))
 		{
-			try
-			{
-				var request = new RegistrarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
-															DivisionID: Division.DivisionID,
-															DocenteID: Docente.DocenteID);
+			return;
+		}
 
-				await _servicioDivision.AsignarPreceptorAsync(request);
+		try
+		{
+			var request = new RegistrarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
+														DivisionID: Division.DivisionID,
+														DocenteID: Docente.DocenteID);
 
-				_dialogService.MostrarInformacion("Datos guardados correctamente", "Operación exitosa");
-				await CargarDivisionesAsync();
-			}
-			catch (Exception ex)
-			{
-				_dialogService.MostrarError(ex.Message, "Error en la operación");
-			}
+			await _servicioDivision.AsignarPreceptorAsync(request);
+
+			await CargarDivisionesAsync();
+			_dialogService.MostrarInformacion($"{ Docente.NombreCompleto } quedó a cargo de { Division.Descripcion }.", "Preceptor asignado");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo asignar el preceptor");
 		}
 	}
 
 	private async Task ModificarPreceptorAsync()
 	{
-		var messageBoxText = $"La división { Division.Descripcion } de { Curso } año ({ NivelEducativo }) pasa a estar a cargo del docente { Docente.NombreCompleto }.\n" +
-							 $"El preceptor actual, { Division.Preceptor }, deja el cargo.\n\n" +
-							 $"¿Desea continuar?";
-		var caption = "Cambiar Preceptor";
-
-		if (_dialogService.Confirmar(messageBoxText, caption))
+		// Cambiar el preceptor saca a alguien de su cargo, así que se avisa en rojo: no es lo
+		// mismo que asignar uno a una división que no tenía.
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: $"Pasar la división { Division.Descripcion } a { Docente.NombreCompleto }",
+				consecuencia: $"{ Division.Preceptor } deja el cargo de preceptor de { Curso }° { Division.Descripcion } "
+							+ "y pierde el acceso a las planillas de asistencia de la división.",
+				verbo: "Cambiar preceptor")))
 		{
-			try
-			{
-				var request = new ModificarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
-															DivisionID: Division.DivisionID,
-															DocenteID: Docente.DocenteID);
+			return;
+		}
 
-				await _servicioDivision.ModificarPreceptorAsync(request);
+		try
+		{
+			var request = new ModificarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
+														DivisionID: Division.DivisionID,
+														DocenteID: Docente.DocenteID);
 
-				_dialogService.MostrarInformacion("Se cambió correctamente el preceptor de la división", "Operación exitosa");
-				await CargarDivisionesAsync();
-			}
-			catch (Exception ex)
-			{
-				_dialogService.MostrarError(ex.Message, "Error en la operación");
-			}
+			await _servicioDivision.ModificarPreceptorAsync(request);
+
+			await CargarDivisionesAsync();
+			_dialogService.MostrarInformacion($"{ Division.Descripcion } quedó a cargo de { Docente.NombreCompleto }.", "Preceptor cambiado");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo cambiar el preceptor");
 		}
 
 		ModificandoPreceptor = false;
