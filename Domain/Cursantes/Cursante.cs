@@ -45,6 +45,55 @@ public sealed class Cursante : Entity
 	}
 	#endregion
 
+	#region Inscripción
+	/// <summary>
+	/// La inscripción está activa mientras no tenga fecha de fin. Una cerrada es registro
+	/// histórico: queda en el historial del alumno y no admite cambios.
+	/// </summary>
+	public bool EstaActiva() => FechaFin is null;
+
+	public void ModificarCondicionDeRecursante(bool esRecursante)
+	{
+		if (!EstaActiva())
+		{
+			throw new InscripcionCerradaException();
+		}
+
+		EsRecursante = esRecursante;
+	}
+
+	/// <summary>
+	/// Cierra la inscripción con la fecha de baja indicada. Es la única vía que escribe
+	/// <see cref="FechaFin"/>: el traslado de división la usa para cerrar la inscripción de origen
+	/// antes de abrir la de destino.
+	/// </summary>
+	/// <remarks>
+	/// Una regla, una excepción: la baja de una inscripción ya cerrada, la fecha anterior al inicio
+	/// de la cursada y la fecha futura son tres errores distintos y el usuario tiene que poder
+	/// distinguirlos en el mensaje. El criterio de "futura" es el mismo que usa
+	/// <c>PlanillaAsistencia</c>: no se registra lo que todavía no pasó.
+	/// </remarks>
+	public void DarDeBaja(DateTime fechaBaja)
+	{
+		if (!EstaActiva())
+		{
+			throw new InscripcionCerradaException();
+		}
+
+		if (fechaBaja.Date < FechaInicio.Date)
+		{
+			throw new FechaBajaAnteriorAlInicioException();
+		}
+
+		if (fechaBaja.Date > DateTime.Today)
+		{
+			throw new FechaBajaFuturaException();
+		}
+
+		FechaFin = fechaBaja;
+	}
+	#endregion
+
 	#region Calificaciones
 	public Guid RegistrarCalificacion(Guid materiaID, DateTime fecha, Instancia instancia, double? nota, string? observacion)
 	{

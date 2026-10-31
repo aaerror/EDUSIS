@@ -15,6 +15,7 @@ public sealed class CursanteBuilder
 	private CicloLectivo _cicloLectivo = new CicloLectivoBuilder().Build();
 	private DateTime _fechaInicio = DateTime.Today;
 	private bool _esRecursante = false;
+	private DateTime? _fechaBaja = null;
 	#endregion
 
 	#region CONFIGURACIÓN
@@ -47,12 +48,27 @@ public sealed class CursanteBuilder
 		_esRecursante = esRecursante;
 		return this;
 	}
+
+	/// <summary>
+	/// Inscripción cerrada: es la pieza que permite sembrar el historial de un alumno trasladado
+	/// —una inscripción con fecha de fin más la activa en la división destino—.
+	/// </summary>
+	public CursanteBuilder DadoDeBajaEl(DateTime fechaBaja)
+	{
+		_fechaBaja = fechaBaja;
+		return this;
+	}
 	#endregion
 
 	#region CONSTRUCCIÓN
 	public Cursante Build()
 	{
 		var cursante = new Cursante(_divisionID, _alumnoID, _cicloLectivo, _fechaInicio, _esRecursante);
+
+		if (_fechaBaja.HasValue)
+		{
+			cursante.DarDeBaja(_fechaBaja.Value);
+		}
 
 		return cursante;
 	}

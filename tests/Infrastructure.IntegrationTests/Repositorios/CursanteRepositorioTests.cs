@@ -16,7 +16,7 @@ public sealed class CursanteRepositorioTests : BaseIntegracion
 	}
 
 	[RequiereSqlServerFact]
-	public async Task ExisteInscripcionAsync_es_true_cuando_hay_inscripcion_del_alumno_en_el_ciclo()
+	public async Task ExisteInscripcionActivaAsync_es_true_cuando_hay_inscripcion_activa_del_alumno_en_el_ciclo()
 	{
 		var alumnoID = await SembrarAlumnoAsync();
 		var divisionID = await SembrarDivisionAsync(await SembrarCursoAsync());
@@ -35,9 +35,105 @@ public sealed class CursanteRepositorioTests : BaseIntegracion
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		(await uow.Cursantes.ExisteInscripcionAsync(alumnoID, ciclo)).ShouldBeTrue();
+		(await uow.Cursantes.ExisteInscripcionActivaAsync(alumnoID, ciclo)).ShouldBeTrue();
 		var otroCiclo = CicloLectivo.Crear("2025");
-		(await uow.Cursantes.ExisteInscripcionAsync(alumnoID, otroCiclo)).ShouldBeFalse();
+		(await uow.Cursantes.ExisteInscripcionActivaAsync(alumnoID, otroCiclo)).ShouldBeFalse();
+	}
+
+	[RequiereSqlServerFact]
+	public async Task ExisteInscripcionActivaAsync_es_false_cuando_la_inscripcion_del_ciclo_esta_cerrada()
+	{
+		// Consecuencia 2 del traslado: con la inscripción de origen cerrada, la guarda de
+		// inscripción duplicada tiene que dejar pasar la inscripción en la división destino.
+		var alumnoID = await SembrarAlumnoAsync();
+		var divisionID = await SembrarDivisionAsync(await SembrarCursoAsync());
+		var ciclo = CicloLectivo.Crear("2024");
+		var cursante = new CursanteBuilder()
+			.ConAlumno(alumnoID)
+			.ConDivision(divisionID)
+			.ConCicloLectivo(ciclo)
+			.ConFechaInicio(DateTime.Today.AddDays(-30))
+			.DadoDeBajaEl(DateTime.Today.AddDays(-1))
+			.Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.Add(cursante);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		(await uow.Cursantes.ExisteInscripcionActivaAsync(alumnoID, ciclo)).ShouldBeFalse();
+	}
+
+	[RequiereSqlServerFact]
+	public async Task BuscarInscripcionesDelCicloAsync_trae_las_activas_y_las_cerradas_del_ciclo()
+	{
+		var cursoID = await SembrarCursoAsync();
+		var divisionAID = await SembrarDivisionAsync(cursoID, "A");
+		var divisionBID = await SembrarDivisionAsync(cursoID, "B");
+		var alumnoID = await SembrarAlumnoAsync();
+		var ciclo = CicloLectivo.Crear("2024");
+
+		var cerrada = new CursanteBuilder()
+			.ConAlumno(alumnoID)
+			.ConDivision(divisionAID)
+			.ConCicloLectivo(ciclo)
+			.ConFechaInicio(DateTime.Today.AddDays(-30))
+			.DadoDeBajaEl(DateTime.Today.AddDays(-10))
+			.Build();
+		var activa = new CursanteBuilder()
+			.ConAlumno(alumnoID)
+			.ConDivision(divisionBID)
+			.ConCicloLectivo(ciclo)
+			.ConFechaInicio(DateTime.Today.AddDays(-10))
+			.Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.AddRange(cerrada, activa);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var inscripciones = await uow.Cursantes.BuscarInscripcionesDelCicloAsync(alumnoID, ciclo);
+		inscripciones.Count.ShouldBe(2);
+		inscripciones.Select(x => x.Id).ShouldBe(new[] { cerrada.Id, activa.Id });
+	}
+
+	[RequiereSqlServerFact]
+	public async Task BuscarInscripcionesDelAlumnoAsync_trae_el_historial_completo_ordenado_por_fecha_de_inicio()
+	{
+		var cursoID = await SembrarCursoAsync();
+		var divisionID = await SembrarDivisionAsync(cursoID);
+		var alumnoID = await SembrarAlumnoAsync();
+
+		var anterior = new CursanteBuilder()
+			.ConAlumno(alumnoID)
+			.ConDivision(divisionID)
+			.ConCicloLectivo(CicloLectivo.Crear("2024"))
+			.ConFechaInicio(new DateTime(2024, 3, 1))
+			.DadoDeBajaEl(new DateTime(2024, 12, 1))
+			.Build();
+		var vigente = new CursanteBuilder()
+			.ConAlumno(alumnoID)
+			.ConDivision(divisionID)
+			.ConCicloLectivo(CicloLectivo.Crear("2025"))
+			.ConFechaInicio(new DateTime(2025, 3, 1))
+			.Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.AddRange(vigente, anterior);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var historial = await uow.Cursantes.BuscarInscripcionesDelAlumnoAsync(alumnoID);
+		historial.Select(x => x.Id).ShouldBe(new[] { anterior.Id, vigente.Id });
 	}
 
 	[RequiereSqlServerFact]

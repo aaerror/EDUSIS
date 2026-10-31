@@ -8,10 +8,12 @@ using Xunit;
 namespace Domain.UnitTests.Cursantes;
 
 /// <summary>
-/// Agregado <see cref="Cursante"/>: alta con su división, alumno y ciclo lectivo, y registro de
-/// calificaciones con métodos para crear, eliminar y modificar observaciones. <c>CalificacionNoEncontradaException</c>,
-/// <c>SinDatosDivisionException</c> y <c>SinDatosAlumnoException</c> son <c>internal</c>: se
-/// verifican por el nombre del tipo.
+/// Agregado <see cref="Cursante"/>: alta con su división, alumno y ciclo lectivo, condición de
+/// recursante, baja de la inscripción y registro de calificaciones con métodos para crear,
+/// eliminar y modificar observaciones. <c>CalificacionNoEncontradaException</c>,
+/// <c>SinDatosDivisionException</c>, <c>SinDatosAlumnoException</c>,
+/// <c>InscripcionCerradaException</c>, <c>FechaBajaAnteriorAlInicioException</c> y
+/// <c>FechaBajaFuturaException</c> son <c>internal</c>: se verifican por el nombre del tipo.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class CursanteTests
@@ -83,6 +85,120 @@ public class CursanteTests
 		var ex = Should.Throw<Exception>(() => new Cursante(Guid.NewGuid(), Guid.NewGuid(), null!, DateTime.Today));
 
 		ex.GetType().Name.ShouldBe("SinDatosAlumnoException");
+	}
+	#endregion
+
+	#region Condición de recursante
+	[Fact]
+	public void ModificarCondicionDeRecursante_marca_y_desmarca_la_condicion()
+	{
+		var cursante = new CursanteBuilder().Build();
+
+		cursante.ModificarCondicionDeRecursante(true);
+		cursante.EsRecursante.ShouldBeTrue();
+
+		cursante.ModificarCondicionDeRecursante(false);
+		cursante.EsRecursante.ShouldBeFalse();
+	}
+
+	[Fact]
+	public void ModificarCondicionDeRecursante_sobre_una_inscripcion_cerrada_lanza_InscripcionCerradaException()
+	{
+		var cursante = new CursanteBuilder()
+			.ConFechaInicio(DateTime.Today.AddDays(-30))
+			.DadoDeBajaEl(DateTime.Today.AddDays(-1))
+			.Build();
+
+		var ex = Should.Throw<Exception>(() => cursante.ModificarCondicionDeRecursante(true));
+
+		ex.GetType().Name.ShouldBe("InscripcionCerradaException");
+		cursante.EsRecursante.ShouldBeFalse();
+	}
+	#endregion
+
+	#region Baja
+	[Fact]
+	public void Una_inscripcion_nueva_esta_activa()
+	{
+		var cursante = new CursanteBuilder().Build();
+
+		cursante.EstaActiva().ShouldBeTrue();
+		cursante.FechaFin.ShouldBeNull();
+	}
+
+	[Fact]
+	public void DarDeBaja_cierra_la_inscripcion_con_la_fecha_indicada()
+	{
+		var baja = DateTime.Today.AddDays(-5);
+		var cursante = new CursanteBuilder().ConFechaInicio(DateTime.Today.AddDays(-30)).Build();
+
+		cursante.DarDeBaja(baja);
+
+		cursante.FechaFin.ShouldBe(baja);
+		cursante.EstaActiva().ShouldBeFalse();
+	}
+
+	[Fact]
+	public void DarDeBaja_el_mismo_dia_del_inicio_se_acepta()
+	{
+		// Un alumno que se da de baja el día en que empezó: la cursada duró cero días, pero la
+		// inscripción existió y el registro no es inválido.
+		var inicio = DateTime.Today.AddDays(-3);
+		var cursante = new CursanteBuilder().ConFechaInicio(inicio).Build();
+
+		cursante.DarDeBaja(inicio);
+
+		cursante.FechaFin.ShouldBe(inicio);
+	}
+
+	[Fact]
+	public void DarDeBaja_de_una_inscripcion_ya_cerrada_lanza_InscripcionCerradaException()
+	{
+		var cursante = new CursanteBuilder()
+			.ConFechaInicio(DateTime.Today.AddDays(-30))
+			.DadoDeBajaEl(DateTime.Today.AddDays(-10))
+			.Build();
+
+		var ex = Should.Throw<Exception>(() => cursante.DarDeBaja(DateTime.Today));
+
+		ex.GetType().Name.ShouldBe("InscripcionCerradaException");
+		cursante.FechaFin.ShouldBe(DateTime.Today.AddDays(-10));
+	}
+
+	[Fact]
+	public void DarDeBaja_con_una_fecha_anterior_al_inicio_lanza_FechaBajaAnteriorAlInicioException()
+	{
+		var cursante = new CursanteBuilder().ConFechaInicio(DateTime.Today.AddDays(-10)).Build();
+
+		var ex = Should.Throw<Exception>(() => cursante.DarDeBaja(DateTime.Today.AddDays(-11)));
+
+		ex.GetType().Name.ShouldBe("FechaBajaAnteriorAlInicioException");
+		cursante.EstaActiva().ShouldBeTrue();
+	}
+
+	[Fact]
+	public void DarDeBaja_con_una_fecha_futura_lanza_FechaBajaFuturaException()
+	{
+		// Mismo criterio que PlanillaAsistencia: no se registra lo que todavía no pasó.
+		var cursante = new CursanteBuilder().ConFechaInicio(DateTime.Today.AddDays(-10)).Build();
+
+		var ex = Should.Throw<Exception>(() => cursante.DarDeBaja(DateTime.Today.AddDays(1)));
+
+		ex.GetType().Name.ShouldBe("FechaBajaFuturaException");
+		cursante.EstaActiva().ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Las_calificaciones_quedan_en_la_inscripcion_cerrada()
+	{
+		// Es la razón de DOC-1: las notas no se mudan con el alumno, así que el boletín tiene que
+		// unir las calificaciones de todas las inscripciones del ciclo.
+		var cursante = new CursanteBuilder().ConFechaInicio(DateTime.Today.AddDays(-30)).Build();
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today.AddDays(-20), Instancia.Parcial, 8, null);
+
+		cursante.DarDeBaja(DateTime.Today);
+
+		cursante.Calificaciones.ShouldHaveSingleItem().Nota.ShouldBe(8);
 	}
 	#endregion
 
