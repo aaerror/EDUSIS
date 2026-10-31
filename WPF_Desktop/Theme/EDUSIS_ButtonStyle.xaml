@@ -296,6 +296,73 @@
 						<Trigger Property="IsMouseOver" Value="True">
 							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
 						</Trigger>
+						<!--
+							Faltaban los dos estados de abajo: la pestaña se aclaraba al apuntarla
+							y después no acusaba el clic ni se apagaba cuando el paso estaba
+							cerrado. Una pestaña deshabilitada con el mismo color que una
+							disponible invita a un clic que no hace nada.
+						-->
+						<Trigger Property="IsPressed" Value="True">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioPress }"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Cursor" Value="Arrow"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region MIGA — un tramo de la ruta, en el encabezado de cada pantalla
+		Es un enlace, no un botón: sin caja, sin alto fijo y subrayado al apuntarlo, porque lo
+		que hace es ir a otro lugar y no ejecutar algo sobre esta pantalla. Va en condensada
+		mayúscula, la misma voz que los rótulos de sección (Txt.Seccion), así que la ruta se lee
+		como una etiqueta de ubicación y no compite con el título que tiene debajo.
+	-->
+	<Style x:Key="Btn.Miga" TargetType="{ x:Type Button }">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Display }"/>
+		<Setter Property="FontStretch" Value="Condensed"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaSuave }"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type Button }">
+					<Grid Background="Transparent">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="1"/>
+						</Grid.RowDefinitions>
+						<ContentPresenter Grid.Row="0" VerticalAlignment="Center"/>
+						<Rectangle x:Name="Subrayado"
+								   Grid.Row="1"
+								   Fill="{ StaticResource ResourceKey=Primario }"
+								   SnapsToDevicePixels="True"
+								   Visibility="Hidden"/>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Subrayado" Property="Visibility" Value="Visible"/>
+						</Trigger>
+						<Trigger Property="IsKeyboardFocused" Value="True">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Subrayado" Property="Visibility" Value="Visible"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioPress }"/>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Cursor" Value="Arrow"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+						</Trigger>
 					</ControlTemplate.Triggers>
 				</ControlTemplate>
 			</Setter.Value>
@@ -418,6 +485,13 @@
 	<!--#region BOTONES DE VENTANA — minimizar / maximizar / cerrar-->
 	<Style x:Key="Btn.Ventana" TargetType="{ x:Type Button }">
 		<Setter Property="Background" Value="Transparent"/>
+		<!--
+			Antes: FocusVisualStyle="{x:Null}". La barra de título quedaba fuera del alcance del
+			teclado en la práctica —se la podía tabular, pero sin ninguna señal de dónde estaba
+			el foco—, así que cerrar la aplicación sin mouse era adivinar. El anillo acá va por
+			dentro (Foco.Visual sobresale 3px y estos botones pegan al borde de la ventana), con
+			lo cual se dibuja en la plantilla y no con FocusVisualStyle.
+		-->
 		<Setter Property="FocusVisualStyle" Value="{ x:Null }"/>
 		<Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
 		<Setter Property="FontSize" Value="10"/>
@@ -427,7 +501,11 @@
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="{ x:Type Button }">
-					<Border x:Name="Fondo" Background="{ TemplateBinding Background }">
+					<Border x:Name="Fondo"
+							Background="{ TemplateBinding Background }"
+							BorderBrush="Transparent"
+							BorderThickness="2"
+							SnapsToDevicePixels="True">
 						<ContentPresenter HorizontalAlignment="Center"
 										  VerticalAlignment="Center"/>
 					</Border>
@@ -435,6 +513,12 @@
 						<Trigger Property="IsMouseOver" Value="True">
 							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=TizaBaja }"/>
 							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</Trigger>
+						<Trigger Property="IsKeyboardFocused" Value="True">
+							<Setter TargetName="Fondo" Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=LineaFuerte }"/>
 						</Trigger>
 					</ControlTemplate.Triggers>
 				</ControlTemplate>
@@ -446,13 +530,24 @@
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="{ x:Type Button }">
-					<Border x:Name="Fondo" Background="{ TemplateBinding Background }">
+					<Border x:Name="Fondo"
+							Background="{ TemplateBinding Background }"
+							BorderBrush="Transparent"
+							BorderThickness="2"
+							SnapsToDevicePixels="True">
 						<ContentPresenter HorizontalAlignment="Center"
 										  VerticalAlignment="Center"/>
 					</Border>
 					<ControlTemplate.Triggers>
 						<Trigger Property="IsMouseOver" Value="True">
 							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=Alerta }"/>
+							<Setter Property="Foreground" Value="#FFFFFF"/>
+						</Trigger>
+						<Trigger Property="IsKeyboardFocused" Value="True">
+							<Setter TargetName="Fondo" Property="BorderBrush" Value="{ StaticResource ResourceKey=Alerta }"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=AlertaHover }"/>
 							<Setter Property="Foreground" Value="#FFFFFF"/>
 						</Trigger>
 					</ControlTemplate.Triggers>
