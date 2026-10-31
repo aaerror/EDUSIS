@@ -66,7 +66,11 @@ public class CatedraViewModelTests
 		tipo.GetProperty(nameof(CatedraViewModel.CatedraID))!.PropertyType.ShouldBe(typeof(Guid));
 		tipo.GetProperty(nameof(CatedraViewModel.MateriaID))!.PropertyType.ShouldBe(typeof(Guid));
 		tipo.GetProperty(nameof(CatedraViewModel.DivisionID))!.PropertyType.ShouldBe(typeof(Guid));
-		tipo.GetProperty(nameof(CatedraViewModel.CargaHoraria))!.PropertyType.ShouldBe(typeof(int));
+		// CargaHoraria es int? desde `bcd09ea`: la cátedra puede no tenerla cargada todavía, y el
+		// formulario necesita distinguir "sin cargar" de "cero horas". HorasAsignadas y
+		// HorasSinAsignar siguen siendo int porque son cuentas, no datos de entrada: sin horas
+		// asignadas la respuesta correcta es 0, no "no se sabe".
+		tipo.GetProperty(nameof(CatedraViewModel.CargaHoraria))!.PropertyType.ShouldBe(typeof(int?));
 		tipo.GetProperty(nameof(CatedraViewModel.HorasAsignadas))!.PropertyType.ShouldBe(typeof(int));
 		tipo.GetProperty(nameof(CatedraViewModel.HorasSinAsignar))!.PropertyType.ShouldBe(typeof(int));
 		tipo.GetProperty(nameof(CatedraViewModel.DocenteEnFuncionesID))!.PropertyType.ShouldBe(typeof(Guid?));
@@ -121,7 +125,9 @@ public class CatedraViewModelTests
 		viewModel!.CatedraID.ShouldBe(Guid.Empty);
 		viewModel.MateriaID.ShouldBe(Guid.Empty);
 		viewModel.DivisionID.ShouldBe(Guid.Empty);
-		viewModel.CargaHoraria.ShouldBe(0);
+		// Sin response no hay carga horaria que mostrar, y eso es nulo, no cero: cero sería afirmar
+		// que la cátedra tiene cero horas. Es el valor por defecto de int? y acá es el correcto.
+		viewModel.CargaHoraria.ShouldBeNull();
 		viewModel.DocenteEnFuncionesID.ShouldBeNull();
 		viewModel.Division.ShouldBe(string.Empty);
 	}

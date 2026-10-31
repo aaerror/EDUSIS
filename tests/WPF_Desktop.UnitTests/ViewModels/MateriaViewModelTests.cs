@@ -41,7 +41,42 @@ public class MateriaViewModelTests
 			var propiedad = typeof(MateriaViewModel).GetProperty(campo.Name);
 
 			propiedad.ShouldNotBeNull($"MateriaViewModel no expone '{campo.Name}'");
-			propiedad!.PropertyType.ShouldBe(campo.PropertyType, $"tipo de '{campo.Name}'");
+			propiedad!.PropertyType.ShouldBe(TipoAdmitido(campo.PropertyType, propiedad.PropertyType),
+											 $"tipo de '{campo.Name}'");
 		}
+	}
+
+	/// <summary>
+	/// Devuelve el tipo que la propiedad del ViewModel tiene permitido declarar para un campo del
+	/// <c>Response</c>: el mismo tipo, o su <see cref="Nullable{T}"/> cuando el ViewModel ensancha
+	/// un tipo de valor a anulable.
+	/// <para>
+	/// El ensanchamiento NO es laxitud: un ViewModel que se bindea a <c>SelectedItem</c> de un
+	/// <c>ComboBox</c> necesita representar "nada elegido", y <c>SelectedItem</c> es nulo hasta que
+	/// el usuario elige. Es el caso de <c>MateriaViewModel.HorasCatedra</c> (<c>int?</c>) contra
+	/// <c>MateriaResponse.HorasCatedra</c> (<c>int</c>), bindeada en
+	/// <c>Views/Cursos/Curriculas/Materias/MateriaView.xaml:50</c>. Exigir paridad estricta forzaría
+	/// a volver el ViewModel a <c>int</c>, y entonces "sin elegir" y "cero horas" serían el mismo
+	/// valor. Ver TEST-15 en <c>docs/todos.md</c>.
+	/// </para>
+	/// Lo que la prueba sigue atrapando es lo que importa: un campo nuevo del DTO que el ViewModel
+	/// no recibe, y un cambio de tipo que no sea ese ensanchamiento. Los tipos exactos de cada
+	/// propiedad se fijan aparte, en <c>Los_tipos_de_las_propiedades_son_los_esperados</c>.
+	/// </summary>
+	private static Type TipoAdmitido(Type tipoDelCampo, Type tipoDeLaPropiedad)
+	{
+		// Nullable<T> exige que T sea un tipo de valor NO anulable, así que MakeGenericType lanza
+		// ArgumentException con un string o con un Guid? — el ensanchamiento sólo se evalúa cuando
+		// el campo del Response es un tipo de valor plano.
+		if (tipoDelCampo.IsValueType && Nullable.GetUnderlyingType(tipoDelCampo) is null)
+		{
+			var ensanchado = typeof(Nullable<>).MakeGenericType(tipoDelCampo);
+			if (tipoDeLaPropiedad == ensanchado)
+			{
+				return ensanchado;
+			}
+		}
+
+		return tipoDelCampo;
 	}
 }
