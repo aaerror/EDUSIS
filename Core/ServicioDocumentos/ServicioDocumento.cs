@@ -168,14 +168,14 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 				.Select(materia => new
 					{
 						Materia = materia,
-						Aprobada = ContextoAcademico.EstaAprobada(cursante.Cursante, materia.Id)
+						Aprobada = ContextoAcademico.EstaAprobada(cursante.CalificacionesDelCiclo, materia.Id)
 					})
 				.Where(x => x.Aprobada == (tipo == TipoConstanciaMaterias.Aprobadas))
 				.OrderBy(x => x.Materia.Descripcion)
 				.Select(x => new MateriaInformada(
 					Materia: x.Materia.Descripcion,
 					HorasCatedra: x.Materia.HorasCatedra,
-					Condicion: ContextoAcademico.DescribirCondicion(cursante.Cursante, x.Materia.Id, conNota: true)))
+					Condicion: ContextoAcademico.DescribirCondicion(cursante.CalificacionesDelCiclo, x.Materia.Id, conNota: true)))
 				.ToList();
 
 			var documento = new ConstanciaMateriasDocumento(
@@ -213,9 +213,9 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 				.OrderBy(materia => materia.Descripcion)
 				.Select(materia => new FilaBoletin(
 					Materia: materia.Descripcion,
-					Parcial: ContextoAcademico.DescribirNota(cursante.Cursante, materia.Id, Instancia.Parcial),
-					Recuperatorio: ContextoAcademico.DescribirNota(cursante.Cursante, materia.Id, Instancia.Recuperatorio),
-					Condicion: ContextoAcademico.DescribirCondicion(cursante.Cursante, materia.Id, conNota: true)))
+					Parcial: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Instancia.Parcial),
+					Recuperatorio: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Instancia.Recuperatorio),
+					Condicion: ContextoAcademico.DescribirCondicion(cursante.CalificacionesDelCiclo, materia.Id, conNota: true)))
 				.ToList();
 
 			var documento = new BoletinCalificacionesDocumento(

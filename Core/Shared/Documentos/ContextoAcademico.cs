@@ -13,7 +13,18 @@ namespace Core.Shared.Documentos;
 /// <summary>
 /// Inscripción de un alumno con todo lo que hace falta para identificarlo en un documento.
 /// </summary>
-internal sealed record ContextoCursante(Alumno Alumno, Cursante Cursante, Division Division, Curso Curso);
+/// <param name="CalificacionesDelCiclo">
+/// Calificaciones de <strong>todas</strong> las inscripciones del alumno en el ciclo lectivo, no
+/// sólo de la activa. Existe porque <c>Calificacion</c> es entidad hija de <see cref="Cursante"/>
+/// y el traslado de división cierra una inscripción y abre otra: sin unirlas, el boletín de un
+/// alumno trasladado perdería todas las notas anteriores al traslado.
+/// </param>
+internal sealed record ContextoCursante(
+	Alumno Alumno,
+	Cursante Cursante,
+	Division Division,
+	Curso Curso,
+	IReadOnlyCollection<Calificacion> CalificacionesDelCiclo);
 
 /// <summary>
 /// Resuelve el contexto académico que necesitan los documentos y los reportes: la inscripción de
@@ -45,8 +56,15 @@ internal sealed class ContextoAcademico
 	}
 
 	/// <summary>
-	/// Inscripción activa del alumno en el ciclo lectivo, con su división y curso.
+	/// Inscripción activa del alumno en el ciclo lectivo, con su división y curso, más las
+	/// calificaciones de todas sus inscripciones del ciclo.
 	/// </summary>
+	/// <remarks>
+	/// <see cref="ContextoCursante.Cursante"/>, <see cref="ContextoCursante.Division"/> y
+	/// <see cref="ContextoCursante.Curso"/> son los de la inscripción <strong>activa</strong>: el
+	/// encabezado del documento tiene que decir la división actual del alumno. Lo único que se une
+	/// de las inscripciones cerradas son las calificaciones.
+	/// </remarks>
 	/// <exception cref="InvalidOperationException">
 	/// El alumno no existe, no está inscripto en el ciclo lectivo, o su división o curso no se
 	/// pueden resolver. No se emite documentación a partir de datos incompletos: un certificado
@@ -66,7 +84,12 @@ internal sealed class ContextoAcademico
 		var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(division.CursoID)
 			?? throw new InvalidOperationException("No se pudo determinar el curso del alumno.");
 
-		return new ContextoCursante(alumno, cursante, division, curso);
+		var inscripcionesDelCiclo = await _unitOfWork.Cursantes.BuscarInscripcionesDelCicloAsync(alumnoID, cicloLectivo);
+		var calificacionesDelCiclo = inscripcionesDelCiclo
+			.SelectMany(x => x.Calificaciones)
+			.ToList();
+
+		return new ContextoCursante(alumno, cursante, division, curso, calificacionesDelCiclo.AsReadOnly());
 	}
 
 	/// <summary>
@@ -99,8 +122,8 @@ internal sealed class ContextoAcademico
 	/// Una materia está aprobada si alguna de sus calificaciones lo está, sin importar la
 	/// instancia: aprobar en el recuperatorio es aprobar.
 	/// </summary>
-	public static bool EstaAprobada(Cursante cursante, Guid materiaID) =>
-		cursante.Calificaciones.Any(x => x.MateriaID.Equals(materiaID) && x.EstaAprobado());
+	public static bool EstaAprobada(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID) =>
+		calificacionesDelCursante.Any(x => x.MateriaID.Equals(materiaID) && x.EstaAprobado());
 
 	/// <summary>
 	/// Condición de la materia. Con <paramref name="conNota"/> informa además la mejor nota
@@ -112,9 +135,9 @@ internal sealed class ContextoAcademico
 	/// celda en dos líneas. Lo que NO cambia entre los dos es cómo se decide la condición, y por
 	/// eso se decide acá una sola vez.
 	/// </remarks>
-	public static string DescribirCondicion(Cursante cursante, Guid materiaID, bool conNota)
+	public static string DescribirCondicion(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID, bool conNota)
 	{
-		var calificaciones = cursante.Calificaciones.Where(x => x.MateriaID.Equals(materiaID)).ToList();
+		var calificaciones = calificacionesDelCursante.Where(x => x.MateriaID.Equals(materiaID)).ToList();
 
 		if (!calificaciones.Any())
 		{
@@ -137,9 +160,9 @@ internal sealed class ContextoAcademico
 	/// Nota de la materia en una instancia. Si hay más de una, vale la última por fecha: es la
 	/// que refleja el estado actual de la cursada.
 	/// </summary>
-	public static string DescribirNota(Cursante cursante, Guid materiaID, Instancia instancia)
+	public static string DescribirNota(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID, Instancia instancia)
 	{
-		var ultima = cursante.Calificaciones
+		var ultima = calificacionesDelCursante
 			.Where(x => x.MateriaID.Equals(materiaID) && x.Instancia.Equals(instancia))
 			.OrderBy(x => x.Fecha)
 			.LastOrDefault();

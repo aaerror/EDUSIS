@@ -78,6 +78,28 @@ public class ServicioDocumentoTests
 
 	private static EmitirDocumentoAlumnoRequest Pedido(Guid alumnoID, string? finalidad = null) =>
 		new(alumnoID, CICLO, finalidad);
+
+	/// <summary>
+	/// Inscripción <strong>cerrada</strong> del mismo alumno y del mismo ciclo lectivo, en una
+	/// división propia: es el registro que deja un traslado de división. Se siembra además de la
+	/// activa de <see cref="Sembrar"/>, no en su lugar.
+	/// </summary>
+	private Cursante SembrarInscripcionCerrada(Guid alumnoID, Guid cursoID, string division)
+	{
+		var divisionAnterior = new DivisionBuilder().ConCurso(cursoID).ConDescripcion(division).Build();
+		_host.UnidadDeTrabajo.DivisionesFake.Sembrar(divisionAnterior);
+
+		var cerrada = new CursanteBuilder()
+			.ConAlumno(alumnoID)
+			.ConDivision(divisionAnterior.Id)
+			.ConCicloLectivo(CicloLectivo.Crear(CICLO))
+			.ConFechaInicio(DateTime.Today.AddDays(-60))
+			.DadoDeBajaEl(DateTime.Today.AddDays(-30))
+			.Build();
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cerrada);
+
+		return cerrada;
+	}
 	#endregion
 
 	#region Certificado de alumno regular
@@ -352,5 +374,92 @@ public class ServicioDocumentoTests
 
 	private static void Calificar(Cursante cursante, Materia materia, double nota, Instancia instancia = Instancia.Parcial, DateTime? fecha = null) =>
 		cursante.RegistrarCalificacion(materia.Id, fecha ?? DateTime.Today, instancia, nota, null);
+	#endregion
+
+	#region Boletín de un alumno trasladado (DOC-1)
+	[Fact]
+	public async Task GenerarBoletin_de_un_alumno_trasladado_informa_las_notas_de_la_inscripcion_cerrada()
+	{
+		// Consecuencia 1 del traslado: Calificacion es entidad hija de Cursante, así que las notas
+		// cargadas antes del traslado viven en la inscripción cerrada. Sin unirlas, el boletín de un
+		// alumno trasladado sale en blanco.
+		var sembrado = Sembrar("Matemática");
+		var cerrada = SembrarInscripcionCerrada(sembrado.Alumno.Id, sembrado.Curso.Id, "A");
+		Calificar(cerrada, sembrado.Materias[0], nota: 8, fecha: DateTime.Today.AddDays(-40));
+
+		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
+
+		var fila = _host.Generador.Boletin.ShouldNotBeNull().Filas.ShouldHaveSingleItem();
+		fila.Parcial.ShouldBe("8");
+		fila.Condicion.ShouldBe("Aprobada (8)");
+	}
+
+	[Fact]
+	public async Task GenerarBoletin_de_un_alumno_trasladado_encabeza_con_la_division_actual()
+	{
+		// El encabezado sigue saliendo de la inscripción ACTIVA: lo único que se une de la cerrada
+		// son las calificaciones.
+		var sembrado = Sembrar("Matemática");
+		var cerrada = SembrarInscripcionCerrada(sembrado.Alumno.Id, sembrado.Curso.Id, "A");
+		Calificar(cerrada, sembrado.Materias[0], nota: 8, fecha: DateTime.Today.AddDays(-40));
+
+		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
+
+		_host.Generador.Boletin.ShouldNotBeNull().Alumno.Division.ShouldBe("B");
+	}
+
+	[Fact]
+	public async Task GenerarBoletin_une_las_notas_de_las_dos_inscripciones_del_ciclo()
+	{
+		// Una materia calificada antes del traslado y otra después: las dos tienen que figurar.
+		var sembrado = Sembrar("Matemática", "Lengua");
+		var cerrada = SembrarInscripcionCerrada(sembrado.Alumno.Id, sembrado.Curso.Id, "A");
+		Calificar(cerrada, sembrado.Materias[0], nota: 7, fecha: DateTime.Today.AddDays(-40));
+		Calificar(sembrado.Cursante, sembrado.Materias[1], nota: 9);
+
+		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
+
+		var documento = _host.Generador.Boletin.ShouldNotBeNull();
+		documento.Filas.Single(x => x.Materia == "Matemática").Parcial.ShouldBe("7");
+		documento.Filas.Single(x => x.Materia == "Lengua").Parcial.ShouldBe("9");
+	}
+
+	[Fact]
+	public async Task GenerarBoletin_sin_traslado_sale_igual_que_antes()
+	{
+		// No-regresión: con una sola inscripción en el ciclo, unir las calificaciones de todas las
+		// inscripciones da exactamente el mismo boletín que leer las del cursante activo.
+		var sembrado = Sembrar("Matemática", "Lengua");
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 3);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 7, instancia: Instancia.Recuperatorio);
+
+		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
+
+		var documento = _host.Generador.Boletin.ShouldNotBeNull();
+		documento.Alumno.Division.ShouldBe("B");
+
+		var matematica = documento.Filas.Single(x => x.Materia == "Matemática");
+		matematica.Parcial.ShouldBe("3");
+		matematica.Recuperatorio.ShouldBe("7");
+		matematica.Condicion.ShouldBe("Aprobada (7)");
+
+		var lengua = documento.Filas.Single(x => x.Materia == "Lengua");
+		lengua.Parcial.ShouldBe("—");
+		lengua.Condicion.ShouldBe("Sin calificar");
+	}
+
+	[Fact]
+	public async Task GenerarConstanciaMateriasAprobadas_de_un_alumno_trasladado_cuenta_lo_aprobado_antes_del_traslado()
+	{
+		// Las dos constancias leen las calificaciones por la misma vía que el boletín.
+		var sembrado = Sembrar("Matemática", "Lengua");
+		var cerrada = SembrarInscripcionCerrada(sembrado.Alumno.Id, sembrado.Curso.Id, "A");
+		Calificar(cerrada, sembrado.Materias[0], nota: 8, fecha: DateTime.Today.AddDays(-40));
+
+		await _servicio.GenerarConstanciaMateriasAprobadasAsync(Pedido(sembrado.Alumno.Id));
+
+		_host.Generador.ConstanciaMaterias.ShouldNotBeNull()
+			.Materias.Select(x => x.Materia).ShouldBe(new[] { "Matemática" });
+	}
 	#endregion
 }

@@ -179,9 +179,9 @@ internal class ServicioReporte : IServicio, IServicioReporte
 							inscripcion.Division.Descripcion,
 							inscripcion.Alumno.DatosPersonales.NombreCompleto(),
 							materia.Descripcion,
-							ContextoAcademico.DescribirNota(inscripcion.Cursante, materia.Id, Instancia.Parcial),
-							ContextoAcademico.DescribirNota(inscripcion.Cursante, materia.Id, Instancia.Recuperatorio),
-							ContextoAcademico.DescribirCondicion(inscripcion.Cursante, materia.Id, conNota: false)
+							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Instancia.Parcial),
+							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Instancia.Recuperatorio),
+							ContextoAcademico.DescribirCondicion(inscripcion.Cursante.Calificaciones, materia.Id, conNota: false)
 						});
 				}
 			}
@@ -215,7 +215,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 			foreach (var inscripcion in inscripciones)
 			{
 				var pendientes = materiasPorCurso[inscripcion.Curso.Id]
-					.Where(materia => !ContextoAcademico.EstaAprobada(inscripcion.Cursante, materia.Id))
+					.Where(materia => !ContextoAcademico.EstaAprobada(inscripcion.Cursante.Calificaciones, materia.Id))
 					.OrderBy(materia => materia.Descripcion);
 
 				foreach (var materia in pendientes)
@@ -228,7 +228,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 							inscripcion.Alumno.DatosPersonales.NombreCompleto(),
 							materia.Descripcion,
 							materia.HorasCatedra.ToString(),
-							ContextoAcademico.DescribirCondicion(inscripcion.Cursante, materia.Id, conNota: false)
+							ContextoAcademico.DescribirCondicion(inscripcion.Cursante.Calificaciones, materia.Id, conNota: false)
 						});
 				}
 			}
@@ -262,7 +262,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 				.Select(x =>
 					{
 						var materias = materiasPorCurso[x.Curso.Id];
-						var aprobadas = materias.Count(materia => ContextoAcademico.EstaAprobada(x.Cursante, materia.Id));
+						var aprobadas = materias.Count(materia => ContextoAcademico.EstaAprobada(x.Cursante.Calificaciones, materia.Id));
 						var total = materias.Count;
 
 						return (IReadOnlyCollection<string>) new[]

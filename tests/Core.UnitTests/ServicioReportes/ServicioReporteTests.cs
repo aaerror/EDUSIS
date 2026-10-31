@@ -80,8 +80,72 @@ public class ServicioReporteTests
 		return (alumno, cursante);
 	}
 
+	/// <summary>
+	/// Alumno trasladado dentro del ciclo: la inscripción de la división de origen queda cerrada y
+	/// la de la división <c>B</c> es la vigente. Son dos filas en la tabla <c>cursante</c> y un
+	/// solo alumno en la matrícula.
+	/// </summary>
+	private (Alumno Alumno, Cursante Cerrada, Cursante Vigente) SembrarInscripcionTrasladada(string legajo)
+	{
+		var alumno = new AlumnoBuilder().ConLegajo(legajo).Build();
+		_host.UnidadDeTrabajo.AlumnosFake.Sembrar(alumno);
+
+		var divisionOrigen = new DivisionBuilder().ConCurso(_curso.Id).ConDescripcion("A").Build();
+		_host.UnidadDeTrabajo.DivisionesFake.Sembrar(divisionOrigen);
+
+		var cerrada = new CursanteBuilder()
+			.ConAlumno(alumno.Id)
+			.ConDivision(divisionOrigen.Id)
+			.ConCicloLectivo(CicloLectivo.Crear(CICLO))
+			.ConFechaInicio(DateTime.Today.AddDays(-60))
+			.DadoDeBajaEl(DateTime.Today.AddDays(-30))
+			.Build();
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cerrada);
+
+		var vigente = new CursanteBuilder()
+			.ConAlumno(alumno.Id)
+			.ConDivision(_division.Id)
+			.ConCicloLectivo(CicloLectivo.Crear(CICLO))
+			.ConFechaInicio(DateTime.Today.AddDays(-30))
+			.Build();
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(vigente);
+
+		return (alumno, cerrada, vigente);
+	}
+
 	private static ReportePorCicloRequest TodaLaInstitucion() =>
 		new(CICLO, null);
+	#endregion
+
+	#region Matrícula vigente (consecuencia 3 del traslado)
+	[Fact]
+	public async Task GenerarReporteMatriculas_cuenta_una_sola_vez_al_alumno_trasladado()
+	{
+		// Consecuencia 3: los reportes recorren BuscarPorCicloLectivoAsync, que es matrícula
+		// VIGENTE. Sin el filtro por FechaFin, el trasladado aportaría una fila por inscripción.
+		SembrarEstructura();
+		var trasladado = SembrarInscripcionTrasladada("AL0001");
+
+		await _servicio.GenerarReporteMatriculasAsync(TodaLaInstitucion());
+
+		var reporte = _host.Generador.Reporte.ShouldNotBeNull();
+		reporte.Filas.Count.ShouldBe(1);
+
+		// Y la fila que queda es la de la división vigente, no la de la de origen.
+		reporte.Filas.Single().ShouldContain(trasladado.Alumno.Legajo);
+		reporte.Filas.Single().ShouldContain("B");
+	}
+
+	[Fact]
+	public async Task GenerarReporteTrayectorias_emite_una_sola_trayectoria_por_alumno_trasladado()
+	{
+		SembrarEstructura("Matemática");
+		SembrarInscripcionTrasladada("AL0001");
+
+		await _servicio.GenerarReporteTrayectoriasAsync(TodaLaInstitucion());
+
+		_host.Generador.Reporte.ShouldNotBeNull().Filas.Count.ShouldBe(1);
+	}
 	#endregion
 
 	#region Matrículas
