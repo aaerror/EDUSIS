@@ -15,14 +15,35 @@ internal partial class LegajoDocenteViewModel : ObservableValidator
 	[ObservableProperty]
 	private string _nombreCompleto = string.Empty;
 
-	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar el legajo")]
-	[RegularExpression(@"^(\d{6})$", ErrorMessage= "Se debe ingresar un número de seis dígitos.")]
-	[Range(6,6)]
+	/*
+		NINGUNO DE ESTOS CAMPOS SE VALIDABA. Legajo declaraba sus reglas pero le faltaba
+		[NotifyDataErrorInfo], que es lo que hace que el setter generado llame a
+		ValidateProperty: sin ese atributo los otros dos son decoración y HasErrors nunca
+		pasa a true. Era el único ViewModel de formulario del alta sin el par completo, y la
+		vista ya pedía ValidatesOnNotifyDataErrors sobre los tres campos. Con lo cual un
+		legajo "abc" llegaba entero hasta Domain.Docentes.Docente.ValidarLegajo y volvía como
+		"Verificar el legajo del docente: legajoDocente." —el nombre del parámetro, después de
+		recorrer los dos pasos—.
+
+		[Range(6,6)] estaba MAL y por eso convenía que no corriera: Range sobre un string
+		convierte el texto a int y lo compara contra el intervalo, así que el legajo válido
+		123456 daba fuera de rango. Lo que el autor quería decir —seis dígitos— ya lo dice la
+		expresión regular, que es la misma que usa el dominio.
+
+		El prefijo y el posfijo validan la FORMA, no qué prefijos existen: cuáles son legales
+		lo decide Domain.Docentes.Docente.ValidarCuil y no se copia acá.
+	*/
+	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar el legajo.")]
+	[RegularExpression(@"^(\d{6})$", ErrorMessage="El legajo es un número de seis dígitos.")]
+	[NotifyDataErrorInfo]
 	[ObservableProperty]
 	private string _legajo = string.Empty;
 
 	public string CodigoUnicoIdentificacionLaboral => $"{ PrefijoCuil }{ DocumentoNacionalIdentidad }{ PosfijoCuil }";
 
+	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar el prefijo del CUIL.")]
+	[RegularExpression(@"^(\d{2})$", ErrorMessage="El prefijo del CUIL son dos dígitos.")]
+	[NotifyDataErrorInfo]
 	[NotifyPropertyChangedFor(nameof(CodigoUnicoIdentificacionLaboral))]
 	[ObservableProperty]
 	private string _prefijoCuil = string.Empty;
@@ -31,6 +52,9 @@ internal partial class LegajoDocenteViewModel : ObservableValidator
 	[ObservableProperty]
 	private string _documentoNacionalIdentidad = string.Empty;
 
+	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar el verificador del CUIL.")]
+	[RegularExpression(@"^(\d{1})$", ErrorMessage="El verificador del CUIL es un dígito.")]
+	[NotifyDataErrorInfo]
 	[NotifyPropertyChangedFor(nameof(CodigoUnicoIdentificacionLaboral))]
 	[ObservableProperty]
 	private string _posfijoCuil = string.Empty;
@@ -69,6 +93,10 @@ internal partial class LegajoDocenteViewModel : ObservableValidator
 			EstaActivo = _legajoDocenteResponse.Activo;
 		}
 	}
+
+	/// <inheritdoc cref="WPF_Desktop.ViewModels.Shared.InformacionPersonalViewModel.Validar"/>
+	public void Validar() =>
+		ValidateAllProperties();
 
 	#region Properties
 	/*

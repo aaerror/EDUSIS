@@ -70,15 +70,26 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicaci
 			Migaja.Actual("ALTA")
 		};
 
-		AtrasCommand = new RelayCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
-		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
-		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommand, CanExecuteGuardarCommand);
+		/*
+			LOS TRES COMANDOS IBAN CON UN CanExecute QUE NO SERVÍA PARA NADA. El RelayCommand de
+			CommunityToolkit no escucha CommandManager.RequerySuggested —a diferencia del
+			RoutedCommand de WPF—, así que su CanExecute se evalúa cuando se enlaza y no vuelve
+			a evaluarse hasta que alguien llame NotifyCanExecuteChanged. Nadie llamaba, y los
+			sub-ViewModels tampoco estaban suscritos: los tres botones se calculaban una vez,
+			con los bloques recién creados y sin errores, y quedaban habilitados para siempre.
+
+			No se cablean: se borran. Un botón de avanzar que se apaga solo deja al usuario sin
+			nada que leer —no hay dónde decirle POR QUÉ no puede seguir—, y el de "Atrás" era
+			peor, porque se apagaba con el legajo mal cargado y encerraba a quien quisiera
+			volver a corregir el paso anterior. Se avanza siempre, se valida al avanzar, y el
+			error aparece en el campo que lo tiene.
+		*/
+		AtrasCommand = new RelayCommand(ExecuteAtrasCommand);
+		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand);
+		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommand);
 	}
 
 	#region GuardarCommand
-	private bool CanExecuteGuardarCommand() =>
-		!HasErrors && !InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
-
 	/// <summary>
 	/// Registra el docente con los datos de los dos pasos.
 	/// </summary>
@@ -98,13 +109,20 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicaci
 	/// apretó "Guardar". Lo que faltaba no era una pregunta más, era que los campos con error
 	/// se marcaran mientras escribe (la vista ya no apaga el adorno de validación).
 	/// </para>
+	/// <para>
+	/// El control de "faltan datos" era un IsNullOrWhiteSpace sobre tres campos que terminaba
+	/// en un aviso al pie: decía que faltaba el legajo sin marcar el legajo, y no atrapaba el
+	/// legajo MAL cargado, sólo el vacío. Ahora valida los dos bloques del paso y deja que
+	/// cada campo muestre su propio motivo, que es donde el usuario está mirando.
+	/// </para>
 	/// </remarks>
 	private async Task ExecuteGuardarCommand()
 	{
-		if (string.IsNullOrWhiteSpace(LegajoDocente.Legajo) || string.IsNullOrWhiteSpace(LegajoDocente.PrefijoCuil) || string.IsNullOrWhiteSpace(LegajoDocente.PosfijoCuil))
-		{
-			_dialogService.MostrarAdvertencia("Completá el legajo y las dos partes del CUIL para dar de alta el docente.", "Faltan datos del legajo");
+		LegajoDocente.Validar();
+		PuestoDocente.Validar();
 
+		if (LegajoDocente.HasErrors || PuestoDocente.HasErrors)
+		{
 			return;
 		}
 
@@ -169,37 +187,38 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region ContinuarCommand
-	private bool CanExecuteContinuarCommand() =>
-		!InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
-
 	/// <summary>
 	/// Pasa al segundo paso del alta.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Acá estaba el peor defecto del formulario: si faltaba UN campo, la pantalla reemplazaba
 	/// los tres ViewModels del paso por instancias vacías. Es decir, avisaba que faltaba un dato
 	/// y a cambio borraba todos los demás —nombre, documento, domicilio y contacto—. El usuario
 	/// volvía a empezar de cero por haberse salteado el teléfono.
-	///
-	/// Ahora el aviso nombra lo que falta y lo cargado queda donde está.
+	/// </para>
+	/// <para>
+	/// Después de eso quedó una lista de ocho IsNullOrWhiteSpace escrita a mano que terminaba
+	/// en un aviso al pie: "Falta completar: apellido, documento, teléfono". El dato ya estaba
+	/// dicho —cada campo tiene su [Required] en el ViewModel del bloque—, así que la lista era
+	/// una segunda copia de las reglas que había que mantener al día, y además dejaba al
+	/// usuario buscando por la pantalla cuáles de los catorce campos eran esos tres.
+	/// </para>
+	/// <para>
+	/// Validar los tres bloques enteros marca cada campo donde está, con su propio motivo, y
+	/// de paso atrapa lo que la lista no miraba: el documento de cinco dígitos, el correo sin
+	/// arroba, el teléfono con letras. Por eso tampoco queda aviso al pie: sería repetir en un
+	/// cartel lo que ya está escrito debajo de cada campo.
+	/// </para>
 	/// </remarks>
 	private void ExecuteContinuarCommand()
 	{
-		var faltantes = new List<string>();
+		InformacionPersonal.Validar();
+		Domicilio.Validar();
+		Contacto.Validar();
 
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido)) { faltantes.Add("apellido"); }
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.Nombre)) { faltantes.Add("nombre"); }
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad)) { faltantes.Add("documento"); }
-		if (string.IsNullOrWhiteSpace(Domicilio.Calle)) { faltantes.Add("calle"); }
-		if (string.IsNullOrWhiteSpace(Domicilio.Localidad)) { faltantes.Add("localidad"); }
-		if (string.IsNullOrWhiteSpace(Domicilio.Provincia)) { faltantes.Add("provincia"); }
-		if (string.IsNullOrWhiteSpace(Contacto.Telefono)) { faltantes.Add("teléfono"); }
-		if (string.IsNullOrWhiteSpace(Contacto.Email)) { faltantes.Add("correo"); }
-
-		if (faltantes.Count > 0)
+		if (InformacionPersonal.HasErrors || Domicilio.HasErrors || Contacto.HasErrors)
 		{
-			_dialogService.MostrarAdvertencia($"Falta completar: { string.Join(", ", faltantes) }.", "Datos incompletos");
-
 			return;
 		}
 
@@ -210,9 +229,6 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region AtrasCommand
-	private bool CanExecuteAtrasCommand() =>
-		!LegajoDocente.HasErrors && !PuestoDocente.HasErrors;
-
 	private void ExecuteAtrasCommand() =>
 		Tab = 0;
 	#endregion

@@ -12,8 +12,10 @@ internal partial class ContactoViewModel : ObservableValidator
 	[ObservableProperty]
 	private string _telefono;
 
+	// Se fue [EmailAddress]: la expresión regular de abajo es más estricta, así que no agregaba
+	// ninguna validación —sólo un segundo mensaje para la misma falla, y en inglés ("The Email
+	// field is not a valid e-mail address."), que es lo que ahora se leería debajo del campo.
 	[Required(AllowEmptyStrings = false, ErrorMessage="Se debe especificar un correo electrónico.")]
-	[EmailAddress]
 	[RegularExpression(@"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$", ErrorMessage="El formato del correo electrónico es inválido.", MatchTimeoutInMilliseconds=2500)]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
@@ -28,4 +30,8 @@ internal partial class ContactoViewModel : ObservableValidator
 			Email = contactoResponse.Email;
 		}
 	}
+
+	/// <inheritdoc cref="InformacionPersonalViewModel.Validar"/>
+	public void Validar() =>
+		ValidateAllProperties();
 }

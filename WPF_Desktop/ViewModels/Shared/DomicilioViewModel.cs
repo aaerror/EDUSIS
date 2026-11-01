@@ -58,4 +58,8 @@ internal partial class DomicilioViewModel : ObservableValidator
 			Observaciones = domicilioResponse.Observacion;
 		}
 	}
+
+	/// <inheritdoc cref="InformacionPersonalViewModel.Validar"/>
+	public void Validar() =>
+		ValidateAllProperties();
 }
