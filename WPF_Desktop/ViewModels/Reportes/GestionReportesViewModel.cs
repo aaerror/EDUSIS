@@ -6,6 +6,8 @@ using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioReportes;
 using Core.ServicioReportes.DTOs.Requests;
 using Core.Shared.Documentos;
+using Domain.Cursos;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -23,9 +25,17 @@ namespace WPF_Desktop.ViewModels.Reportes;
 /// una división, y se emite el reporte.
 /// </summary>
 /// <remarks>
+/// <para>
+/// El ciclo lectivo se <b>elige</b>, no se tipea: la lista sale del catálogo <c>ciclo_lectivo</c>
+/// por <c>IServicioReporte.ListarCiclosLectivosAsync</c>. Antes era un campo libre de cuatro
+/// dígitos y se podía pedir un reporte de un año que la base no habilita, que recién fallaba al
+/// emitir.
+/// </para>
+/// <para>
 /// El filtro por curso y división es opcional a propósito: sin él, el reporte abarca la
 /// institución completa, que es el caso habitual. Las divisiones se cargan recién al elegir un
 /// curso porque <c>IServicioDivision.ListarDivisionesAsync</c> pide curso y ciclo lectivo.
+/// </para>
 /// </remarks>
 internal partial class GestionReportesViewModel : ObservableValidator
 {
@@ -41,13 +51,22 @@ internal partial class GestionReportesViewModel : ObservableValidator
 	private readonly CicloLectivoStore _cicloLectivoStore;
 	#endregion
 
-	[Required(AllowEmptyStrings = false, ErrorMessage = "Se debe ingresar el ciclo lectivo.")]
-	[RegularExpression(@"^\d{4}$", ErrorMessage = "El ciclo lectivo son cuatro dígitos.", MatchTimeoutInMilliseconds = 2000)]
+	private const string SIN_FILTRO = "Elegí el ciclo lectivo y emití el reporte que necesites. Sin curso y división, abarca la institución completa.";
+
+	[ObservableProperty]
+	private ObservableCollection<string> _ciclosLectivos = new();
+
+	// Sigue siendo string y no int: el período es un string en el dominio (CicloLectivo.Periodo) y
+	// así viaja al request sin conversión. La validación de formato que había acá —cuatro dígitos—
+	// se fue con el campo libre: ahora el valor sale del catálogo de la base y lo único que puede
+	// faltar es la elección.
+	[Required(AllowEmptyStrings = false, ErrorMessage = "Se debe elegir el ciclo lectivo.")]
 	[NotifyCanExecuteChangedFor(nameof(MatriculasCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(AsistenciasCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(CalificacionesCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(MateriasPendientesCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(TrayectoriasCommandAsync))]
+	[NotifyPropertyChangedFor(nameof(Alcance))]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
 	private string _cicloLectivo = string.Empty;
@@ -55,12 +74,18 @@ internal partial class GestionReportesViewModel : ObservableValidator
 	[ObservableProperty]
 	private ObservableCollection<CursoViewModel> _cursos = new();
 
+	[NotifyCanExecuteChangedFor(nameof(QuitarFiltroCommand))]
+	[NotifyPropertyChangedFor(nameof(Alcance))]
+	[NotifyPropertyChangedFor(nameof(CursoSinDivision))]
 	[ObservableProperty]
 	private CursoViewModel? _curso;
 
 	[ObservableProperty]
 	private ObservableCollection<DivisionViewModel> _divisiones = new();
 
+	[NotifyCanExecuteChangedFor(nameof(QuitarFiltroCommand))]
+	[NotifyPropertyChangedFor(nameof(Alcance))]
+	[NotifyPropertyChangedFor(nameof(CursoSinDivision))]
 	[ObservableProperty]
 	private DivisionViewModel? _division;
 
@@ -70,8 +95,49 @@ internal partial class GestionReportesViewModel : ObservableValidator
 	[ObservableProperty]
 	private DateTime _hasta = DateTime.Today;
 
+	/// <summary>
+	/// Hay una emisión en curso. Apaga los cinco botones mientras tanto: generar el reporte de una
+	/// institución entera no es instantáneo, y sin esto la pantalla no da señal de estar haciendo
+	/// algo y se termina apretando dos veces.
+	/// </summary>
+	[NotifyCanExecuteChangedFor(nameof(MatriculasCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(AsistenciasCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(CalificacionesCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(MateriasPendientesCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(TrayectoriasCommandAsync))]
 	[ObservableProperty]
-	private string _mensaje = "El reporte abarca la institución completa salvo que elijas un curso y una división.";
+	private bool _emitiendo;
+
+	[ObservableProperty]
+	private string _mensaje = SIN_FILTRO;
+
+	/// <summary>
+	/// Qué va a abarcar el PDF, dicho con las mismas palabras que lleva impresas el documento. Es
+	/// la única forma de ver el alcance antes de emitir: el request sólo lleva período y división.
+	/// </summary>
+	public string Alcance
+	{
+		get
+		{
+			if (string.IsNullOrWhiteSpace(CicloLectivo))
+			{
+				return "Falta elegir el ciclo lectivo";
+			}
+
+			return Division is not null && Curso is not null
+				? $"Ciclo { CicloLectivo } · { Describir(Curso) } · División { Division.Descripcion }"
+				: $"Ciclo { CicloLectivo } · Institución completa";
+		}
+	}
+
+	/// <summary>
+	/// Hay curso elegido pero no división. Importa decirlo: <c>ReportePorCicloRequest</c> sólo
+	/// lleva la división, así que un curso sin división no acota nada y el reporte sale igual de
+	/// completo que sin filtro.
+	/// </summary>
+	public bool CursoSinDivision => Curso is not null && Division is null;
+
+	public bool HayFiltro => Curso is not null || Division is not null;
 
 	#region AsyncCommands
 	public IAsyncRelayCommand CargarCommandAsync { get; }
@@ -102,7 +168,7 @@ internal partial class GestionReportesViewModel : ObservableValidator
 		_dialogos = dialogos;
 		_cicloLectivoStore = cicloLectivoStore;
 
-		CargarCommandAsync = new AsyncRelayCommand(CargarCursosAsync);
+		CargarCommandAsync = new AsyncRelayCommand(CargarAsync);
 		CargarDivisionesCommandAsync = new AsyncRelayCommand(CargarDivisionesAsync);
 
 		MatriculasCommandAsync = new AsyncRelayCommand(
@@ -116,9 +182,11 @@ internal partial class GestionReportesViewModel : ObservableValidator
 
 		AsistenciasCommandAsync = new AsyncRelayCommand(EmitirAsistenciasAsync, CanExecuteEmitir);
 
-		QuitarFiltroCommand = new RelayCommand(QuitarFiltro);
+		QuitarFiltroCommand = new RelayCommand(QuitarFiltro, () => HayFiltro);
 
-		CicloLectivo = _cicloLectivoStore.CicloLectivo;
+		// El ciclo lectivo NO se asigna acá: el valor del store se elige recién cuando llegó el
+		// catálogo, en CargarCiclosLectivosAsync. Un SelectedItem que no está en ItemsSource lo
+		// descarta el propio ComboBox, así que asignarlo antes de tener la lista lo perdería.
 	}
 
 	#region Cambios de propiedad
@@ -127,6 +195,14 @@ internal partial class GestionReportesViewModel : ObservableValidator
 		if (!string.IsNullOrWhiteSpace(value))
 		{
 			_cicloLectivoStore.CicloLectivo = value;
+		}
+
+		// Las divisiones se listan por curso Y ciclo lectivo: cambiar de año sin rearmar la lista
+		// dejaría elegida una división de otro período.
+		if (Curso is not null)
+		{
+			Division = null;
+			CargarDivisionesCommandAsync.Execute(null);
 		}
 	}
 
@@ -145,6 +221,51 @@ internal partial class GestionReportesViewModel : ObservableValidator
 	#endregion
 
 	#region Carga
+	private async Task CargarAsync()
+	{
+		await CargarCiclosLectivosAsync();
+		await CargarCursosAsync();
+	}
+
+	private async Task CargarCiclosLectivosAsync()
+	{
+		try
+		{
+			var ciclos = await _servicioReporte.ListarCiclosLectivosAsync();
+
+			CiclosLectivos = new ObservableCollection<string>(ciclos);
+			CicloLectivo = Preferir(ciclos);
+
+			if (CiclosLectivos.Count == 0)
+			{
+				Mensaje = "La base no tiene ningún ciclo lectivo habilitado, así que no hay período contra el cual emitir.";
+			}
+		}
+		catch (Exception ex)
+		{
+			_dialogos.MostrarError(ex.Message, "Error al cargar los ciclos lectivos");
+		}
+	}
+
+	/// <summary>
+	/// Qué período queda elegido al abrir: el que venía de otra pantalla, si no el año en curso, y
+	/// si ninguno de los dos está habilitado, el más reciente del catálogo. El store arranca en el
+	/// año en curso y nadie garantiza que la base lo tenga cargado.
+	/// </summary>
+	private string Preferir(IReadOnlyCollection<string> ciclos)
+	{
+		if (ciclos.Contains(_cicloLectivoStore.CicloLectivo))
+		{
+			return _cicloLectivoStore.CicloLectivo;
+		}
+
+		var añoEnCurso = DateTime.Today.Year.ToString();
+
+		return ciclos.Contains(añoEnCurso)
+			? añoEnCurso
+			: ciclos.FirstOrDefault() ?? string.Empty;
+	}
+
 	private async Task CargarCursosAsync()
 	{
 		try
@@ -160,7 +281,7 @@ internal partial class GestionReportesViewModel : ObservableValidator
 
 	private async Task CargarDivisionesAsync()
 	{
-		if (Curso is null)
+		if (Curso is null || string.IsNullOrWhiteSpace(CicloLectivo))
 		{
 			return;
 		}
@@ -180,13 +301,13 @@ internal partial class GestionReportesViewModel : ObservableValidator
 	{
 		Curso = null;
 		Division = null;
-		Mensaje = "El reporte abarca la institución completa salvo que elijas un curso y una división.";
+		Mensaje = SIN_FILTRO;
 	}
 	#endregion
 
 	#region Emisión
 	private bool CanExecuteEmitir() =>
-		!string.IsNullOrWhiteSpace(CicloLectivo) && !GetErrors(nameof(CicloLectivo)).Any();
+		!Emitiendo && !string.IsNullOrWhiteSpace(CicloLectivo) && !GetErrors(nameof(CicloLectivo)).Any();
 
 	private async Task EmitirAsync(Func<ReportePorCicloRequest, Task<DocumentoGenerado>> emitir)
 	{
@@ -212,6 +333,8 @@ internal partial class GestionReportesViewModel : ObservableValidator
 	{
 		try
 		{
+			Emitiendo = true;
+
 			var documento = await generar();
 			var ruta = _archivos.GuardarYAbrir(documento);
 
@@ -224,6 +347,16 @@ internal partial class GestionReportesViewModel : ObservableValidator
 		{
 			_dialogos.MostrarError(ex.Message, "Error al emitir el reporte");
 		}
+		finally
+		{
+			Emitiendo = false;
+		}
 	}
 	#endregion
+
+	/// <summary>Curso en la misma forma en que lo imprime el encabezado del reporte.</summary>
+	private static string Describir(CursoViewModel curso) =>
+		Enum.TryParse<Grado>(curso.Grado, out var grado)
+			? $"{ (int) grado }° Año { curso.NivelEducativo }"
+			: curso.NivelEducativo;
 }

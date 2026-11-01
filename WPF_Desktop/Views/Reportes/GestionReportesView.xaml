@@ -12,6 +12,32 @@
 			 mc:Ignorable="d">
 	<UserControl.Resources>
 		<converters:GradoConverter x:Key="grado"/>
+
+		<!--
+			Una "pieza" es cada cosa emitible: título, qué contiene y el botón. Las cinco se
+			separan con la misma regla fina, así que el estilo vive acá y no repetido cinco veces.
+		-->
+		<Style x:Key="Pieza" TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Superficie.Seccion }">
+			<Setter Property="Margin" Value="0 0 0 16"/>
+		</Style>
+
+		<!-- Mismo peso visual para los cinco: ninguno es "el" reporte, no hay acción por omisión. -->
+		<Style x:Key="Btn.Emitir" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Secundario }">
+			<Setter Property="MinWidth" Value="130"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+		</Style>
+
+		<Style x:Key="Pieza.Titulo" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.CuerpoFuerte }">
+			<Setter Property="Margin" Value="8 0 0 0"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+		</Style>
+
+		<Style x:Key="Pieza.Detalle" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Detalle }">
+			<Setter Property="Margin" Value="0 4 0 0"/>
+			<Setter Property="MaxWidth" Value="620"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+			<Setter Property="TextWrapping" Value="Wrap"/>
+		</Style>
 	</UserControl.Resources>
 
 	<!--
@@ -21,6 +47,10 @@
 		división—, así que se fija una vez arriba y vale para todos. Sin curso y división
 		elegidos el reporte abarca la institución completa, que es el caso habitual; el botón
 		"Quitar filtro" está para volver a eso sin tener que adivinar cómo deseleccionar.
+
+		La franja de alcance compone en vivo lo que va a abarcar el PDF. No es decoración: el
+		request sólo lleva período y división, así que es el único lugar donde se ve que elegir
+		un curso SIN división no acota nada.
 
 		El rango de fechas vive con el reporte de asistencias porque es el único que lo usa.
 	-->
@@ -53,6 +83,7 @@
 						<RowDefinition Height="Auto"/>
 						<RowDefinition Height="Auto"/>
 						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
 					</Grid.RowDefinitions>
 
 					<!--#region ALCANCE-->
@@ -66,11 +97,12 @@
 								<Label Content="Ciclo lectivo"
 									   Style="{ StaticResource ResourceKey=Lbl.Campo }"
 									   Target="{ Binding ElementName=CampoCiclo }"/>
-								<TextBox x:Name="CampoCiclo"
-										 Tag="AAAA"
-										 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-										 Style="{ StaticResource ResourceKey=Txb.Campo }"
-										 Width="110"/>
+								<ComboBox x:Name="CampoCiclo"
+										  ItemsSource="{ Binding Path=CiclosLectivos, Mode=OneWay }"
+										  SelectedItem="{ Binding Path=CicloLectivo, Mode=TwoWay }"
+										  Style="{ StaticResource ResourceKey=ComboBoxStyle }"
+										  ToolTip="Períodos habilitados en la base"
+										  Width="110"/>
 							</StackPanel>
 
 							<StackPanel Margin="0 0 20 0">
@@ -111,14 +143,30 @@
 									VerticalAlignment="Bottom"/>
 						</StackPanel>
 
-						<Border Margin="0 14 0 0"
-								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
-								HorizontalAlignment="Left">
-							<TextBlock MaxWidth="700"
-									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-									   Text="{ Binding Path=Mensaje }"
-									   TextWrapping="Wrap"/>
+						<!-- La franja: lo que va a decir el encabezado del PDF, armado en vivo. -->
+						<Border HorizontalAlignment="Left"
+								Margin="0 16 0 0"
+								Padding="12 8"
+								Style="{ StaticResource ResourceKey=Insignia.Activa }">
+							<StackPanel Orientation="Horizontal">
+								<fa:IconBlock FontSize="13"
+											  Foreground="{ StaticResource ResourceKey=Primario }"
+											  Icon="FilePdf"
+											  Margin="0 0 10 0"
+											  VerticalAlignment="Center"/>
+								<TextBlock Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+										   Text="{ Binding Path=Alcance, Mode=OneWay }"
+										   VerticalAlignment="Center"/>
+							</StackPanel>
 						</Border>
+
+						<TextBlock Margin="0 8 0 0"
+								   MaxWidth="700"
+								   HorizontalAlignment="Left"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="Elegí también una división para acotar: con el curso solo, el reporte sigue abarcando la institución completa."
+								   TextWrapping="Wrap"
+								   Visibility="{ Binding Path=CursoSinDivision, Converter={ StaticResource ResourceKey=visibilidad }, Mode=OneWay }"/>
 					</StackPanel>
 					<!--#endregion-->
 
@@ -132,99 +180,188 @@
 								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
 								   Text="EMITIR"/>
 
-						<WrapPanel Orientation="Horizontal">
-							<Button Command="{ Binding Path=MatriculasCommandAsync }"
-									Margin="0 0 10 10"
-									MinWidth="250"
-									Style="{ StaticResource ResourceKey=Btn.Primario }"
-									ToolTip="Nómina de inscriptos por curso y división">
-								<StackPanel Orientation="Horizontal">
-									<fa:IconBlock FontSize="11" Icon="Users" Margin="0 0 8 0" VerticalAlignment="Center"/>
-									<TextBlock Text="Reporte de matrículas" VerticalAlignment="Center"/>
-								</StackPanel>
-							</Button>
+						<!--#region MATRÍCULAS-->
+						<Border Style="{ StaticResource ResourceKey=Pieza }">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
 
-							<Button Command="{ Binding Path=CalificacionesCommandAsync }"
-									Margin="0 0 10 10"
-									MinWidth="250"
-									Style="{ StaticResource ResourceKey=Btn.Secundario }"
-									ToolTip="Parcial, recuperatorio y condición por alumno y materia">
-								<StackPanel Orientation="Horizontal">
-									<fa:IconBlock FontSize="11" Icon="TableList" Margin="0 0 8 0" VerticalAlignment="Center"/>
-									<TextBlock Text="Reporte de calificaciones" VerticalAlignment="Center"/>
-								</StackPanel>
-							</Button>
-
-							<Button Command="{ Binding Path=MateriasPendientesCommandAsync }"
-									Margin="0 0 10 10"
-									MinWidth="250"
-									Style="{ StaticResource ResourceKey=Btn.Secundario }"
-									ToolTip="Espacios curriculares sin aprobar, por alumno">
-								<StackPanel Orientation="Horizontal">
-									<fa:IconBlock FontSize="11" Icon="ListUl" Margin="0 0 8 0" VerticalAlignment="Center"/>
-									<TextBlock Text="Reporte de materias pendientes" VerticalAlignment="Center"/>
-								</StackPanel>
-							</Button>
-
-							<Button Command="{ Binding Path=TrayectoriasCommandAsync }"
-									Margin="0 0 10 10"
-									MinWidth="250"
-									Style="{ StaticResource ResourceKey=Btn.Secundario }"
-									ToolTip="Materias aprobadas, pendientes y avance por alumno">
-								<StackPanel Orientation="Horizontal">
-									<fa:IconBlock FontSize="11" Icon="ChartLine" Margin="0 0 8 0" VerticalAlignment="Center"/>
-									<TextBlock Text="Reporte de trayectorias académicas" VerticalAlignment="Center"/>
-								</StackPanel>
-							</Button>
-						</WrapPanel>
-
-						<!--#region REPORTE DE ASISTENCIAS-->
-						<Border Margin="0 10 0 0"
-								Style="{ StaticResource ResourceKey=Superficie.Seccion }">
-							<StackPanel>
-								<TextBlock Margin="0 0 0 4"
-										   Style="{ StaticResource ResourceKey=Txt.CuerpoFuerte }"
-										   Text="Reporte de asistencias"/>
-								<TextBlock Margin="0 0 0 12"
-										   MaxWidth="700"
-										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-										   Text="Computa las planillas del rango: presentes, ausencias, inasistencias, tardanzas y porcentaje de asistencia. La tardanza cuenta como concurrencia."
-										   TextWrapping="Wrap"/>
-
-								<StackPanel Orientation="Horizontal">
-									<StackPanel Margin="0 0 16 0">
-										<Label Content="Desde"
-											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
-											   Target="{ Binding ElementName=CampoDesde }"/>
-										<DatePicker x:Name="CampoDesde"
-													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
-													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
-													SelectedDate="{ Binding Path=Desde, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-													Style="{ StaticResource ResourceKey=DatePicker }"
-													Width="160"/>
+								<StackPanel Grid.Column="0" Margin="0 0 24 0">
+									<StackPanel Orientation="Horizontal">
+										<fa:IconBlock FontSize="12" Icon="Users" VerticalAlignment="Center"/>
+										<TextBlock Style="{ StaticResource ResourceKey=Pieza.Titulo }"
+												   Text="Reporte de matrículas"/>
 									</StackPanel>
-
-									<StackPanel Margin="0 0 16 0">
-										<Label Content="Hasta"
-											   Style="{ StaticResource ResourceKey=Lbl.Campo }"
-											   Target="{ Binding ElementName=CampoHasta }"/>
-										<DatePicker x:Name="CampoHasta"
-													CalendarStyle="{ StaticResource ResourceKey=Calendar }"
-													DisplayDateEnd="{ x:Static sys:DateTime.Today }"
-													SelectedDate="{ Binding Path=Hasta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-													Style="{ StaticResource ResourceKey=DatePicker }"
-													Width="160"/>
-									</StackPanel>
-
-									<Button Command="{ Binding Path=AsistenciasCommandAsync }"
-											Content="Emitir reporte"
-											Style="{ StaticResource ResourceKey=Btn.Primario }"
-											VerticalAlignment="Bottom"/>
+									<TextBlock Style="{ StaticResource ResourceKey=Pieza.Detalle }"
+											   Text="Nómina de inscriptos: nivel, curso, división, legajo, documento, fecha de inscripción y condición."/>
 								</StackPanel>
-							</StackPanel>
+
+								<Button Grid.Column="1"
+										Command="{ Binding Path=MatriculasCommandAsync }"
+										Content="Emitir"
+										Style="{ StaticResource ResourceKey=Btn.Emitir }"/>
+							</Grid>
+						</Border>
+						<!--#endregion-->
+
+						<!--#region CALIFICACIONES-->
+						<Border Style="{ StaticResource ResourceKey=Pieza }">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0" Margin="0 0 24 0">
+									<StackPanel Orientation="Horizontal">
+										<fa:IconBlock FontSize="12" Icon="TableList" VerticalAlignment="Center"/>
+										<TextBlock Style="{ StaticResource ResourceKey=Pieza.Titulo }"
+												   Text="Reporte de calificaciones"/>
+									</StackPanel>
+									<TextBlock Style="{ StaticResource ResourceKey=Pieza.Detalle }"
+											   Text="Una fila por alumno y materia, con parcial, recuperatorio y condición."/>
+								</StackPanel>
+
+								<Button Grid.Column="1"
+										Command="{ Binding Path=CalificacionesCommandAsync }"
+										Content="Emitir"
+										Style="{ StaticResource ResourceKey=Btn.Emitir }"/>
+							</Grid>
+						</Border>
+						<!--#endregion-->
+
+						<!--#region MATERIAS PENDIENTES-->
+						<Border Style="{ StaticResource ResourceKey=Pieza }">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0" Margin="0 0 24 0">
+									<StackPanel Orientation="Horizontal">
+										<fa:IconBlock FontSize="12" Icon="ListUl" VerticalAlignment="Center"/>
+										<TextBlock Style="{ StaticResource ResourceKey=Pieza.Titulo }"
+												   Text="Reporte de materias pendientes"/>
+									</StackPanel>
+									<TextBlock Style="{ StaticResource ResourceKey=Pieza.Detalle }"
+											   Text="Espacios curriculares sin aprobar, agrupados por alumno."/>
+								</StackPanel>
+
+								<Button Grid.Column="1"
+										Command="{ Binding Path=MateriasPendientesCommandAsync }"
+										Content="Emitir"
+										Style="{ StaticResource ResourceKey=Btn.Emitir }"/>
+							</Grid>
+						</Border>
+						<!--#endregion-->
+
+						<!--#region TRAYECTORIAS-->
+						<Border Style="{ StaticResource ResourceKey=Pieza }">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0" Margin="0 0 24 0">
+									<StackPanel Orientation="Horizontal">
+										<fa:IconBlock FontSize="12" Icon="ChartLine" VerticalAlignment="Center"/>
+										<TextBlock Style="{ StaticResource ResourceKey=Pieza.Titulo }"
+												   Text="Reporte de trayectorias académicas"/>
+									</StackPanel>
+									<TextBlock Style="{ StaticResource ResourceKey=Pieza.Detalle }"
+											   Text="Materias aprobadas, pendientes y avance de cada alumno."/>
+								</StackPanel>
+
+								<Button Grid.Column="1"
+										Command="{ Binding Path=TrayectoriasCommandAsync }"
+										Content="Emitir"
+										Style="{ StaticResource ResourceKey=Btn.Emitir }"/>
+							</Grid>
+						</Border>
+						<!--#endregion-->
+
+						<!--#region ASISTENCIAS
+							La única pieza con rango de fechas. Va abajo y con los campos adentro
+							para que no se lea como si los cinco reportes se emitieran por período.
+						-->
+						<Border Style="{ StaticResource ResourceKey=Pieza }">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0" Margin="0 0 24 0">
+									<StackPanel Orientation="Horizontal">
+										<fa:IconBlock FontSize="12" Icon="CalendarCheck" VerticalAlignment="Center"/>
+										<TextBlock Style="{ StaticResource ResourceKey=Pieza.Titulo }"
+												   Text="Reporte de asistencias"/>
+									</StackPanel>
+									<TextBlock Style="{ StaticResource ResourceKey=Pieza.Detalle }"
+											   Text="Computa las planillas del rango: presentes, ausencias, inasistencias, tardanzas y porcentaje de asistencia. La tardanza cuenta como concurrencia."/>
+
+									<StackPanel Margin="0 12 0 0" Orientation="Horizontal">
+										<StackPanel Margin="0 0 16 0">
+											<Label Content="Desde"
+												   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+												   Target="{ Binding ElementName=CampoDesde }"/>
+											<DatePicker x:Name="CampoDesde"
+														CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+														DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+														SelectedDate="{ Binding Path=Desde, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+														Style="{ StaticResource ResourceKey=DatePicker }"
+														Width="160"/>
+										</StackPanel>
+
+										<StackPanel>
+											<Label Content="Hasta"
+												   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+												   Target="{ Binding ElementName=CampoHasta }"/>
+											<DatePicker x:Name="CampoHasta"
+														CalendarStyle="{ StaticResource ResourceKey=Calendar }"
+														DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+														SelectedDate="{ Binding Path=Hasta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+														Style="{ StaticResource ResourceKey=DatePicker }"
+														Width="160"/>
+										</StackPanel>
+									</StackPanel>
+								</StackPanel>
+
+								<Button Grid.Column="1"
+										Command="{ Binding Path=AsistenciasCommandAsync }"
+										Content="Emitir"
+										Style="{ StaticResource ResourceKey=Btn.Emitir }"/>
+							</Grid>
 						</Border>
 						<!--#endregion-->
 					</StackPanel>
+					<!--#endregion-->
+
+					<!--#region ESTADO
+						Una sola línea al pie: o se está generando, o se cuenta en qué terminó la
+						última emisión. Los errores siguen yendo por IDialogService.
+					-->
+					<Grid Grid.Row="3" Margin="0 6 0 0">
+						<Border HorizontalAlignment="Left"
+								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								Visibility="{ Binding Path=Emitiendo, Converter={ StaticResource ResourceKey=visibilidad }, Mode=OneWay }">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+									   Text="Generando el documento…"/>
+						</Border>
+
+						<Border HorizontalAlignment="Left"
+								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								Visibility="{ Binding Path=Emitiendo, Converter={ StaticResource ResourceKey=visibilidadInversa }, Mode=OneWay }">
+							<TextBlock MaxWidth="700"
+									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+									   Text="{ Binding Path=Mensaje }"
+									   TextWrapping="Wrap"/>
+						</Border>
+					</Grid>
 					<!--#endregion-->
 				</Grid>
 			</ScrollViewer>
