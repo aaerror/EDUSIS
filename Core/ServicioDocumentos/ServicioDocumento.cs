@@ -238,6 +238,25 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 	}
 	#endregion
 
+	#region Ciclos lectivos
+	public async Task<IReadOnlyCollection<string>> ListarCiclosLectivosAsync()
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GenerarDocumentos);
+
+			var ciclos = await _unitOfWork.Cursantes.ListarCiclosLectivosAsync();
+
+			return ciclos.Select(x => x.Periodo).ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+	#endregion
+
 	#region Resolución
 	private async Task<ContextoCursante> ResolverAsync(Guid alumnoID, string periodo) =>
 		await _contexto.ResolverCursanteAsync(alumnoID, CicloLectivo.Crear(periodo));

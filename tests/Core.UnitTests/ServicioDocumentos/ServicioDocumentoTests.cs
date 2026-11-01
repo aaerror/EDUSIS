@@ -462,4 +462,38 @@ public class ServicioDocumentoTests
 			.Materias.Select(x => x.Materia).ShouldBe(new[] { "Matemática" });
 	}
 	#endregion
+
+	#region Ciclos lectivos
+	[Fact]
+	public async Task ListarCiclosLectivos_devuelve_los_periodos_habilitados()
+	{
+		Sembrar();
+
+		var ciclos = await _servicio.ListarCiclosLectivosAsync();
+
+		ciclos.ShouldContain(CICLO);
+	}
+
+	[Fact]
+	public async Task ListarCiclosLectivos_sin_permiso_falla()
+	{
+		// El catálogo alimenta el desplegable de la pantalla de documentación, así que va detrás
+		// de la misma guarda: sin permiso no se llega ni a saber qué períodos existen.
+		using var host = new HostDeServicios(sesion: SesionDePrueba.SinPermisos());
+		var servicio = host.Resolver<IServicioDocumento>();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => servicio.ListarCiclosLectivosAsync());
+	}
+
+	[Fact]
+	public async Task ListarCiclosLectivos_con_permiso_de_reportes_no_alcanza()
+	{
+		using var host = new HostDeServicios(sesion: SesionDePrueba.Con(Permiso.GenerarReportes));
+		var servicio = host.Resolver<IServicioDocumento>();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => servicio.ListarCiclosLectivosAsync());
+	}
+	#endregion
 }

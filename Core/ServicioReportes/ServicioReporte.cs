@@ -295,6 +295,25 @@ internal class ServicioReporte : IServicio, IServicioReporte
 	}
 	#endregion
 
+	#region Ciclos lectivos
+	public async Task<IReadOnlyCollection<string>> ListarCiclosLectivosAsync()
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GenerarReportes);
+
+			var ciclos = await _unitOfWork.Cursantes.ListarCiclosLectivosAsync();
+
+			return ciclos.Select(x => x.Periodo).ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+	#endregion
+
 	#region Armado
 	private async Task<DocumentoGenerado> GenerarAsync(
 		string titulo,

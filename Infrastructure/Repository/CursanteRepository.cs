@@ -1,5 +1,6 @@
 using Domain.Cursantes;
 using Domain.Shared;
+using Infrastructure.EntityConfigurations;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
@@ -62,4 +63,21 @@ internal class CursanteRepository : Repository<Cursante>, ICursanteRepository
 			.Where(x => x.DivisionID == divisionID && x.FechaInicio.Date <= fecha.Date && (x.FechaFin == null || x.FechaFin.Value.Date >= fecha.Date))
 			.Select(x => x.Id)
 			.ToListAsync();
+
+	// El catálogo de ciclos lectivos no es una entidad de dominio: es la tabla ciclo_lectivo
+	// mapeada como shared-type entity sobre Dictionary<string, object> (ver
+	// CicloLectivoConfiguration), por eso se llega a ella con Set<...>(nombre) y se lee la columna
+	// por EF.Property en vez de por una propiedad CLR.
+	//
+	// El orden descendente sale numérico y no alfabético porque "periodo" tiene conversión a
+	// smallint: EF ordena por la columna del proveedor, no por el string.
+	public async Task<IReadOnlyCollection<CicloLectivo>> ListarCiclosLectivosAsync()
+	{
+		var periodos = await _context.Set<Dictionary<string, object>>(CicloLectivoConfiguration.CATALOGO)
+			.OrderByDescending(x => EF.Property<string>(x, "periodo"))
+			.Select(x => EF.Property<string>(x, "periodo"))
+			.ToListAsync();
+
+		return periodos.Select(CicloLectivo.Crear).ToList();
+	}
 }

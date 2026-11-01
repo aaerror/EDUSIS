@@ -304,4 +304,29 @@ public sealed class CursanteRepositorioTests : BaseIntegracion
 		cargado.Calificaciones.First().MateriaID.ShouldBe(materiaID);
 		cargado.Calificaciones.First().Nota.ShouldBe(8.5);
 	}
+
+	/// <summary>
+	/// El catálogo <c>ciclo_lectivo</c> es la fuente del desplegable de período en las pantallas
+	/// de reportes y documentación. Tiene que probarse contra SQL Server y no contra el fake: la
+	/// consulta sale de un shared-type entity sobre <c>Dictionary&lt;string, object&gt;</c>, lee la
+	/// columna con <c>EF.Property</c> y la columna tiene conversión a <c>smallint</c>. Nada de eso
+	/// falla al compilar.
+	/// </summary>
+	[RequiereSqlServerFact]
+	public async Task ListarCiclosLectivosAsync_trae_el_catalogo_del_mas_reciente_al_mas_antiguo()
+	{
+		using var uow = CrearUnidadDeTrabajo();
+
+		var ciclos = await uow.Cursantes.ListarCiclosLectivosAsync();
+
+		// Los períodos los siembra CicloLectivoConfiguration con HasData, así que no hace falta
+		// sembrar nada: el catálogo existe desde la migración.
+		ciclos.ShouldNotBeEmpty();
+		ciclos.Select(x => x.Periodo).ShouldContain("2026");
+
+		// Orden numérico descendente, no alfabético: es lo que hace que el desplegable abra en los
+		// años en curso y no en 2020.
+		var periodos = ciclos.Select(x => int.Parse(x.Periodo)).ToList();
+		periodos.ShouldBe(periodos.OrderByDescending(x => x).ToList());
+	}
 }

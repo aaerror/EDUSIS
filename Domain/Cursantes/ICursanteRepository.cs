@@ -50,4 +50,16 @@ public interface ICursanteRepository : IRepository<Cursante>
 	/// completa y agrupan después; sin el filtro, un alumno trasladado se contaría dos veces.
 	/// </summary>
 	Task<IReadOnlyCollection<Cursante>> BuscarPorCicloLectivoAsync(CicloLectivo cicloLectivo);
+
+	/// <summary>
+	/// Ciclos lectivos <strong>habilitados</strong>, del más reciente al más antiguo. No son los
+	/// períodos que tienen inscripciones: es el catálogo sobre el que apunta la clave ajena de
+	/// <c>Cursante.CicloLectivo.Periodo</c>, así que incluye años sin matrícula todavía.
+	/// </summary>
+	/// <remarks>
+	/// Existe para que la interfaz ofrezca el período en lugar de pedirlo tipeado: un año fuera
+	/// del catálogo no se puede elegir, y así no se llega a emitir un documento contra un ciclo
+	/// que la base no admite.
+	/// </remarks>
+	Task<IReadOnlyCollection<CicloLectivo>> ListarCiclosLectivosAsync();
 }
