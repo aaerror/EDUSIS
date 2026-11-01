@@ -12,6 +12,7 @@ using Core.Shared.DTOs.Personas.Responses;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
@@ -121,11 +122,67 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 
 		ActualizarCursosAsyncCommand = new AsyncRelayCommand(ActualizarCursos);
 
+		// Después de crear los comandos: SuscribirValidacion notifica a ContinuarCommand, que acá
+		// todavía no existiría.
+		SuscribirValidacion(_informacionPersonal);
+		SuscribirValidacion(_domicilio);
+		SuscribirValidacion(_contacto);
+
 		// Las propiedades con [NotifyCanExecuteChangedFor] se asignan DESPUÉS de crear los comandos.
 		Periodo = _cicloLectivoStore.CicloLectivo;
 
 		_ = ActualizarCursos();
 	}
+
+	#region Reevaluación de ContinuarCommand
+	// CanExecuteContinuarCommand lee HasErrors de los tres sub-ViewModels, y esos cambian cuando el
+	// usuario tipea DENTRO de ellos, no cuando se reasigna la propiedad del padre. Un
+	// [NotifyCanExecuteChangedFor] sobre InformacionPersonal/Domicilio/Contacto sólo dispararía al
+	// cambiar la instancia entera, así que el botón quedaba con el estado de la última reasignación.
+	// La suscripción a ErrorsChanged es lo que lo mantiene al día.
+	private void SuscribirValidacion(ObservableValidator? validable)
+	{
+		if (validable is not null)
+		{
+			validable.ErrorsChanged += AlCambiarLosErrores;
+		}
+	}
+
+	private void DesuscribirValidacion(ObservableValidator? validable)
+	{
+		if (validable is not null)
+		{
+			validable.ErrorsChanged -= AlCambiarLosErrores;
+		}
+	}
+
+	private void AlCambiarLosErrores(object? remitente, DataErrorsChangedEventArgs argumentos) =>
+		ContinuarCommand.NotifyCanExecuteChanged();
+
+	// El overload de dos parámetros permite soltar el handler de la instancia vieja; sin eso cada
+	// reasignación (las de ExecuteGuardarCommandAsync al limpiar el formulario) dejaría un
+	// suscriptor colgado del objeto anterior.
+	partial void OnInformacionPersonalChanged(InformacionPersonalViewModel? oldValue, InformacionPersonalViewModel newValue)
+	{
+		DesuscribirValidacion(oldValue);
+		SuscribirValidacion(newValue);
+		ContinuarCommand.NotifyCanExecuteChanged();
+	}
+
+	partial void OnDomicilioChanged(DomicilioViewModel? oldValue, DomicilioViewModel newValue)
+	{
+		DesuscribirValidacion(oldValue);
+		SuscribirValidacion(newValue);
+		ContinuarCommand.NotifyCanExecuteChanged();
+	}
+
+	partial void OnContactoChanged(ContactoViewModel? oldValue, ContactoViewModel newValue)
+	{
+		DesuscribirValidacion(oldValue);
+		SuscribirValidacion(newValue);
+		ContinuarCommand.NotifyCanExecuteChanged();
+	}
+	#endregion
 
 	#region Cursos y divisiones
 	private async Task ActualizarCursos()
@@ -211,12 +268,18 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 	/// </remarks>
 	private async Task ExecuteContinuarCommand()
 	{
+		// Sexo y Vivienda entran en la guarda aunque salgan de un combo y no de un campo de
+		// texto: arrancan sin selección y más abajo se les llama .ToString(), así que no
+		// elegirlos no daba el aviso de datos incompletos sino un NullReferenceException.
+		// Lo encontró master en UI-33.
 		var faltantes = new List<string>();
 
 		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido)) { faltantes.Add("apellido"); }
 		if (string.IsNullOrWhiteSpace(InformacionPersonal.Nombre)) { faltantes.Add("nombre"); }
 		if (string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad)) { faltantes.Add("documento"); }
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.Sexo)) { faltantes.Add("sexo"); }
 		if (string.IsNullOrWhiteSpace(Domicilio.Calle)) { faltantes.Add("calle"); }
+		if (string.IsNullOrWhiteSpace(Domicilio.Vivienda)) { faltantes.Add("tipo de vivienda"); }
 		if (string.IsNullOrWhiteSpace(Domicilio.Localidad)) { faltantes.Add("localidad"); }
 		if (string.IsNullOrWhiteSpace(Domicilio.Provincia)) { faltantes.Add("provincia"); }
 		if (string.IsNullOrWhiteSpace(Contacto.Telefono)) { faltantes.Add("teléfono"); }
@@ -244,7 +307,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 			var request = new RegistrarAlumnoRequest(
 				Apellido: InformacionPersonal.Apellido,
 				Nombre: InformacionPersonal.Nombre,
-				DNI: InformacionPersonal.DocumentoNacionalIdentidad,
+				DNI: documento,
 				Sexo: InformacionPersonal.Sexo.ToString(),
 				FechaNacimiento: InformacionPersonal.FechaNacimiento,
 				Nacionalidad: InformacionPersonal.Nacionalidad,

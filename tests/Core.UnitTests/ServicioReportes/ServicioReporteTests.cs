@@ -380,4 +380,39 @@ public class ServicioReporteTests
 		fila[8].ShouldBe("—");
 	}
 	#endregion
+
+	#region Ciclos lectivos
+	[Fact]
+	public async Task ListarCiclosLectivos_devuelve_los_periodos_habilitados()
+	{
+		SembrarEstructura();
+		SembrarInscripcion("AL0001");
+
+		var ciclos = await _servicio.ListarCiclosLectivosAsync();
+
+		ciclos.ShouldContain(CICLO);
+	}
+
+	[Fact]
+	public async Task ListarCiclosLectivos_sin_permiso_falla()
+	{
+		// El catálogo alimenta el desplegable de la pantalla de reportes, así que va detrás de la
+		// misma guarda: sin permiso no se llega ni a saber qué períodos existen.
+		using var host = new HostDeServicios(sesion: SesionDePrueba.SinPermisos());
+		var servicio = host.Resolver<IServicioReporte>();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => servicio.ListarCiclosLectivosAsync());
+	}
+
+	[Fact]
+	public async Task ListarCiclosLectivos_con_permiso_de_documentos_no_alcanza()
+	{
+		using var host = new HostDeServicios(sesion: SesionDePrueba.Con(Permiso.GenerarDocumentos));
+		var servicio = host.Resolver<IServicioReporte>();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => servicio.ListarCiclosLectivosAsync());
+	}
+	#endregion
 }

@@ -198,7 +198,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	public async Task CargarMateriasAsync()
 	{
 		Materias.Clear();
-		if (Curriculas.Count is not 0)
+		if (Curricula is not null)
 		{
 			try
 			{
@@ -295,7 +295,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 
 						HabilitarRegistrarMateria = false;
 
-						await CargarCurriculasAsync();
+						await CargarMateriasAsync();
 					}
 					catch (Exception ex)
 					{
@@ -392,7 +392,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 						_dialogService.MostrarInformacion($"Vigente desde hoy, { DateTime.Today.ToString("d") }. Ya podés agregarle materias.", "Currícula creada");
 
 						HabilitarEditarMateria = false;
-						await CargarMateriasAsync();
+						await CargarCurriculasAsync();
 					}
 					catch (Exception ex)
 					{
@@ -472,7 +472,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 			case "Nueva":
 				HabilitarRegistrarMateria = false;
 
-				await CargarCurriculasAsync();
+				await CargarMateriasAsync();
 				break;
 
 			case "Editar":
