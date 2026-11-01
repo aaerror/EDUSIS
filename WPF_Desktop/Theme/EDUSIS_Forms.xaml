@@ -10,6 +10,8 @@
 		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Brushes.xaml"/>
 		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Typography.xaml"/>
 		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_ButtonStyle.xaml"/>
+		<!-- Campo dibuja el motivo del error con Txt.Error.Campo, que vive en Feedback. -->
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Feedback.xaml"/>
 	</ResourceDictionary.MergedDictionaries>
 
 	<!--
@@ -36,6 +38,21 @@
 		El hueco de 4px entre rótulo y control ya lo pone Lbl.Campo con su Padding; acá sólo
 		se fija el ritmo de 16px entre un campo y el siguiente.
 	-->
+	<!--
+		EL ERROR DEL CAMPO, EN TEXTO Y DEBAJO DEL CAMPO. El tema ya marcaba el campo con error
+		—borde Alerta de 2px— y ponía el motivo en el ToolTip. Un ToolTip exige apuntar con el
+		mouse: quien navega con teclado nunca lee el mensaje, y lo único que le queda es un
+		borde rojo, que es significado comunicado sólo por color.
+
+		Va acá y no en cada formulario porque Campo es el único lugar que ya envuelve al rótulo
+		y al control: una fila más en el mismo StackPanel y los treinta y pico de campos de la
+		aplicación quedan explicados. Por eso también ocupa lugar de layout en vez de dibujarse
+		encima, que es lo que impedía resolverlo con el adorno de WPF.
+
+		El enlace cuelga de Content, que es el control enlazado. Un Campo cuyo Content sea un
+		contenedor —el CUIL, que son tres cajas dentro de un Grid— no tiene error propio que
+		mostrar: cada caja de adentro se sigue marcando sola.
+	-->
 	<Style x:Key="Campo" TargetType="{ x:Type HeaderedContentControl }">
 		<Setter Property="Margin" Value="0 0 0 16"/>
 		<Setter Property="Template">
@@ -46,7 +63,25 @@
 							   Style="{ StaticResource ResourceKey=Lbl.Campo }"
 							   Target="{ Binding Path=Content, RelativeSource={ RelativeSource TemplatedParent } }"/>
 						<ContentPresenter/>
+						<!--
+							La fila se esconde por su PROPIO texto y no por un DataTrigger sobre
+							Content.(Validation.HasError): ese disparador no llega a evaluarse
+							desde ControlTemplate.Triggers con RelativeSource=TemplatedParent
+							—el enlace del Text sí resuelve, el del disparador no—, y el
+							resultado era la fila colapsada para siempre, con el motivo adentro
+							y sin que nadie lo viera. Sin error el enlace da nulo,
+							TargetNullValue lo vuelve cadena vacía y el disparador la esconde:
+							el mismo recurso con el que Txb.Campo muestra y esconde su guía.
+						-->
+						<TextBlock x:Name="Error"
+								   Style="{ StaticResource ResourceKey=Txt.Error.Campo }"
+								   Text="{ Binding Path=Content.(Validation.Errors)[0].ErrorContent, RelativeSource={ RelativeSource TemplatedParent }, TargetNullValue='' }"/>
 					</StackPanel>
+					<ControlTemplate.Triggers>
+						<Trigger SourceName="Error" Property="Text" Value="">
+							<Setter TargetName="Error" Property="Visibility" Value="Collapsed"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
