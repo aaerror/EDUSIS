@@ -13,8 +13,16 @@
 		Los ocho RowDefinition sin Height eran OCHO FILAS EN *, para seis campos y con la 4
 		salteada: la grilla repartía el sobrante de la pantalla entre las filas y estiraba los
 		huecos de forma despareja. De ahí venían los VerticalAlignment="Center" campo por
-		campo, que compensaban a mano lo que causaba la propia grilla. Un StackPanel apila en
-		el alto que cada campo necesita y el ritmo lo pone Campo.
+		campo, que compensaban a mano lo que causaba la propia grilla. Después fue un StackPanel,
+		que apilaba en el alto justo pero dejaba los seis campos de ancho completo.
+
+		AHORA VAN DE A PARES, como Domicilio y Contacto. La pila tenía dos costos visibles en
+		las dos altas, que es donde este bloque comparte la pantalla con Domicilio: la columna
+		izquierda quedaba un 50% más alta que la derecha —seis filas contra cuatro— y dejaba un
+		hueco debajo del domicilio; y un dato de ocho dígitos como el documento se dibujaba con
+		media tarjeta de ancho. El ancho de un campo es una promesa sobre cuánto se espera que
+		entre, y media tarjeta para un D.N.I. promete mal. Las filas van en Auto y el ritmo
+		vertical lo sigue poniendo Campo.
 
 		Los textos guía quedaron sólo donde el formato NO se deduce del rótulo. "ingresar el
 		apellido…" debajo de una etiqueta que dice "Apellido" no agrega nada, y el estilo del
@@ -29,41 +37,74 @@
 	</UserControl.Resources>
 
 	<GroupBox Header="INFORMACIÓN PERSONAL" Style="{ StaticResource ResourceKey=Seccion }">
-		<StackPanel>
-			<HeaderedContentControl Header="Apellido" Style="{ StaticResource ResourceKey=Campo }">
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+
+			<HeaderedContentControl Grid.Column="0" Grid.Row="0"
+									Header="Apellido"
+									Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 				<TextBox Text="{ Binding Path=Apellido, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
-			<HeaderedContentControl Header="Nombre" Style="{ StaticResource ResourceKey=Campo }">
+			<HeaderedContentControl Grid.Column="1" Grid.Row="0"
+									Header="Nombre"
+									Style="{ StaticResource ResourceKey=Campo.Derecha }">
 				<TextBox Text="{ Binding Path=Nombre, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
 			<!-- Mismo texto guía que la búsqueda de Alumnos: el dato se pide igual en los dos lados. -->
-			<HeaderedContentControl Header="Documento" Style="{ StaticResource ResourceKey=Campo }">
-				<TextBox Tag="8 dígitos, sin puntos"
+			<HeaderedContentControl Grid.Column="0" Grid.Row="1"
+									Header="Documento"
+									Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+				<TextBox MaxLength="8"
+						 Tag="8 dígitos, sin puntos"
 						 Text="{ Binding Path=DocumentoNacionalIdentidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
-			<HeaderedContentControl Header="Fecha de nacimiento" Style="{ StaticResource ResourceKey=Campo }">
-				<DatePicker DisplayDate="{ Binding Path=FechaNacimiento, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+			<!--
+				LA FECHA ELEGIDA NO LLEGABA AL ViewModel. Este era el único DatePicker de la
+				aplicación enlazado sólo por DisplayDate, que es el mes que muestra el almanaque
+				y no el valor elegido —ese es SelectedDate—. Como además el enlace no declaraba
+				Mode=TwoWay, lo que el usuario elegía no volvía nunca: FechaNacimiento se quedaba
+				en 01/01/0001 y el docente —y el alumno, que comparte esta vista— se registraba
+				con esa fecha. [DateBeforeThanToday] tampoco lo atrapaba, porque el año 1 ES
+				anterior a hoy. Los otros trece DatePicker del repositorio ya enlazan SelectedDate.
+			-->
+			<HeaderedContentControl Grid.Column="1" Grid.Row="1"
+									Header="Fecha de nacimiento"
+									Style="{ StaticResource ResourceKey=Campo.Derecha }">
+				<DatePicker DisplayDate="{ Binding Path=FechaNacimiento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							DisplayDateEnd="{ x:Static sys:DateTime.Today }"
 							DisplayDateStart="01/01/1900"
+							SelectedDate="{ Binding Path=FechaNacimiento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 			</HeaderedContentControl>
 
-			<HeaderedContentControl Header="Sexo" Style="{ StaticResource ResourceKey=Campo }">
+			<HeaderedContentControl Grid.Column="0" Grid.Row="2"
+									Header="Sexo"
+									Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 				<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos } }"
 						  SelectedItem="{ Binding Path=Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
 			</HeaderedContentControl>
 
-			<HeaderedContentControl Header="Nacionalidad" Style="{ StaticResource ResourceKey=Campo }">
+			<HeaderedContentControl Grid.Column="1" Grid.Row="2"
+									Header="Nacionalidad"
+									Style="{ StaticResource ResourceKey=Campo.Derecha }">
 				<TextBox Text="{ Binding Path=Nacionalidad, FallbackValue='Sin datos', UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
-		</StackPanel>
+		</Grid>
 	</GroupBox>
 </UserControl>
