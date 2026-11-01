@@ -41,14 +41,26 @@
 						 IsEnabled="False"
 						 Tag="01">
 					<ScrollViewer VerticalScrollBarVisibility="Auto">
+						<!--
+							DOS COLUMNAS QUE TERMINAN PAREJAS. Contacto cruzaba las tres columnas
+							debajo de las otras dos secciones, y como Información personal es más
+							alta que Domicilio, quedaba un hueco debajo del domicilio y después
+							una banda de ancho completo con dos campos sueltos —un teléfono y un
+							correo dibujados con media tarjeta cada uno—.
+
+							Contacto baja a la columna de la persona, que es de lo que habla: a
+							la izquierda quién es y cómo ubicarlo, a la derecha dónde vive. Con
+							Información personal ya de a pares, las dos columnas miden casi lo
+							mismo y el pie de acciones apoya sobre las dos.
+						-->
 						<Grid>
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*"/>
+								<!-- La separación entre columnas es una columna, no un margen por vista. -->
 								<ColumnDefinition Width="28"/>
 								<ColumnDefinition Width="*"/>
 							</Grid.ColumnDefinitions>
 							<Grid.RowDefinitions>
-								<RowDefinition Height="Auto"/>
 								<RowDefinition Height="Auto"/>
 								<RowDefinition Height="Auto"/>
 							</Grid.RowDefinitions>
@@ -61,18 +73,17 @@
 								recién aparecía al apretar "Continuar", en un cartel que además
 								borraba lo escrito. Las reglas ya estaban en los ViewModels.
 							-->
-							<shared:InformacionPersonalView Grid.Column="0" Grid.Row="0"
-															DataContext="{ Binding Path=InformacionPersonal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-															VerticalAlignment="Top"/>
+							<StackPanel Grid.Column="0" Grid.Row="0">
+								<shared:InformacionPersonalView DataContext="{ Binding Path=InformacionPersonal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+
+								<shared:ContactoView DataContext="{ Binding Path=Contacto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+							</StackPanel>
 
 							<shared:DomicilioView Grid.Column="2" Grid.Row="0"
 												  DataContext="{ Binding Path=Domicilio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 												  VerticalAlignment="Top"/>
 
-							<shared:ContactoView Grid.ColumnSpan="3" Grid.Row="1"
-												 DataContext="{ Binding Path=Contacto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
-
-							<Border Grid.ColumnSpan="3" Grid.Row="2"
+							<Border Grid.ColumnSpan="3" Grid.Row="1"
 									Style="{ StaticResource ResourceKey=Superficie.Seccion }">
 								<Button Command="{ Binding Path=ContinuarCommand }"
 										Content="Continuar"
