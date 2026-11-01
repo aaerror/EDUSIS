@@ -1,4 +1,4 @@
-<UserControl x:Class="WPF_Desktop.Views.Cursos.Divisiones.GestionCursantesView"
+﻿<UserControl x:Class="WPF_Desktop.Views.Cursos.Divisiones.GestionCursantesView"
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
@@ -13,17 +13,38 @@
 	<!--
 		ALUMNOS DE LA DIVISIÓN Y SUS CALIFICACIONES.
 
-		Dos listas en cadena: se elige un alumno y abajo aparecen sus notas. Esa dependencia
-		ahora se ve —la ficha del alumno elegido va entre las dos listas, así que la segunda
-		lista siempre tiene a quién se refiere—. Antes había dos grillas pegadas y nada decía
-		de quién eran las calificaciones de abajo.
+		ERA UNA COLUMNA DE 1520px DENTRO DE UN VIEWPORT DE 620. Ocho bloques apilados —búsqueda,
+		grilla de alumnos, ficha, inscripción, historial, calificaciones, observación, pie— en
+		un ScrollViewer de página, con las tres grillas limitadas a 260, 200 y 300px de alto.
+		Eso producía tres defectos que eran el mismo:
 
-		CursanteView se monta acá por primera vez: estaba mapeada en DataTemplate.xaml y era
-		un Grid vacío, y el ViewModel ya expone Cursante como CursanteViewModel.
+		1. LA RUEDA DEL MOUSE MORÍA sobre la mitad de la pantalla. El ScrollViewer de WPF marca
+		   el evento como manejado aunque no tenga nada que scrollear, y las tres grillas
+		   sumaban 760 de los 1520px de contenido.
+		2. "CARGAR NOTA" ABRÍA UN FORMULARIO FUERA DE PANTALLA, debajo de una página que ya no
+		   entraba. Apretabas el botón y no pasaba nada visible.
+		3. EL ANCHO NO SE USABA. La fila del ciclo lectivo dejaba 750px vacíos y la columna EDAD
+		   recibía 243px para decir "15 años", mientras se scrolleaba 2,5 pantallas de alto.
 
-		El campo de observación y sus botones estaban sueltos al pie de la tarjeta, con tres
-		botones secundarios en fila (uno de ellos destructivo). Quitar una calificación pasa
-		al lado izquierdo del pie, separado de lo que guarda.
+		Ahora es ÍNDICE + DETALLE, el mismo esqueleto de GestionCursosView, GestionDocentesView
+		y GestionPuestosView: la tarjeta llena el alto disponible y no hay scroll de página, así
+		que cada panel scrollea lo suyo y la rueda funciona en los dos lados. La grilla de
+		calificaciones toma la fila * del detalle: a 1320x800 muestra lo mismo que antes, y
+		maximizada muestra el doble, porque ya no está clavada en 300px.
+
+		El listado de alumnos DEJA DE IRSE DE PANTALLA. Antes, para llegar al pie donde se
+		cargaba una nota había que scrollear hasta perder de vista a quién se le estaba poniendo
+		esa nota.
+
+		"Cargar nota" sube al hueco de acción principal del encabezado, que es donde el sistema
+		la pone. El alta sigue siendo una tarjeta aparte, pero como fila Auto DEBAJO de la
+		tarjeta principal —igual que "Asignar preceptor" en GestionDivisionesView—: al abrirse,
+		la de arriba cede alto y el formulario nace a la vista.
+
+		PENDIENTE: DÓNDE VIVE EL HISTORIAL. Por ahora es una sección del detalle que sólo existe
+		cuando tiene filas, así que no cuesta alto hasta que se pide con "Ver historial". Las
+		dos salidas que quedaron sobre la mesa son dos solapas junto a CALIFICACIONES, o una
+		pantalla propia del alumno. No se decidió.
 	-->
 	<UserControl.Resources>
 		<ObjectDataProvider x:Key="instancias" MethodName="GetNames" ObjectType="{ x:Type sys:Enum }">
@@ -43,109 +64,184 @@
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
+		<!--#region ENCABEZADO-->
 		<components:PaginaComponent Grid.Row="0"
 									Margin="0 0 0 20"
 									Ruta="{ Binding Path=Ruta }"
 									Titulo="Alumnos de la división"
-									Subtitulo="Alumnos cursando y las calificaciones de cada uno"/>
+									Subtitulo="Inscripción, traslados y calificaciones de cada alumno">
+			<components:PaginaComponent.Accion>
+				<Button Command="{ Binding Path=NuevaCalificacionCommand }"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Cargar una calificación al alumno elegido">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Cargar nota" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
+		<!--#endregion-->
 
-		<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-			<StackPanel>
-				<!--#region ALUMNOS Y CALIFICACIONES-->
-				<Border Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
-					<Grid Margin="20 18">
+		<!--#region ALUMNOS Y CALIFICACIONES-->
+		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="280"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<!--#region ÍNDICE
+					Todo el bloque cuelga del margen de 12, que es el relleno que ya tienen las
+					celdas de la grilla: rótulo, campo y nombres arrancan en la misma vertical.
+				-->
+				<Grid Grid.Column="0">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+
+					<Grid Grid.Row="0" Margin="12 18 12 0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="Auto"/>
+						</Grid.ColumnDefinitions>
+
+						<HeaderedContentControl Grid.Column="0"
+												Header="Ciclo lectivo"
+												Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+							<!--
+								Enter busca. Es un campo de un solo dato con su botón al lado: el
+								gesto esperado es tipear el año y apretar Enter, no salir a buscar
+								el botón con el mouse.
+							-->
+							<TextBox MaxLength="4"
+									 Tag="2026"
+									 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+									 Style="{ StaticResource ResourceKey=Txb.Campo }">
+								<TextBox.InputBindings>
+									<KeyBinding Key="Enter" Command="{ Binding Path=BuscarCommandAsync }"/>
+								</TextBox.InputBindings>
+							</TextBox>
+						</HeaderedContentControl>
+
+						<Button Grid.Column="1"
+								Command="{ Binding Path=BuscarCommandAsync }"
+								Margin="10 0 0 16"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
+								ToolTip="Listar los alumnos del ciclo"
+								VerticalAlignment="Bottom">
+							<StackPanel Orientation="Horizontal">
+								<fa:IconBlock FontSize="11"
+											  Icon="MagnifyingGlass"
+											  Margin="0 0 8 0"
+											  VerticalAlignment="Center"/>
+								<TextBlock Text="Buscar" VerticalAlignment="Center"/>
+							</StackPanel>
+						</Button>
+					</Grid>
+
+					<TextBlock Grid.Row="1"
+							   Margin="12 0 12 10"
+							   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+							   Text="ALUMNOS CURSANDO"/>
+
+					<DataGrid x:Name="DataGrid_Cursantes"
+							  Grid.Row="2"
+							  AutomationProperties.Name="Alumnos cursando"
+							  ItemsSource="{ Binding Path=Cursantes, Mode=OneWay }"
+							  SelectedItem="{ Binding Path=Cursante, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Grilla }"
+							  Tag="Ningún alumno cursa este ciclo lectivo en esta división. Probá otro ciclo, o inscribilo desde Alumnos.">
+						<DataGrid.Columns>
+							<!--
+								El documento y la edad se fueron a la ficha del detalle, que es
+								donde se leen enteros. Acá la columna ancha es el nombre, que es
+								por lo que se busca a alguien en una lista.
+							-->
+							<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+												Header="ALUMNO"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Documento, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="DOCUMENTO"
+												Width="Auto"/>
+						</DataGrid.Columns>
+					</DataGrid>
+				</Grid>
+				<!--#endregion-->
+
+				<Rectangle Grid.Column="1" Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
+
+				<!--#region DETALLE DEL ALUMNO-->
+				<Grid Grid.Column="2">
+					<StackPanel HorizontalAlignment="Center"
+								VerticalAlignment="Center"
+								Visibility="{ Binding Path=Cursante, Converter={ StaticResource ResourceKey=visibleSiHay }, ConverterParameter=inverso }">
+						<TextBlock Foreground="{ StaticResource ResourceKey=TintaSuave }"
+								   HorizontalAlignment="Center"
+								   Style="{ StaticResource ResourceKey=Txt.Subtitulo }"
+								   Text="Elegí un alumno"/>
+						<TextBlock HorizontalAlignment="Center"
+								   Margin="0 6 0 0"
+								   MaxWidth="300"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="Acá se cargan sus calificaciones y se corrige su inscripción: condición de recursante, baja y traslado de división."
+								   TextAlignment="Center"
+								   TextWrapping="Wrap"/>
+					</StackPanel>
+
+					<Grid Margin="28 22"
+						  Visibility="{ Binding Path=Cursante, Converter={ StaticResource ResourceKey=visibleSiHay } }">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<!-- 4 y 5 son la sección de inscripción y el historial (UI-CUR-1). -->
-							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="*"/>
 							<RowDefinition Height="Auto"/>
 						</Grid.RowDefinitions>
 
-						<!--#region BÚSQUEDA POR CICLO-->
-						<Grid Grid.Row="0" Margin="0 0 0 4">
+						<!--#region FICHA DEL ALUMNO ELEGIDO-->
+						<Grid Grid.Row="0" Margin="0 0 0 20">
 							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="Auto"/>
-								<ColumnDefinition Width="Auto"/>
 								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="Auto"/>
 							</Grid.ColumnDefinitions>
 
-							<HeaderedContentControl Grid.Column="0"
-													Header="Ciclo lectivo"
-													Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-								<TextBox MaxLength="4"
-										 Tag="2026"
-										 Text="{ Binding Path=CicloLectivo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-										 Width="120"
-										 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
-							</HeaderedContentControl>
+							<local:CursanteView Grid.Column="0"
+												DataContext="{ Binding Path=Cursante, Mode=OneWay }"/>
 
+							<!--
+								"Ver historial" vive acá y no sobre su sección porque la sección
+								no existe hasta que esta consulta la trae. Es una acción sobre el
+								alumno elegido, así que su lugar es la ficha del alumno elegido.
+							-->
 							<Button Grid.Column="1"
-									Command="{ Binding Path=BuscarCommandAsync }"
-									Margin="10 0 0 16"
-									Style="{ StaticResource ResourceKey=Btn.Secundario }"
-									ToolTip="Listar los alumnos del ciclo"
-									VerticalAlignment="Bottom">
-								<StackPanel Orientation="Horizontal">
-									<fa:IconBlock FontSize="11"
-												  Icon="MagnifyingGlass"
-												  Margin="0 0 8 0"
-												  VerticalAlignment="Center"/>
-									<TextBlock Text="Buscar" VerticalAlignment="Center"/>
-								</StackPanel>
-							</Button>
+									Command="{ Binding Path=CargarHistorialCommandAsync }"
+									Content="Ver historial"
+									Margin="16 0 0 0"
+									Style="{ StaticResource ResourceKey=Btn.Terciario }"
+									ToolTip="Todas las inscripciones del alumno, de cualquier ciclo lectivo"
+									VerticalAlignment="Center"/>
 						</Grid>
 						<!--#endregion-->
 
-						<TextBlock Grid.Row="1"
-								   Margin="0 0 0 12"
-								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-								   Text="ALUMNOS CURSANDO"/>
-
-						<DataGrid x:Name="DataGrid_Cursantes"
-								  Grid.Row="2"
-								  ItemsSource="{ Binding Path=Cursantes, Mode=OneWay }"
-								  SelectedItem="{ Binding Path=Cursante, Mode=TwoWay }"
-								  MaxHeight="260"
-								  MinHeight="120"
-								  Style="{ StaticResource ResourceKey=Grilla }"
-								  Tag="No hay alumnos cursando en este ciclo lectivo.">
-							<DataGrid.Columns>
-								<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime }"
-													Header="ALUMNO"
-													Width="2*"/>
-								<DataGridTextColumn Binding="{ Binding Path=Documento, Mode=OneTime }"
-													Header="DOCUMENTO"
-													Width="*"/>
-								<DataGridTextColumn Binding="{ Binding Path=Edad, Mode=OneTime }"
-													Header="EDAD"
-													Width="*"/>
-							</DataGrid.Columns>
-						</DataGrid>
-
-						<!-- La ficha del alumno elegido: es de quién son las notas de abajo. -->
-						<local:CursanteView Grid.Row="3"
-											DataContext="{ Binding Path=Cursante, Mode=OneWay }"
-											Margin="0 16 0 0"
-											Visibility="{ Binding Path=Cursante, Converter={ StaticResource ResourceKey=visibleSiHay } }"/>
-
-						<!--#region INSCRIPCIÓN-->
-						<!--
+						<!--#region INSCRIPCIÓN
 							Las tres operaciones sobre la inscripción del alumno elegido. La
 							condición de recursante es lo único que el dominio deja corregir: la
 							baja y el traslado son operaciones de ciclo de vida, no ediciones.
 							Tildar el checkbox no escribe nada hasta que se guarda.
 						-->
-						<Border Grid.Row="4"
-								Margin="0 16 0 0"
-								Style="{ StaticResource ResourceKey=Superficie.Seccion }"
-								Visibility="{ Binding Path=Cursante, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+						<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Seccion }">
 							<StackPanel>
 								<TextBlock Margin="0 0 0 12"
 										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
@@ -232,84 +328,110 @@
 						</Border>
 						<!--#endregion-->
 
-						<!--#region HISTORIAL DE DIVISIONES-->
-						<Grid Grid.Row="5"
-							  Margin="0 16 0 0"
-							  Visibility="{ Binding Path=Cursante, Converter={ StaticResource ResourceKey=visibleSiHay } }">
-							<Grid.RowDefinitions>
-								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="Auto"/>
-							</Grid.RowDefinitions>
+						<!--#region HISTORIAL DE DIVISIONES
+							PENDIENTE de ubicación definitiva. Mientras tanto no ocupa alto hasta
+							que la consulta trae filas: con el disparador sobre Count, la sección
+							entera se colapsa y la grilla de calificaciones se queda con todo el
+							espacio, que es el reparto correcto mientras nadie pidió el historial.
+						-->
+						<Border Grid.Row="2">
+							<Border.Style>
+								<Style TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Superficie.Seccion }">
+									<Style.Triggers>
+										<DataTrigger Binding="{ Binding Path=Historial.Count }" Value="0">
+											<Setter Property="Visibility" Value="Collapsed"/>
+										</DataTrigger>
+									</Style.Triggers>
+								</Style>
+							</Border.Style>
 
-							<Grid Grid.Row="0" Margin="0 0 0 12">
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="*"/>
-									<ColumnDefinition Width="Auto"/>
-								</Grid.ColumnDefinitions>
-
-								<TextBlock Grid.Column="0"
+							<StackPanel>
+								<TextBlock Margin="0 0 0 12"
 										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-										   Text="HISTORIAL DE DIVISIONES"
-										   VerticalAlignment="Center"/>
+										   Text="HISTORIAL DE DIVISIONES"/>
 
-								<Button Grid.Column="1"
-										Command="{ Binding Path=CargarHistorialCommandAsync }"
-										Content="Ver historial"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Todas las inscripciones del alumno, de cualquier ciclo lectivo"/>
-							</Grid>
-
-							<DataGrid x:Name="DataGrid_Historial"
-									  Grid.Row="1"
-									  ItemsSource="{ Binding Path=Historial, Mode=OneWay }"
-									  MaxHeight="200"
-									  Style="{ StaticResource ResourceKey=Grilla }"
-									  Tag="Sin inscripciones para mostrar. Use &quot;Ver historial&quot;.">
-								<DataGrid.Columns>
-									<DataGridTextColumn Binding="{ Binding Path=CicloLectivo, Mode=OneTime }"
-														Header="CICLO"
-														Width="*"/>
-									<DataGridTextColumn Binding="{ Binding Path=Division, Mode=OneTime }"
-														Header="DIVISIÓN"
-														Width="*"/>
-									<DataGridTextColumn Binding="{ Binding Path=Grado, Mode=OneTime }"
-														Header="AÑO"
-														Width="*"/>
-									<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneTime, StringFormat=d }"
-														Header="DESDE"
-														Width="*"/>
-									<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneTime, StringFormat=d }"
-														Header="HASTA"
-														Width="*"/>
-									<DataGridCheckBoxColumn Binding="{ Binding Path=EsRecursante, Mode=OneWay }"
-															Header="RECURSANTE"
-															IsReadOnly="True"
+								<DataGrid x:Name="DataGrid_Historial"
+										  AutomationProperties.Name="Historial de divisiones del alumno"
+										  ItemsSource="{ Binding Path=Historial, Mode=OneWay }"
+										  Margin="0 0 0 16"
+										  MaxHeight="180"
+										  Style="{ StaticResource ResourceKey=Grilla }"
+										  Tag="Todavía no pediste el historial. Traelo con &#x201C;Ver historial&#x201D;.">
+									<DataGrid.Columns>
+										<DataGridTextColumn Binding="{ Binding Path=CicloLectivo, Mode=OneTime }"
+															ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+															Header="CICLO"
+															Width="Auto"/>
+										<DataGridTextColumn Binding="{ Binding Path=Division, Mode=OneTime }"
+															ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+															Header="DIVISIÓN"
+															Width="Auto"/>
+										<DataGridTextColumn Binding="{ Binding Path=Grado, Mode=OneTime }"
+															ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+															Header="AÑO"
 															Width="*"/>
-									<DataGridTemplateColumn Header="ESTADO" Width="*">
-										<DataGridTemplateColumn.CellTemplate>
-											<DataTemplate>
-												<!--
-													La inscripción cerrada se marca con la insignia de
-													alerta: es registro histórico y no la vigente.
-												-->
-												<Border Style="{ StaticResource ResourceKey=Insignia.Alerta }">
-													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-															   Text="{ Binding Path=Estado, Mode=OneTime }"/>
-												</Border>
-											</DataTemplate>
-										</DataGridTemplateColumn.CellTemplate>
-									</DataGridTemplateColumn>
-								</DataGrid.Columns>
-							</DataGrid>
-						</Grid>
+										<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneTime, StringFormat=d }"
+															ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+															Header="DESDE"
+															Width="Auto"/>
+										<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneTime, StringFormat=d }"
+															ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+															Header="HASTA"
+															Width="Auto"/>
+										<DataGridCheckBoxColumn Binding="{ Binding Path=EsRecursante, Mode=OneWay }"
+																Header="RECURSANTE"
+																IsReadOnly="True"
+																Width="Auto"/>
+										<DataGridTemplateColumn Header="ESTADO" Width="Auto">
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<!--
+														LA INSIGNIA SEGUÍA EL ESTADO MAL. Estaba
+														fija en Insignia.Alerta para toda fila, así
+														que la inscripción VIGENTE —la sana, la que
+														el alumno está cursando— se señalaba con el
+														color de alerta igual que las cerradas. El
+														rótulo decía "Vigente" y el color decía lo
+														contrario.
+
+														Ahora la vigente lleva la insignia activa y
+														la cerrada la de alerta. El texto sigue
+														nombrando el estado: el color sólo lo
+														refuerza.
+													-->
+													<Border>
+														<Border.Style>
+															<Style TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Insignia.Alerta }">
+																<Style.Triggers>
+																	<DataTrigger Binding="{ Binding Path=EstaActiva, Mode=OneTime }" Value="True">
+																		<Setter Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+																	</DataTrigger>
+																</Style.Triggers>
+															</Style>
+														</Border.Style>
+
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+																   Text="{ Binding Path=Estado, Mode=OneTime }"/>
+													</Border>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+									</DataGrid.Columns>
+								</DataGrid>
+							</StackPanel>
+						</Border>
 						<!--#endregion-->
 
-						<!--#region CALIFICACIONES-->
-						<Grid Grid.Row="6" Margin="0 8 0 0">
+						<!--#region CALIFICACIONES
+							La fila * del detalle: la grilla llena lo que sobra en lugar de estar
+							clavada en 300px. Las columnas llevan MinWidth para que, en una
+							ventana angosta, la grilla scrollee en horizontal en vez de apretar
+							siete columnas hasta volverlas ilegibles.
+						-->
+						<Grid Grid.Row="3" Margin="0 4 0 0">
 							<Grid.RowDefinitions>
 								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
 							</Grid.RowDefinitions>
 
 							<TextBlock Grid.Row="0"
@@ -319,27 +441,32 @@
 
 							<DataGrid x:Name="DataGrid_Calificaciones"
 									  Grid.Row="1"
+									  AutomationProperties.Name="Calificaciones del alumno"
 									  ItemsSource="{ Binding Path=Calificaciones, Mode=OneWay }"
 									  SelectedItem="{ Binding Path=CalificacionSeleccionada, Mode=TwoWay }"
-									  MaxHeight="300"
 									  MinHeight="120"
 									  Style="{ StaticResource ResourceKey=Grilla }"
-									  Tag="El alumno elegido todavía no tiene calificaciones cargadas.">
+									  Tag="El alumno elegido todavía no tiene calificaciones cargadas. Empezá con &#x201C;Cargar nota&#x201D;.">
 								<DataGrid.Columns>
 									<DataGridTextColumn Binding="{ Binding Path=Materia, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 														Header="MATERIA"
+														MinWidth="140"
 														Width="2*"/>
 									<DataGridTextColumn Binding="{ Binding Path=Fecha, Mode=OneTime, StringFormat=d }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
 														Header="FECHA"
-														Width="*"/>
+														Width="Auto"/>
 									<DataGridTextColumn Binding="{ Binding Path=Instancia, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 														Header="INSTANCIA"
-														Width="*"/>
+														Width="Auto"/>
 									<DataGridCheckBoxColumn Binding="{ Binding Path=Rindio, Mode=OneWay }"
 															Header="RINDIÓ"
 															IsReadOnly="True"
 															Width="Auto"/>
 									<DataGridTextColumn Binding="{ Binding Path=Nota, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
 														Header="NOTA"
 														Width="Auto"/>
 									<DataGridCheckBoxColumn Binding="{ Binding Path=Aprobado, Mode=OneWay }"
@@ -347,146 +474,177 @@
 															IsReadOnly="True"
 															Width="Auto"/>
 									<DataGridTextColumn Binding="{ Binding Path=Observacion, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 														Header="OBSERVACIÓN"
+														MinWidth="160"
 														Width="2*"/>
 								</DataGrid.Columns>
 							</DataGrid>
+						</Grid>
+						<!--#endregion-->
 
+						<!--#region PIE-->
+						<StackPanel Grid.Row="4">
 							<!-- La nota no se corrige: se quita y se vuelve a cargar. Sólo la observación es editable. -->
-							<HeaderedContentControl Grid.Row="2"
-													Header="Observación de la calificación elegida"
+							<HeaderedContentControl Header="Observación de la calificación elegida"
 													Margin="0 16 0 0"
 													Style="{ StaticResource ResourceKey=Campo }">
 								<TextBox Tag="recuperatorio pendiente, ausente con certificado&#x2026;"
 										 Text="{ Binding Path=ObservacionEdicion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 										 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 							</HeaderedContentControl>
-						</Grid>
-						<!--#endregion-->
 
-						<HeaderedContentControl Grid.Row="7" Style="{ StaticResource ResourceKey=Acciones }">
-							<HeaderedContentControl.Header>
-								<Button Command="{ Binding Path=QuitarCalificacionCommandAsync }"
-										Content="Quitar calificación"
-										Style="{ StaticResource ResourceKey=Btn.Peligro }"
-										ToolTip="Quitar la calificación elegida"/>
-							</HeaderedContentControl.Header>
+							<HeaderedContentControl Style="{ StaticResource ResourceKey=Acciones }">
+								<HeaderedContentControl.Header>
+									<Button Command="{ Binding Path=QuitarCalificacionCommandAsync }"
+											Content="Quitar calificación"
+											Style="{ StaticResource ResourceKey=Btn.Peligro }"
+											ToolTip="Quitar la calificación elegida"/>
+								</HeaderedContentControl.Header>
 
-							<StackPanel Orientation="Horizontal">
 								<!--
 									"Editar observación" lo exige una guarda estática: distingue
 									la única corrección que el dominio permite de corregir la
 									nota, que no se puede. El rótulo no se cambia sin tocar esa
 									guarda.
+
+									"Cargar nota" se fue al encabezado de la pantalla, que es el
+									hueco que el sistema reserva para la acción principal. Acá
+									abajo quedaba sepultada al final de una página de 1520px.
 								-->
 								<Button Command="{ Binding Path=ModificarObservacionCommandAsync }"
 										Content="Editar observación"
-										Margin="0 0 8 0"
 										Style="{ StaticResource ResourceKey=Btn.Terciario }"
 										ToolTip="Guardar la observación de la calificación elegida"/>
-								<Button Command="{ Binding Path=NuevaCalificacionCommand }"
-										Content="Cargar nota"
-										Style="{ StaticResource ResourceKey=Btn.Primario }"
-										ToolTip="Cargar una calificación nueva"/>
-							</StackPanel>
-						</HeaderedContentControl>
+							</HeaderedContentControl>
+						</StackPanel>
+						<!--#endregion-->
 					</Grid>
-				</Border>
+				</Grid>
 				<!--#endregion-->
 
-				<!--#region CARGAR CALIFICACIÓN-->
-				<Border Margin="0 16 0 0"
-						Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
-						Visibility="{ Binding Path=MostrarCalificacionView, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-					<Grid Margin="20 18">
-						<Grid.RowDefinitions>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-						</Grid.RowDefinitions>
+				<!--
+					EL VELO DE CARGA FALTABA, y era la única de las seis pantallas hermanas sin
+					él. Importa especialmente acá: al elegir un alumno, OnCursanteChanged vacía
+					Calificaciones de forma sincrónica y recién después dispara la consulta, así
+					que entre un paso y el otro la grilla AFIRMABA que el alumno no tenía notas.
+					Un estado vacío que miente es peor que no tener estado vacío.
 
-						<TextBlock Grid.Row="0"
-								   Margin="0 0 0 16"
-								   Style="{ StaticResource ResourceKey=Txt.Titulo }"
-								   Text="Cargar una calificación"/>
+					Uno por panel y no uno sobre la tarjeta entera: elegir un alumno no deja de
+					saber quiénes son los demás, así que el índice se queda a la vista mientras
+					el detalle espera. Cada velo cubre la columna que efectivamente está
+					esperando.
+				-->
+				<components:CargandoComponent Grid.Column="0"
+											  EstaCargando="{ Binding Path=BuscarCommandAsync.IsRunning }"
+											  Leyenda="BUSCANDO"/>
 
-						<Grid Grid.Row="1">
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="2*"/>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="*"/>
-							</Grid.ColumnDefinitions>
+				<components:CargandoComponent Grid.Column="2"
+											  EstaCargando="{ Binding Path=CargarCalificacionesCommandAsync.IsRunning }"
+											  Leyenda="CARGANDO LAS CALIFICACIONES"/>
+			</Grid>
+		</Border>
+		<!--#endregion-->
 
-							<HeaderedContentControl Grid.Column="0"
-													Header="Materia"
-													Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-								<ComboBox DisplayMemberPath="Descripcion"
-										  ItemsSource="{ Binding Path=Materias, Mode=OneWay }"
-										  SelectedItem="{ Binding Path=Materia, Mode=TwoWay }"
-										  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-							</HeaderedContentControl>
+		<!--#region CARGAR CALIFICACIÓN
+			Fila Auto DEBAJO de la tarjeta principal, que es fila *: cuando esta tarjeta aparece,
+			la de arriba cede el alto y el formulario nace dentro de la pantalla. Antes vivía al
+			final de un ScrollViewer de página y se abría fuera de la vista.
+		-->
+		<Border Grid.Row="2"
+				Margin="0 16 0 0"
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				Visibility="{ Binding Path=MostrarCalificacionView, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<Grid Margin="20 18">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
 
-							<HeaderedContentControl Grid.Column="1"
-													Header="Instancia"
-													Style="{ StaticResource ResourceKey=Campo.Centro }">
-								<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=instancias } }"
-										  SelectedItem="{ Binding Path=Calificacion.Instancia, Mode=TwoWay }"
-										  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-							</HeaderedContentControl>
+				<StackPanel Grid.Row="0" Margin="0 0 0 16">
+					<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+							   Text="Cargar una calificación"/>
+					<TextBlock Margin="0 4 0 0"
+							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="{ Binding Path=Cursante.NombreCompleto, Mode=OneWay, StringFormat=Nota de {0}, FallbackValue='Elegí primero un alumno', TargetNullValue='Elegí primero un alumno' }"/>
+				</StackPanel>
 
-							<HeaderedContentControl Grid.Column="2"
-													Header="Fecha"
-													Style="{ StaticResource ResourceKey=Campo.Centro }">
-								<DatePicker DisplayDateEnd="{ x:Static sys:DateTime.Today }"
-											DisplayDateStart="01/01/2000"
-											SelectedDate="{ Binding Path=Calificacion.Fecha, Mode=TwoWay }"
-											Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
-							</HeaderedContentControl>
+				<Grid Grid.Row="1">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="2*"/>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
 
-							<HeaderedContentControl Grid.Column="3"
-													Header="Nota"
-													Style="{ StaticResource ResourceKey=Campo.Derecha }">
-								<TextBox MaxLength="2"
-										 Tag="8"
-										 Text="{ Binding Path=Calificacion.Nota, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue='' }"
-										 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
-							</HeaderedContentControl>
-						</Grid>
+					<HeaderedContentControl Grid.Column="0"
+											Header="Materia"
+											Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+						<ComboBox DisplayMemberPath="Descripcion"
+								  ItemsSource="{ Binding Path=Materias, Mode=OneWay }"
+								  SelectedItem="{ Binding Path=Materia, Mode=TwoWay }"
+								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+					</HeaderedContentControl>
 
-						<HeaderedContentControl Grid.Row="2"
-												Header="Observación"
-												Style="{ StaticResource ResourceKey=Campo }">
-							<TextBox Tag="tema evaluado, condiciones de la mesa&#x2026;"
-									 Text="{ Binding Path=Calificacion.Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-									 Style="{ StaticResource ResourceKey=Txb.Nota }"/>
-						</HeaderedContentControl>
+					<HeaderedContentControl Grid.Column="1"
+											Header="Instancia"
+											Style="{ StaticResource ResourceKey=Campo.Centro }">
+						<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=instancias } }"
+								  SelectedItem="{ Binding Path=Calificacion.Instancia, Mode=TwoWay }"
+								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+					</HeaderedContentControl>
 
-						<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
-							<HeaderedContentControl.Header>
-								<Button Command="{ Binding Path=CancelarCalificacionCommand }"
-										Content="Cancelar"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Descartar la calificación"/>
-							</HeaderedContentControl.Header>
+					<HeaderedContentControl Grid.Column="2"
+											Header="Fecha"
+											Style="{ StaticResource ResourceKey=Campo.Centro }">
+						<DatePicker DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+									DisplayDateStart="01/01/2000"
+									SelectedDate="{ Binding Path=Calificacion.Fecha, Mode=TwoWay }"
+									Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+					</HeaderedContentControl>
 
-							<StackPanel Orientation="Horizontal">
-								<Button Command="{ Binding Path=RegistrarInasistenciaCommandAsync }"
-										Content="Registrar inasistencia"
-										Margin="0 0 8 0"
-										Style="{ StaticResource ResourceKey=Btn.Secundario }"
-										ToolTip="El alumno no se presentó a la instancia"/>
-								<Button Command="{ Binding Path=GuardarCalificacionCommandAsync }"
-										Content="Guardar nota"
-										Style="{ StaticResource ResourceKey=Btn.Primario }"
-										ToolTip="Guardar la calificación"/>
-							</StackPanel>
-						</HeaderedContentControl>
-					</Grid>
-				</Border>
-				<!--#endregion-->
-			</StackPanel>
-		</ScrollViewer>
+					<HeaderedContentControl Grid.Column="3"
+											Header="Nota"
+											Style="{ StaticResource ResourceKey=Campo.Derecha }">
+						<TextBox MaxLength="2"
+								 Tag="8"
+								 Text="{ Binding Path=Calificacion.Nota, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue='' }"
+								 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					</HeaderedContentControl>
+				</Grid>
+
+				<HeaderedContentControl Grid.Row="2"
+										Header="Observación"
+										Style="{ StaticResource ResourceKey=Campo }">
+					<TextBox Tag="tema evaluado, condiciones de la mesa&#x2026;"
+							 Text="{ Binding Path=Calificacion.Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+							 Style="{ StaticResource ResourceKey=Txb.Nota }"/>
+				</HeaderedContentControl>
+
+				<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
+					<HeaderedContentControl.Header>
+						<Button Command="{ Binding Path=CancelarCalificacionCommand }"
+								Content="Cancelar"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								ToolTip="Descartar la calificación"/>
+					</HeaderedContentControl.Header>
+
+					<StackPanel Orientation="Horizontal">
+						<Button Command="{ Binding Path=RegistrarInasistenciaCommandAsync }"
+								Content="Registrar inasistencia"
+								Margin="0 0 8 0"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
+								ToolTip="El alumno no se presentó a la instancia"/>
+						<Button Command="{ Binding Path=GuardarCalificacionCommandAsync }"
+								Content="Guardar nota"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Guardar la calificación"/>
+					</StackPanel>
+				</HeaderedContentControl>
+			</Grid>
+		</Border>
+		<!--#endregion-->
 	</Grid>
 </UserControl>

@@ -303,8 +303,15 @@ public class GuardasEstaticasW5Tests
 		var cursantes = documento.Descendants().Single(e => e.Name.LocalName == "DataGrid" && (string?) e.Attribute(Xaml + "Name") == "DataGrid_Cursantes");
 		((string) cursantes.Attribute("ItemsSource")!).ShouldContain("Cursantes");
 		var columnasCursante = ColumnasBindeadas(cursantes);
-		columnasCursante.ShouldBe(new[] { "NombreCompleto", "Documento", "Edad" });
+
+		// "Edad" se fue de la grilla al pasar la pantalla a índice + detalle: el índice es una
+		// columna angosta al costado y lo único que se busca ahí es el nombre. La edad y el
+		// documento se leen enteros en la ficha del alumno elegido (CursanteView), que es
+		// donde el detalle los muestra. El documento se queda también acá porque es el
+		// desempate cuando dos alumnos se llaman igual.
+		columnasCursante.ShouldBe(new[] { "NombreCompleto", "Documento" });
 		DebenExistirEn(typeof(CursanteViewModel), columnasCursante);
+		DebenExistirEn(typeof(CursanteViewModel), new[] { "Edad", "EsRecursante" });
 
 		var calificaciones = documento.Descendants().Single(e => e.Name.LocalName == "DataGrid" && (string?) e.Attribute(Xaml + "Name") == "DataGrid_Calificaciones");
 		((string) calificaciones.Attribute("ItemsSource")!).ShouldContain("Calificaciones");

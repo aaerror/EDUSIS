@@ -8,51 +8,54 @@
 	<!--
 		FICHA DEL CURSANTE — el alumno dentro de una división.
 
-		El archivo era un UserControl con un Grid vacío: estaba mapeado en DataTemplate.xaml
-		contra CursanteViewModel y no dibujaba nada. Los datos salen del ViewModel, que ya los
-		expone todos (NombreCompleto, Documento, Edad, EsRecursante).
+		Era un GroupBox "ALUMNO" con tres pares rótulo+valor apilados: 170px de alto para decir
+		un nombre, un documento y una edad. En el panel de detalle ese alto sale del único lugar
+		donde hace falta, que es la grilla de calificaciones. Ahora es la CABECERA del panel y
+		mide 60: la misma forma de ficha que usa GestionDivisionesView para el curso —regla
+		verde, identificador arriba, nombre en Txt.Titulo— porque responde la misma pregunta,
+		"sobre quién estoy trabajando".
 
-		"Recursante" es el único estado del cursante, y se marca con insignia porque cambia
-		cómo se lee el resto de la ficha. El texto nombra el estado; el color sólo lo refuerza.
+		El rótulo "Alumno" se fue con la caja. Un nombre propio a 22px debajo de un documento no
+		necesita que le avisen que es un alumno: lo dice la pantalla entera.
+
+		"Recursante" es el único estado del cursante, y se marca con insignia porque cambia cómo
+		se lee el resto de la ficha. El texto nombra el estado; el color sólo lo refuerza.
 	-->
-	<GroupBox Header="ALUMNO" Style="{ StaticResource ResourceKey=Seccion }">
-		<Grid>
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-			<Grid.RowDefinitions>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="Auto"/>
-			</Grid.RowDefinitions>
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="Auto"/>
+			<ColumnDefinition Width="Auto"/>
+		</Grid.ColumnDefinitions>
 
-			<HeaderedContentControl Grid.Column="0" Grid.Row="0"
-									Content="{ Binding Path=NombreCompleto, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-									Header="Alumno"
-									Style="{ StaticResource ResourceKey=Dato.Izquierda }"/>
+		<StackPanel Grid.Column="0" Orientation="Horizontal">
+			<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
+					   Margin="0 2 14 2"
+					   VerticalAlignment="Stretch"
+					   Width="3"/>
 
-			<HeaderedContentControl Grid.Column="1" Grid.Row="0"
-									Header="Documento"
-									Style="{ StaticResource ResourceKey=Dato.Centro }">
-				<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
-						   Text="{ Binding Path=Documento, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
-			</HeaderedContentControl>
+			<StackPanel VerticalAlignment="Center">
+				<TextBlock Style="{ StaticResource ResourceKey=Txt.Identificador }"
+						   Text="{ Binding Path=Documento, Mode=OneWay, StringFormat=DNI {0}, FallbackValue='SIN DOCUMENTO', TargetNullValue='SIN DOCUMENTO' }"/>
+				<TextBlock Margin="0 2 0 0"
+						   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+						   Text="{ Binding Path=NombreCompleto, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+						   TextTrimming="CharacterEllipsis"/>
+			</StackPanel>
+		</StackPanel>
 
-			<HeaderedContentControl Grid.Column="2" Grid.Row="0"
-									Header="Edad"
-									Style="{ StaticResource ResourceKey=Dato.Derecha }">
-				<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
-						   Text="{ Binding Path=Edad, Mode=OneWay, StringFormat={}{0} años, FallbackValue='Sin datos' }"/>
-			</HeaderedContentControl>
+		<Border Grid.Column="1"
+				Margin="16 0 0 0"
+				Style="{ StaticResource ResourceKey=Insignia.Alerta }"
+				Visibility="{ Binding Path=EsRecursante, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+					   Text="RECURSA LA DIVISIÓN"/>
+		</Border>
 
-			<Border Grid.ColumnSpan="3" Grid.Row="1"
-					HorizontalAlignment="Left"
-					Style="{ StaticResource ResourceKey=Insignia.Alerta }"
-					Visibility="{ Binding Path=EsRecursante, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-				<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-						   Text="RECURSA LA DIVISIÓN"/>
-			</Border>
-		</Grid>
-	</GroupBox>
+		<TextBlock Grid.Column="2"
+				   Margin="16 0 0 0"
+				   Style="{ StaticResource ResourceKey=Txt.Dato }"
+				   Text="{ Binding Path=Edad, Mode=OneWay, StringFormat={}{0} años, FallbackValue='Sin datos' }"
+				   VerticalAlignment="Center"/>
+	</Grid>
 </UserControl>
