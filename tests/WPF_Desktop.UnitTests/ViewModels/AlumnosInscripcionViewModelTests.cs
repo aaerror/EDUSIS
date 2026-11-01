@@ -1,4 +1,5 @@
 using Core.ServicioAlumnos;
+using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioCursantes;
 using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursos;
@@ -22,8 +23,9 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 /// (<see cref="RegistrarAlumnoViewModel"/>): la inscripcion llega a <see cref="IServicioCursante.InscribirCursanteAsync"/>,
 /// el periodo sale de <see cref="CicloLectivoStore"/>, el alumno de <see cref="LegajoStore"/> y la UI no reimplementa la
 /// validacion de cupo (la hace <c>Core</c>: la UI solo muestra la excepcion).
-/// <c>RegistrarAlumnoViewModel.GuardarCommand</c> conserva <c>MessageBox.Show</c> (decision #2), asi que su flujo de
-/// guardado se cubre por guarda sobre el codigo fuente y no por ejecucion.
+/// Desde UI-33, <see cref="RegistrarAlumnoViewModel"/> consume <c>IDialogService</c> en lugar de <c>MessageBox.Show</c>,
+/// asi que su flujo de alta ya se cubre por <strong>ejecucion</strong> y no solo por guarda sobre el codigo fuente:
+/// ver la region "UI-33". La guarda estatica se conserva para que la migracion no se revierta por descuido.
 /// </summary>
 public class AlumnosInscripcionViewModelTests
 {
@@ -59,9 +61,12 @@ public class AlumnosInscripcionViewModelTests
 			return new InscripcionAlumnoViewModel(ServicioCursos, ServicioCursantes, ServicioDivisiones, LegajoStore, CicloLectivoStore);
 		}
 
+		public IServicioAlumno ServicioAlumnos { get; } = Substitute.For<IServicioAlumno>();
+		public DialogServiceFalso Dialogos { get; } = new();
+
 		public RegistrarAlumnoViewModel CrearRegistro()
 		{
-			return new RegistrarAlumnoViewModel(Substitute.For<IServicioAlumno>(), ServicioCursos, ServicioCursantes, ServicioDivisiones, CicloLectivoStore);
+			return new RegistrarAlumnoViewModel(ServicioAlumnos, ServicioCursos, ServicioCursantes, ServicioDivisiones, CicloLectivoStore, Dialogos);
 		}
 	}
 
@@ -346,6 +351,178 @@ public class AlumnosInscripcionViewModelTests
 		fuente.ShouldContain("_legajoStore.PersonaID");
 		fuente.ShouldNotContain("ContarCursantes");
 		fuente.ShouldNotContain("ValidarCupo");
+	}
+	#endregion
+
+	#region UI-33: el alta de alumno, ahora ejecutable
+	/// <summary>
+	/// Deja los tres sub-ViewModels con datos válidos, que es la precondición de
+	/// <c>ContinuarCommand</c>: sin esto corta en la guarda de campos vacíos.
+	/// </summary>
+	private static void CompletarFormulario(RegistrarAlumnoViewModel viewModel)
+	{
+		viewModel.InformacionPersonal.Apellido = "Perez";
+		viewModel.InformacionPersonal.Nombre = "Ana";
+		viewModel.InformacionPersonal.DocumentoNacionalIdentidad = "33998731";
+		viewModel.InformacionPersonal.Sexo = "Femenino";
+		viewModel.InformacionPersonal.Nacionalidad = "Argentina";
+		viewModel.Domicilio.Calle = "Rivadavia";
+		viewModel.Domicilio.Vivienda = "Casa";
+		viewModel.Domicilio.Localidad = "Moron";
+		viewModel.Domicilio.Provincia = "Buenos Aires";
+		viewModel.Contacto.Telefono = "1144556677";
+		viewModel.Contacto.Email = "ana.perez@ejemplo.com";
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Continuar_con_un_campo_vacio_avisa_y_NO_borra_lo_que_el_usuario_cargo()
+	{
+		// El defecto que cubre esta prueba: la rama de campos incompletos reemplazaba los tres
+		// sub-ViewModels por instancias vacías, así que olvidarse el teléfono borraba también el
+		// nombre, el DNI y el domicilio ya tipeados. Avisar no puede costar el formulario entero.
+		var contexto = new Contexto();
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+		viewModel.Contacto.Telefono = string.Empty;
+
+		await viewModel.ContinuarCommand.ExecuteAsync(null);
+
+		viewModel.InformacionPersonal.Apellido.ShouldBe("Perez");
+		viewModel.InformacionPersonal.Nombre.ShouldBe("Ana");
+		viewModel.InformacionPersonal.DocumentoNacionalIdentidad.ShouldBe("33998731");
+		viewModel.Domicilio.Calle.ShouldBe("Rivadavia");
+		viewModel.Contacto.Email.ShouldBe("ana.perez@ejemplo.com");
+
+		contexto.Dialogos.Errores.ShouldHaveSingleItem();
+		await contexto.ServicioAlumnos.DidNotReceive().RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Continuar_registra_el_alumno_y_pasa_a_la_solapa_de_inscripcion()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioAlumnos.EsDocumentoInvalidoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
+		contexto.ServicioAlumnos.RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>()).Returns(Task.FromResult(Guid.NewGuid()));
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+
+		await viewModel.ContinuarCommand.ExecuteAsync(null);
+
+		await contexto.ServicioAlumnos.Received(1).RegistrarAlumnoAsync(Arg.Is<RegistrarAlumnoRequest>(r =>
+			r.Apellido == "Perez" && r.Nombre == "Ana" && r.DNI == "33998731" && r.Email == "ana.perez@ejemplo.com"));
+		viewModel.Tab.ShouldBe(1);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Continuar_sin_confirmar_no_registra_nada()
+	{
+		var contexto = new Contexto();
+		contexto.Dialogos.RespuestaDeConfirmacion = false;
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+
+		await viewModel.ContinuarCommand.ExecuteAsync(null);
+
+		await contexto.ServicioAlumnos.DidNotReceive().RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
+		viewModel.Tab.ShouldBe(0);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Un_documento_duplicado_avisa_limpia_solo_el_DNI_y_no_registra()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioAlumnos.EsDocumentoInvalidoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(true));
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+
+		await viewModel.ContinuarCommand.ExecuteAsync(null);
+
+		viewModel.InformacionPersonal.DocumentoNacionalIdentidad.ShouldBeEmpty();
+		viewModel.InformacionPersonal.Apellido.ShouldBe("Perez");
+		contexto.Dialogos.Advertencias.ShouldHaveSingleItem();
+		await contexto.ServicioAlumnos.DidNotReceive().RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
+		viewModel.Tab.ShouldBe(0);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Si_Core_rechaza_el_alta_la_UI_muestra_el_error_y_no_lo_propaga()
+	{
+		// Con async void esta excepción se perdía en el SynchronizationContext en vez de llegar acá.
+		var contexto = new Contexto();
+		contexto.ServicioAlumnos.EsDocumentoInvalidoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
+		contexto.ServicioAlumnos.RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>())
+				.Returns(Task.FromException<Guid>(new FormatException("Verificar el legajo del alumno: legajo.")));
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+
+		await Should.NotThrowAsync(async () => await viewModel.ContinuarCommand.ExecuteAsync(null));
+
+		contexto.Dialogos.Errores.ShouldHaveSingleItem();
+		contexto.Dialogos.Errores[0].Mensaje.ShouldBe("Verificar el legajo del alumno: legajo.");
+		viewModel.Tab.ShouldBe(0);
+	}
+
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData("Sexo")]
+	[InlineData("Vivienda")]
+	public async Task Sin_elegir_en_los_combos_avisa_de_campos_incompletos_y_no_revienta(string combo)
+	{
+		// Sexo y Vivienda salen de combos que arrancan sin seleccion, asi que quedan en null. La
+		// guarda original no los miraba y mas abajo se les llama .ToString(): el resultado era un
+		// NullReferenceException, no el aviso de campos incompletos. Con async void ademas se perdia.
+		var contexto = new Contexto();
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+		if (combo == "Sexo")
+		{
+			viewModel.InformacionPersonal.Sexo = null!;
+		}
+		else
+		{
+			viewModel.Domicilio.Vivienda = null!;
+		}
+
+		await Should.NotThrowAsync(async () => await viewModel.ContinuarCommand.ExecuteAsync(null));
+
+		contexto.Dialogos.Errores.ShouldHaveSingleItem();
+		contexto.Dialogos.Errores[0].Mensaje.ShouldContain("datos correspondientes");
+		await contexto.ServicioAlumnos.DidNotReceive().RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Continuar_se_reevalua_cuando_cambian_los_errores_de_un_sub_ViewModel()
+	{
+		// CanExecuteContinuarCommand lee HasErrors de los tres sub-ViewModels. Sin la suscripción a
+		// ErrorsChanged el botón conservaba el estado de la última reasignación de la propiedad.
+		var contexto = new Contexto();
+		var viewModel = contexto.CrearRegistro();
+		var avisos = 0;
+		viewModel.ContinuarCommand.CanExecuteChanged += (_, _) => avisos++;
+
+		viewModel.Contacto.Email = "no-es-un-email";
+
+		avisos.ShouldBeGreaterThan(0);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void RegistrarAlumno_no_usa_MessageBox_ni_async_void_ni_construye_requests_que_descarta()
+	{
+		var fuente = RaizDelRepositorio.Leer("WPF_Desktop/ViewModels/Alumnos/RegistrarAlumnoViewModel.cs");
+
+		// "MessageBox.Show" y no "MessageBox": ShouldNotContain ignora mayusculas y chocaria con la variable local messageBoxText.
+		fuente.ShouldNotContain("MessageBox.Show");
+		fuente.ShouldNotContain("async void");
+		fuente.ShouldNotContain("new RegistrarDomicilioRequest(");
+		fuente.ShouldNotContain("new RegistrarContactoRequest(");
+		fuente.ShouldNotContain("Registrar un Docente");
 	}
 	#endregion
 }

@@ -7,14 +7,12 @@ using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
-using Core.Shared.DTOs.Personas.Requests;
-using Core.Shared.DTOs.Personas.Responses;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
+using System.ComponentModel;
 using System.Threading.Tasks;
-using System.Windows;
 using System;
+using WPF_Desktop.Shared;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.Store;
@@ -29,14 +27,10 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	private readonly IServicioCursante _servicioCursantes;
 	private readonly IServicioDivision _servicioDivisiones;
 	private readonly CicloLectivoStore _cicloLectivoStore;
-
-	#region Request
-	private RegistrarDatosPersonalesRequest _informacionPersonalRequest;
-	private RegistrarContactoRequest _contactoRequest;
-	private RegistrarDomicilioRequest _domicilioRequest;
-	#endregion
+	private readonly IDialogService _dialogService;
 
 	#region ViewModels
+	// Los tres se enganchan a ErrorsChanged para reevaluar ContinuarCommand: ver SuscribirValidacion.
 	[ObservableProperty]
 	private InformacionPersonalViewModel _informacionPersonal;
 
@@ -79,38 +73,95 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 
 	#region Commands
 	public IRelayCommand AtrasCommand { get; }
-	public IRelayCommand ContinuarCommand { get; }
+	public IAsyncRelayCommand ContinuarCommand { get; }
 	public IAsyncRelayCommand GuardarCommand { get; }
 	#endregion
 
 	#region AsyncCommands
-	public IAsyncRelayCommand ActualizarCursosAsyncCommand; 
+	public IAsyncRelayCommand ActualizarCursosAsyncCommand { get; }
 	#endregion
 
 
-	public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumnos, IServicioCurso servicioCursos, IServicioCursante servicioCursantes, IServicioDivision servicioDivisiones, CicloLectivoStore cicloLectivoStore)
+	public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumnos, IServicioCurso servicioCursos, IServicioCursante servicioCursantes, IServicioDivision servicioDivisiones, CicloLectivoStore cicloLectivoStore, IDialogService dialogService)
 	{
 		_servicioAlumnos = servicioAlumnos;
 		_servicioCursos = servicioCursos;
 		_servicioCursantes = servicioCursantes;
 		_servicioDivisiones = servicioDivisiones;
 		_cicloLectivoStore = cicloLectivoStore;
+		_dialogService = dialogService;
 
 		_informacionPersonal = new(null);
 		_domicilio = new(null);
 		_contacto = new(null);
 
 		AtrasCommand = new RelayCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
-		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
+		ContinuarCommand = new AsyncRelayCommand(ExecuteContinuarCommandAsync, CanExecuteContinuarCommand);
 		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
 
 		ActualizarCursosAsyncCommand = new AsyncRelayCommand(ActualizarCursos);
+
+		// Después de crear los comandos: SuscribirValidacion notifica a ContinuarCommand, que acá
+		// todavía no existiría.
+		SuscribirValidacion(_informacionPersonal);
+		SuscribirValidacion(_domicilio);
+		SuscribirValidacion(_contacto);
 
 		// Las propiedades con [NotifyCanExecuteChangedFor] se asignan DESPUÉS de crear los comandos.
 		Periodo = _cicloLectivoStore.CicloLectivo;
 
 		_ = ActualizarCursos();
 	}
+
+	#region Reevaluación de ContinuarCommand
+	// CanExecuteContinuarCommand lee HasErrors de los tres sub-ViewModels, y esos cambian cuando el
+	// usuario tipea DENTRO de ellos, no cuando se reasigna la propiedad del padre. Un
+	// [NotifyCanExecuteChangedFor] sobre InformacionPersonal/Domicilio/Contacto sólo dispararía al
+	// cambiar la instancia entera, así que el botón quedaba con el estado de la última reasignación.
+	// La suscripción a ErrorsChanged es lo que lo mantiene al día.
+	private void SuscribirValidacion(ObservableValidator? validable)
+	{
+		if (validable is not null)
+		{
+			validable.ErrorsChanged += AlCambiarLosErrores;
+		}
+	}
+
+	private void DesuscribirValidacion(ObservableValidator? validable)
+	{
+		if (validable is not null)
+		{
+			validable.ErrorsChanged -= AlCambiarLosErrores;
+		}
+	}
+
+	private void AlCambiarLosErrores(object? remitente, DataErrorsChangedEventArgs argumentos) =>
+		ContinuarCommand.NotifyCanExecuteChanged();
+
+	// El overload de dos parámetros permite soltar el handler de la instancia vieja; sin eso cada
+	// reasignación (las de ExecuteGuardarCommandAsync al limpiar el formulario) dejaría un
+	// suscriptor colgado del objeto anterior.
+	partial void OnInformacionPersonalChanged(InformacionPersonalViewModel? oldValue, InformacionPersonalViewModel newValue)
+	{
+		DesuscribirValidacion(oldValue);
+		SuscribirValidacion(newValue);
+		ContinuarCommand.NotifyCanExecuteChanged();
+	}
+
+	partial void OnDomicilioChanged(DomicilioViewModel? oldValue, DomicilioViewModel newValue)
+	{
+		DesuscribirValidacion(oldValue);
+		SuscribirValidacion(newValue);
+		ContinuarCommand.NotifyCanExecuteChanged();
+	}
+
+	partial void OnContactoChanged(ContactoViewModel? oldValue, ContactoViewModel newValue)
+	{
+		DesuscribirValidacion(oldValue);
+		SuscribirValidacion(newValue);
+		ContinuarCommand.NotifyCanExecuteChanged();
+	}
+	#endregion
 
 	#region Cursos y divisiones
 	private async Task ActualizarCursos()
@@ -127,7 +178,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "Error al cargar los cursos");
 		}
 	}
 
@@ -162,7 +213,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "Error al cargar las divisiones");
 		}
 	}
 	#endregion
@@ -179,111 +230,71 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 	private bool CanExecuteContinuarCommand() =>
 		!InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
 
-	private async void ExecuteContinuarCommand()
+	private async Task ExecuteContinuarCommandAsync()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonal.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad) || string.IsNullOrWhiteSpace(Domicilio.Calle) || string.IsNullOrWhiteSpace(Domicilio.Localidad) || string.IsNullOrWhiteSpace(Domicilio.Provincia) || string.IsNullOrWhiteSpace(Contacto.Telefono) || string.IsNullOrWhiteSpace(Contacto.Email))
+		// Sexo y Vivienda entran en la guarda aunque no sean campos de texto: los dos salen de un
+		// combo que arranca sin selección, quedan en null con un response nulo, y más abajo se les
+		// llama .ToString(). Sin chequearlos acá, no elegir en esos dos combos no daba el aviso de
+		// campos incompletos sino un NullReferenceException, que además se perdía porque el comando
+		// anterior no devolvía Task y nadie podía esperarlo (UI-33).
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonal.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad) || string.IsNullOrWhiteSpace(InformacionPersonal.Sexo) || string.IsNullOrWhiteSpace(Domicilio.Calle) || string.IsNullOrWhiteSpace(Domicilio.Vivienda) || string.IsNullOrWhiteSpace(Domicilio.Localidad) || string.IsNullOrWhiteSpace(Domicilio.Provincia) || string.IsNullOrWhiteSpace(Contacto.Telefono) || string.IsNullOrWhiteSpace(Contacto.Email))
 		{
-			messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
-			caption = "Error al Registrar un Docente";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-			InformacionPersonal = new InformacionPersonalViewModel(
-				new DatosPersonalesResponse(
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					"",
-					DateTime.Now,
-					string.Empty));
-
-			Domicilio = new DomicilioViewModel(
-				new DomicilioResponse(
-					string.Empty,
-					string.Empty,
-					"",
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					string.Empty));
-
-			Contacto = new ContactoViewModel(
-				new ContactoResponse(string.Empty, string.Empty));
+			// Sólo se avisa: lo que el usuario ya cargó NO se toca. Antes acá se reemplazaban los
+			// tres sub-ViewModels por instancias vacías, así que olvidarse un teléfono borraba
+			// también el nombre, el DNI y el domicilio ya tipeados.
+			_dialogService.MostrarError("Se deben ingresar los datos correspondientes para continuar.",
+										"Error al registrar un alumno");
 
 			return;
 		}
-		else
+
+		if (!_dialogService.Confirmar($"¿Está seguro que desea registrar los datos del alumno { InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }?",
+									  "Registrar alumno"))
 		{
-			messageBoxText = $"¿Está seguro que desea registrar los datos del alumno { InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }?";
-			caption = "Registrar Alumno";
-			result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-			if (result is MessageBoxResult.Yes)
+			return;
+		}
+
+		try
+		{
+			var documento = InformacionPersonal.DocumentoNacionalIdentidad;
+
+			var esDocumentoInvalido = await _servicioAlumnos.EsDocumentoInvalidoAsync(new DocumentoRequest(documento));
+			if (esDocumentoInvalido)
 			{
-				var requestInformacionPersonal = new RegistrarDatosPersonalesRequest(
-					InformacionPersonal.Apellido,
-					InformacionPersonal.Nombre,
-					InformacionPersonal.DocumentoNacionalIdentidad,
-					InformacionPersonal.Sexo.ToString(),
-					InformacionPersonal.FechaNacimiento,
-					InformacionPersonal.Nacionalidad);
+				_dialogService.MostrarAdvertencia($"El número de documento ({ documento }) ya se encuentra registrado con otra persona.",
+												  "Documento duplicado");
 
-				var requestDomicilio = new RegistrarDomicilioRequest(
-					Domicilio.Calle,
-					Domicilio.Altura,
-					Domicilio.Vivienda.ToString(),
-					Domicilio.Observaciones,
-					Domicilio.Localidad,
-					Domicilio.Provincia,
-					Domicilio.Pais);
+				InformacionPersonal.DocumentoNacionalIdentidad = string.Empty;
 
-				var requestContacto = new RegistrarContactoRequest(Contacto.Telefono, Contacto.Email);
-
-				try
-				{
-					var esDocumentoInvalido = await _servicioAlumnos.EsDocumentoInvalidoAsync(new DocumentoRequest(requestInformacionPersonal.Documento));
-					if (esDocumentoInvalido)
-					{
-						messageBoxText = $"El número de documento ({ requestInformacionPersonal.Documento }) ya se encuentra registrado con otra persona.";
-						caption = "Error";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
-						InformacionPersonal.DocumentoNacionalIdentidad = string.Empty;
-
-						return;
-					}
-
-					var request = new RegistrarAlumnoRequest(
-						Apellido: InformacionPersonal.Apellido,
-						Nombre: InformacionPersonal.Nombre,
-						DNI: InformacionPersonal.DocumentoNacionalIdentidad,
-						Sexo: InformacionPersonal.Sexo.ToString(),
-						FechaNacimiento: InformacionPersonal.FechaNacimiento,
-						Nacionalidad: InformacionPersonal.Nacionalidad,
-						Telefono: Contacto.Telefono,
-						Email: Contacto.Email,
-						Calle: Domicilio.Calle,
-						Altura: Domicilio.Altura,
-						Vivienda: Domicilio.Vivienda.ToString(),
-						Observacion: Domicilio.Observaciones,
-						Localidad: Domicilio.Localidad,
-						Provincia: Domicilio.Provincia,
-						Pais: Domicilio.Pais);
-					alumnoID = await _servicioAlumnos.RegistrarAlumnoAsync(request);
-
-					messageBoxText = $"Se han registrado los datos de un nuevo alumno.";
-					caption = "Operación Exitosa";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-
-					Tab = 1;
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-				}
+				return;
 			}
+
+			var request = new RegistrarAlumnoRequest(
+				Apellido: InformacionPersonal.Apellido,
+				Nombre: InformacionPersonal.Nombre,
+				DNI: documento,
+				Sexo: InformacionPersonal.Sexo.ToString(),
+				FechaNacimiento: InformacionPersonal.FechaNacimiento,
+				Nacionalidad: InformacionPersonal.Nacionalidad,
+				Telefono: Contacto.Telefono,
+				Email: Contacto.Email,
+				Calle: Domicilio.Calle,
+				Altura: Domicilio.Altura,
+				Vivienda: Domicilio.Vivienda.ToString(),
+				Observacion: Domicilio.Observaciones,
+				Localidad: Domicilio.Localidad,
+				Provincia: Domicilio.Provincia,
+				Pais: Domicilio.Pais);
+			alumnoID = await _servicioAlumnos.RegistrarAlumnoAsync(request);
+
+			_dialogService.MostrarInformacion($"Se registraron los datos del alumno { InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }.",
+											  "Operación exitosa");
+
+			Tab = 1;
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "Error al registrar un alumno");
 		}
 	}
 	#endregion
@@ -294,10 +305,6 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 
 	private async Task ExecuteGuardarCommandAsync()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
 		if (Curso is null || Division is null)
 		{
 			return;
@@ -305,9 +312,8 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 
 		if (string.IsNullOrWhiteSpace(Periodo))
 		{
-			messageBoxText = "Se deben completar todos los campos necesarios para poder registrar el alumno en el curso.";
-			caption = "Error";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError("Se deben completar todos los campos necesarios para poder registrar el alumno en el curso.",
+										"Error al inscribir");
 
 			Periodo = string.Empty;
 
@@ -316,51 +322,49 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator
 
 		if (alumnoID.Equals(Guid.Empty))
 		{
-			messageBoxText = "Antes de inscribir el alumno en el curso debe estar registrado previamente.";
-			caption = "Error";
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError("Antes de inscribir el alumno en el curso debe estar registrado previamente.",
+										"Error al inscribir");
 
 			Tab = 0;
 
 			return;
 		}
 
-		messageBoxText = $"Está a punto de inscribir a { InformacionPersonal.Apellido } { InformacionPersonal.Nombre } en:\n" +
-						 $"\tCurso: { Curso.Grado }° Año ({ Curso.NivelEducativo })\n"+
-						 $"\tDivisión: { Division.Descripcion }\n"+
-						 $"\tCiclo Lectivo: { Periodo }\n\n"+
-						 $"¿Desea continuar?";
-		caption = "Inscripción del Alumno";
-		result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-		if (result is MessageBoxResult.Yes)
+		var confirmacion = $"Está a punto de inscribir a { InformacionPersonal.Apellido } { InformacionPersonal.Nombre } en:\n" +
+						   $"\tCurso: { Curso.Grado }° Año ({ Curso.NivelEducativo })\n"+
+						   $"\tDivisión: { Division.Descripcion }\n"+
+						   $"\tCiclo Lectivo: { Periodo }\n\n"+
+						   $"¿Desea continuar?";
+		if (!_dialogService.Confirmar(confirmacion, "Inscripción del alumno"))
 		{
-			try
-			{
-				// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
-				var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo, FechaInicio);
-				await _servicioCursantes.InscribirCursanteAsync(request);
+			return;
+		}
 
-				messageBoxText = $"Se han inscripto el alumno en el curso correctamente .";
-				caption = "Operación Exitosa";
-				MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+		try
+		{
+			// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
+			var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo, FechaInicio);
+			await _servicioCursantes.InscribirCursanteAsync(request);
 
-				alumnoID = Guid.Empty;
-				InformacionPersonal = new(null);
-				Domicilio = new(null);
-				Contacto = new(null);
+			_dialogService.MostrarInformacion("El alumno se inscribió en el curso correctamente.",
+											  "Operación exitosa");
 
-				Curso = null;
-				FechaInicio = DateTime.Today;
-				Periodo = _cicloLectivoStore.CicloLectivo;
+			alumnoID = Guid.Empty;
+			InformacionPersonal = new(null);
+			Domicilio = new(null);
+			Contacto = new(null);
 
-				await ActualizarCursos();
+			Curso = null;
+			FechaInicio = DateTime.Today;
+			Periodo = _cicloLectivoStore.CicloLectivo;
 
-				Tab = 0;
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-			}
+			await ActualizarCursos();
+
+			Tab = 0;
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "Error al inscribir");
 		}
 	}
 	#endregion
