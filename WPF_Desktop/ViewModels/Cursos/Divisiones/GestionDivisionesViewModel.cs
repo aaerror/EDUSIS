@@ -184,7 +184,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		Ruta = new[]
 		{
 			Migaja.Hacia("CURSOS", VolverCommand),
-			Migaja.Actual($"{ Curso }° { NivelEducativo.ToUpper() } · DIVISIONES")
+			Migaja.Actual($"{ Grados.Decir(Curso).ToUpper() } · { NivelEducativo.ToUpper() } · DIVISIONES")
 		};
 
 		// El buscador vive en el modal y no conoce a sus llamadores: el elegido vuelve por acá.
@@ -305,7 +305,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		{
 			case "Division":
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
-						titulo: $"Eliminar la división { Division.Descripcion } de { Curso }° año",
+						titulo: $"Eliminar la división { Division.Descripcion } de { Grados.Decir(Curso) }",
 						consecuencia: $"Se eliminan también sus planillas de asistencia del ciclo { _cicloLectivoStore.CicloLectivo } "
 									+ "y las cátedras asignadas a esta división. Core rechaza la operación si todavía tiene "
 									+ "cursantes inscriptos: primero hay que darlos de baja o cambiarlos de división.",
@@ -320,7 +320,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 					await _servicioDivision.EliminarDivisionAsync(request);
 
 					await CargarDivisionesAsync();
-					_dialogService.MostrarInformacion($"División { Division.Descripcion } de { Curso }° año.", "División eliminada");
+					_dialogService.MostrarInformacion($"División { Division.Descripcion } de { Grados.Decir(Curso) }.", "División eliminada");
 				}
 				catch (Exception ex)
 				{
@@ -423,7 +423,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 				// viene precargado con la sugerencia de Core y el usuario pudo escribir otra.
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
 						titulo: $"Crear la división { Descripcion.ToUpper() }",
-						mensaje: $"Queda en { _cursoStore.Curso.Grado.ToLower() } año de { _cursoStore.Curso.NivelEducativo.ToLower() }, sin preceptor y sin cursantes.",
+						mensaje: $"Queda en { Grados.Decir(_cursoStore.Curso.Grado) } de { _cursoStore.Curso.NivelEducativo.ToLower() }, sin preceptor y sin cursantes.",
 						verbo: "Crear división")))
 				{
 					return;
@@ -434,7 +434,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 					await _servicioDivision.AgregarDivisionAsync(new AgregarDivisionRequest(_cursoStore.Curso.CursoID, Descripcion));
 
 					await CargarDivisionesAsync();
-					_dialogService.MostrarInformacion($"División { Descripcion.ToUpper() } de { Curso }° año. Asignale un preceptor para poder tomar asistencia.", "División creada");
+					_dialogService.MostrarInformacion($"División { Descripcion.ToUpper() } de { Grados.Decir(Curso) }. Asignale un preceptor para poder tomar asistencia.", "División creada");
 				}
 				catch (Exception ex)
 				{
@@ -481,7 +481,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	{
 		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
 				titulo: $"Asignar a { Docente.NombreCompleto } como preceptor",
-				mensaje: $"Queda a cargo de la división { Division.Descripcion } de { Curso }° año ({ NivelEducativo }) y podrá abrir y firmar sus planillas de asistencia.",
+				mensaje: $"Queda a cargo de la división { Division.Descripcion } de { Grados.Decir(Curso) } ({ NivelEducativo }) y podrá abrir y firmar sus planillas de asistencia.",
 				verbo: "Asignar preceptor")))
 		{
 			return;
@@ -510,7 +510,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		// mismo que asignar uno a una división que no tenía.
 		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
 				titulo: $"Pasar la división { Division.Descripcion } a { Docente.NombreCompleto }",
-				consecuencia: $"{ Division.Preceptor } deja el cargo de preceptor de { Curso }° { Division.Descripcion } "
+				consecuencia: $"{ Division.Preceptor } deja el cargo de preceptor de { Grados.Decir(Curso) } { Division.Descripcion } "
 							+ "y pierde el acceso a las planillas de asistencia de la división.",
 				verbo: "Cambiar preceptor")))
 		{

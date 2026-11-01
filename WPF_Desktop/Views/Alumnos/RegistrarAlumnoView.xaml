@@ -125,7 +125,7 @@
 												<DataTemplate>
 													<StackPanel Orientation="Horizontal">
 														<TextBlock Margin="0 0 4 0"
-																   Text="{ Binding Path=Grado, StringFormat={}{0}° Año }"/>
+																   Text="{ Binding Path=Grado, Converter={ StaticResource ResourceKey=grado }, Mode=OneWay }"/>
 														<TextBlock Text="{ Binding Path=NivelEducativo, StringFormat={}({0}) }"/>
 													</StackPanel>
 												</DataTemplate>

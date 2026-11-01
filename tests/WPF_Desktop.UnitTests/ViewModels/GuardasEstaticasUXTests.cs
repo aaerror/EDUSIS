@@ -259,6 +259,52 @@ public class GuardasEstaticasUXTests
 	}
 	#endregion
 
+	#region El grado se dice una sola vez
+	/// <summary>
+	/// El grado se dice como lo declara el dominio, no armando el texto a mano.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <c>Grado</c> es un enum cuyos miembros se llaman <c>Primero</c>, <c>Segundo</c>…, y los
+	/// ViewModels guardan ese NOMBRE como cadena. Diecisiete lugares le concatenaban el símbolo
+	/// de grado —<c>$"{ Curso }° año"</c> en los ViewModels, <c>StringFormat={}{0}° Año</c> en
+	/// las vistas— y en pantalla salía "Primero° año" y "Primero° PRIMARIA · DIVISIONES".
+	/// </para>
+	/// <para>
+	/// El símbolo pegado a una interpolación o a un marcador de <c>StringFormat</c> es la forma
+	/// del defecto: ningún otro dato de la aplicación lleva ese símbolo. Quien lo necesite tiene
+	/// <c>Grados.Decir</c>, que lee el texto que el propio enum declara.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Nadie_pega_el_simbolo_de_grado_a_un_dato()
+	{
+		var pegado = new Regex(@"\}\s*[°º]|\{0\}\s*[°º]");
+
+		var infractores = ArchivosDeViewModels()
+						  .Concat(ArchivosBajo("WPF_Desktop/Shared", ".cs"))
+						  .Where(archivo => pegado.IsMatch(CodigoVivo(archivo)))
+						  .Concat(ArchivosDeVistas().Where(archivo => pegado.IsMatch(XamlVivo(archivo))))
+						  .Select(NombreCorto)
+						  .OrderBy(n => n)
+						  .ToList();
+
+		infractores.ShouldBeEmpty("archivos que arman el texto del grado a mano en lugar de pedírselo a Grados.Decir");
+	}
+
+	/// <summary>El texto del grado sale del <c>[Description]</c> que declara el dominio.</summary>
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData("Primero", "1° Año")]
+	[InlineData("Septimo", "7° Año")]
+	[InlineData("NoEsUnGrado", "")]
+	[InlineData("", "")]
+	[InlineData(null, "")]
+	public void El_grado_se_dice_como_lo_declara_el_dominio(string? nombre, string esperado) =>
+		global::WPF_Desktop.Shared.Grados.Decir(nombre).ShouldBe(esperado);
+	#endregion
+
 	#region Infraestructura
 	private static XDocument Cargar(string rutaRelativa) =>
 		XDocument.Load(RaizDelRepositorio.Resolver(rutaRelativa));

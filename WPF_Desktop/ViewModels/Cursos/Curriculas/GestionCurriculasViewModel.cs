@@ -279,7 +279,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 				// número que el usuario lee en el diálogo tiene que ser el que sale en el request.
 				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
 						titulo: $"Agregar { Descripcion } al diseño curricular",
-						mensaje: $"Queda en { _cursoStore.Curso.Grado }° año de { _cursoStore.Curso.NivelEducativo }. "
+						mensaje: $"Queda en { Grados.Decir(_cursoStore.Curso.Grado) } de { _cursoStore.Curso.NivelEducativo }. "
 							   + $"Carga horaria: { CargaHoraria } horas cátedra.",
 						verbo: "Agregar materia")))
 				{

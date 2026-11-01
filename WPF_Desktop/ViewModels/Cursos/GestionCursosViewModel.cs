@@ -193,7 +193,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 		switch (obj)
 		{
 			case "Curso":
-				string curso = $"{ Curso.Grado }° año ({ Curso.NivelEducativo })";
+				string curso = $"{ Grados.Decir(Curso.Grado) } ({ Curso.NivelEducativo })";
 
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
 						titulo: $"Eliminar el curso de { curso }",

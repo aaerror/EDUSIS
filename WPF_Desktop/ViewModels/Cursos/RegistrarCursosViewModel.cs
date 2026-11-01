@@ -69,7 +69,7 @@ internal partial class RegistrarCursosViewModel : ObservableValidator, IUbicacio
 	{
 		try
 		{
-			string curso = $"{ Grado }° año ({ NivelEducativo })";
+			string curso = $"{ Grados.Decir(Grado) } ({ NivelEducativo })";
 
 			await _servicioCursos.RegistrarCurso(new RegistrarCursoRequest(Grado, NivelEducativo));
 

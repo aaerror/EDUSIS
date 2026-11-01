@@ -178,7 +178,7 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject, IUbicacion
 
 		try
 		{
-			string destino = $"{ Curso.Grado }° { Division.Descripcion } ({ Periodo })";
+			string destino = $"{ Grados.Decir(Curso.Grado) } { Division.Descripcion } ({ Periodo })";
 
 			// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
 			var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, _legajoStore.PersonaID.Value, Periodo, FechaInicio, EsRecursante);

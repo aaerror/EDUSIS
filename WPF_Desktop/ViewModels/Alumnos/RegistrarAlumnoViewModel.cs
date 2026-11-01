@@ -373,7 +373,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 
 		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
 				titulo: $"Inscribir a { InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }",
-				mensaje: $"Curso: { Curso.Grado }° año ({ Curso.NivelEducativo }). "
+				mensaje: $"Curso: { Grados.Decir(Curso.Grado) } ({ Curso.NivelEducativo }). "
 					   + $"División: { Division.Descripcion }. Ciclo lectivo: { Periodo }. "
 					   + "Para moverlo después hay que darlo de baja y cambiarlo de división desde Cursantes.",
 				verbo: "Inscribir alumno")))
@@ -388,7 +388,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 			await _servicioCursantes.InscribirCursanteAsync(request);
 
 			string inscripto = $"{ InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }";
-			string destino = $"{ Curso.Grado }° { Division.Descripcion } ({ Periodo })";
+			string destino = $"{ Grados.Decir(Curso.Grado) } { Division.Descripcion } ({ Periodo })";
 
 			alumnoID = Guid.Empty;
 			InformacionPersonal = new(null);

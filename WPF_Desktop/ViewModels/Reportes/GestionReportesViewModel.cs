@@ -355,8 +355,10 @@ internal partial class GestionReportesViewModel : ObservableValidator
 	#endregion
 
 	/// <summary>Curso en la misma forma en que lo imprime el encabezado del reporte.</summary>
-	private static string Describir(CursoViewModel curso) =>
-		Enum.TryParse<Grado>(curso.Grado, out var grado)
-			? $"{ (int) grado }° Año { curso.NivelEducativo }"
-			: curso.NivelEducativo;
+	private static string Describir(CursoViewModel curso)
+	{
+		var grado = Grados.Decir(curso.Grado);
+
+		return string.IsNullOrEmpty(grado) ? curso.NivelEducativo : $"{ grado } { curso.NivelEducativo }";
+	}
 }

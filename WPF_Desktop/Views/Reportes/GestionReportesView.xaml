@@ -11,7 +11,6 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 mc:Ignorable="d">
 	<UserControl.Resources>
-		<converters:GradoConverter x:Key="grado"/>
 
 		<!--
 			Una "pieza" es cada cosa emitible: título, qué contiene y el botón. Las cinco se
