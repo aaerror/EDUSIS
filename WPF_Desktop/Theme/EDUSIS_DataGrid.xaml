@@ -100,16 +100,25 @@
 							BorderBrush="{ StaticResource ResourceKey=Linea }"
 							BorderThickness="0 0 0 1"
 							SnapsToDevicePixels="True">
+						<!--
+							LA MARCA NO OCUPA LUGAR EN LA FILA. Estaba en una columna propia de
+							3px con las celdas en la columna 1, así que TODA celda arrancaba 3px
+							más a la derecha que su encabezado, estuviera la fila seleccionada o
+							no: la marca siempre ocupaba su columna y lo único que cambiaba era
+							su opacidad. El encabezado no tiene esa columna, de modo que la
+							desalineación se veía en todas las grillas de la aplicación.
+
+							Superpuesta, las celdas vuelven a empezar donde empieza el
+							encabezado. Los 3px caen dentro del Padding de la celda, que es 12,
+							así que la marca no toca el texto.
+						-->
 						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="3"/>
-								<ColumnDefinition Width="*"/>
-							</Grid.ColumnDefinitions>
+							<DataGridCellsPresenter VerticalAlignment="Center"/>
 							<Rectangle x:Name="Marca"
-									   Grid.Column="0"
 									   Fill="{ StaticResource ResourceKey=Primario }"
-									   Opacity="0"/>
-							<DataGridCellsPresenter Grid.Column="1" VerticalAlignment="Center"/>
+									   HorizontalAlignment="Left"
+									   Opacity="0"
+									   Width="3"/>
 						</Grid>
 					</Border>
 					<ControlTemplate.Triggers>
