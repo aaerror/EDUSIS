@@ -153,7 +153,9 @@
 								Margin="0 20 0 0"
 								Style="{ StaticResource ResourceKey=Superficie.Seccion }"
 								VerticalAlignment="Top">
-							<TextBlock MaxWidth="420"
+							<!-- Left explícito: con MaxWidth, un TextBlock estirado lo centra WPF. -->
+							<TextBlock HorizontalAlignment="Left"
+									   MaxWidth="420"
 									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 									   Text="Las divisiones agrupan a los alumnos del curso y le asignan preceptor. El diseño curricular define las materias y su carga horaria."
 									   TextWrapping="Wrap"/>

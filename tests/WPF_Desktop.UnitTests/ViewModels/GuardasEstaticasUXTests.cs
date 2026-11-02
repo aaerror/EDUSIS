@@ -259,6 +259,52 @@ public class GuardasEstaticasUXTests
 	}
 	#endregion
 
+	#region Un ancho máximo no centra el párrafo
+	/// <summary>
+	/// Todo elemento con <c>MaxWidth</c> dice también de qué lado se apoya.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// WPF arranca en <c>HorizontalAlignment="Stretch"</c>, y cuando un <c>MaxWidth</c> le impide a
+	/// un elemento llenar el hueco que le tocó, NO lo deja pegado a la izquierda: lo CENTRA. Un
+	/// párrafo de 520px en una columna de 1100 arranca entonces ~290px adentro, con un vacío a su
+	/// izquierda que no es margen de nada y que no coincide con ninguna otra cosa de la pantalla.
+	/// </para>
+	/// <para>
+	/// Es un defecto que no se ve leyendo el XAML —el atributo que lo causa es el que no está— y
+	/// que <c>TextAlignment</c> no arregla: ese alinea el texto DENTRO de la caja, y la caja es la
+	/// que quedó corrida. Tres vistas lo tenían; el resto ya declaraba el lado, así que la
+	/// convención existía y lo único que faltaba era la guarda.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Todo_elemento_con_ancho_maximo_declara_de_que_lado_se_apoya()
+	{
+		var centradosSinQuererlo = new List<string>();
+
+		foreach (var archivo in ArchivosDeVistas())
+		{
+			foreach (var elemento in XDocument.Load(archivo).Descendants()
+											  .Where(e => e.Attribute("MaxWidth") is not null))
+			{
+				// Vale también en un ancestro: un Border con HorizontalAlignment="Left" se achica a
+				// su contenido, así que adentro no queda hueco sobrante donde centrar nada. Lo que
+				// se audita es que el elemento esté en un hueco estirado sin decir de qué lado se
+				// apoya, no la presencia literal del atributo.
+				if (elemento.AncestorsAndSelf().Any(e => e.Attribute("HorizontalAlignment") is not null))
+				{
+					continue;
+				}
+
+				centradosSinQuererlo.Add($"{ NombreCorto(archivo) }: { elemento.Name.LocalName }");
+			}
+		}
+
+		centradosSinQuererlo.ShouldBeEmpty("elementos con MaxWidth y sin HorizontalAlignment: WPF los centra");
+	}
+	#endregion
+
 	#region El grado se dice una sola vez
 	/// <summary>
 	/// El grado se dice como lo declara el dominio, no armando el texto a mano.

@@ -37,7 +37,9 @@
 				<Border Margin="0 0 0 20"
 						Style="{ StaticResource ResourceKey=Superficie.Aviso }"
 						Visibility="{ Binding Path=HabilitarMessage, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-					<TextBlock MaxWidth="560"
+					<!-- Left explícito: con MaxWidth, un TextBlock estirado lo centra WPF. -->
+					<TextBlock HorizontalAlignment="Left"
+							   MaxWidth="560"
 							   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 							   Text="{ Binding Path=Message, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 							   TextWrapping="Wrap"/>
