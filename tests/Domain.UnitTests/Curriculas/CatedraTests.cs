@@ -175,6 +175,106 @@ public class CatedraTests
 	}
 	#endregion
 
+	#region TieneSuplenteVigente / DocenteDe
+	[Fact]
+	public void TieneSuplenteVigente_es_true_cuando_una_suplencia_vigente_apunta_a_la_designacion()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+		var suplencia = catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddMonths(1), titular);
+
+		catedra.TieneSuplenteVigente(titular).ShouldBeTrue();
+		// El suplente mismo no tiene a nadie encima.
+		catedra.TieneSuplenteVigente(suplencia).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void TieneSuplenteVigente_es_false_cuando_la_suplencia_ya_termino()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-2), null);
+		catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddMonths(-6), DateTime.Today.AddMonths(-3), titular);
+
+		catedra.TieneSuplenteVigente(titular).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void TieneSuplenteVigente_es_false_cuando_nadie_reemplaza_a_la_designacion()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+
+		catedra.TieneSuplenteVigente(titular).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void TieneSuplenteVigente_es_false_para_una_designacion_que_no_pertenece_a_la_catedra()
+	{
+		var catedra = new CatedraBuilder().Build();
+		catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+
+		catedra.TieneSuplenteVigente(Guid.NewGuid()).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void Si_TieneSuplenteVigente_es_true_Designar_otra_suplencia_sobre_el_mismo_ausente_lanza_DocenteYaReemplazadoException()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+		catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddMonths(1), titular);
+
+		catedra.TieneSuplenteVigente(titular).ShouldBeTrue();
+
+		var ex = Should.Throw<Exception>(() =>
+			catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today, DateTime.Today.AddMonths(1), titular));
+
+		ex.GetType().Name.ShouldBe("DocenteYaReemplazadoException");
+	}
+
+	[Fact]
+	public void Si_TieneSuplenteVigente_es_false_Designar_admite_otra_suplencia_sobre_el_mismo_ausente()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-2), null);
+		catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddMonths(-6), DateTime.Today.AddMonths(-3), titular);
+
+		catedra.TieneSuplenteVigente(titular).ShouldBeFalse();
+
+		Should.NotThrow(() =>
+			catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today, DateTime.Today.AddMonths(1), titular));
+	}
+
+	[Fact]
+	public void DocenteDe_devuelve_el_docente_de_la_designacion_indicada()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var titularID = Guid.NewGuid();
+		var suplenteID = Guid.NewGuid();
+		var titular = catedra.Designar(titularID, Cargo.Titular, DateTime.Today.AddYears(-1), null);
+		var suplencia = catedra.Designar(suplenteID, Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddMonths(1), titular);
+
+		catedra.DocenteDe(titular).ShouldBe(titularID);
+		catedra.DocenteDe(suplencia).ShouldBe(suplenteID);
+	}
+
+	[Fact]
+	public void DocenteDe_de_una_designacion_que_no_pertenece_a_la_catedra_devuelve_null()
+	{
+		var catedra = new CatedraBuilder().Build();
+		catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+
+		catedra.DocenteDe(Guid.NewGuid()).ShouldBeNull();
+	}
+
+	[Fact]
+	public void DocenteDe_sobre_una_catedra_sin_designaciones_devuelve_null()
+	{
+		var catedra = new CatedraBuilder().Build();
+
+		catedra.DocenteDe(Guid.NewGuid()).ShouldBeNull();
+	}
+	#endregion
+
 	#region Slot en funciones
 	[Fact]
 	public void PonerEnFunciones_a_un_segundo_docente_reemplaza_al_primero_y_nunca_hay_dos()
@@ -204,8 +304,10 @@ public class CatedraTests
 	[Fact]
 	public void PonerEnFunciones_sobre_un_cargo_no_vigente_lanza_CargoNoVigenteException()
 	{
+		// Interino y no Titular: el cargo a término es el que lleva fecha de fin, y el titular
+		// —por tiempo indeterminado— ya no se puede crear con una.
 		var catedra = new CatedraBuilder().Build();
-		catedra.Designar(Guid.NewGuid(), Cargo.Titular, new DateTime(2020, 1, 1), new DateTime(2020, 6, 1));
+		catedra.Designar(Guid.NewGuid(), Cargo.Interino, new DateTime(2020, 1, 1), new DateTime(2020, 6, 1));
 		var situacion = catedra.SituacionesRevista.Single();
 
 		var ex = Should.Throw<Exception>(() => catedra.PonerEnFunciones(situacion.Id));

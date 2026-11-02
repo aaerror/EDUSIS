@@ -26,31 +26,25 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="Alumnos"
-							   Subtitle="Búsqueda por documento, perfil e inscripción a una división"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=NavigationCommand }"
-					CommandParameter="Registrar"
-					Style="{ StaticResource ResourceKey=Btn.Primario }"
-					ToolTip="Dar de alta un alumno nuevo"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="Plus"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Registrar alumno" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Titulo="Alumnos"
+									Subtitulo="Búsqueda por documento, perfil e inscripción a una división">
+			<components:PaginaComponent.Accion>
+				<Button Command="{ Binding Path=NavigationCommand }"
+						CommandParameter="Registrar"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Dar de alta un alumno nuevo">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Registrar alumno" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
@@ -68,7 +62,7 @@
 					<StackPanel Orientation="Horizontal">
 						<TextBox x:Name="CampoDocumento"
 								 Tag="8 dígitos, sin puntos"
-								 Text="{ Binding Path=Documento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+								 Text="{ Binding Path=Documento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 								 Style="{ StaticResource ResourceKey=Txb.Campo }"
 								 Width="220"/>
 						<Button Command="{ Binding Path=BuscarCommand }"
@@ -200,6 +194,11 @@
 					</Grid>
 				</Grid>
 				<!--#endregion-->
+
+				<components:CargandoComponent Grid.Row="0"
+											  Grid.RowSpan="2"
+											  EstaCargando="{ Binding Path=BuscarCommand.IsRunning }"
+											  Leyenda="BUSCANDO EL DOCUMENTO"/>
 			</Grid>
 		</Border>
 	</Grid>

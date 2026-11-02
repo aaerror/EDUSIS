@@ -6,9 +6,9 @@ using Core.ServicioCursos;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows.Data;
-using System.Windows;
 using System;
 using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels.Cursos;
@@ -17,6 +17,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 {
 	#region Servicios
 	private readonly IServicioCurso _servicioCursos;
+	private readonly IDialogService _dialogService;
 	private readonly INavigationService _registrarCursoNavigationService;
 	private readonly INavigationService _gestionDivisionesNavigationService;
 	private readonly INavigationService _registrarMateriaNavigationService;
@@ -54,12 +55,14 @@ internal partial class GestionCursosViewModel : ObservableObject
 
 
 	public GestionCursosViewModel(IServicioCurso servicioCursos,
+								  IDialogService dialogService,
 								  INavigationService registrarCursoNavigationService,
 								  INavigationService gestionDivisionesNavigationService,
 								  INavigationService registrarMateriaNavigationService,
 								  CursoStore cursoStore)
 	{
 		_servicioCursos = servicioCursos;
+		_dialogService = dialogService;
 		_registrarCursoNavigationService = registrarCursoNavigationService;
 		_gestionDivisionesNavigationService = gestionDivisionesNavigationService;
 		_registrarMateriaNavigationService = registrarMateriaNavigationService;
@@ -84,7 +87,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 		var cursos = await _servicioCursos.ListarCursosAsync();
 		if (cursos.Count is 0)
 		{
-			Message = "No existen cursos agregados hasta el momento.";
+			Message = "Todavía no hay cursos. Creá el primero con «Registrar curso».";
 			HabilitarMessage = true;
 			HabilitarCursos = false;
 		}
@@ -187,35 +190,31 @@ internal partial class GestionCursosViewModel : ObservableObject
 
 	private async Task ExecuteEliminarCommandAsync(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
 		switch (obj)
 		{
 			case "Curso":
-				messageBoxText = $"Se va a eliminar el curso:\n" +
-								 $"Grado: { Curso.Grado }\n" +
-								 $"Nivel Educativo: { Curso.NivelEducativo }\n\n" +
-								 $"¿Desea continuar?";
-				caption = "Eliminar Curso";
+				string curso = $"{ Grados.Decir(Curso.Grado) } ({ Curso.NivelEducativo })";
 
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-				if (result is MessageBoxResult.Yes)
+				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+						titulo: $"Eliminar el curso de { curso }",
+						consecuencia: "Se eliminan también sus divisiones y su diseño curricular: las materias, "
+									+ "las cátedras y los horarios cargados en este curso. "
+									+ "Core rechaza la operación si todavía tiene cursantes inscriptos.",
+						verbo: "Eliminar curso")))
 				{
-					try
-					{
-						await _servicioCursos.EliminarCurso(new EliminarCursoRequest(Curso.CursoID));
-						MessageBox.Show("Curso eliminado correctamente", "Operación exitosa", MessageBoxButton.OK, MessageBoxImage.Information);
-						
-						await ExecuteCargarCursosCommandAsync();
-					}
-					catch (Exception ex)
-					{
-						messageBoxText = $"Error al eliminar un nuevo curso. {ex.Message}";
-						caption = "Error en la operación";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					return;
+				}
+
+				try
+				{
+					await _servicioCursos.EliminarCurso(new EliminarCursoRequest(Curso.CursoID));
+
+					await ExecuteCargarCursosCommandAsync();
+					_dialogService.MostrarInformacion($"{ curso } ya no figura en el listado.", "Curso eliminado");
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo eliminar el curso");
 				}
 
 				break;

@@ -406,4 +406,261 @@ public class ServicioAsistenciaTests
 		cantidad.ShouldBe(0);
 	}
 	#endregion
+
+	#region ListarPlanillasAsync
+	[Fact]
+	public async Task ListarPlanillasAsync_devuelve_las_planillas_de_la_mas_reciente_a_la_mas_vieja()
+	{
+		var divisionID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		var ayer = hoy.AddDays(-1);
+		var anteayer = hoy.AddDays(-2);
+		SembrarPlanilla(divisionID, anteayer, Guid.NewGuid(), new[] { Guid.NewGuid() });
+		SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { Guid.NewGuid() });
+		SembrarPlanilla(divisionID, ayer, Guid.NewGuid(), new[] { Guid.NewGuid() });
+
+		var response = await _servicio.ListarPlanillasAsync(new ListarPlanillasRequest(divisionID, anteayer, hoy));
+
+		response.Select(p => p.Fecha).ShouldBe(new[] { hoy, ayer, anteayer });
+	}
+
+	[Fact]
+	public async Task ListarPlanillasAsync_incluye_los_dos_extremos_del_rango_y_excluye_lo_que_queda_afuera()
+	{
+		var divisionID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		SembrarPlanilla(divisionID, hoy.AddDays(-5), Guid.NewGuid(), new[] { Guid.NewGuid() });
+		SembrarPlanilla(divisionID, hoy.AddDays(-4), Guid.NewGuid(), new[] { Guid.NewGuid() });
+		SembrarPlanilla(divisionID, hoy.AddDays(-3), Guid.NewGuid(), new[] { Guid.NewGuid() });
+		SembrarPlanilla(divisionID, hoy.AddDays(-2), Guid.NewGuid(), new[] { Guid.NewGuid() });
+		SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { Guid.NewGuid() });
+
+		var response = await _servicio.ListarPlanillasAsync(new ListarPlanillasRequest(divisionID, hoy.AddDays(-4), hoy.AddDays(-2)));
+
+		response.Select(p => p.Fecha).ShouldBe(new[] { hoy.AddDays(-2), hoy.AddDays(-3), hoy.AddDays(-4) });
+	}
+
+	[Fact]
+	public async Task ListarPlanillasAsync_devuelve_una_coleccion_vacia_si_el_rango_no_tiene_planillas()
+	{
+		var divisionID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { Guid.NewGuid() });
+
+		var response = await _servicio.ListarPlanillasAsync(new ListarPlanillasRequest(divisionID, hoy.AddDays(-30), hoy.AddDays(-20)));
+
+		response.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task ListarPlanillasAsync_arma_cada_fila_con_los_registros_y_los_cuatro_contadores_de_la_planilla()
+	{
+		var divisionID = Guid.NewGuid();
+		var ausente = Guid.NewGuid();
+		var inasistente = Guid.NewGuid();
+		var tarde = Guid.NewGuid();
+		var presente1 = Guid.NewGuid();
+		var presente2 = Guid.NewGuid();
+		var fecha = DateTime.Today.AddDays(-1);
+		var planilla = SembrarPlanilla(divisionID, fecha, Guid.NewGuid(), new[] { presente1, presente2, ausente, inasistente, tarde });
+		planilla.MarcarAusencia(ausente, "Turno médico");
+		planilla.MarcarInasistencia(inasistente);
+		planilla.MarcarTardanza(tarde, TimeSpan.FromMinutes(20));
+
+		var response = await _servicio.ListarPlanillasAsync(new ListarPlanillasRequest(divisionID, fecha, fecha));
+
+		var fila = response.ShouldHaveSingleItem();
+		fila.PlanillaID.ShouldBe(planilla.Id);
+		fila.Fecha.ShouldBe(fecha);
+		fila.Cerrada.ShouldBeFalse();
+		fila.Registros.ShouldBe(5);
+		fila.Presentes.ShouldBe(2);
+		fila.Ausencias.ShouldBe(1);
+		fila.Inasistencias.ShouldBe(1);
+		fila.Tardanzas.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ListarPlanillasAsync_con_el_rango_invertido_da_vuelta_los_extremos()
+	{
+		var divisionID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		var anteayer = hoy.AddDays(-2);
+		SembrarPlanilla(divisionID, anteayer, Guid.NewGuid(), new[] { Guid.NewGuid() });
+		SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { Guid.NewGuid() });
+		SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { Guid.NewGuid() });
+
+		var bienOrdenado = await _servicio.ListarPlanillasAsync(new ListarPlanillasRequest(divisionID, anteayer, hoy));
+		var invertido = await _servicio.ListarPlanillasAsync(new ListarPlanillasRequest(divisionID, hoy, anteayer));
+
+		invertido.Select(p => p.PlanillaID).ShouldBe(bienOrdenado.Select(p => p.PlanillaID));
+	}
+	#endregion
+
+	#region ConsultarResumenAsync
+	[Fact]
+	public async Task ConsultarResumenAsync_suma_en_Faltas_las_ausencias_y_las_inasistencias_del_alumno()
+	{
+		var divisionID = Guid.NewGuid();
+		var cursanteID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		var planilla1 = SembrarPlanilla(divisionID, hoy.AddDays(-2), Guid.NewGuid(), new[] { cursanteID });
+		planilla1.MarcarAusencia(cursanteID, "Turno médico");
+		var planilla2 = SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { cursanteID });
+		planilla2.MarcarInasistencia(cursanteID);
+		SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { cursanteID });
+
+		var response = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, hoy.AddDays(-2), hoy));
+
+		var cursante = response.Cursantes.ShouldHaveSingleItem();
+		cursante.CursanteID.ShouldBe(cursanteID);
+		cursante.Ausencias.ShouldBe(1);
+		cursante.Inasistencias.ShouldBe(1);
+		cursante.Faltas.ShouldBe(2);
+		cursante.Presentes.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAsync_cuenta_como_jornadas_solo_las_planillas_del_periodo_en_las_que_el_alumno_tiene_registro()
+	{
+		var divisionID = Guid.NewGuid();
+		var veterano = Guid.NewGuid();
+		var incorporado = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		SembrarPlanilla(divisionID, hoy.AddDays(-2), Guid.NewGuid(), new[] { veterano });
+		SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { veterano });
+		SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { veterano, incorporado });
+
+		var response = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, hoy.AddDays(-2), hoy));
+
+		response.Planillas.ShouldBe(3);
+		response.Cursantes.Single(c => c.CursanteID == veterano).Jornadas.ShouldBe(3);
+		response.Cursantes.Single(c => c.CursanteID == incorporado).Jornadas.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAsync_calcula_el_porcentaje_del_alumno_contando_la_tardanza_como_jornada_asistida()
+	{
+		var divisionID = Guid.NewGuid();
+		var cursanteID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		var planilla1 = SembrarPlanilla(divisionID, hoy.AddDays(-2), Guid.NewGuid(), new[] { cursanteID });
+		planilla1.MarcarTardanza(cursanteID, TimeSpan.FromMinutes(10));
+		var planilla2 = SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { cursanteID });
+		planilla2.MarcarAusencia(cursanteID);
+		var planilla3 = SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { cursanteID });
+		planilla3.MarcarInasistencia(cursanteID);
+
+		var response = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, hoy.AddDays(-2), hoy));
+
+		var cursante = response.Cursantes.ShouldHaveSingleItem();
+		cursante.Jornadas.ShouldBe(3);
+		cursante.Faltas.ShouldBe(2);
+		// El alumno no estuvo presente ni un solo día: la única jornada que cuenta como asistida es la
+		// tardanza, porque llegó tarde pero estuvo en clase. Sin esa regla el porcentaje daría 0.
+		cursante.PorcentajeAsistencia.ShouldBe(33.3m);
+		response.PorcentajeAsistencia.ShouldBe(33.3m);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAsync_sin_marcas_en_el_periodo_devuelve_porcentaje_cero()
+	{
+		var divisionID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { Guid.NewGuid() });
+
+		var response = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, hoy.AddDays(-30), hoy.AddDays(-20)));
+
+		response.Planillas.ShouldBe(0);
+		response.Marcas.ShouldBe(0);
+		response.PorcentajeAsistencia.ShouldBe(0m);
+		response.Cursantes.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAsync_ordena_los_cursantes_de_mas_faltas_a_menos_y_a_igual_cantidad_primero_el_de_menos_jornadas()
+	{
+		var divisionID = Guid.NewGuid();
+		var dosFaltas = Guid.NewGuid();
+		var unaFaltaEnTresJornadas = Guid.NewGuid();
+		var unaFaltaEnUnaJornada = Guid.NewGuid();
+		var hoy = DateTime.Today;
+
+		var planilla1 = SembrarPlanilla(divisionID, hoy.AddDays(-2), Guid.NewGuid(), new[] { dosFaltas, unaFaltaEnTresJornadas });
+		planilla1.MarcarAusencia(dosFaltas);
+		planilla1.MarcarAusencia(unaFaltaEnTresJornadas);
+
+		var planilla2 = SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { dosFaltas, unaFaltaEnTresJornadas });
+		planilla2.MarcarInasistencia(dosFaltas);
+
+		var planilla3 = SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { dosFaltas, unaFaltaEnTresJornadas, unaFaltaEnUnaJornada });
+		planilla3.MarcarInasistencia(unaFaltaEnUnaJornada);
+
+		var response = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, hoy.AddDays(-2), hoy));
+
+		response.Cursantes.Select(c => c.CursanteID).ShouldBe(new[] { dosFaltas, unaFaltaEnUnaJornada, unaFaltaEnTresJornadas });
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAsync_cuenta_en_PlanillasAbiertas_solo_las_que_no_estan_cerradas()
+	{
+		var divisionID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		SembrarPlanilla(divisionID, hoy.AddDays(-2), Guid.NewGuid(), new[] { Guid.NewGuid() }, cerrada: true);
+		SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { Guid.NewGuid() }, cerrada: true);
+		SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { Guid.NewGuid() });
+
+		var response = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, hoy.AddDays(-2), hoy));
+
+		response.Planillas.ShouldBe(3);
+		response.PlanillasAbiertas.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAsync_totaliza_las_marcas_del_periodo_por_tipo()
+	{
+		var divisionID = Guid.NewGuid();
+		var cursante1 = Guid.NewGuid();
+		var cursante2 = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		var planilla1 = SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { cursante1, cursante2 });
+		planilla1.MarcarAusencia(cursante1);
+		planilla1.MarcarTardanza(cursante2, TimeSpan.FromMinutes(5));
+		var planilla2 = SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { cursante1, cursante2 });
+		planilla2.MarcarInasistencia(cursante2);
+
+		var response = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, hoy.AddDays(-1), hoy));
+
+		response.Marcas.ShouldBe(4);
+		response.Presentes.ShouldBe(1);
+		response.Ausencias.ShouldBe(1);
+		response.Inasistencias.ShouldBe(1);
+		response.Tardanzas.ShouldBe(1);
+		response.PorcentajeAsistencia.ShouldBe(50m);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAsync_con_el_rango_invertido_da_vuelta_los_extremos()
+	{
+		var divisionID = Guid.NewGuid();
+		var cursanteID = Guid.NewGuid();
+		var hoy = DateTime.Today;
+		var anteayer = hoy.AddDays(-2);
+		var planilla1 = SembrarPlanilla(divisionID, anteayer, Guid.NewGuid(), new[] { cursanteID });
+		planilla1.MarcarAusencia(cursanteID);
+		SembrarPlanilla(divisionID, hoy.AddDays(-1), Guid.NewGuid(), new[] { cursanteID });
+		SembrarPlanilla(divisionID, hoy, Guid.NewGuid(), new[] { cursanteID });
+
+		var bienOrdenado = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, anteayer, hoy));
+		var invertido = await _servicio.ConsultarResumenAsync(new ConsultarResumenRequest(divisionID, hoy, anteayer));
+
+		invertido.Planillas.ShouldBe(bienOrdenado.Planillas);
+		invertido.PlanillasAbiertas.ShouldBe(bienOrdenado.PlanillasAbiertas);
+		invertido.Marcas.ShouldBe(bienOrdenado.Marcas);
+		invertido.Presentes.ShouldBe(bienOrdenado.Presentes);
+		invertido.Ausencias.ShouldBe(bienOrdenado.Ausencias);
+		invertido.PorcentajeAsistencia.ShouldBe(bienOrdenado.PorcentajeAsistencia);
+		invertido.Cursantes.ShouldBe(bienOrdenado.Cursantes);
+	}
+	#endregion
 }

@@ -58,6 +58,23 @@ public class GestionHorariosViewModelTests
 			ServicioCatedra.ListarHorariosSegunCatedraAsync(Arg.Any<ListarHorariosRequest>())
 						   .Returns(Task.FromResult<IReadOnlyCollection<HorarioResponse>>(horarios.ToList()));
 		}
+
+		/// <summary>
+		/// Declara la carga horaria que el listado por materia va a devolver para esta catedra.
+		/// </summary>
+		/// <remarks>
+		/// La pantalla lee el tope por ahi porque <c>IServicioCatedra</c> no expone la lectura de UNA
+		/// catedra. Sin esta siembra NSubstitute devuelve una coleccion vacia y la carga queda en cero,
+		/// que es el caso de "no se pudo leer el tope".
+		/// </remarks>
+		public void DevolverCargaHoraria(int? cargaHoraria)
+		{
+			ServicioCatedra.ListarCatedrasSegunMateriaAsync(Arg.Any<ListarCatedrasSegunMateriaRequest>())
+						   .Returns(Task.FromResult<IReadOnlyCollection<CatedraResponse>>(new[]
+						   {
+							   new CatedraResponse(CatedraID, MateriaID, Guid.NewGuid(), cargaHoraria, 0, 0, null)
+						   }));
+		}
 	}
 
 	private static HorarioResponse CrearHorario(string turno, string dia, TimeOnly inicio, TimeOnly fin)
@@ -155,6 +172,97 @@ public class GestionHorariosViewModelTests
 		contexto.ViewModel.Turnos.Count.ShouldBe(3);
 		contexto.ViewModel.Turnos.ShouldContain("Tarde");
 		contexto.ViewModel.Turnos.ShouldContain("Noche");
+	}
+	#endregion
+
+	#region Presupuesto de la catedra
+	/// <summary>
+	/// El tope de la catedra se LEE, no se descubre fallando.
+	/// </summary>
+	/// <remarks>
+	/// <c>Catedra.AgregarHorario</c> rechaza con <c>HorasCatedraCompletasException</c> cuando
+	/// <c>HorasAsignadas</c> —la cantidad de horarios cargados— llega a <c>CargaHoraria</c>. La pantalla
+	/// no mostraba ninguno de los dos numeros, asi que se cargaban horarios hasta que uno reventaba.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cargar_trae_la_carga_horaria_de_la_catedra_y_calcula_lo_que_falta()
+	{
+		var contexto = new Contexto(true,
+									CrearHorario("Tarde", "Lunes", new TimeOnly(14, 0), new TimeOnly(14, 40)),
+									CrearHorario("Tarde", "Martes", new TimeOnly(15, 0), new TimeOnly(15, 40)));
+		contexto.DevolverCargaHoraria(5);
+
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+
+		contexto.ViewModel.CargaHoraria.ShouldBe(5);
+		contexto.ViewModel.HorasConHorario.ShouldBe(2);
+		contexto.ViewModel.HorasSinAsignar.ShouldBe(3);
+		contexto.ViewModel.HorasCompletas.ShouldBeFalse();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Con_la_semana_completa_el_alta_se_apaga_en_lugar_de_fallar()
+	{
+		var contexto = new Contexto(true,
+									CrearHorario("Tarde", "Lunes", new TimeOnly(14, 0), new TimeOnly(14, 40)),
+									CrearHorario("Tarde", "Martes", new TimeOnly(15, 0), new TimeOnly(15, 40)));
+		contexto.DevolverCargaHoraria(2);
+
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+
+		// Formulario entero y valido: lo unico que apaga el boton es el tope.
+		contexto.ViewModel.Turno = "Tarde";
+		contexto.ViewModel.Dia = "Miercoles";
+		contexto.ViewModel.HoraInicio = "16:00";
+		contexto.ViewModel.DuracionMinutos = 40;
+
+		contexto.ViewModel.HorasSinAsignar.ShouldBe(0);
+		contexto.ViewModel.HorasCompletas.ShouldBeTrue();
+		contexto.ViewModel.AgregarHorarioCommand.CanExecute(null).ShouldBeFalse();
+	}
+
+	/// <summary>
+	/// Sin carga horaria conocida la pantalla FALLA ABIERTA: deja intentar y que conteste el dominio.
+	/// </summary>
+	/// <remarks>
+	/// <c>CatedraResponse.CargaHoraria</c> es opcional. Apagar el alta sobre un dato que no se tiene
+	/// seria mas estricto que el dominio, que es el defecto que docs/ui-ux.md ya corrigio en los cuatro
+	/// botones de las designaciones.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Sin_carga_horaria_conocida_el_alta_sigue_disponible()
+	{
+		var contexto = new Contexto(true,
+									CrearHorario("Tarde", "Lunes", new TimeOnly(14, 0), new TimeOnly(14, 40)));
+		contexto.DevolverCargaHoraria(null);
+
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+
+		contexto.ViewModel.Turno = "Tarde";
+		contexto.ViewModel.Dia = "Martes";
+		contexto.ViewModel.HoraInicio = "15:00";
+		contexto.ViewModel.DuracionMinutos = 40;
+
+		contexto.ViewModel.CargaHoraria.ShouldBe(0);
+		contexto.ViewModel.HorasCompletas.ShouldBeFalse();
+		contexto.ViewModel.AgregarHorarioCommand.CanExecute(null).ShouldBeTrue();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task El_presupuesto_se_pide_en_la_misma_cadena_que_los_horarios_y_no_en_paralelo()
+	{
+		var contexto = new Contexto();
+		contexto.DevolverCargaHoraria(4);
+
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+
+		// Una sola lectura de cada cosa por carga: el DbContext no admite dos consultas en vuelo.
+		_ = contexto.ServicioCatedra.Received(1).ListarHorariosSegunCatedraAsync(Arg.Any<ListarHorariosRequest>());
+		_ = contexto.ServicioCatedra.Received(1).ListarCatedrasSegunMateriaAsync(Arg.Any<ListarCatedrasSegunMateriaRequest>());
 	}
 	#endregion
 

@@ -17,6 +17,9 @@ internal class DialogServiceFalso : IDialogService
 
 	public List<(string Mensaje, string Titulo)> Confirmaciones { get; } = new();
 
+	/// <summary>Las solicitudes completas, para afirmar sobre la consecuencia y el verbo.</summary>
+	public List<SolicitudDeDialogo> Solicitudes { get; } = new();
+
 	/// <summary>Lo que devolverá <see cref="Confirmar"/>.</summary>
 	public bool RespuestaDeConfirmacion { get; set; } = true;
 
@@ -38,6 +41,23 @@ internal class DialogServiceFalso : IDialogService
 	public bool Confirmar(string mensaje, string titulo)
 	{
 		Confirmaciones.Add((mensaje, titulo));
+		return RespuestaDeConfirmacion;
+	}
+
+	/// <summary>
+	/// Registra la solicitud completa y además la anota en <see cref="Confirmaciones"/>, para
+	/// que una prueba que sólo quiere saber "¿preguntó?" no distinga por qué camino preguntó.
+	/// </summary>
+	/// <remarks>
+	/// El <c>Mensaje</c> que se anota es el cuerpo cuando lo hay y el título cuando no: una
+	/// confirmación destructiva pone todo el peso en el título y la consecuencia, y deja el
+	/// cuerpo vacío.
+	/// </remarks>
+	public bool ConfirmarAccion(SolicitudDeDialogo solicitud)
+	{
+		Solicitudes.Add(solicitud);
+		Confirmaciones.Add((string.IsNullOrWhiteSpace(solicitud.Mensaje) ? solicitud.Titulo : solicitud.Mensaje, solicitud.Titulo));
+
 		return RespuestaDeConfirmacion;
 	}
 }

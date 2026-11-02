@@ -11,13 +11,32 @@
 	<!--
 		CÁTEDRAS DE LA MATERIA — una por división.
 
-		El ComboBox de divisiones sin cátedra era el único control de la pantalla sin estilo:
-		se dibujaba con el combo de Windows, gradiente celeste incluido.
+		LA LISTA PASÓ A SER UNA GRILLA DEL TEMA. Era un ItemsControl de tarjetas, y eso costaba tres
+		cosas. Repetía los cuatro rótulos —DIVISIÓN, CARGA, ASIGNADAS, SIN ASIGNAR— en CADA fila,
+		cuando un encabezado de columna los dice una sola vez. Dejaba los tres números fuera de
+		Celda.Numero, que es la que los pone en cifras tabulares, y son justamente tres números que
+		se comparan entre cátedras. Y era la única lista del sistema sin el estado vacío del tema
+		—lo traía a mano, colgado de su HasItems—, que es lo que docs/ui-ux.md anotaba como
+		pendiente.
 
-		Cada cátedra mostraba su carga horaria en un renglón de Runs separados por barras
-		("Carga horaria: 4 | Asignadas: 2 | Sin asignar: 2"). Son tres números que se comparan
-		entre cátedras, así que van tabulados en monoespaciada con su rótulo: lo que importa
-		es si queda algo sin asignar.
+		EL ALTA SUBIÓ AL ENCABEZADO. Necesita UN dato, la división, así que es el caso de Divisiones
+		—el campo al lado del botón, los dos como un solo grupo de acción— y no el de Horarios, que
+		pide un formulario entero y por eso se queda con su tarjeta. Tenerla en una tarjeta propia
+		empujaba la lista hacia abajo y dejaba el encabezado sin acción principal.
+
+		CUÁNTO FALTA, ANTES DE ABRIR LOS COMBOS. Dos cosas que la pantalla sabía y no decía: cuántas
+		divisiones siguen sin cátedra —el único motivo por el que "Crear cátedra" puede estar
+		apagado— y cuántas horas de la materia todavía no tienen lugar en el horario semanal.
+
+		OJO CON "SIN ASIGNAR": lo que falta asignar es el LUGAR EN LA SEMANA, no el docente.
+		Catedra.HorasAsignadas es _horarios.Count, así que esa columna manda a Horarios y no a
+		Designar docentes.
+
+		LOS DOS DRILL-DOWN SE FUERON AL PIE. Estaban en cada fila, con CommandParameter="{Binding}",
+		que es la forma correcta cuando la acción vive en la fila; pero son dos botones con texto
+		multiplicados por fila, y en una grilla eso es ruido. En el pie reciben la fila por el
+		SelectedItem de la grilla, así que los comandos del ViewModel no cambian: siguen siendo
+		IRelayCommand<CatedraViewModel> y siguen recibiendo la cátedra.
 	-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
@@ -28,185 +47,206 @@
 	<Grid Margin="28 24 28 24">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="{ Binding Path=Materia.Descripcion, Mode=OneWay }"
-							   Subtitle="Cátedras de la materia: una por división"
-							   VerticalContentAlignment="Top"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=VolverCommand }"
-					Style="{ StaticResource ResourceKey=Btn.Terciario }"
-					ToolTip="Volver al diseño curricular"
-					VerticalAlignment="Center">
+		<!--
+			El título era el nombre de la materia, igual que en Horarios y en Situación de
+			revista: tres pantallas hermanas con el mismo título y sin la palabra que dice qué
+			es cada una. La materia pasó a la ruta, donde es contexto y no nombre de pantalla.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Cátedras"
+									Subtitulo="Cátedras de la materia: una por división, con sus docentes y sus horas">
+			<components:PaginaComponent.Accion>
 				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="ArrowLeft"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Volver a materias" VerticalAlignment="Center"/>
+					<!--
+						El combo era el único control de la pantalla sin estilo: se dibujaba con el
+						de Windows, gradiente celeste incluido. Se queda al lado de su botón porque
+						es el único dato que la acción necesita.
+					-->
+					<HeaderedContentControl Header="División sin cátedra"
+											Margin="0 0 8 0"
+											Style="{ StaticResource ResourceKey=Campo }"
+											ToolTip="Divisiones del curso que todavía no tienen cátedra de esta materia">
+						<ComboBox DisplayMemberPath="Descripcion"
+								  ItemsSource="{ Binding Path=DivisionesSinCatedra, Mode=OneWay }"
+								  MinWidth="200"
+								  SelectedItem="{ Binding Path=DivisionSeleccionada, Mode=TwoWay }"
+								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+					</HeaderedContentControl>
+
+					<Button Command="{ Binding Path=CrearCatedraCommand }"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Crear la cátedra de la división elegida"
+							VerticalAlignment="Bottom">
+						<StackPanel Orientation="Horizontal">
+							<fa:IconBlock FontSize="11"
+										  Icon="Plus"
+										  Margin="0 0 8 0"
+										  VerticalAlignment="Center"/>
+							<TextBlock Text="Crear cátedra" VerticalAlignment="Center"/>
+						</StackPanel>
+					</Button>
 				</StackPanel>
-			</Button>
-		</Grid>
-		<!--#endregion-->
-
-		<!--#region CREAR CÁTEDRA-->
-		<Border Grid.Row="1"
-				Margin="0 0 0 16"
-				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
-			<Grid Margin="20 18">
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="*"/>
-					<ColumnDefinition Width="Auto"/>
-				</Grid.ColumnDefinitions>
-
-				<HeaderedContentControl Grid.Column="0"
-										Header="División sin cátedra de esta materia"
-										Margin="0 0 12 0"
-										Style="{ StaticResource ResourceKey=Campo }">
-					<ComboBox DisplayMemberPath="Descripcion"
-							  HorizontalAlignment="Left"
-							  ItemsSource="{ Binding Path=DivisionesSinCatedra, Mode=OneWay }"
-							  MinWidth="220"
-							  SelectedItem="{ Binding Path=DivisionSeleccionada, Mode=TwoWay }"
-							  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-				</HeaderedContentControl>
-
-				<Button Grid.Column="1"
-						Command="{ Binding Path=CrearCatedraCommand }"
-						Style="{ StaticResource ResourceKey=Btn.Primario }"
-						ToolTip="Crear la cátedra de la división elegida"
-						VerticalAlignment="Bottom"
-						Margin="0 0 0 16">
-					<StackPanel Orientation="Horizontal">
-						<fa:IconBlock FontSize="11"
-									  Icon="Plus"
-									  Margin="0 0 8 0"
-									  VerticalAlignment="Center"/>
-						<TextBlock Text="Crear cátedra" VerticalAlignment="Center"/>
-					</StackPanel>
-				</Button>
-			</Grid>
-		</Border>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<!--#region CÁTEDRAS-->
-		<Border Grid.Row="2" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
 			<Grid Margin="20 18">
 				<Grid.RowDefinitions>
 					<RowDefinition Height="Auto"/>
 					<RowDefinition Height="*"/>
+					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
 
-				<TextBlock Grid.Row="0"
-						   Margin="0 0 0 12"
-						   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-						   Text="CÁTEDRAS ABIERTAS"/>
+				<Grid Grid.Row="0" Margin="0 0 0 14">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
+
+					<StackPanel Grid.Column="0" VerticalAlignment="Center">
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+								   Text="Cátedras abiertas"/>
+						<!--
+							La unidad y el sentido de "sin asignar" se dicen UNA vez acá, y no en
+							cada encabezado de columna ni en cada fila.
+						-->
+						<TextBlock Margin="0 4 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="Una cátedra por división. Sin asignar son las horas cátedra semanales que todavía no tienen lugar en el horario."/>
+					</StackPanel>
+
+					<!--
+						Los dos números que deciden qué hacer con esta pantalla: si todavía queda
+						una división sin cátedra, y cuántas horas de la materia esperan un lugar en
+						el horario semanal.
+					-->
+					<StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+						<StackPanel Margin="0 0 28 0">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="SIN CÁTEDRA"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=DivisionesSinCatedra.Count, Mode=OneWay }"/>
+						</StackPanel>
+						<StackPanel>
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="HORAS SIN HORARIO"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=HorasSinAsignar, Mode=OneWay }"/>
+						</StackPanel>
+					</StackPanel>
+				</Grid>
+
+				<DataGrid x:Name="Grilla_Catedras"
+						  Grid.Row="1"
+						  ItemsSource="{ Binding Path=Catedras, Mode=OneWay }"
+						  AutomationProperties.Name="Cátedras de la materia"
+						  IsReadOnly="True"
+						  IsSynchronizedWithCurrentItem="True"
+						  Style="{ StaticResource ResourceKey=Grilla }"
+						  Tag="Esta materia todavía no tiene cátedras. Elegí una división y empezá con &#x201C;Crear cátedra&#x201D;."
+						  d:ItemsSource="{ d:SampleData ItemCount=4 }">
+					<DataGrid.Columns>
+						<DataGridTextColumn Binding="{ Binding Path=Division, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+											Header="DIVISIÓN"
+											MinWidth="100"
+											Width="*"/>
+						<!--
+							QUIÉN ESTÁ AL FRENTE DEL CURSO. DocenteEnFuncionesID viajaba en el
+							Response y en el ViewModel desde siempre y no se dibujaba en ninguna
+							parte, así que para saber si una cátedra tenía a alguien en el aula
+							había que entrar a cada una. Es el dato que decide a cuál entrar.
+
+							Dos insignias y no una casilla: la que falta es un problema y va en
+							rojo, la que está es neutra-sana. La forma y el texto distinguen los dos
+							estados, el color sólo refuerza.
+						-->
+						<DataGridTemplateColumn Header="EN AULA" MinWidth="130" Width="Auto">
+							<DataGridTemplateColumn.CellTemplate>
+								<DataTemplate>
+									<Grid>
+										<Border Style="{ StaticResource ResourceKey=Insignia.Activa }"
+												Visibility="{ Binding Path=DocenteEnFuncionesID, Mode=OneWay, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+											<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+													   Text="CON DOCENTE"/>
+										</Border>
+										<Border Style="{ StaticResource ResourceKey=Insignia.Alerta }"
+												Visibility="{ Binding Path=DocenteEnFuncionesID, Mode=OneWay, Converter={ StaticResource ResourceKey=visibleSiHay }, ConverterParameter=inverso }">
+											<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+													   Text="SIN DOCENTE"/>
+										</Border>
+									</Grid>
+								</DataTemplate>
+							</DataGridTemplateColumn.CellTemplate>
+						</DataGridTemplateColumn>
+						<!--
+							Las tres cifras en Celda.Numero: cifras tabulares, así que la columna se
+							compara de un vistazo contra la fila de arriba. La carga horaria es
+							opcional en el DTO —hay materias cargadas sin ella—, y una celda en
+							blanco se leería como "falta el dato" en vez de "no tiene".
+						-->
+						<DataGridTextColumn Binding="{ Binding Path=CargaHoraria, Mode=OneWay, TargetNullValue='—' }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+											Header="CARGA"
+											MinWidth="90"
+											Width="Auto"/>
+						<DataGridTextColumn Binding="{ Binding Path=HorasAsignadas, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+											Header="ASIGNADAS"
+											MinWidth="110"
+											Width="Auto"/>
+						<DataGridTextColumn Binding="{ Binding Path=HorasSinAsignar, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+											Header="SIN ASIGNAR"
+											MinWidth="120"
+											Width="Auto"/>
+					</DataGrid.Columns>
+				</DataGrid>
 
 				<!--
-					Un ItemsControl no tiene estado vacío propio como Grilla o Lista.Indice:
-					el aviso cuelga de su HasItems.
+					El pie entero cuelga de que haya una fila elegida: sin selección no hay cátedra
+					sobre la cual navegar, y una regla con dos botones grises no dice por qué.
+
+					Los dos comandos reciben la cátedra por CommandParameter, igual que cuando
+					vivían en la fila, sólo que ahora la fila sale del SelectedItem de la grilla.
+					ButtonBase reevalúa CanExecute cuando cambia su CommandParameter, así que elegir
+					otra fila los vuelve a medir sin que el ViewModel notifique nada.
 				-->
-				<TextBlock Grid.Row="1"
-						   Foreground="{ StaticResource ResourceKey=TintaSuave }"
-						   HorizontalAlignment="Center"
-						   Margin="32 36"
-						   MaxWidth="320"
-						   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-						   Text="Esta materia todavía no tiene cátedras. Elegí una división y creá la primera."
-						   TextAlignment="Center"
-						   TextWrapping="Wrap"
-						   VerticalAlignment="Top"
-						   Visibility="{ Binding Path=HasItems, ElementName=ListaCatedras, Converter={ StaticResource ResourceKey=visibilidadInversa } }"/>
+				<HeaderedContentControl Grid.Row="2"
+										IsEnabled="{ Binding Path=SelectedItem, ElementName=Grilla_Catedras, Converter={ StaticResource ResourceKey=noEsNulo } }"
+										Style="{ StaticResource ResourceKey=Acciones }"
+										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+					<HeaderedContentControl.Header>
+						<Button Command="{ Binding Path=VerHorariosCommand }"
+								CommandParameter="{ Binding Path=SelectedItem, ElementName=Grilla_Catedras }"
+								Content="Ver horarios"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
+								ToolTip="Horarios de la cátedra elegida"/>
+					</HeaderedContentControl.Header>
 
-				<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-					<ItemsControl x:Name="ListaCatedras"
-								  ItemsSource="{ Binding Path=Catedras, Mode=OneWay }">
-						<ItemsControl.ItemTemplate>
-							<DataTemplate>
-								<Border BorderBrush="{ StaticResource ResourceKey=Linea }"
-										BorderThickness="0 0 0 1"
-										Padding="0 14"
-										SnapsToDevicePixels="True">
-									<Grid>
-										<Grid.ColumnDefinitions>
-											<ColumnDefinition Width="*"/>
-											<ColumnDefinition Width="Auto"/>
-											<ColumnDefinition Width="Auto"/>
-										</Grid.ColumnDefinitions>
-
-										<StackPanel Grid.Column="0" VerticalAlignment="Center">
-											<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
-													   Text="DIVISIÓN"/>
-											<TextBlock Margin="0 2 0 0"
-													   Style="{ StaticResource ResourceKey=Txt.CuerpoFuerte }"
-													   Text="{ Binding Path=Division }"/>
-										</StackPanel>
-
-										<StackPanel Grid.Column="1"
-													Margin="0 0 24 0"
-													Orientation="Horizontal"
-													VerticalAlignment="Center">
-											<StackPanel Margin="0 0 20 0">
-												<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
-														   Text="CARGA"/>
-												<TextBlock Margin="0 2 0 0"
-														   Style="{ StaticResource ResourceKey=Txt.Dato }"
-														   Text="{ Binding Path=CargaHoraria, Mode=OneWay }"/>
-											</StackPanel>
-											<StackPanel Margin="0 0 20 0">
-												<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
-														   Text="ASIGNADAS"/>
-												<TextBlock Margin="0 2 0 0"
-														   Style="{ StaticResource ResourceKey=Txt.Dato }"
-														   Text="{ Binding Path=HorasAsignadas, Mode=OneWay }"/>
-											</StackPanel>
-											<StackPanel>
-												<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
-														   Text="SIN ASIGNAR"/>
-												<TextBlock Margin="0 2 0 0"
-														   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
-														   Text="{ Binding Path=HorasSinAsignar, Mode=OneWay }"/>
-											</StackPanel>
-										</StackPanel>
-
-										<!-- Los dos drill-down de la cátedra comparten la columna del botón: docentes y horarios. -->
-										<StackPanel Grid.Column="2"
-													Orientation="Horizontal"
-													VerticalAlignment="Center">
-											<Button Command="{ Binding Path=DataContext.SeleccionarCatedraCommand, RelativeSource={ RelativeSource AncestorType=UserControl } }"
-													CommandParameter="{ Binding }"
-													Content="Designar docentes"
-													Margin="0 0 8 0"
-													Style="{ StaticResource ResourceKey=Btn.Secundario }"
-													ToolTip="Situación de revista de la cátedra"
-													VerticalAlignment="Center"/>
-
-											<Button Command="{ Binding Path=DataContext.VerHorariosCommand, RelativeSource={ RelativeSource AncestorType=UserControl } }"
-													CommandParameter="{ Binding }"
-													Content="Ver horarios"
-													Style="{ StaticResource ResourceKey=Btn.Terciario }"
-													ToolTip="Horarios de la cátedra"
-													VerticalAlignment="Center"/>
-										</StackPanel>
-									</Grid>
-								</Border>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
-				</ScrollViewer>
+					<Button Command="{ Binding Path=SeleccionarCatedraCommand }"
+							CommandParameter="{ Binding Path=SelectedItem, ElementName=Grilla_Catedras }"
+							Content="Designar docentes"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Docentes y situación de revista de la cátedra elegida"/>
+				</HeaderedContentControl>
 			</Grid>
 		</Border>
 		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="2"
+									  EstaCargando="{ Binding Path=CargarCommand.IsRunning }"
+									  Leyenda="CARGANDO LAS CÁTEDRAS"/>
 	</Grid>
 </UserControl>

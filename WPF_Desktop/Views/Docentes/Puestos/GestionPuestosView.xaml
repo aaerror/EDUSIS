@@ -44,31 +44,26 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="Puestos docentes"
-							   Subtitle="Posiciones del docente, con su período y su estado"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=RegistrarCommand }"
-					Style="{ StaticResource ResourceKey=Btn.Primario }"
-					ToolTip="Agregar un puesto al docente"
-					VerticalAlignment="Center"
-					Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="Plus"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Agregar puesto" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Puestos docentes"
+									Subtitulo="Posiciones del docente, con su período y su estado">
+			<components:PaginaComponent.Accion>
+				<Button Command="{ Binding Path=RegistrarCommand }"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Agregar un puesto al docente"
+						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Agregar puesto" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<!--#region AVISO-->
@@ -199,18 +194,25 @@
 									Style="{ StaticResource ResourceKey=Btn.Peligro }"
 									ToolTip="Eliminar el puesto seleccionado"
 									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							<!--
+								Revocar cierra un puesto activo: es destructivo y va en rojo.
+								Estaba en Btn.Secundario, idéntico a "Cambiar preceptor" o
+								"Rechazar", así que la acción que da de baja a alguien de su
+								cargo se veía igual que una navegación.
+							-->
 							<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
 									CommandParameter="Revocar"
 									Content="Revocar"
-									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									Style="{ StaticResource ResourceKey=Btn.Peligro }"
 									ToolTip="Dar de baja al docente del puesto"
 									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 						</StackPanel>
 					</HeaderedContentControl.Header>
 
+					<!-- "Editar" abre el formulario: mismo peso que en los perfiles y en licencias. -->
 					<Button Command="{ Binding Path=EditarCommandAsync, IsAsync=True }"
 							Content="Editar"
-							Style="{ StaticResource ResourceKey=Btn.Terciario }"
+							Style="{ StaticResource ResourceKey=Btn.Secundario }"
 							ToolTip="Editar el puesto seleccionado"
 							Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 				</HeaderedContentControl>
@@ -231,9 +233,14 @@
 						<RowDefinition Height="Auto"/>
 					</Grid.RowDefinitions>
 
+					<!--
+						Sin Validation.ErrorTemplate="{x:Null}". Esa línea apagaba el adorno de
+						error de todo el formulario: el campo con problema no se marcaba y el
+						error recién aparecía al guardar, en un cartel. Las reglas de validación
+						del ViewModel ya existían; lo que faltaba era dejarlas verse.
+					-->
 					<local:PuestoDocenteView Grid.Row="0"
-											 DataContext="{ Binding Path=PuestoDocente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-											 Validation.ErrorTemplate="{ x:Null }"/>
+											 DataContext="{ Binding Path=PuestoDocente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
 
 					<HeaderedContentControl Grid.Row="1" Style="{ StaticResource ResourceKey=Acciones }">
 						<HeaderedContentControl.Header>
@@ -256,5 +263,10 @@
 			</ScrollViewer>
 		</Border>
 		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="4"
+									  EstaCargando="{ Binding Path=CargarPuestosCommandAsync.IsRunning }"
+									  Leyenda="CARGANDO LOS PUESTOS"/>
 	</Grid>
 </UserControl>

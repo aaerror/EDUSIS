@@ -66,10 +66,11 @@
 		<vDocentes:GestionDocentesView/>
 	</DataTemplate>
 
-	<DataTemplate DataType="{ x:Type vmDocentes:DocenteViewModel }">
-		<vDocentes:DocenteView/>
-	</DataTemplate>
-
+	<!--
+		Acá estaba DocenteViewModel -> DocenteView: una ficha de sólo lectura mapeada pero que
+		ningún ContentControl recibía nunca. El perfil del docente, que es la pantalla que sí
+		existe, no la usaba. Se borraron las tres piezas.
+	-->
 	<DataTemplate DataType="{ x:Type vmDocentes:PerfilDocenteViewModel }">
 		<vDocentes:PerfilDocenteView/>
 	</DataTemplate>
@@ -141,9 +142,12 @@
 		<vDivisiones:CursanteView/>
 	</DataTemplate>
 
-	<DataTemplate DataType="{ x:Type vmDivisiones:CalificacionViewModel }">
-		<vDivisiones:CalificacionView/>
-	</DataTemplate>
+	<!--
+		CalificacionViewModel se queda —es el tipo de fila de la grilla de calificaciones— pero
+		su vista no: CalificacionView estaba mapeada acá y no la montaba nadie, porque
+		GestionCursantesView escribe esos mismos campos a mano con otra forma. Dos formularios
+		para la misma nota, uno de ellos invisible.
+	-->
 
 	<!--#region DIVISIONES-->
 	<DataTemplate DataType="{ x:Type vmDivisiones:GestionDivisionesViewModel }">

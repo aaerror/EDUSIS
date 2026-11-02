@@ -21,12 +21,18 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Docentes"
-						   Subtitle="Alta de un docente nuevo, en dos pasos"/>
+		<!--
+			El título decía "Docentes", el mismo que el índice del que se viene: dos pantallas
+			distintas con el mismo nombre. Acá se da de alta, y eso es lo que dice ahora.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Registrar docente"
+									Subtitulo="Alta de un docente nuevo, en dos pasos: primero la persona, después su lugar en la institución"/>
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid>
 			<TabControl Margin="28 20 28 24"
 						SelectedIndex="{ Binding Path=Tab, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 						Style="{ StaticResource ResourceKey=Pestanas }">
@@ -35,33 +41,49 @@
 						 IsEnabled="False"
 						 Tag="01">
 					<ScrollViewer VerticalScrollBarVisibility="Auto">
+						<!--
+							DOS COLUMNAS QUE TERMINAN PAREJAS. Contacto cruzaba las tres columnas
+							debajo de las otras dos secciones, y como Información personal es más
+							alta que Domicilio, quedaba un hueco debajo del domicilio y después
+							una banda de ancho completo con dos campos sueltos —un teléfono y un
+							correo dibujados con media tarjeta cada uno—.
+
+							Contacto baja a la columna de la persona, que es de lo que habla: a
+							la izquierda quién es y cómo ubicarlo, a la derecha dónde vive. Con
+							Información personal ya de a pares, las dos columnas miden casi lo
+							mismo y el pie de acciones apoya sobre las dos.
+						-->
 						<Grid>
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*"/>
+								<!-- La separación entre columnas es una columna, no un margen por vista. -->
 								<ColumnDefinition Width="28"/>
 								<ColumnDefinition Width="*"/>
 							</Grid.ColumnDefinitions>
 							<Grid.RowDefinitions>
 								<RowDefinition Height="Auto"/>
 								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="Auto"/>
 							</Grid.RowDefinitions>
 
-							<shared:InformacionPersonalView Grid.Column="0" Grid.Row="0"
-															DataContext="{ Binding Path=InformacionPersonal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-															Validation.ErrorTemplate="{ x:Null }"
-															VerticalAlignment="Top"/>
+							<!--
+								VALIDACIÓN A LA VISTA. Los tres bloques tenían
+								Validation.ErrorTemplate="{x:Null}", que apaga el adorno de error
+								de todo el sub-árbol: en el único formulario largo de la
+								aplicación, el campo mal cargado no se marcaba y el problema
+								recién aparecía al apretar "Continuar", en un cartel que además
+								borraba lo escrito. Las reglas ya estaban en los ViewModels.
+							-->
+							<StackPanel Grid.Column="0" Grid.Row="0">
+								<shared:InformacionPersonalView DataContext="{ Binding Path=InformacionPersonal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+
+								<shared:ContactoView DataContext="{ Binding Path=Contacto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+							</StackPanel>
 
 							<shared:DomicilioView Grid.Column="2" Grid.Row="0"
 												  DataContext="{ Binding Path=Domicilio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-												  Validation.ErrorTemplate="{ x:Null }"
 												  VerticalAlignment="Top"/>
 
-							<shared:ContactoView Grid.ColumnSpan="3" Grid.Row="1"
-												 DataContext="{ Binding Path=Contacto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-												 Validation.ErrorTemplate="{ x:Null }"/>
-
-							<Border Grid.ColumnSpan="3" Grid.Row="2"
+							<Border Grid.ColumnSpan="3" Grid.Row="1"
 									Style="{ StaticResource ResourceKey=Superficie.Seccion }">
 								<Button Command="{ Binding Path=ContinuarCommand }"
 										Content="Continuar"
@@ -99,7 +121,7 @@
 
 									<Button Grid.Column="1"
 											Command="{ Binding Path=GuardarCommand }"
-											Content="Guardar"
+											Content="Registrar docente"
 											HorizontalAlignment="Right"
 											Style="{ StaticResource ResourceKey=Btn.Primario }"
 											ToolTip="Dar de alta el docente con este legajo y puesto"/>
@@ -110,6 +132,10 @@
 				</TabItem>
 				<!--#endregion-->
 			</TabControl>
+
+			<components:CargandoComponent EstaCargando="{ Binding Path=GuardarCommand.IsRunning }"
+										  Leyenda="REGISTRANDO EL DOCENTE"/>
+			</Grid>
 		</Border>
 	</Grid>
 </UserControl>

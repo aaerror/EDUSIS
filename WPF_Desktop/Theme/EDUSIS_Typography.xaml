@@ -66,6 +66,50 @@
 		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaSuave }"/>
 	</Style>
 
+	<!--
+		El tramo final de la ruta: dónde estoy parado. Misma voz que el rótulo de sección —es
+		una etiqueta de ubicación, no un título— pero en tinta plena, porque es el único tramo
+		que no es un enlace a otro lado.
+	-->
+	<Style x:Key="Txt.Miga.Actual" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Seccion }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+	</Style>
+
+	<!-- El separador entre tramos. Apagado a propósito: es puntuación, no contenido. -->
+	<Style x:Key="Txt.Miga.Separador" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Seccion }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+		<Setter Property="Margin" Value="7 0"/>
+	</Style>
+
+	<!--#region SOBRE PIZARRA — el rail oscuro
+		El rail es el único campo oscuro de la aplicación y no tenía estilos propios: la ficha de
+		sesión fijaba familia, tamaño, peso y color a mano, cuatro atributos por TextBlock, y era
+		la única vista que lo hacía. Con estos dos la tipografía del rail es reutilizable.
+	-->
+	<Style x:Key="Txt.SobrePizarra" TargetType="{ x:Type TextBlock }">
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
+		<Setter Property="FontSize" Value="13"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarra }"/>
+	</Style>
+
+	<Style x:Key="Txt.SobrePizarra.Dato" TargetType="{ x:Type TextBlock }">
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Dato }"/>
+		<Setter Property="FontSize" Value="11.5"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarraMedia }"/>
+	</Style>
+
+	<Style x:Key="Txt.SobrePizarra.Inicial" TargetType="{ x:Type TextBlock }">
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Display }"/>
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="FontStretch" Value="SemiCondensed"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+	<!--#endregion-->
+
 	<Style x:Key="Txt.Cuerpo" TargetType="{ x:Type TextBlock }">
 		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
 		<Setter Property="FontSize" Value="13.5"/>

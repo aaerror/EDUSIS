@@ -155,9 +155,10 @@ public class GestionAsistenciasViewModelTests
 		var fecha = new DateTime(1999, 3, 10);
 		contexto.ViewModel.Fecha = fecha;
 
+		// Cambiar la fecha ya consulta; el Cargar explícito es el de la carga inicial de la pantalla.
 		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
 
-		_ = contexto.ServicioAsistencia.Received(1).ConsultarPlanillaAsync(new ConsultarPlanillaRequest(contexto.DivisionID, fecha));
+		_ = contexto.ServicioAsistencia.Received(2).ConsultarPlanillaAsync(new ConsultarPlanillaRequest(contexto.DivisionID, fecha));
 	}
 
 	[Fact]
@@ -333,23 +334,22 @@ public class GestionAsistenciasViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Los_cuatro_marcados_exigen_una_fila_elegida()
+	public async Task Los_cuatro_marcados_exigen_la_fila_sobre_la_que_marcan()
 	{
 		var contexto = await ConPlanillaAbiertaYFilaElegida();
+		var fila = contexto.ViewModel.Registros[0];
 
-		contexto.ViewModel.Registro = null;
-
+		// Sin fila no hay a quién marcar. Los cuatro comandos la reciben por parámetro: los botones
+		// de la grilla pasan la suya y los del pie pasan la seleccionada.
 		contexto.ViewModel.MarcarPresenteCommand.CanExecute(null).ShouldBeFalse();
 		contexto.ViewModel.MarcarAusenciaCommand.CanExecute(null).ShouldBeFalse();
 		contexto.ViewModel.MarcarInasistenciaCommand.CanExecute(null).ShouldBeFalse();
 		contexto.ViewModel.MarcarTardanzaCommand.CanExecute(null).ShouldBeFalse();
 
-		contexto.ViewModel.Registro = contexto.ViewModel.Registros[0];
-
-		contexto.ViewModel.MarcarPresenteCommand.CanExecute(null).ShouldBeTrue();
-		contexto.ViewModel.MarcarAusenciaCommand.CanExecute(null).ShouldBeTrue();
-		contexto.ViewModel.MarcarInasistenciaCommand.CanExecute(null).ShouldBeTrue();
-		contexto.ViewModel.MarcarTardanzaCommand.CanExecute(null).ShouldBeTrue();
+		contexto.ViewModel.MarcarPresenteCommand.CanExecute(fila).ShouldBeTrue();
+		contexto.ViewModel.MarcarAusenciaCommand.CanExecute(fila).ShouldBeTrue();
+		contexto.ViewModel.MarcarInasistenciaCommand.CanExecute(fila).ShouldBeTrue();
+		contexto.ViewModel.MarcarTardanzaCommand.CanExecute(fila).ShouldBeTrue();
 	}
 
 	[Fact]
@@ -357,12 +357,15 @@ public class GestionAsistenciasViewModelTests
 	public async Task Los_cuatro_marcados_exigen_la_planilla_abierta()
 	{
 		var contexto = await ConPlanillaAbiertaYFilaElegida(cerrada: true);
+		var fila = contexto.ViewModel.Registros[0];
 
+		// Se pasa la fila a propósito: con null los cuatro darían false por falta de parámetro y el
+		// caso no probaría nada sobre la planilla cerrada.
 		contexto.ViewModel.Cerrada.ShouldBeTrue();
-		contexto.ViewModel.MarcarPresenteCommand.CanExecute(null).ShouldBeFalse();
-		contexto.ViewModel.MarcarAusenciaCommand.CanExecute(null).ShouldBeFalse();
-		contexto.ViewModel.MarcarInasistenciaCommand.CanExecute(null).ShouldBeFalse();
-		contexto.ViewModel.MarcarTardanzaCommand.CanExecute(null).ShouldBeFalse();
+		contexto.ViewModel.MarcarPresenteCommand.CanExecute(fila).ShouldBeFalse();
+		contexto.ViewModel.MarcarAusenciaCommand.CanExecute(fila).ShouldBeFalse();
+		contexto.ViewModel.MarcarInasistenciaCommand.CanExecute(fila).ShouldBeFalse();
+		contexto.ViewModel.MarcarTardanzaCommand.CanExecute(fila).ShouldBeFalse();
 		contexto.ViewModel.IncorporarCursanteCommand.CanExecute(null).ShouldBeFalse();
 	}
 
@@ -390,10 +393,11 @@ public class GestionAsistenciasViewModelTests
 	{
 		var contexto = await ConPlanillaAbiertaYFilaElegida();
 
+		var fila = contexto.ViewModel.Registros[0];
 		contexto.ViewModel.MinutosTardanza = minutos;
 
-		contexto.ViewModel.MarcarTardanzaCommand.CanExecute(null).ShouldBe(habilitado);
-		contexto.ViewModel.MarcarPresenteCommand.CanExecute(null).ShouldBeTrue();
+		contexto.ViewModel.MarcarTardanzaCommand.CanExecute(fila).ShouldBe(habilitado);
+		contexto.ViewModel.MarcarPresenteCommand.CanExecute(fila).ShouldBeTrue();
 	}
 
 	[Fact]
@@ -401,11 +405,12 @@ public class GestionAsistenciasViewModelTests
 	public async Task Marcar_tardanza_manda_los_minutos_del_formulario_como_TimeSpan()
 	{
 		var contexto = await ConPlanillaAbiertaYFilaElegida();
-		var cursanteID = contexto.ViewModel.Registro!.CursanteID;
+		var fila = contexto.ViewModel.Registro!;
+		var cursanteID = fila.CursanteID;
 		contexto.ViewModel.MinutosTardanza = 20;
 		contexto.ViewModel.Observacion = "llego con el transporte demorado";
 
-		await contexto.ViewModel.MarcarTardanzaCommand.ExecuteAsync(null);
+		await contexto.ViewModel.MarcarTardanzaCommand.ExecuteAsync(fila);
 
 		_ = contexto.ServicioAsistencia.Received(1).MarcarTardanzaAsync(new MarcarTardanzaRequest(contexto.DivisionID,
 																								  contexto.ViewModel.Fecha,
@@ -420,10 +425,11 @@ public class GestionAsistenciasViewModelTests
 	public async Task Una_observacion_en_blanco_viaja_como_null()
 	{
 		var contexto = await ConPlanillaAbiertaYFilaElegida();
-		var cursanteID = contexto.ViewModel.Registro!.CursanteID;
+		var fila = contexto.ViewModel.Registro!;
+		var cursanteID = fila.CursanteID;
 		contexto.ViewModel.Observacion = "   ";
 
-		await contexto.ViewModel.MarcarAusenciaCommand.ExecuteAsync(null);
+		await contexto.ViewModel.MarcarAusenciaCommand.ExecuteAsync(fila);
 
 		_ = contexto.ServicioAsistencia.Received(1).MarcarAusenciaAsync(new MarcarAusenciaRequest(contexto.DivisionID,
 																								  contexto.ViewModel.Fecha,
@@ -437,21 +443,76 @@ public class GestionAsistenciasViewModelTests
 	{
 		var contexto = await ConPlanillaAbiertaYFilaElegida();
 
-		await contexto.ViewModel.MarcarPresenteCommand.ExecuteAsync(null);
+		await contexto.ViewModel.MarcarPresenteCommand.ExecuteAsync(contexto.ViewModel.Registro!);
 
 		_ = contexto.ServicioAsistencia.Received(2).ConsultarPlanillaAsync(Arg.Any<ConsultarPlanillaRequest>());
 	}
 
+	/// <summary>
+	/// Marca la fila QUE RECIBE y no la que está seleccionada, que son dos alumnos distintos.
+	/// </summary>
+	/// <remarks>
+	/// Es la guarda del defecto que <c>docs/ui-ux.md</c> dejó anotado: un <c>Button</c> dentro de una
+	/// celda marca el clic como manejado, así que apretar el botón de la fila 3 NO la selecciona, y un
+	/// comando que leyera el <c>SelectedItem</c> terminaría marcándole la inasistencia a la fila 1.
+	/// Acá se eligen explícitamente dos filas diferentes para que el caso falle si alguien vuelve a
+	/// colgar el marcado de la selección.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Marcar_inasistencia_usa_el_cursante_de_la_fila_elegida()
+	public async Task Marcar_inasistencia_usa_la_fila_que_recibe_y_no_la_seleccionada()
 	{
-		var contexto = await ConPlanillaAbiertaYFilaElegida();
-		var cursanteID = contexto.ViewModel.Registro!.CursanteID;
+		var contexto = new Contexto();
+		var elegido = CrearCursante("Perez, Ana");
+		var otro = CrearCursante("Luna, Juan");
+		contexto.DevolverCursantes(elegido, otro);
+		contexto.DevolverPlanilla(CrearPlanilla(contexto.DivisionID,
+												contexto.ViewModel.Fecha,
+												new List<RegistroAsistenciaResponse>
+												{
+													CrearRegistro(elegido.CursanteID),
+													CrearRegistro(otro.CursanteID)
+												}));
 
-		await contexto.ViewModel.MarcarInasistenciaCommand.ExecuteAsync(null);
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
 
-		_ = contexto.ServicioAsistencia.Received(1).MarcarInasistenciaAsync(Arg.Is<MarcarInasistenciaRequest>(r => r.CursanteID == cursanteID));
+		var filaSeleccionada = contexto.ViewModel.Registros[0];
+		var filaDelBoton = contexto.ViewModel.Registros[1];
+		contexto.ViewModel.Registro = filaSeleccionada;
+
+		await contexto.ViewModel.MarcarInasistenciaCommand.ExecuteAsync(filaDelBoton);
+
+		_ = contexto.ServicioAsistencia.Received(1).MarcarInasistenciaAsync(Arg.Is<MarcarInasistenciaRequest>(r => r.CursanteID == otro.CursanteID));
+		_ = contexto.ServicioAsistencia.DidNotReceive().MarcarInasistenciaAsync(Arg.Is<MarcarInasistenciaRequest>(r => r.CursanteID == elegido.CursanteID));
+	}
+
+	/// <summary>
+	/// Cambiar de alumno vacía la observación: la nota describe a UN registro y no se hereda.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Elegir_otra_fila_limpia_la_observacion_del_formulario()
+	{
+		var contexto = new Contexto();
+		var uno = CrearCursante("Perez, Ana");
+		var otro = CrearCursante("Luna, Juan");
+		contexto.DevolverCursantes(uno, otro);
+		contexto.DevolverPlanilla(CrearPlanilla(contexto.DivisionID,
+												contexto.ViewModel.Fecha,
+												new List<RegistroAsistenciaResponse>
+												{
+													CrearRegistro(uno.CursanteID),
+													CrearRegistro(otro.CursanteID)
+												}));
+
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+
+		contexto.ViewModel.Registro = contexto.ViewModel.Registros[0];
+		contexto.ViewModel.Observacion = "se retira a las 11";
+
+		contexto.ViewModel.Registro = contexto.ViewModel.Registros[1];
+
+		contexto.ViewModel.Observacion.ShouldBeEmpty();
 	}
 	#endregion
 
@@ -495,7 +556,10 @@ public class GestionAsistenciasViewModelTests
 		await contexto.ViewModel.AbrirPlanillaCommand.ExecuteAsync(null);
 
 		_ = contexto.ServicioAsistencia.Received(1).AbrirPlanillaAsync(new AbrirPlanillaRequest(contexto.DivisionID, fecha));
-		_ = contexto.ServicioAsistencia.Received(1).ConsultarPlanillaAsync(new ConsultarPlanillaRequest(contexto.DivisionID, fecha));
+
+		// Dos consultas y no una: la primera la dispara el cambio de fecha —elegir una fecha ES pedir
+		// su planilla— y la segunda es la recarga con la que termina la apertura.
+		_ = contexto.ServicioAsistencia.Received(2).ConsultarPlanillaAsync(new ConsultarPlanillaRequest(contexto.DivisionID, fecha));
 	}
 
 	[Fact]

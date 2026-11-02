@@ -4,19 +4,20 @@ using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
-using iText.Kernel.Pdf;
-using iText.Layout.Element;
-using iText.Layout;
-using System.Windows;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using System;
+using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.ViewModels.Docentes.Puestos;
 using WPF_Desktop.ViewModels.Shared;
 
 namespace WPF_Desktop.ViewModels.Docentes;
 
-internal partial class RegistrarDocenteViewModel : ObservableValidator
+internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicacion
 {
 	private readonly IServicioDocente _servicioDocentes;
+	private readonly IDialogService _dialogService;
 
 	#region ViewModels
 	[ObservableProperty]
@@ -39,15 +40,21 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator
 	private int _tab = 0;
 
 	#region Commands
-	public IRelayCommand GuardarCommand { get; }
+	public IAsyncRelayCommand GuardarCommand { get; }
 	public IRelayCommand ContinuarCommand { get; }
 	public IRelayCommand AtrasCommand { get; }
+	public IRelayCommand VolverCommand { get; }
 	#endregion
 
+	public IReadOnlyList<Migaja> Ruta { get; }
 
-	public RegistrarDocenteViewModel(IServicioDocente servicioDocentes)
+
+	public RegistrarDocenteViewModel(IServicioDocente servicioDocentes,
+									 IDialogService dialogService,
+									 INavigationService gestionDocentesNavigationService)
 	{
 		_servicioDocentes = servicioDocentes;
+		_dialogService = dialogService;
 
 		_informacionPersonal = new();
 		_contacto = new(null);
@@ -55,178 +62,163 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator
 		_legajoDocente = new(null);
 		_puestoDocente = new();
 
-		AtrasCommand = new RelayCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
-		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
-		GuardarCommand = new RelayCommand(ExecuteGuardarCommand, CanExecuteGuardarCommand);
+		VolverCommand = new RelayCommand(gestionDocentesNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Hacia("DOCENTES", VolverCommand),
+			Migaja.Actual("ALTA")
+		};
+
+		/*
+			LOS TRES COMANDOS IBAN CON UN CanExecute QUE NO SERVÍA PARA NADA. El RelayCommand de
+			CommunityToolkit no escucha CommandManager.RequerySuggested —a diferencia del
+			RoutedCommand de WPF—, así que su CanExecute se evalúa cuando se enlaza y no vuelve
+			a evaluarse hasta que alguien llame NotifyCanExecuteChanged. Nadie llamaba, y los
+			sub-ViewModels tampoco estaban suscritos: los tres botones se calculaban una vez,
+			con los bloques recién creados y sin errores, y quedaban habilitados para siempre.
+
+			No se cablean: se borran. Un botón de avanzar que se apaga solo deja al usuario sin
+			nada que leer —no hay dónde decirle POR QUÉ no puede seguir—, y el de "Atrás" era
+			peor, porque se apagaba con el legajo mal cargado y encerraba a quien quisiera
+			volver a corregir el paso anterior. Se avanza siempre, se valida al avanzar, y el
+			error aparece en el campo que lo tiene.
+		*/
+		AtrasCommand = new RelayCommand(ExecuteAtrasCommand);
+		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand);
+		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommand);
 	}
 
 	#region GuardarCommand
-	private bool CanExecuteGuardarCommand() =>
-		!HasErrors && !InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
-
-	private async void ExecuteGuardarCommand()
+	/// <summary>
+	/// Registra el docente con los datos de los dos pasos.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// DOS DEFECTOS QUE ESTABAN ACÁ. El primero: si faltaba el legajo o una parte del CUIL, la
+	/// pantalla avisaba "Se deben ingresar los datos correspondientes" y después BORRABA los
+	/// tres campos. Quien se había olvidado la mitad del CUIL perdía también la mitad que sí
+	/// había escrito. Ahora el aviso dice qué falta y no toca lo cargado.
+	/// </para>
+	/// <para>
+	/// El segundo: era <c>async void</c>, así que una excepción que se escapara del try subía
+	/// al manejador global, que apaga la aplicación con un alta a medio cargar.
+	/// </para>
+	/// <para>
+	/// Tampoco pregunta "¿Está seguro?" antes de guardar: el usuario recorrió dos pasos y
+	/// apretó "Guardar". Lo que faltaba no era una pregunta más, era que los campos con error
+	/// se marcaran mientras escribe (la vista ya no apaga el adorno de validación).
+	/// </para>
+	/// <para>
+	/// El control de "faltan datos" era un IsNullOrWhiteSpace sobre tres campos que terminaba
+	/// en un aviso al pie: decía que faltaba el legajo sin marcar el legajo, y no atrapaba el
+	/// legajo MAL cargado, sólo el vacío. Ahora valida los dos bloques del paso y deja que
+	/// cada campo muestre su propio motivo, que es donde el usuario está mirando.
+	/// </para>
+	/// </remarks>
+	private async Task ExecuteGuardarCommand()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
+		LegajoDocente.Validar();
+		PuestoDocente.Validar();
 
-		if (string.IsNullOrWhiteSpace(LegajoDocente.Legajo) || string.IsNullOrWhiteSpace(LegajoDocente.PrefijoCuil) || string.IsNullOrWhiteSpace(LegajoDocente.PosfijoCuil))
+		if (LegajoDocente.HasErrors || PuestoDocente.HasErrors)
 		{
-			messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
-			caption = "Error en la operación";
-
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-			LegajoDocente.Legajo = string.Empty;
-			LegajoDocente.PrefijoCuil = string.Empty;
-			LegajoDocente.PosfijoCuil = string.Empty;
+			return;
 		}
-		else
+
+		var requestDatosPersonales = new RegistrarDatosPersonalesRequest(
+			Apellido: InformacionPersonal.Apellido,
+			Nombre: InformacionPersonal.Nombre,
+			Documento: InformacionPersonal.DocumentoNacionalIdentidad,
+			Sexo: InformacionPersonal.Sexo.ToString(),
+			FechaNacimiento: InformacionPersonal.FechaNacimiento,
+			Nacionalidad: InformacionPersonal.Nacionalidad);
+
+		var requestDomicilio = new RegistrarDomicilioRequest(
+			Calle: Domicilio.Calle,
+			Altura: Domicilio.Altura,
+			Vivienda: Domicilio.Vivienda.ToString(),
+			Observacion: Domicilio.Observaciones,
+			Localidad: Domicilio.Localidad,
+			Provincia: Domicilio.Provincia,
+			Pais: Domicilio.Pais);
+
+		var requestContacto = new RegistrarContactoRequest(
+			Telefono: Contacto.Telefono,
+			Email: Contacto.Email);
+
+		var requestPuesto = new RegistrarPuestoDocenteRequest(
+			DocenteID: Guid.Empty,
+			Posicion: PuestoDocente.Posicion,
+			Estado: PuestoDocente.Estado,
+			FechaInicio: PuestoDocente.FechaInicio,
+			FechaFin: PuestoDocente.FechaFin);
+
+		var request = new RegistrarDocenteRequest(
+			Legajo: LegajoDocente.Legajo,
+			CUIL: LegajoDocente.CodigoUnicoIdentificacionLaboral,
+			FechaAlta: LegajoDocente.FechaAlta,
+			DatosPersonales: requestDatosPersonales,
+			Domicilio: requestDomicilio,
+			Contacto: requestContacto,
+			Puesto: requestPuesto);
+
+		string nombreCompleto = $"{ InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }";
+
+		try
 		{
-			messageBoxText = $"¿Está seguro que desea registrar los datos del docente {InformacionPersonal.Apellido}, {InformacionPersonal.Nombre}?";
-			caption = "Registrar Docente";
+			await _servicioDocentes.RegistrarDocenteAsync(request);
 
-			result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-			if (result is MessageBoxResult.Yes)
-			{
-				var requestDatosPersonales = new RegistrarDatosPersonalesRequest(
-					Apellido: InformacionPersonal.Apellido,
-					Nombre: InformacionPersonal.Nombre,
-					Documento: InformacionPersonal.DocumentoNacionalIdentidad,
-					Sexo: InformacionPersonal.Sexo.ToString(),
-					FechaNacimiento: InformacionPersonal.FechaNacimiento,
-					Nacionalidad: InformacionPersonal.Nacionalidad);
+			InformacionPersonal = new InformacionPersonalViewModel(null);
+			Domicilio = new DomicilioViewModel(null);
+			Contacto = new ContactoViewModel(null);
+			LegajoDocente = new LegajoDocenteViewModel(null);
+			PuestoDocente = new PuestoDocenteViewModel(null);
 
-				var requestDomicilio = new RegistrarDomicilioRequest(
-					Calle: Domicilio.Calle,
-					Altura: Domicilio.Altura,
-					Vivienda: Domicilio.Vivienda.ToString(),
-					Observacion: Domicilio.Observaciones,
-					Localidad: Domicilio.Localidad,
-					Provincia: Domicilio.Provincia,
-					Pais: Domicilio.Pais);
+			Tab = 0;
 
-				var requestContacto = new RegistrarContactoRequest(
-					Telefono: Contacto.Telefono,
-					Email: Contacto.Email);
-
-				var requestPuesto = new RegistrarPuestoDocenteRequest(
-					DocenteID: Guid.Empty,
-					Posicion: PuestoDocente.Posicion,
-					Estado: PuestoDocente.Estado,
-					FechaInicio: PuestoDocente.FechaInicio,
-					FechaFin: PuestoDocente.FechaFin);
-
-				var request = new RegistrarDocenteRequest(
-					Legajo: LegajoDocente.Legajo,
-					CUIL: LegajoDocente.CodigoUnicoIdentificacionLaboral,
-					FechaAlta: LegajoDocente.FechaAlta,
-					DatosPersonales: requestDatosPersonales,
-					Domicilio: requestDomicilio,
-					Contacto: requestContacto,
-					Puesto: requestPuesto);
-
-				try
-				{
-					/*if (!_servicioDocentes.EsDNIValido(new VerificarDNIRequest(request.DNI)))
-					{
-						messageBoxText = $"El número de documento, {request.DNI}, ya se encuentra registrado con otro docente.";
-						caption = "Error en la operación";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
-						InformacionPersonal.DNI = string.Empty;
-						Tab = 0;
-
-						return;
-					}
-
-					if (!_servicioDocentes.EsLegajoValido(new VerificarLegajoRequest(request.Legajo)))
-					{
-						messageBoxText = $"El legajo docente, {request.Legajo}, ya se encuentra registrado con otro docente.";
-						caption = "Error en la operación";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
-						DocenteInstitucionalViewModel.Legajo = string.Empty;
-
-						return;
-					}
-
-					if (!_servicioDocentes.EsCUILValido(new VerificarCuilRequest(request.CUIL)))
-					{
-						messageBoxText = $"El CUIL del docente, {request.Apellido} {request.Nombre}, ya se encuentra registrado con otro personal de la institución.";
-						caption = "Error en la operación";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning);
-
-						DocenteInstitucionalViewModel.PrefijoCuil = string.Empty;
-						DocenteInstitucionalViewModel.PosfijoCuil = string.Empty;
-
-						return;
-					}*/
-
-					await _servicioDocentes.RegistrarDocenteAsync(request);
-
-					messageBoxText = $"Se han registrado los datos de un nuevo docente.";
-					caption = "Operación Exitosa";
-					MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-
-					InformacionPersonal = new InformacionPersonalViewModel(null);
-					Domicilio = new DomicilioViewModel(null);
-					Contacto = new ContactoViewModel(null);
-					LegajoDocente = new LegajoDocenteViewModel(null);
-					PuestoDocente = new PuestoDocenteViewModel(null);
-
-					Tab = 0;
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-				}
-			}
+			_dialogService.MostrarInformacion($"{ nombreCompleto }, legajo { request.Legajo }. Ya figura en el listado de docentes.", "Docente registrado");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo registrar el docente");
 		}
 	}
 	#endregion
 
 	#region ContinuarCommand
-	private bool CanExecuteContinuarCommand() =>
-		!InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
-
+	/// <summary>
+	/// Pasa al segundo paso del alta.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Acá estaba el peor defecto del formulario: si faltaba UN campo, la pantalla reemplazaba
+	/// los tres ViewModels del paso por instancias vacías. Es decir, avisaba que faltaba un dato
+	/// y a cambio borraba todos los demás —nombre, documento, domicilio y contacto—. El usuario
+	/// volvía a empezar de cero por haberse salteado el teléfono.
+	/// </para>
+	/// <para>
+	/// Después de eso quedó una lista de ocho IsNullOrWhiteSpace escrita a mano que terminaba
+	/// en un aviso al pie: "Falta completar: apellido, documento, teléfono". El dato ya estaba
+	/// dicho —cada campo tiene su [Required] en el ViewModel del bloque—, así que la lista era
+	/// una segunda copia de las reglas que había que mantener al día, y además dejaba al
+	/// usuario buscando por la pantalla cuáles de los catorce campos eran esos tres.
+	/// </para>
+	/// <para>
+	/// Validar los tres bloques enteros marca cada campo donde está, con su propio motivo, y
+	/// de paso atrapa lo que la lista no miraba: el documento de cinco dígitos, el correo sin
+	/// arroba, el teléfono con letras. Por eso tampoco queda aviso al pie: sería repetir en un
+	/// cartel lo que ya está escrito debajo de cada campo.
+	/// </para>
+	/// </remarks>
 	private void ExecuteContinuarCommand()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
+		InformacionPersonal.Validar();
+		Domicilio.Validar();
+		Contacto.Validar();
 
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido) || string.IsNullOrWhiteSpace(InformacionPersonal.Nombre) || string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad) || string.IsNullOrWhiteSpace(Domicilio.Calle) || string.IsNullOrWhiteSpace(Domicilio.Localidad) || string.IsNullOrWhiteSpace(Domicilio.Provincia) || string.IsNullOrWhiteSpace(Contacto.Telefono) || string.IsNullOrWhiteSpace(Contacto.Email))
+		if (InformacionPersonal.HasErrors || Domicilio.HasErrors || Contacto.HasErrors)
 		{
-			messageBoxText = "Se deben ingresar los datos correspondientes para continuar.";
-			caption = "Error en la operación";
-
-			MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error);
-
-			InformacionPersonal = new InformacionPersonalViewModel(
-				new DatosPersonalesResponse(
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					DateTime.Now,
-					string.Empty));
-
-			Domicilio = new DomicilioViewModel(
-				new DomicilioResponse(
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					string.Empty,
-					string.Empty));
-
-			Contacto = new ContactoViewModel(
-				new ContactoResponse(
-					string.Empty,
-					string.Empty));
-
 			return;
 		}
 
@@ -237,20 +229,7 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator
 	#endregion
 
 	#region AtrasCommand
-	private bool CanExecuteAtrasCommand() =>
-		!LegajoDocente.HasErrors && !PuestoDocente.HasErrors;
-
 	private void ExecuteAtrasCommand() =>
 		Tab = 0;
 	#endregion
-
-	private void GenerateDocument(string filename)
-	{
-		var writer = new PdfWriter(filename);
-		var pdf = new PdfDocument(writer);
-		var document = new Document(pdf);
-		document.Add(new Paragraph(""));
-
-		writer.Close();
-	}
 }

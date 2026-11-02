@@ -7,20 +7,13 @@ namespace WPF_Desktop.Shared.Converters;
 
 internal class GradoConverter : IValueConverter
 {
-	public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-	{
-		var data = value as string;
-		if (!string.IsNullOrWhiteSpace(data))
-		{
-			var result = Enum.TryParse<Grado>(data, out var grado);
-			if (result)
-			{
-				return $" { (int) grado }° Año";
-			}
-		}
-
-		return string.Empty;
-	}
+	/// <remarks>
+	/// Armaba el texto por su cuenta con el valor numérico del enum y además lo devolvía con un
+	/// espacio adelante. Ahora lo pide a <see cref="Grados"/>, que lee el texto que el propio
+	/// <see cref="Grado"/> declara, para que la pantalla no tenga su tabla de equivalencias.
+	/// </remarks>
+	public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+		Grados.Decir(value as string);
 
 	public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
 	{

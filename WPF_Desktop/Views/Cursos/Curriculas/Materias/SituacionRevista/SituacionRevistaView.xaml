@@ -11,10 +11,20 @@
 	<!--
 		SITUACIÓN DE REVISTA — la designación de un docente en una cátedra.
 
-		Se monta tres veces y DOS de ellas con IsEnabled="False" (el docente en funciones y el
-		detalle de la grilla), así que la mitad de sus usos son de sólo lectura. El docente ya
-		venía deshabilitado en los tres: lo elige el buscador de la pantalla, no este
-		formulario. Pasa a Dato.
+		AHORA ES SÓLO EL FORMULARIO DEL ALTA. Se montaba tres veces y DOS de ellas con
+		IsEnabled="False" —el docente en funciones y el detalle de la grilla—, o sea que la
+		mayoría de sus usos eran de sólo lectura y los resolvía con un ComboBox, dos DatePicker
+		y un CheckBox grises. Eso es exactamente lo que el estilo Dato existe para evitar: un
+		campo gris deshabilitado dice "no podés ahora", y lo que había que decir era "esto no se
+		edita". Los dos montajes de lectura pasaron a la pantalla contenedora, escritos con
+		Dato.*; acá quedó el único uso editable, y el docente —que lo elige el buscador y no este
+		formulario— sigue entrando como Dato.
+
+		SIN EL GroupBox "SITUACIÓN DE REVISTA". Era el rótulo de la ÚNICA sección del formulario
+		—así que no separaba nada de nada— y repetía en jerga el título que la tarjeta ya daba en
+		castellano: "Designar un docente" arriba y "SITUACIÓN DE REVISTA" doce píxeles después.
+		El corte contra el botón "Buscar docente" lo hace ahora la tarjeta con Superficie.Seccion,
+		que es una regla sin rótulo.
 
 		Se sacaron tres bloques con Visibility="Collapsed" fija (SituacionRevistaID, CatedraID,
 		DocenteID) y las seis RowDefinition sin Height, que eran * en lugar de Auto.
@@ -23,7 +33,8 @@
 		"Titular": comparaba la salida de CargoConverter contra la cadena "Titular", y ese
 		conversor devuelve cadena vacía cuando recibe un valor de enum —que es justo lo que
 		expone SelectedItem—. La condición no podía cumplirse nunca, así que el campo estaba
-		siempre visible. Si la regla hace falta, va en el ViewModel, que sí sabe el cargo.
+		siempre visible. La regla hacía falta y ahora vive donde se sabe el cargo: el campo
+		cuelga de ExigeFechaFin, del ViewModel.
 	-->
 	<UserControl.Resources>
 		<converters:CargoConverter x:Key="cargoConverter"/>
@@ -35,63 +46,108 @@
 		</ObjectDataProvider>
 	</UserControl.Resources>
 
-	<GroupBox Header="SITUACIÓN DE REVISTA" Style="{ StaticResource ResourceKey=Seccion }">
-		<Grid>
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
-			</Grid.ColumnDefinitions>
-			<Grid.RowDefinitions>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="Auto"/>
-			</Grid.RowDefinitions>
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
 
-			<!-- El docente lo elige el buscador de la pantalla, no este formulario. -->
-			<HeaderedContentControl Grid.Column="0" Grid.Row="0"
-									Content="{ Binding Path=Docente, Mode=OneWay, FallbackValue='Sin docente seleccionado', TargetNullValue='Sin docente seleccionado' }"
-									Header="Docente"
-									Style="{ StaticResource ResourceKey=Dato.Izquierda }"/>
+		<!-- El docente lo elige el buscador de la pantalla, no este formulario. -->
+		<HeaderedContentControl Grid.Column="0" Grid.Row="0"
+								Content="{ Binding Path=Docente, Mode=OneWay, FallbackValue='Sin docente seleccionado', TargetNullValue='Sin docente seleccionado' }"
+								Header="Docente"
+								Style="{ StaticResource ResourceKey=Dato.Izquierda }"/>
 
-			<HeaderedContentControl Grid.Column="1" Grid.Row="0"
-									Header="Cargo en la materia"
-									Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<ComboBox x:Name="ComboBox_Cargo"
-						  ItemsSource="{ Binding Source={ StaticResource ResourceKey=cargos } }"
-						  SelectedItem="{ Binding Path=Cargo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=cargoConverter } }"
-						  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-			</HeaderedContentControl>
+		<!--
+			"Cargo en la cátedra" y no "en la materia": la designación es de UNA cátedra —la
+			materia en una división—, que es lo que dicen la pantalla, su ruta y el nombre
+			accesible de la grilla. La materia sola no tiene docentes.
+		-->
+		<HeaderedContentControl Grid.Column="1" Grid.Row="0"
+								Header="Cargo en la cátedra"
+								Style="{ StaticResource ResourceKey=Campo.Derecha }">
+			<ComboBox x:Name="ComboBox_Cargo"
+					  ItemsSource="{ Binding Source={ StaticResource ResourceKey=cargos } }"
+					  SelectedItem="{ Binding Path=Cargo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=cargoConverter } }"
+					  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+		</HeaderedContentControl>
 
-			<HeaderedContentControl Grid.Column="0" Grid.Row="1"
-									Header="Fecha de inicio"
-									Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-				<DatePicker x:Name="DatePicker_FechaInicio"
-							DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-							DisplayDateStart="{ x:Static sys:DateTime.Now }"
-							SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
-			</HeaderedContentControl>
-
-			<HeaderedContentControl Grid.Column="1" Grid.Row="1"
-									Header="Fecha de fin"
-									Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<DatePicker x:Name="DatePicker_FechaFin"
-							DisplayDateStart="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={ x:Static sys:DateTime.Now } }"
-							SelectedDate="{ Binding Path=FechaFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
-							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
-			</HeaderedContentControl>
-
+		<HeaderedContentControl Grid.Column="0" Grid.Row="1"
+								Header="Fecha de inicio"
+								Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 			<!--
-				Lo decide el circuito de designación, no este formulario: viene deshabilitada
-				en los tres usos de la vista. La casilla se nombra sola, así que no lleva
-				rótulo encima.
+				SIN DisplayDateStart. Tenía fijado "hoy" como primer día elegible, así que no se
+				podía cargar una designación retroactiva: el docente que empezó el lunes pasado y
+				recién ahora se registra no entraba. El dominio no lo prohíbe —RangoFechas acepta
+				un inicio pasado, y HaIniciado() existe justamente para contemplarlo—, era una
+				regla inventada por la vista.
 			-->
-			<CheckBox x:Name="CheckBox_EnFunciones"
-					  Grid.ColumnSpan="2" Grid.Row="2"
-					  Content="Es el docente de aula de la cátedra"
-					  IsChecked="{ Binding Path=EnFunciones, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-					  IsEnabled="False"
-					  Style="{ StaticResource ResourceKey=Chk.Campo }"/>
-		</Grid>
-	</GroupBox>
+			<DatePicker x:Name="DatePicker_FechaInicio"
+						AutomationProperties.Name="Fecha de inicio de la designación"
+						DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+						SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+						Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+		</HeaderedContentControl>
+
+		<!--
+			EL CAMPO NO EXISTE PARA UN TITULAR. El titular se designa por tiempo indeterminado y el
+			dominio lo rechaza con fecha de fin —TitularConFechaFinalizacionException—, así que
+			ofrecer el calendario era ofrecer un camino garantizado a un cartel de error. El
+			ViewModel ya vaciaba FechaFin al elegir Titular, pero sólo AL CAMBIAR el cargo: elegir
+			Titular y cargar la fecha después mandaba las dos cosas juntas.
+
+			Cuelga de ExigeFechaFin, que es la misma propiedad que enciende el texto de abajo y que
+			nombra a los dos cargos temporales. Era la regla que el comentario de más arriba dejó
+			anotada: el MultiDataTrigger que la intentaba comparaba la salida de CargoConverter
+			contra la cadena "Titular" y ese conversor devuelve cadena vacía con un valor de enum,
+			así que no podía cumplirse nunca.
+		-->
+		<HeaderedContentControl Grid.Column="1" Grid.Row="1"
+								Header="Fecha de fin"
+								Style="{ StaticResource ResourceKey=Campo.Derecha }"
+								Visibility="{ Binding Path=ExigeFechaFin, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<DatePicker x:Name="DatePicker_FechaFin"
+						AutomationProperties.Name="Fecha de fin de la designación"
+						DisplayDateStart="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={ x:Static sys:DateTime.Now } }"
+						SelectedDate="{ Binding Path=FechaFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+						Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+		</HeaderedContentControl>
+
+		<!--
+			LA FECHA DE FIN DEJÓ DE RELLENARSE SOLA. El ViewModel le ponía la fecha de inicio a
+			todo suplente o interino para esquivar CargoTemporalSinFechaFinalizacionException, con
+			lo cual esquivaba la excepción guardando un dato falso: una designación de UN DÍA que
+			nadie eligió. Ahora el campo nace vacío, esta línea dice que hace falta y el comando
+			de guardar no se habilita sin ella.
+		-->
+		<TextBlock Grid.Column="1" Grid.Row="2"
+				   Margin="0 0 0 12"
+				   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+				   Text="El suplente y el interino necesitan fecha de fin: el cargo es temporal."
+				   TextWrapping="Wrap"
+				   Visibility="{ Binding Path=ExigeFechaFin, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+
+		<!--
+			La casilla se nombra sola, así que no lleva rótulo encima. Dejó de estar
+			deshabilitada: poner al docente frente al curso es una decisión aparte de designarlo,
+			y el formulario la tomaba solo —nacía marcada y sin poder desmarcarse—, de modo que
+			designar disparaba un PonerEnFunciones que nadie pidió ni vio.
+
+			DICE EL ESTADO QUE DEJA ENCENDIDO, no una orden. "Ponerlo también frente al curso
+			desde ya" era imperativo con pronombre, y además era el único lugar de la pantalla que
+			llamaba "frente al curso" a lo que la grilla y los cuatro botones llaman "en aula".
+		-->
+		<CheckBox x:Name="CheckBox_EnFunciones"
+				  Grid.ColumnSpan="2" Grid.Row="3"
+				  Content="En aula desde que empieza la designación"
+				  IsChecked="{ Binding Path=EnFunciones, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+				  Style="{ StaticResource ResourceKey=Chk.Campo }"
+				  ToolTip="Sin marcar, el docente queda designado y el aula no cambia"/>
+	</Grid>
 </UserControl>

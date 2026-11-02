@@ -24,10 +24,11 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Inscribir alumno"
-						   Subtitle="Inscribir al alumno seleccionado en una división"/>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Inscribir alumno"
+									Subtitulo="Inscribir al alumno seleccionado en una división"/>
 
 		<Border Grid.Row="1"
 				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
@@ -36,7 +37,9 @@
 				<Border Margin="0 0 0 20"
 						Style="{ StaticResource ResourceKey=Superficie.Aviso }"
 						Visibility="{ Binding Path=HabilitarMessage, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-					<TextBlock MaxWidth="560"
+					<!-- Left explícito: con MaxWidth, un TextBlock estirado lo centra WPF. -->
+					<TextBlock HorizontalAlignment="Left"
+							   MaxWidth="560"
 							   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 							   Text="{ Binding Path=Message, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 							   TextWrapping="Wrap"/>
@@ -64,7 +67,7 @@
 									<DataTemplate>
 										<StackPanel Orientation="Horizontal">
 											<TextBlock Margin="0 0 4 0"
-													   Text="{ Binding Path=Grado, StringFormat={}{0}° Año }"/>
+													   Text="{ Binding Path=Grado, Converter={ StaticResource ResourceKey=grado }, Mode=OneWay }"/>
 											<TextBlock Text="{ Binding Path=NivelEducativo, StringFormat={}({0}) }"/>
 										</StackPanel>
 									</DataTemplate>

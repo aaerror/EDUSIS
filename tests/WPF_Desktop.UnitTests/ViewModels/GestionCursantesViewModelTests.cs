@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
+using Core.ServicioAsistencias;
+using Core.ServicioAsistencias.DTOs.Requests;
 using Core.ServicioCurriculas;
 using Core.ServicioCurriculas.DTOs.Requests;
 using Core.ServicioCurriculas.DTOs.Responses;
@@ -12,6 +14,7 @@ using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioMaterias;
 using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Responses;
+using Domain.Asistencias;
 using Domain.Cursos;
 using Domain.Shared;
 using NSubstitute;
@@ -44,7 +47,17 @@ public class GestionCursantesViewModelTests
 
 		/// <summary>UI-CUR-1: la pantalla lista las divisiones del curso para poblar el destino del traslado.</summary>
 		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
+
+		/// <summary>
+		/// La vista de asistencias del alumno. Cuenta y no lista porque
+		/// <c>ContarFaltasAsync(cursanteID, tipo)</c> es la única consulta de asistencias que
+		/// acepta un cursante: el agregado es la planilla, que es de la división y de una fecha.
+		/// </summary>
+		public IServicioAsistencia ServicioAsistencia { get; } = Substitute.For<IServicioAsistencia>();
 		public DialogServiceFalso Dialogos { get; } = new();
+
+		/// <summary>Salida de la pantalla: la ruta vuelve a las divisiones del curso.</summary>
+		public NavegacionFalsa NavegarADivisiones { get; } = new();
 		public CursoStore CursoStore { get; } = new();
 		public DivisionStore DivisionStore { get; } = new();
 		public CicloLectivoStore CicloLectivoStore { get; } = new();
@@ -64,8 +77,8 @@ public class GestionCursantesViewModelTests
 				DivisionStore.Division = new DivisionSeleccionada(DivisionID);
 			}
 
-			DevolverCurriculas(new CurriculaResponse(CursoID, CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31)),
-							   new CurriculaResponse(CursoID, CurriculaVigenteID, new DateTime(2024, 3, 1), null));
+			DevolverCurriculas(new CurriculaResponse(CursoID, CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31), Vigente: false),
+							   new CurriculaResponse(CursoID, CurriculaVigenteID, new DateTime(2024, 3, 1), null, Vigente: true));
 			DevolverMaterias(CrearMateria("Matematica"), CrearMateria("Lengua"));
 			DevolverCursantes();
 			DevolverCalificaciones();
@@ -76,7 +89,9 @@ public class GestionCursantesViewModelTests
 													  ServicioMateria,
 													  ServicioCurricula,
 													  ServicioDivision,
+													  ServicioAsistencia,
 													  Dialogos,
+													  NavegarADivisiones,
 													  CursoStore,
 													  DivisionStore,
 													  CicloLectivoStore);
@@ -86,6 +101,13 @@ public class GestionCursantesViewModelTests
 		{
 			ServicioDivision.ListarDivisionesAsync(Arg.Any<ListarDivisionesRequest>())
 							.Returns(Task.FromResult<IReadOnlyCollection<DivisionResponse>>(divisiones.ToList()));
+		}
+
+		/// <summary>El conteo que devuelve el servicio para un tipo de asistencia.</summary>
+		public void DevolverConteo(TipoAsistencia tipo, int cantidad)
+		{
+			ServicioAsistencia.ContarFaltasAsync(Arg.Is<ContarFaltasRequest>(r => r.Tipo == tipo))
+							  .Returns(Task.FromResult(cantidad));
 		}
 
 		public void DevolverHistorial(params InscripcionHistoricaResponse[] inscripciones)
@@ -239,8 +261,8 @@ public class GestionCursantesViewModelTests
 	public async Task Cargar_elige_la_vigente_aunque_venga_primera_en_la_lista()
 	{
 		var contexto = new Contexto();
-		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, contexto.CurriculaVigenteID, new DateTime(2024, 3, 1), null),
-									new CurriculaResponse(contexto.CursoID, contexto.CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31)));
+		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, contexto.CurriculaVigenteID, new DateTime(2024, 3, 1), null, Vigente: true),
+									new CurriculaResponse(contexto.CursoID, contexto.CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31), Vigente: false));
 
 		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
 
@@ -266,7 +288,7 @@ public class GestionCursantesViewModelTests
 	public async Task Sin_curricula_vigente_Materias_queda_vacia_se_advierte_y_no_se_piden_materias()
 	{
 		var contexto = new Contexto();
-		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, contexto.CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31)));
+		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, contexto.CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31), Vigente: false));
 
 		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
 
@@ -933,6 +955,123 @@ public class GestionCursantesViewModelTests
 		contexto.ViewModel.Materias.Count.ShouldBe(2);
 		contexto.ViewModel.DivisionesDestino.ShouldBeEmpty();
 		contexto.Dialogos.Advertencias.Count.ShouldBe(1);
+	}
+	#endregion
+
+	#region Vistas del alumno
+	/// <summary>
+	/// El defecto que esto fija: el historial se pedía con un botón y la sección aparecía para
+	/// quedarse. No había forma de volver a las calificaciones sin cambiar de alumno.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Abrir_el_historial_lo_carga_y_se_puede_volver_a_las_calificaciones()
+	{
+		var contexto = new Contexto();
+		var cursante = await contexto.BuscarYSeleccionarAsync();
+		contexto.DevolverHistorial(
+			new InscripcionHistoricaResponse(Guid.NewGuid(), Guid.NewGuid(), "A", "Primero", "Secundaria", "2024", new DateTime(2024, 3, 1), null, false, true));
+
+		contexto.ViewModel.VistaDelAlumno.ShouldBe(GestionCursantesViewModel.VISTA_CALIFICACIONES);
+
+		contexto.ViewModel.VerCommand.Execute(GestionCursantesViewModel.VISTA_HISTORIAL);
+
+		contexto.ViewModel.VistaDelAlumno.ShouldBe(GestionCursantesViewModel.VISTA_HISTORIAL);
+		_ = contexto.ServicioCursante.Received(1).ConsultarHistorialDeDivisionesAsync(new ConsultarHistorialRequest(cursante.AlumnoID));
+		contexto.ViewModel.Historial.Count.ShouldBe(1);
+
+		contexto.ViewModel.VerCommand.Execute(GestionCursantesViewModel.VISTA_CALIFICACIONES);
+
+		contexto.ViewModel.VistaDelAlumno.ShouldBe(GestionCursantesViewModel.VISTA_CALIFICACIONES);
+	}
+
+	/// <summary>El historial no cambia mientras se mira al mismo alumno: se trae una sola vez.</summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Volver_al_historial_del_mismo_alumno_no_lo_vuelve_a_consultar()
+	{
+		var contexto = new Contexto();
+		await contexto.BuscarYSeleccionarAsync();
+		contexto.DevolverHistorial(
+			new InscripcionHistoricaResponse(Guid.NewGuid(), Guid.NewGuid(), "A", "Primero", "Secundaria", "2024", new DateTime(2024, 3, 1), null, false, true));
+
+		contexto.ViewModel.VerCommand.Execute(GestionCursantesViewModel.VISTA_HISTORIAL);
+		contexto.ViewModel.VerCommand.Execute(GestionCursantesViewModel.VISTA_CALIFICACIONES);
+		contexto.ViewModel.VerCommand.Execute(GestionCursantesViewModel.VISTA_HISTORIAL);
+
+		_ = contexto.ServicioCursante.Received(1).ConsultarHistorialDeDivisionesAsync(Arg.Any<ConsultarHistorialRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Abrir_las_asistencias_cuenta_los_cuatro_tipos_del_alumno_elegido()
+	{
+		var contexto = new Contexto();
+		var cursante = await contexto.BuscarYSeleccionarAsync();
+		contexto.DevolverConteo(TipoAsistencia.Presente, 142);
+		contexto.DevolverConteo(TipoAsistencia.Ausencia, 6);
+		contexto.DevolverConteo(TipoAsistencia.Inasistencia, 3);
+		contexto.DevolverConteo(TipoAsistencia.Tardanza, 4);
+
+		contexto.ViewModel.VerCommand.Execute(GestionCursantesViewModel.VISTA_ASISTENCIAS);
+
+		contexto.ViewModel.Presentes.ShouldBe(142);
+		contexto.ViewModel.Ausencias.ShouldBe(6);
+		contexto.ViewModel.Inasistencias.ShouldBe(3);
+		contexto.ViewModel.Tardanzas.ShouldBe(4);
+		_ = contexto.ServicioAsistencia.Received(1).ContarFaltasAsync(new ContarFaltasRequest(cursante.CursanteID, TipoAsistencia.Presente));
+	}
+
+	/// <summary>
+	/// Si cambiar de alumno dejara abierta la vista de asistencias, los contadores recién
+	/// puestos en cero se leerían como los del alumno nuevo.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cambiar_de_alumno_vuelve_a_calificaciones_y_pone_los_contadores_en_cero()
+	{
+		var contexto = new Contexto();
+		contexto.DevolverCursantes(new CursanteResponse(Guid.NewGuid(), Guid.NewGuid(), "Perez, Ana", "30111222", 15, false),
+								   new CursanteResponse(Guid.NewGuid(), Guid.NewGuid(), "Gomez, Luis", "30111333", 16, false));
+		await contexto.ViewModel.BuscarCommandAsync.ExecuteAsync(null);
+		contexto.ViewModel.Cursante = contexto.ViewModel.Cursantes[0];
+		contexto.DevolverConteo(TipoAsistencia.Presente, 142);
+
+		contexto.ViewModel.VerCommand.Execute(GestionCursantesViewModel.VISTA_ASISTENCIAS);
+		contexto.ViewModel.Presentes.ShouldBe(142);
+
+		contexto.ViewModel.Cursante = contexto.ViewModel.Cursantes[1];
+
+		contexto.ViewModel.VistaDelAlumno.ShouldBe(GestionCursantesViewModel.VISTA_CALIFICACIONES);
+		contexto.ViewModel.Presentes.ShouldBe(0);
+		contexto.ViewModel.Ausencias.ShouldBe(0);
+		contexto.ViewModel.Inasistencias.ShouldBe(0);
+		contexto.ViewModel.Tardanzas.ShouldBe(0);
+	}
+
+	/// <summary>El alta es de una calificación: abrirla desde otra vista vuelve a su grilla.</summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cargar_una_nota_desde_otra_vista_vuelve_a_calificaciones()
+	{
+		var contexto = new Contexto();
+		await contexto.BuscarYSeleccionarAsync();
+		contexto.ViewModel.VerCommand.Execute(GestionCursantesViewModel.VISTA_INSCRIPCION);
+
+		contexto.ViewModel.NuevaCalificacionCommand.Execute(null);
+
+		contexto.ViewModel.VistaDelAlumno.ShouldBe(GestionCursantesViewModel.VISTA_CALIFICACIONES);
+		contexto.ViewModel.MostrarCalificacionView.ShouldBeTrue();
+	}
+
+	/// <summary>Sin alumno elegido no hay vista que abrir: el conmutador está apagado.</summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Sin_alumno_elegido_no_se_puede_cambiar_de_vista()
+	{
+		var contexto = new Contexto();
+
+		contexto.ViewModel.VerCommand.CanExecute(GestionCursantesViewModel.VISTA_ASISTENCIAS).ShouldBeFalse();
 	}
 	#endregion
 }

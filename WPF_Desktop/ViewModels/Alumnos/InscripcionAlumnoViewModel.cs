@@ -5,21 +5,25 @@ using Core.ServicioCursantes;
 using Core.ServicioCursos;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System;
+using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Cursos;
 
 namespace WPF_Desktop.ViewModels.Alumnos;
 
-internal partial class InscripcionAlumnoViewModel : ObservableObject
+internal partial class InscripcionAlumnoViewModel : ObservableObject, IUbicacion
 {
 	#region Servicios
 	private readonly IServicioCurso _servicioCursos;
 	private readonly IServicioCursante _servicioCursantes;
 	private readonly IServicioDivision _servicioDivisiones;
+	private readonly IDialogService _dialogService;
 	#endregion
 
 	#region Stores
@@ -61,15 +65,33 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject
 	public string Periodo => _cicloLectivoStore.CicloLectivo;
 
 	public IAsyncRelayCommand InscribirCommand { get; }
+	public IRelayCommand VolverCommand { get; }
+
+	public IReadOnlyList<Migaja> Ruta { get; }
 
 
-	public InscripcionAlumnoViewModel(IServicioCurso servicioCursos, IServicioCursante servicioCursantes, IServicioDivision servicioDivisiones, LegajoStore legajoStore, CicloLectivoStore cicloLectivoStore)
+	public InscripcionAlumnoViewModel(IServicioCurso servicioCursos,
+									  IServicioCursante servicioCursantes,
+									  IServicioDivision servicioDivisiones,
+									  IDialogService dialogService,
+									  INavigationService gestionAlumnosNavigationService,
+									  LegajoStore legajoStore,
+									  CicloLectivoStore cicloLectivoStore)
 	{
 		_servicioCursos = servicioCursos;
 		_servicioCursantes = servicioCursantes;
 		_servicioDivisiones = servicioDivisiones;
+		_dialogService = dialogService;
 		_legajoStore = legajoStore;
 		_cicloLectivoStore = cicloLectivoStore;
+
+		VolverCommand = new RelayCommand(gestionAlumnosNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Hacia("ALUMNOS", VolverCommand),
+			Migaja.Actual("INSCRIPCIÓN")
+		};
 
 		InscribirCommand = new AsyncRelayCommand(ExecuteInscribirCommandAsync, CanExecuteInscribirCommand);
 
@@ -94,7 +116,7 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject
 		}
 		catch (Exception ex)
 		{
-			MostrarMensaje(ex.Message);
+			_dialogService.MostrarError(ex.Message, "No se pudieron cargar los cursos");
 		}
 	}
 
@@ -129,7 +151,7 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject
 		}
 		catch (Exception ex)
 		{
-			MostrarMensaje(ex.Message);
+			_dialogService.MostrarError(ex.Message, "No se pudieron cargar las divisiones del curso");
 		}
 	}
 	#endregion
@@ -156,23 +178,34 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject
 
 		try
 		{
+			string destino = $"{ Grados.Decir(Curso.Grado) } { Division.Descripcion } ({ Periodo })";
+
 			// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
 			var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, _legajoStore.PersonaID.Value, Periodo, FechaInicio, EsRecursante);
 			await _servicioCursantes.InscribirCursanteAsync(request);
 
-			MostrarMensaje("Se ha inscripto el alumno en la división correctamente.");
-
 			EsRecursante = false;
 			FechaInicio = DateTime.Today;
 			Curso = null;
+			Message = string.Empty;
+			HabilitarMessage = false;
+
+			_dialogService.MostrarInformacion($"Quedó inscripto en { destino }.", "Alumno inscripto");
 		}
 		catch (Exception ex)
 		{
-			MostrarMensaje(ex.Message);
+			// El error de Core —cupo lleno, inscripción duplicada— va al diálogo y no al aviso
+			// ámbar: antes el éxito y el fallo se escribían en el MISMO cartel, con el mismo
+			// color, así que "se inscribió" y "no se pudo inscribir" se veían igual.
+			_dialogService.MostrarError(ex.Message, "No se pudo inscribir el alumno");
 		}
 	}
 	#endregion
 
+	/// <summary>
+	/// El aviso en línea de la pantalla. Queda sólo para lo que le falta al usuario —elegir un
+	/// alumno, por ejemplo—, no para errores ni para éxitos.
+	/// </summary>
 	private void MostrarMensaje(string mensaje)
 	{
 		Message = mensaje;

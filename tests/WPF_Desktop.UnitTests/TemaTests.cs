@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Resources;
 using System.Text;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows;
 using Xunit;
 
@@ -41,8 +42,8 @@ public class TemaTests
 		"Theme/EDUSIS_Brushes.xaml",
 		"Theme/EDUSIS_Typography.xaml",
 		"Theme/EDUSIS_Surfaces.xaml",
+		"Theme/EDUSIS_Feedback.xaml",
 		"Theme/EDUSIS_ButtonStyle.xaml",
-		"Theme/EDUSIS_ButtonWithIcon.xaml",
 		"Theme/EDUSIS_Labels.xaml",
 		"Theme/EDUSIS_TextBlock.xaml",
 		"Theme/EDUSIS_TextBox.xaml",
@@ -61,10 +62,7 @@ public class TemaTests
 	{
 		EjecutarEnSTA(() =>
 		{
-			var aplicacion = new Application
-			{
-				Resources = ArmarRecursos()
-			};
+			ArmarAplicacion();
 
 			var fallas = new StringBuilder();
 
@@ -113,7 +111,88 @@ public class TemaTests
 		enDisco.Where(nombre => !cubiertos.Contains(nombre)).ShouldBeEmpty();
 	}
 
+	/// <summary>
+	/// El campo con error muestra el motivo DEBAJO del campo, y no sólo en el ToolTip.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// La plantilla <c>Campo</c> dibuja esa fila con un <c>DataTrigger</c> sobre
+	/// <c>Content.(Validation.HasError)</c>, que es un camino de enlace encadenado hacia una
+	/// propiedad adjunta: si estuviera mal escrito, WPF no falla ni avisa —se traga el enlace y
+	/// no dibuja nada—. Construir la vista no alcanza para detectarlo, porque el error de
+	/// enlace es silencioso; hace falta provocar un error de validación real y mirar el
+	/// resultado.
+	/// </para>
+	/// <para>
+	/// Importa porque es el único canal del mensaje para quien no usa mouse: un ToolTip exige
+	/// apuntar, y sin esta fila lo único que queda es un borde rojo.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_campo_con_error_muestra_el_motivo_debajo_del_campo()
+	{
+		EjecutarEnSTA(() =>
+		{
+			var recursos = ArmarAplicacion().Resources;
+
+			recursos["Txt.Error.Campo"].ShouldNotBeNull("el estilo del motivo tiene que estar en los recursos");
+			recursos["Campo"].ShouldNotBeNull();
+
+			// Un correo sin arroba: ContactoViewModel ya lo rechaza con [EmailAddress].
+			// global:: porque el namespace de las pruebas también tiene un ViewModels.
+			var contacto = new global::WPF_Desktop.ViewModels.Shared.ContactoViewModel(null)
+			{
+				Email = "sin-arroba"
+			};
+
+			var caja = new TextBox
+			{
+				Style = (Style) recursos["Txb.Campo"]
+			};
+
+			BindingOperations.SetBinding(caja, TextBox.TextProperty, new Binding("Email")
+			{
+				Source = contacto,
+				Mode = BindingMode.TwoWay,
+				UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
+				ValidatesOnNotifyDataErrors = true
+			});
+
+			var campo = new HeaderedContentControl
+			{
+				Header = "Correo electrónico",
+				Style = (Style) recursos["Campo"],
+				Content = caja
+			};
+
+			campo.Measure(new Size(400, 400));
+			campo.Arrange(new Rect(0, 0, 400, 400));
+
+			Validation.GetHasError(caja)
+					  .ShouldBeTrue("el enlace tendría que haber marcado el error del correo");
+
+			var motivo = campo.Template.FindName("Error", campo) as TextBlock;
+
+			motivo.ShouldNotBeNull("la plantilla Campo tiene que traer la fila del motivo");
+
+			var diagnostico = $"texto='{ motivo!.Text }', visibilidad={ motivo.Visibility }";
+
+			motivo.Text.ShouldNotBeNullOrWhiteSpace(diagnostico);
+			motivo.Visibility.ShouldBe(Visibility.Visible, diagnostico);
+		});
+	}
+
 	#region Infraestructura
+	/// <summary>
+	/// WPF admite UNA <see cref="Application"/> por dominio, y estas pruebas comparten proceso.
+	/// </summary>
+	private static Application ArmarAplicacion() =>
+		Application.Current ?? new Application
+		{
+			Resources = ArmarRecursos()
+		};
+
 	private static ResourceDictionary ArmarRecursos()
 	{
 		var raiz = new ResourceDictionary();

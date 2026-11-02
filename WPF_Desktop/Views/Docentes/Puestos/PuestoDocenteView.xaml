@@ -63,35 +63,47 @@
 						  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
 			</HeaderedContentControl>
 
-			<HeaderedContentControl Grid.Column="0" Grid.Row="1"
+			<!--
+				LA CASILLA VA ANTES QUE EL CAMPO QUE REVELA. Estaba en la última fila, debajo de
+				las dos fechas: tildarla hacía aparecer "Fecha de fin" ARRIBA del cursor, o sea
+				que la causa se leía después del efecto. Puesta primero, el formulario se lee en
+				el orden en que se decide: qué clase de puesto es, y recién entonces hasta cuándo.
+			-->
+			<CheckBox x:Name="eventual"
+					  Grid.ColumnSpan="2" Grid.Row="1"
+					  Content="El puesto es eventual"
+					  IsChecked="{ Binding Path=EsEventual, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+					  Margin="0 0 0 16"
+					  Style="{ StaticResource ResourceKey=Chk.Campo }"/>
+
+			<HeaderedContentControl Grid.Column="0" Grid.Row="2"
 								   Header="Fecha de inicio"
 								   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 				<DatePicker x:Name="fechaInicio"
-							DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							DisplayDateStart="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-							SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 			</HeaderedContentControl>
 
-			<!-- La fecha de fin sólo existe si el puesto es eventual: se oculta, no se deshabilita. -->
-			<HeaderedContentControl Grid.Column="1" Grid.Row="1"
+			<!--
+				La fecha de fin sólo existe si el puesto es eventual: se oculta, no se deshabilita.
+
+				El DatePicker tenía ADEMÁS su propio IsEnabled contra la casilla. Era la misma
+				compuerta dos veces —IsEnabled ya baja del padre al hijo—, así que se fue la del
+				hijo y queda una sola condición que mantener.
+			-->
+			<HeaderedContentControl Grid.Column="1" Grid.Row="2"
 								   Header="Fecha de fin"
 								   IsEnabled="{ Binding Path=EsEventual, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 								   Style="{ StaticResource ResourceKey=Campo.Derecha }"
 								   Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=booleanToVisibility } }">
 				<DatePicker x:Name="fecha_fin"
-							DisplayDate="{ Binding Path=FechaFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							DisplayDate="{ Binding Path=FechaFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							DisplayDateStart="{ Binding Path=SelectedDate, ElementName=fechaInicio, Mode=OneWay }"
-							IsEnabled="{ Binding Path=IsChecked, ElementName=eventual, Mode=OneWay }"
-							SelectedDate="{ Binding Path=FechaFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							SelectedDate="{ Binding Path=FechaFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 			</HeaderedContentControl>
-
-			<CheckBox x:Name="eventual"
-					  Grid.ColumnSpan="2" Grid.Row="2"
-					  Content="El puesto es eventual"
-					  IsChecked="{ Binding Path=EsEventual, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-					  Style="{ StaticResource ResourceKey=Chk.Campo }"/>
 		</Grid>
 	</GroupBox>
 </UserControl>

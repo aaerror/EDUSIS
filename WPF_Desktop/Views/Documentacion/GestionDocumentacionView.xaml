@@ -69,10 +69,10 @@
 		<!--#endregion-->
 
 		<!--#region ENCABEZADO-->
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Documentación"
-						   Subtitle="Certificados, constancias y boletín de un alumno, en PDF"/>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Titulo="Documentación"
+									Subtitulo="Certificados, constancias y boletín de un alumno, en PDF"/>
 		<!--#endregion-->
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">

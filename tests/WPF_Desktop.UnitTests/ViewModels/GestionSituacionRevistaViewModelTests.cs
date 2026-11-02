@@ -3,6 +3,7 @@ using Core.ServicioCatedras;
 using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.DTOs.Responses;
 using Core.ServicioDocentes;
+using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes.DTOs.Responses;
 using Core.ServicioMaterias.DTOs.Responses;
 using NSubstitute;
@@ -42,6 +43,7 @@ public class GestionSituacionRevistaViewModelTests
 		public CursoStore CursoStore { get; } = new();
 		public MateriaStore MateriaStore { get; } = new();
 		public CatedraStore CatedraStore { get; } = new();
+		public BuscarContextoStore BuscarContextoStore { get; } = new();
 
 		public Guid CatedraID { get; } = Guid.NewGuid();
 		public Guid SituacionCreadaID { get; } = Guid.NewGuid();
@@ -74,16 +76,27 @@ public class GestionSituacionRevistaViewModelTests
 															 CursoStore,
 															 MateriaStore,
 															 CatedraStore,
+															 BuscarContextoStore,
 															 Mensajero);
 		}
 
+		/// <remarks>
+		/// <paramref name="vigente"/> y <c>EsOcupante</c> los calcula Core a partir del dominio. Acá se
+		/// los deriva de los mismos datos para que el fixture no se contradiga solo —una designación
+		/// "Finalizado" marcada como vigente no existe—, y <paramref name="vigente"/> queda abierto
+		/// para los casos que necesitan justamente esa combinación rara: aceptada pero con el período
+		/// terminado, que es la que distingue vigencia real de estado.
+		/// </remarks>
 		public SituacionRevistaResponse Agregar(string cargo = "Titular",
 												string estado = "Aceptado",
 												DateTime? inicio = null,
 												DateTime? fin = null,
 												bool enFunciones = false,
 												Guid? reemplazaA = null,
-												Guid? docenteID = null)
+												Guid? docenteID = null,
+												bool? vigente = null,
+												Guid? reemplazaADocenteID = null,
+												bool tieneSuplenteVigente = false)
 		{
 			var situacion = new SituacionRevistaResponse(Guid.NewGuid(),
 														 CatedraID,
@@ -93,7 +106,14 @@ public class GestionSituacionRevistaViewModelTests
 														 inicio ?? DateTime.Today.AddDays(-30),
 														 fin,
 														 reemplazaA,
-														 enFunciones);
+														 enFunciones,
+														 // Misma cuenta que RangoFechas.EstaVigente: ya empezó y todavía no terminó.
+													 Vigente: vigente ?? (!string.Equals(estado, "Finalizado")
+																		  && (inicio ?? DateTime.Today.AddDays(-30)) <= DateTime.Today
+																		  && (fin is null || fin >= DateTime.Today)),
+														 EsOcupante: string.Equals(cargo, "Titular") || string.Equals(cargo, "Interino"),
+														 ReemplazaADocenteID: reemplazaADocenteID,
+														 TieneSuplenteVigente: tieneSuplenteVigente);
 			Situaciones.Add(situacion);
 
 			return situacion;
@@ -154,18 +174,27 @@ public class GestionSituacionRevistaViewModelTests
 		contexto.ViewModel.DocentesEnMateria.Count.ShouldBe(1);
 	}
 
+	/// <summary>
+	/// Una cátedra sin designaciones deja la grilla vacía y a la vista, sin interrumpir.
+	/// </summary>
+	/// <remarks>
+	/// Antes retornaba temprano, apagaba la tarjeta entera y lo avisaba con un cartel: el estado
+	/// vacío de la grilla —que ya trae su frase y dice qué hacer— era código inalcanzable, y una
+	/// cátedra recién creada es el caso normal, no un problema que merezca interrumpir.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Cargar_sin_situaciones_avisa_y_no_habilita_la_gestion()
+	public async Task Cargar_sin_situaciones_deja_la_grilla_vacia_y_a_la_vista()
 	{
 		var contexto = new Contexto();
 
 		await contexto.ViewModel.CargarSituacionRevistasAsync();
 
 		contexto.ViewModel.DocentesEnMateria.ShouldBeEmpty();
-		contexto.ViewModel.HabilitarGestionSituacionRevista.ShouldBeFalse();
-		contexto.ViewModel.HabilitarNotificacion.ShouldBeTrue();
-		contexto.Dialogos.Advertencias.Count.ShouldBe(1);
+		contexto.ViewModel.HabilitarGestionSituacionRevista.ShouldBeTrue();
+		contexto.ViewModel.HabilitarInfoSituacionRevista.ShouldBeTrue();
+		contexto.ViewModel.HabilitarNotificacion.ShouldBeFalse();
+		contexto.Dialogos.Advertencias.ShouldBeEmpty();
 	}
 	#endregion
 
@@ -226,7 +255,54 @@ public class GestionSituacionRevistaViewModelTests
 		await contexto.ViewModel.CargarSituacionRevistasAsync();
 
 		contexto.Fila(situacionConocida.SituacionRevistaID).Docente.ShouldBe("Gomez Maria");
-		contexto.Fila(situacionDesconocida.SituacionRevistaID).Docente.ShouldBe("Docente no disponible");
+		contexto.Fila(situacionDesconocida.SituacionRevistaID).Docente.ShouldBe("Docente sin legajo");
+	}
+
+	/// <summary>
+	/// El docente DADO DE BAJA conserva su nombre en el historial.
+	/// </summary>
+	/// <remarks>
+	/// Es el caso que el cruce contra <c>ListarDocentesActivosAsync</c> perdía: el listado de activos
+	/// no lo trae, así que una designación de alguien que ya no trabaja en la escuela aparecía sin
+	/// nombre —y el historial existe justamente para mostrar por quién pasó la cátedra—. Se lo busca
+	/// de a uno y sólo cuando falta, así que el caso normal sigue costando una sola consulta.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Un_docente_dado_de_baja_conserva_su_nombre_en_el_historial()
+	{
+		var contexto = new Contexto();
+		var deBaja = Guid.NewGuid();
+		var situacion = contexto.Agregar(docenteID: deBaja, estado: "Finalizado");
+		contexto.ServicioDocente.MostrarLegajoDocenteAsync(Arg.Is<DocenteIDRequest>(r => r.DocenteID == deBaja))
+								.Returns(Task.FromResult(new LegajoDocenteResponse(deBaja, "Ruiz Carlos", "28999111", "20289991113", "L-9", DateTime.Today.AddYears(-10), DateTime.Today.AddMonths(-2), false)));
+
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		contexto.Fila(situacion.SituacionRevistaID).Docente.ShouldBe("Ruiz Carlos");
+	}
+
+	/// <summary>
+	/// El combo de reemplazo no ofrece a quien ya tiene un suplente vigente.
+	/// </summary>
+	/// <remarks>
+	/// Es la regla con la que <c>Catedra.Designar</c> rechaza una segunda suplencia sobre el mismo
+	/// ausente (<c>DocenteYaReemplazadoException</c>). El combo filtraba sólo por vigencia, así que
+	/// ofrecía activamente la opción que el dominio iba a rechazar.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task SituacionesReemplazables_excluye_a_quien_ya_tiene_suplente_vigente()
+	{
+		var contexto = new Contexto();
+		var yaReemplazado = contexto.Agregar(cargo: "Titular", tieneSuplenteVigente: true);
+		var libre = contexto.Agregar(cargo: "Interino", tieneSuplenteVigente: false);
+
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		var reemplazables = contexto.ViewModel.SituacionesReemplazables.Select(x => x.SituacionRevistaID).ToList();
+		reemplazables.ShouldNotContain(yaReemplazado.SituacionRevistaID);
+		reemplazables.ShouldContain(libre.SituacionRevistaID);
 	}
 	#endregion
 
@@ -477,6 +553,52 @@ public class GestionSituacionRevistaViewModelTests
 			r.ReemplazaA == null));
 	}
 
+	/// <summary>
+	/// El dominio rechaza un titular con fecha de fin —<c>TitularConFechaFinalizacionException</c>—
+	/// porque se designa por tiempo indeterminado. El campo ya no se dibuja para ese cargo, pero el
+	/// valor puede quedar de un cargo elegido antes: lo que el formulario no muestra no viaja.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task La_fecha_de_fin_no_viaja_cuando_el_cargo_es_titular_aunque_haya_quedado_cargada()
+	{
+		var contexto = new Contexto();
+		var alta = contexto.PrepararAlta("Titular");
+
+		// Estado residual: se eligió Interino, se puso el término y después se volvió a Titular.
+		alta.FechaFin = DateTime.Today.AddMonths(3);
+
+		await contexto.ViewModel.GuardarCommand.ExecuteAsync("Insert");
+
+		await contexto.ServicioCatedra.Received(1).DesignarDocenteAsync(Arg.Is<DesignarDocenteRequest>(r =>
+			r.Cargo == "Titular" &&
+			r.FechaFin == null));
+		contexto.Dialogos.Errores.ShouldBeEmpty();
+	}
+
+	/// <summary>Y para los dos cargos temporales sí viaja: es obligatoria.</summary>
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData("Interino")]
+	[InlineData("Suplente")]
+	public async Task La_fecha_de_fin_viaja_cuando_el_cargo_la_exige(string cargo)
+	{
+		var contexto = new Contexto();
+		var titular = contexto.Agregar();
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		var alta = contexto.PrepararAlta(cargo);
+		var termino = DateTime.Today.AddMonths(3);
+		alta.FechaFin = termino;
+		alta.ReemplazaA = titular.SituacionRevistaID;
+
+		await contexto.ViewModel.GuardarCommand.ExecuteAsync("Insert");
+
+		await contexto.ServicioCatedra.Received(1).DesignarDocenteAsync(Arg.Is<DesignarDocenteRequest>(r =>
+			r.Cargo == cargo &&
+			r.FechaFin == termino));
+	}
+
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public async Task Designar_un_suplente_sin_ReemplazaA_no_llega_al_servicio_y_se_avisa_por_dialogo()
@@ -617,21 +739,109 @@ public class GestionSituacionRevistaViewModelTests
 		await contexto.ServicioCatedra.Received(1).RelevarDeFuncionesAsync(Arg.Is<RelevarDeFuncionesRequest>(r => r.CatedraID == contexto.CatedraID));
 	}
 
+	/// <summary>
+	/// EL TÉRMINO ES EL QUE SE ELIGIÓ, NO HOY. El comando mandaba <c>DateTime.Today</c>, que cierra
+	/// la designación en el acto en lugar de agendarle un vencimiento.
+	/// </summary>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Establecer_fin_de_designacion_llega_a_EstablecerFinDeDesignacionAsync_con_fecha_de_hoy()
+	public async Task Pasar_a_interino_llega_a_PasarAInterinoAsync_con_el_termino_elegido()
 	{
 		var contexto = new Contexto();
 		var titular = contexto.Agregar();
 		await contexto.ViewModel.CargarSituacionRevistasAsync();
 		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(titular.SituacionRevistaID);
 
-		await contexto.ViewModel.EditarCommand.ExecuteAsync("Rescindir");
+		var termino = DateTime.Today.AddMonths(4);
+		contexto.ViewModel.TerminoDeLaDesignacion = termino;
 
-		await contexto.ServicioCatedra.Received(1).EstablecerFinDeDesignacionAsync(Arg.Is<EstablecerFinDeDesignacionRequest>(r =>
+		await contexto.ViewModel.EditarCommand.ExecuteAsync("Interino");
+
+		await contexto.ServicioCatedra.Received(1).PasarAInterinoAsync(Arg.Is<PasarAInterinoRequest>(r =>
 			r.CatedraID == contexto.CatedraID &&
 			r.SituacionRevistaID == titular.SituacionRevistaID &&
-			r.FechaFin == DateTime.Today));
+			r.FechaFin == termino));
+	}
+
+	/// <summary>
+	/// Sin término el dominio tira <c>ArgumentException</c>: el botón no puede abrir su confirmación
+	/// para reventar después.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Sin_termino_elegido_el_pase_a_interino_no_se_habilita()
+	{
+		var contexto = new Contexto();
+		var titular = contexto.Agregar();
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(titular.SituacionRevistaID);
+
+		// La designación admite término —es un titular vigente—, pero la fecha todavía no está.
+		contexto.ViewModel.PuedePasarAInterino.ShouldBeTrue();
+		contexto.ViewModel.EditarCommand.CanExecute("Interino").ShouldBeFalse();
+
+		await contexto.ViewModel.EditarCommand.ExecuteAsync("Interino");
+
+		await contexto.ServicioCatedra.DidNotReceive().PasarAInterinoAsync(Arg.Any<PasarAInterinoRequest>());
+	}
+
+	/// <summary>
+	/// Una designación que ya es temporal —interino o suplente— se va por
+	/// <c>CargoConFechaFinalizacionException</c>: el campo de fecha ni siquiera se dibuja.
+	/// </summary>
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData("Interino")]
+	[InlineData("Suplente")]
+	public async Task Una_designacion_que_ya_tiene_termino_no_admite_el_pase_a_interino(string cargo)
+	{
+		var contexto = new Contexto();
+		var temporal = contexto.Agregar(cargo: cargo, fin: DateTime.Today.AddMonths(2));
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(temporal.SituacionRevistaID);
+
+		contexto.ViewModel.PuedePasarAInterino.ShouldBeFalse();
+	}
+
+	/// <summary>
+	/// El término es de la designación elegida. Si sobrevive al cambio de fila, la fecha que se puso
+	/// mirando a una designación viaja en el request de otra.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cambiar_de_designacion_descarta_el_termino_elegido()
+	{
+		var contexto = new Contexto();
+		var primera = contexto.Agregar();
+		var segunda = contexto.Agregar();
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(primera.SituacionRevistaID);
+		contexto.ViewModel.TerminoDeLaDesignacion = DateTime.Today.AddMonths(4);
+
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(segunda.SituacionRevistaID);
+
+		contexto.ViewModel.TerminoDeLaDesignacion.ShouldBeNull();
+	}
+
+	/// <summary>
+	/// Las dos cotas del calendario salen del dominio: posterior a hoy —<c>PasarAInterinoHasta</c>— y
+	/// no anterior al inicio —<c>RangoFechas</c>—.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task El_primer_termino_posible_es_manana_o_el_inicio_si_la_designacion_no_empezo()
+	{
+		var contexto = new Contexto();
+		var enCurso = contexto.Agregar(inicio: DateTime.Today.AddDays(-30));
+		var futura = contexto.Agregar(inicio: DateTime.Today.AddDays(20), vigente: false);
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(enCurso.SituacionRevistaID);
+		contexto.ViewModel.PrimerTerminoPosible.ShouldBe(DateTime.Today.AddDays(1));
+
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(futura.SituacionRevistaID);
+		contexto.ViewModel.PrimerTerminoPosible.ShouldBe(DateTime.Today.AddDays(20));
 	}
 
 	[Fact]
@@ -676,9 +886,14 @@ public class GestionSituacionRevistaViewModelTests
 
 		await contexto.ViewModel.EliminarCommand.ExecuteAsync("Docente");
 
-		contexto.Dialogos.Confirmaciones.Count.ShouldBe(1);
-		contexto.Dialogos.Confirmaciones[0].Titulo.ShouldBe("Finalizar Designación");
-		contexto.Dialogos.Confirmaciones[0].Mensaje.ShouldNotContain("definitivamente");
+		// El diálogo pasó a nombrar la acción y su consecuencia en lugar de titularse con el
+		// nombre de la operación: el verbo del botón es el mismo que el de la pantalla.
+		var solicitud = contexto.Dialogos.Solicitudes.ShouldHaveSingleItem();
+		solicitud.Titulo.ShouldStartWith("Finalizar la designación");
+		solicitud.VerboDeAccion.ShouldBe("Finalizar designación");
+		solicitud.Titulo.ShouldNotContain("definitivamente");
+		solicitud.Consecuencia.ShouldNotContain("definitivamente");
+		solicitud.Consecuencia.ShouldContain("deja de estar vigente");
 	}
 
 	[Fact]

@@ -27,31 +27,25 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="Cursos"
-							   Subtitle="Cursos por nivel, con sus divisiones y su diseño curricular"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=NavigationCommand }"
-					CommandParameter="Curso"
-					Style="{ StaticResource ResourceKey=Btn.Primario }"
-					ToolTip="Crear un curso nuevo"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="Plus"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Registrar curso" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Titulo="Cursos"
+									Subtitulo="Cursos por nivel, con sus divisiones y su diseño curricular">
+			<components:PaginaComponent.Accion>
+				<Button Command="{ Binding Path=NavigationCommand }"
+						CommandParameter="Curso"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Crear un curso nuevo">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="Plus"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Registrar curso" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
+			</components:PaginaComponent.Accion>
+		</components:PaginaComponent>
 		<!--#endregion-->
 
 		<!--#region CUERPO-->
@@ -159,7 +153,9 @@
 								Margin="0 20 0 0"
 								Style="{ StaticResource ResourceKey=Superficie.Seccion }"
 								VerticalAlignment="Top">
-							<TextBlock MaxWidth="420"
+							<!-- Left explícito: con MaxWidth, un TextBlock estirado lo centra WPF. -->
+							<TextBlock HorizontalAlignment="Left"
+									   MaxWidth="420"
 									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 									   Text="Las divisiones agrupan a los alumnos del curso y le asignan preceptor. El diseño curricular define las materias y su carga horaria."
 									   TextWrapping="Wrap"/>
@@ -197,6 +193,11 @@
 					</Grid>
 				</Grid>
 				<!--#endregion-->
+
+				<components:CargandoComponent Grid.Column="0"
+											  Grid.ColumnSpan="3"
+											  EstaCargando="{ Binding Path=CargarCursosCommandAsync.IsRunning }"
+											  Leyenda="CARGANDO LOS CURSOS"/>
 			</Grid>
 		</Border>
 		<!--#endregion-->

@@ -29,7 +29,10 @@ internal partial class InformacionPersonalViewModel : ObservableValidator
 	[ObservableProperty]
 	private string _sexo;
 
-	[Required]
+	// Sin ErrorMessage, DataAnnotations contesta en inglés ("The FechaNacimiento field is
+	// required."). Daba igual mientras el motivo vivía sólo en un ToolTip que nadie abría;
+	// ahora se lee debajo del campo, en una pantalla que está entera en español.
+	[Required(ErrorMessage="Se debe ingresar la fecha de nacimiento.")]
 	[DateBeforeThanToday]
 	[DataType(DataType.Date, ErrorMessage="Formato de fecha de nacimiento inválida.")]
 	[NotifyDataErrorInfo]
@@ -55,6 +58,18 @@ internal partial class InformacionPersonalViewModel : ObservableValidator
 			Sexo = informacionPersonalResponse.Sexo;
 			FechaNacimiento = informacionPersonalResponse.FechaNacimiento.Date;
 			Nacionalidad = informacionPersonalResponse.Nacionalidad;
-		} 
+		}
 	}
+
+	/// <summary>
+	/// Valida todos los campos del bloque, incluidos los que el usuario nunca tocó.
+	/// </summary>
+	/// <remarks>
+	/// <c>ObservableValidator</c> valida en el setter, así que un campo que nadie escribió no
+	/// tiene errores: el formulario recién abierto está "sin errores" y vacío a la vez. Esto es
+	/// lo que el paso llama al intentar avanzar, para que lo que falta se marque donde falta.
+	/// <c>ValidateAllProperties</c> es protegido, y por eso cada bloque lo expone así.
+	/// </remarks>
+	public void Validar() =>
+		ValidateAllProperties();
 }

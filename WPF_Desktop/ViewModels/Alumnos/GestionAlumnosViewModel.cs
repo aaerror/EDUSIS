@@ -4,10 +4,10 @@ using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos;
 using Core.Shared.DTOs.Personas.Response;
 using System.ComponentModel.DataAnnotations;
-using System.Windows;
+using System.Threading.Tasks;
 using System;
 using WPF_Desktop.Navigation;
-using WPF_Desktop.Shared.Commands;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels.Alumnos;
@@ -16,6 +16,7 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 {
 	#region Servicio
 	private readonly IServicioAlumno _servicioAlumnos;
+	private readonly IDialogService _dialogService;
 	private readonly INavigationService _registrarAlumnoNavigationService;
 	private readonly INavigationService _perfilNavigationService;
 	private readonly INavigationService _inscripcionAlumnoNavigationService;
@@ -46,32 +47,32 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 	private bool _existeAlumno;
 
 	#region COMMANDs
-	public IRelayCommand EliminarCommand { get; }
+	public IAsyncRelayCommand EliminarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
-	public IRelayCommand BuscarCommand { get; }
-
-	public ViewModelCommand QuitarCommand { get;  }
+	public IAsyncRelayCommand BuscarCommand { get; }
 	#endregion
 
 
 	public GestionAlumnosViewModel(IServicioAlumno servicioAlumnos,
+								   IDialogService dialogService,
 								   INavigationService registrarAlumnoNavigationService,
 								   INavigationService inscripcionAlumnoNavigationService,
 								   INavigationService verPerfilNavigationService,
 								   LegajoStore perfilBuscadoStore)
 	{
 		_servicioAlumnos = servicioAlumnos;
+		_dialogService = dialogService;
 		_registrarAlumnoNavigationService = registrarAlumnoNavigationService;
 		_inscripcionAlumnoNavigationService = inscripcionAlumnoNavigationService;
 		_perfilNavigationService = verPerfilNavigationService;
 
 		_perfilStore = perfilBuscadoStore;
 
-		BuscarCommand = new RelayCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
-		EliminarCommand = new RelayCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
+		BuscarCommand = new AsyncRelayCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
+		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
-		Message = "Debe buscar un alumno para proceder.";
+		Message = "Buscá un alumno por su documento para ver su perfil, inscribirlo o quitarlo. Si todavía no está cargado, usá «Registrar alumno».";
 		ExisteAlumno = false;
 	}
 
@@ -79,7 +80,16 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 	private bool CanExecuteBuscarCommand() =>
 		!string.IsNullOrWhiteSpace(Documento) && !HasErrors;
 
-	private async void ExecuteBuscarCommand()
+	/// <summary>
+	/// Busca el alumno por documento exacto.
+	/// </summary>
+	/// <remarks>
+	/// Era <c>async void</c> sobre un <c>RelayCommand</c>: cualquier excepción que no cayera en
+	/// el try —por ejemplo al escribir en el store— no la podía atrapar nadie y terminaba en el
+	/// manejador global, que apaga la aplicación. Como <c>AsyncRelayCommand</c> además expone
+	/// <c>IsRunning</c>, la pantalla puede mostrar que está buscando.
+	/// </remarks>
+	private async Task ExecuteBuscarCommand()
 	{
 		try
 		{
@@ -87,7 +97,7 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 			if (response is null)
 			{
 				ExisteAlumno = false;
-				Message = $"No se encontró el alumno con el D.N.I. { Documento }. Por favor, intente nuevamente.";
+				Message = $"No hay ningún alumno con el documento { Documento }. Revisá el número o registralo con «Registrar alumno».";
 
 				return;
 			}
@@ -101,7 +111,7 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
+			_dialogService.MostrarError(ex.Message, "No se pudo buscar el alumno");
 		}
 	}
 	#endregion
@@ -138,27 +148,47 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 	private bool CanExecuteEliminarCommand() =>
 		PersonaResponse is not null;
 
-	private async void ExecuteEliminarCommand()
+	/// <summary>
+	/// Quita el alumno de la institución.
+	/// </summary>
+	/// <remarks>
+	/// Tenía tres problemas. Era <c>async void</c>; la confirmación no decía qué se pierde; y
+	/// al terminar NO limpiaba la pantalla: la ficha del alumno recién borrado seguía ahí, con
+	/// los botones "Perfil" e "Inscribir" habilitados sobre un registro que ya no existe.
+	/// </remarks>
+	private async Task ExecuteEliminarCommand()
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
+		string nombre = $"{ PersonaResponse.Apellido }, { PersonaResponse.Nombre }";
 
-		messageBoxText = $"¿Está seguro que desea quitar el alumno { PersonaResponse.Apellido }, { PersonaResponse.Nombre }?";
-		caption = "Eliminar Alumno de la Institución";
-
-		result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
-		if (result is MessageBoxResult.Yes)
+		// El verbo del diálogo es el del botón que lo abrió: la pantalla dice "Eliminar" y el
+		// caso de uso es EliminarAlumno, así que acá no aparece un "Quitar" que no se usó.
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: $"Eliminar a { nombre } de la institución",
+				consecuencia: $"El legajo del documento { PersonaResponse.Documento } deja de estar disponible, "
+							+ "junto con su domicilio y su contacto. Las inscripciones y calificaciones ya registradas "
+							+ "quedan en el historial de la división. Esta acción no se puede deshacer.",
+				verbo: "Eliminar alumno")))
 		{
-			try
-			{
-				var request = new EliminarAlumnoRequest(PersonaResponse.PersonaID);
-				await _servicioAlumnos.EliminarAlumnoAsync(request);
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-			}
+			return;
+		}
+
+		try
+		{
+			var request = new EliminarAlumnoRequest(PersonaResponse.PersonaID);
+			await _servicioAlumnos.EliminarAlumnoAsync(request);
+
+			// La pantalla vuelve a su estado inicial: dejar la ficha de un alumno borrado es
+			// la forma más rápida de que alguien opere sobre un registro que ya no existe.
+			PersonaResponse = null;
+			ExisteAlumno = false;
+			Documento = string.Empty;
+			Message = $"{ nombre } ya no figura en la institución. Buscá otro documento para seguir.";
+
+			_dialogService.MostrarInformacion($"{ nombre } ya no figura en la institución.", "Alumno eliminado");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo quitar el alumno");
 		}
 	}
 	#endregion

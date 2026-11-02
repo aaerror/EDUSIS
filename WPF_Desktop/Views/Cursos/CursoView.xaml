@@ -26,7 +26,7 @@
 									Header="Curso"
 									Style="{ StaticResource ResourceKey=Dato.Izquierda }">
 				<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-						   Text="{ Binding Path=Grado, Mode=OneWay, StringFormat={}{0}° año, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
+						   Text="{ Binding Path=Grado, Converter={ StaticResource ResourceKey=grado }, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
 			</HeaderedContentControl>
 
 			<HeaderedContentControl Grid.Column="1"

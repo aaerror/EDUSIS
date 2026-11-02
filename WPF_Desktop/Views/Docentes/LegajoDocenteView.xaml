@@ -34,10 +34,19 @@
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
+			<!--
+				El formato se dice ANTES de escribir, no sólo cuando ya está mal: es la misma
+				regla de seis dígitos que valida el dominio. Los TargetNullValue de este bloque
+				eran letra muerta —el ViewModel arranca estos campos en cadena vacía, nunca en
+				nulo— y además habrían tapado el texto guía, que el tema muestra sólo cuando el
+				campo está vacío de verdad.
+			-->
 			<HeaderedContentControl Grid.Column="1" Grid.Row="0"
 								   Header="Legajo"
 								   Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<TextBox Text="{ Binding Path=Legajo, FallbackValue='Sin datos', TargetNullValue='Legajo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<TextBox MaxLength="6"
+						 Tag="6 dígitos"
+						 Text="{ Binding Path=Legajo, FallbackValue='Sin datos', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
@@ -62,7 +71,7 @@
 							 HorizontalContentAlignment="Center"
 							 MaxLength="2"
 							 Tag="20"
-							 Text="{ Binding Path=PrefijoCuil, FallbackValue='00', TargetNullValue='Prefijo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							 Text="{ Binding Path=PrefijoCuil, FallbackValue='00', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							 Style="{ StaticResource ResourceKey=Txb.Campo }"
 							 Width="48"/>
 
@@ -88,7 +97,7 @@
 							 HorizontalContentAlignment="Center"
 							 MaxLength="1"
 							 Tag="3"
-							 Text="{ Binding Path=PosfijoCuil, FallbackValue=0, TargetNullValue='Posfijo sin especificar', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							 Text="{ Binding Path=PosfijoCuil, FallbackValue=0, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							 Style="{ StaticResource ResourceKey=Txb.Campo }"
 							 Width="40"/>
 				</Grid>
@@ -97,10 +106,10 @@
 			<HeaderedContentControl Grid.Column="1" Grid.Row="1"
 								   Header="Fecha de alta"
 								   Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<DatePicker DisplayDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+				<DatePicker DisplayDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							DisplayDateEnd="{ x:Static sys:DateTime.Now }"
 							DisplayDateStart="01/01/1900"
-							SelectedDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+							SelectedDate="{ Binding Path=FechaAlta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 			</HeaderedContentControl>
 

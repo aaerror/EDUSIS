@@ -4,20 +4,23 @@ using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioLicencias.DTOs.Requests;
 using Core.ServicioLicencias;
 using Domain.Licencias;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using System;
+using WPF_Desktop.Navigation;
+using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using Microsoft.IdentityModel.Tokens;
 
 namespace WPF_Desktop.ViewModels.Docentes.Licencias;
 
-internal partial class GestionLicenciasViewModel : ObservableValidator
+internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicacion
 {
 	#region Servicios
 	private readonly IServicioLicencia _servicioLicencia;
+	private readonly IDialogService _dialogService;
 	#endregion
 
 	/// <summary>
@@ -77,14 +80,29 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 	public IAsyncRelayCommand GuardarCommandAsync { get; }
 	public IRelayCommand EditarCommand { get; }
 	public IRelayCommand RegistrarCommand { get; }
+	public IRelayCommand VolverCommand { get; }
 	#endregion
 
+	public IReadOnlyList<Migaja> Ruta { get; }
 
-	public GestionLicenciasViewModel(IServicioLicencia servicioLicencia, LegajoStore perfilBuscadoStore)
+
+	public GestionLicenciasViewModel(IServicioLicencia servicioLicencia,
+									 IDialogService dialogService,
+									 INavigationService gestionDocentesNavigationService,
+									 LegajoStore perfilBuscadoStore)
 	{
 		_servicioLicencia = servicioLicencia;
+		_dialogService = dialogService;
 		_docenteID = perfilBuscadoStore.PersonaID
 			?? throw new ArgumentNullException(nameof(perfilBuscadoStore), "Error al gestionar las licencias. Primero debe buscar un docente antes de continuar.");
+
+		VolverCommand = new RelayCommand(gestionDocentesNavigationService.Navigate);
+
+		Ruta = new[]
+		{
+			Migaja.Hacia("DOCENTES", VolverCommand),
+			Migaja.Actual("LICENCIAS")
+		};
 
 		CargarLicenciasCommandAsync = new AsyncRelayCommand(ExecuteCargarLicenciasCommand);
 		CancelarCommandAsync = new AsyncRelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
@@ -99,22 +117,29 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 
 	public async Task ExecuteCargarLicenciasCommand()
 	{
-		var request = new DocenteIDRequest(_docenteID);
-		var licencias = await _servicioLicencia.BuscarLicenciasSegunDocenteAsync(request);
-
-		if (licencias.IsNullOrEmpty())
+		try
 		{
-			Message = "No existen licencias cargadas en el docente.";
-			HabilitarMessage = true;
-			HabilitarDetalleLicencias = false;
+			var request = new DocenteIDRequest(_docenteID);
+			var licencias = await _servicioLicencia.BuscarLicenciasSegunDocenteAsync(request);
+
+			if (licencias.IsNullOrEmpty())
+			{
+				Message = "Este docente no tiene licencias registradas. Cargá la primera con «Registrar licencia».";
+				HabilitarMessage = true;
+				HabilitarDetalleLicencias = false;
+			}
+			else
+			{
+				Licencias = new ObservableCollection<LicenciaViewModel>(licencias.Select(x => new LicenciaViewModel(x)));
+
+				Message = string.Empty;
+				HabilitarMessage = false;
+				HabilitarDetalleLicencias = true;
+			}
 		}
-		else
+		catch (Exception ex)
 		{
-			Licencias = new ObservableCollection<LicenciaViewModel>(licencias.Select(x => new LicenciaViewModel(x)));
-
-			Message = string.Empty;
-			HabilitarMessage = false;
-			HabilitarDetalleLicencias = true;
+			_dialogService.MostrarError(ex.Message, "No se pudieron cargar las licencias");
 		}
 	}
 
@@ -178,94 +203,97 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 		}
 	}
 
+	/// <summary>
+	/// Las cinco escrituras de la pantalla: aprobar, rechazar, editar, registrar y eliminar.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// QUÉ PREGUNTA Y QUÉ NO. Antes las cinco abrían el mismo cartel —"¿Está seguro que
+	/// desea…?", con ícono de información— así que la única irreversible no se distinguía de un
+	/// alta. Ahora:
+	/// </para>
+	/// <list type="bullet">
+	/// <item><b>Aprobar</b> y <b>rechazar</b> preguntan, sin rojo: sacan la licencia de
+	/// Pendiente y después los dos botones se apagan, así que es una decisión de una sola vez.
+	/// El diálogo dice qué pasa con los días.</item>
+	/// <item><b>Editar</b> y <b>registrar</b> no preguntan: el usuario completó el formulario y
+	/// apretó "Guardar"; la licencia queda pendiente y se puede volver a editar.</item>
+	/// <item><b>Eliminar</b> pregunta en rojo y con la consecuencia: no se puede deshacer.</item>
+	/// </list>
+	/// </remarks>
 	private async Task ExecuteGuardarCommandAsync(object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-		MessageBoxResult result;
-
 		switch (obj)
 		{
 			case "Aprobar":
-				messageBoxText = $"¿Está seguro que desea aprobar la licencia { LicenciaSeleccionada.Articulo } para el docente?";
-				caption = "Conceder Licencia";
-
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Aprobar la licencia { LicenciaSeleccionada.Articulo }",
+						mensaje: $"Quedan concedidos { LicenciaSeleccionada.Dias } días desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy}. "
+							   + "La licencia deja de estar pendiente y ya no se puede editar ni rechazar.",
+						verbo: "Aprobar licencia")))
 				{
-					try
-					{
-						var request = new ActualizarEstadoLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
-																		  DocenteID: _docenteID,
-																		  Observacion: LicenciaSeleccionada.Observacion);
-						await _servicioLicencia.AprobarLicencia(request);
+					return;
+				}
 
-						messageBoxText = $"Cambios guardados exitósamente.";
-						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+				try
+				{
+					var request = new ActualizarEstadoLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
+																	  DocenteID: _docenteID,
+																	  Observacion: LicenciaSeleccionada.Observacion);
+					await _servicioLicencia.AprobarLicencia(request);
 
-						await ExecuteCargarLicenciasCommand();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }, { LicenciaSeleccionada.Dias } días desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy}.", "Licencia aprobada");
+					await ExecuteCargarLicenciasCommand();
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo aprobar la licencia");
 				}
 				break;
 
 			case "Cancelar":
-				messageBoxText = $"¿Está seguro que desea rechazar la licencia { LicenciaSeleccionada.Articulo } para el docente?";
-				caption = "Rechazar Licencia";
-
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Rechazar la licencia { LicenciaSeleccionada.Articulo }",
+						mensaje: "La solicitud queda rechazada y deja de estar pendiente: no se puede editar ni aprobar después. "
+							   + "La observación que escribas queda como motivo.",
+						verbo: "Rechazar licencia")))
 				{
-					try
-					{
-						var request = new ActualizarEstadoLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
-																		  DocenteID: _docenteID,
-																		  Observacion: LicenciaSeleccionada.Observacion);
-						await _servicioLicencia.RechazarLicencia(request);
+					return;
+				}
 
-						messageBoxText = $"Cambios guardados exitósamente.";
-						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+				try
+				{
+					var request = new ActualizarEstadoLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
+																	  DocenteID: _docenteID,
+																	  Observacion: LicenciaSeleccionada.Observacion);
+					await _servicioLicencia.RechazarLicencia(request);
 
-						await ExecuteCargarLicenciasCommand();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }.", "Licencia rechazada");
+					await ExecuteCargarLicenciasCommand();
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo rechazar la licencia");
 				}
 				break;
 
 			case "Editar":
-				messageBoxText = $"¿Está seguro que desea modificar la licencia del docente?";
-				caption = "Editar Licencia";
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				try
 				{
-					try
-					{
-						var request = new ModificarLicenciaRequest(DocenteID: _docenteID,
-																   LicenciaID: LicenciaSeleccionada.LicenciaID,
-																   Articulo: LicenciaSeleccionada.Articulo,
-																   Dias: LicenciaSeleccionada.Dias,
-																   FechaInicio: LicenciaSeleccionada.FechaInicio,
-																   Observacion: LicenciaSeleccionada.Observacion);
-						await _servicioLicencia.ModificarLicencia(request);
+					var request = new ModificarLicenciaRequest(DocenteID: _docenteID,
+															   LicenciaID: LicenciaSeleccionada.LicenciaID,
+															   Articulo: LicenciaSeleccionada.Articulo,
+															   Dias: LicenciaSeleccionada.Dias,
+															   FechaInicio: LicenciaSeleccionada.FechaInicio,
+															   Observacion: LicenciaSeleccionada.Observacion);
+					await _servicioLicencia.ModificarLicencia(request);
 
-						messageBoxText = $"Cambios guardados exitósamente.";
-						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-
-						await ExecuteCargarLicenciasCommand();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }, { LicenciaSeleccionada.Dias } días.", "Licencia actualizada");
+					await ExecuteCargarLicenciasCommand();
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo actualizar la licencia");
 				}
 
 				HabilitarUpsert = false;
@@ -274,31 +302,21 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 				break;
 
 			case "Nueva":
-				messageBoxText = $"¿Está seguro que desea cargar una licencia de { LicenciaSeleccionada.Articulo } con una duración de { LicenciaSeleccionada.Dias } días?";
-				caption = "Registrar Licencia";
-
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				try
 				{
-					try
-					{
-						var request = new NuevaSolicitudLicenciaRequest(DocenteID: _docenteID,
-																		Articulo: LicenciaSeleccionada.Articulo,
-																		FechaInicio: LicenciaSeleccionada.FechaInicio,
-																		Dias: LicenciaSeleccionada.Dias,
-																		Observacion: LicenciaSeleccionada.Observacion);
-						await _servicioLicencia.SolicitarLicencia(request);
+					var request = new NuevaSolicitudLicenciaRequest(DocenteID: _docenteID,
+																	Articulo: LicenciaSeleccionada.Articulo,
+																	FechaInicio: LicenciaSeleccionada.FechaInicio,
+																	Dias: LicenciaSeleccionada.Dias,
+																	Observacion: LicenciaSeleccionada.Observacion);
+					await _servicioLicencia.SolicitarLicencia(request);
 
-						messageBoxText = $"Cambios guardados exitósamente.";
-						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
-
-						await ExecuteCargarLicenciasCommand();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }, { LicenciaSeleccionada.Dias } días desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy}. Queda pendiente de aprobación.", "Licencia registrada");
+					await ExecuteCargarLicenciasCommand();
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo registrar la licencia");
 				}
 
 				HabilitarUpsert = false;
@@ -307,28 +325,27 @@ internal partial class GestionLicenciasViewModel : ObservableValidator
 				break;
 
 			case "Eliminar":
-				messageBoxText = $"¿Está seguro que desea eliminar la { LicenciaSeleccionada.Articulo }?";
-				caption = "Eliminar Licencia";
-
-				result = MessageBox.Show(messageBoxText, caption, MessageBoxButton.YesNo, MessageBoxImage.Information);
-				if (result is MessageBoxResult.Yes)
+				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+						titulo: $"Eliminar la licencia { LicenciaSeleccionada.Articulo }",
+						consecuencia: $"Se borran los { LicenciaSeleccionada.Dias } días solicitados desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy} "
+									+ "y la licencia desaparece del legajo. Esta acción no se puede deshacer.",
+						verbo: "Eliminar licencia")))
 				{
-					try
-					{
-						var request = new EliminarLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
-																  DocenteID: _docenteID);
-						await _servicioLicencia.EliminarLicencia(request);
+					return;
+				}
 
-						messageBoxText = $"Cambios guardados exitósamente.";
-						caption = "Operación Exitosa";
-						MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Information);
+				try
+				{
+					var request = new EliminarLicenciaRequest(LicenciaID: LicenciaSeleccionada.LicenciaID,
+															  DocenteID: _docenteID);
+					await _servicioLicencia.EliminarLicencia(request);
 
-						await ExecuteCargarLicenciasCommand();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show(ex.Message, "Error en la operación", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }.", "Licencia eliminada");
+					await ExecuteCargarLicenciasCommand();
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo eliminar la licencia");
 				}
 
 				break;

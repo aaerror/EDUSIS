@@ -10,6 +10,8 @@
 		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Brushes.xaml"/>
 		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Typography.xaml"/>
 		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_ButtonStyle.xaml"/>
+		<!-- Campo dibuja el motivo del error con Txt.Error.Campo, que vive en Feedback. -->
+		<ResourceDictionary Source="/WPF_Desktop;component/Theme/EDUSIS_Feedback.xaml"/>
 	</ResourceDictionary.MergedDictionaries>
 
 	<!--
@@ -36,6 +38,21 @@
 		El hueco de 4px entre rótulo y control ya lo pone Lbl.Campo con su Padding; acá sólo
 		se fija el ritmo de 16px entre un campo y el siguiente.
 	-->
+	<!--
+		EL ERROR DEL CAMPO, EN TEXTO Y DEBAJO DEL CAMPO. El tema ya marcaba el campo con error
+		—borde Alerta de 2px— y ponía el motivo en el ToolTip. Un ToolTip exige apuntar con el
+		mouse: quien navega con teclado nunca lee el mensaje, y lo único que le queda es un
+		borde rojo, que es significado comunicado sólo por color.
+
+		Va acá y no en cada formulario porque Campo es el único lugar que ya envuelve al rótulo
+		y al control: una fila más en el mismo StackPanel y los treinta y pico de campos de la
+		aplicación quedan explicados. Por eso también ocupa lugar de layout en vez de dibujarse
+		encima, que es lo que impedía resolverlo con el adorno de WPF.
+
+		El enlace cuelga de Content, que es el control enlazado. Un Campo cuyo Content sea un
+		contenedor —el CUIL, que son tres cajas dentro de un Grid— no tiene error propio que
+		mostrar: cada caja de adentro se sigue marcando sola.
+	-->
 	<Style x:Key="Campo" TargetType="{ x:Type HeaderedContentControl }">
 		<Setter Property="Margin" Value="0 0 0 16"/>
 		<Setter Property="Template">
@@ -46,7 +63,25 @@
 							   Style="{ StaticResource ResourceKey=Lbl.Campo }"
 							   Target="{ Binding Path=Content, RelativeSource={ RelativeSource TemplatedParent } }"/>
 						<ContentPresenter/>
+						<!--
+							La fila se esconde por su PROPIO texto y no por un DataTrigger sobre
+							Content.(Validation.HasError): ese disparador no llega a evaluarse
+							desde ControlTemplate.Triggers con RelativeSource=TemplatedParent
+							—el enlace del Text sí resuelve, el del disparador no—, y el
+							resultado era la fila colapsada para siempre, con el motivo adentro
+							y sin que nadie lo viera. Sin error el enlace da nulo,
+							TargetNullValue lo vuelve cadena vacía y el disparador la esconde:
+							el mismo recurso con el que Txb.Campo muestra y esconde su guía.
+						-->
+						<TextBlock x:Name="Error"
+								   Style="{ StaticResource ResourceKey=Txt.Error.Campo }"
+								   Text="{ Binding Path=Content.(Validation.Errors)[0].ErrorContent, RelativeSource={ RelativeSource TemplatedParent }, TargetNullValue='' }"/>
 					</StackPanel>
+					<ControlTemplate.Triggers>
+						<Trigger SourceName="Error" Property="Text" Value="">
+							<Setter TargetName="Error" Property="Visibility" Value="Collapsed"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
@@ -481,12 +516,28 @@
 	</Style>
 
 	<!--
-		Casilla que comparte fila con campos de texto. Sin rótulo propio arriba, el tilde
-		queda pegado al borde superior de la fila y a 20px del campo vecino; este margen lo
-		baja hasta la línea de los controles.
+		Casilla que comparte fila con campos de texto.
+
+		LA CASILLA ERA EL ÚNICO CONTROL FUERA DE LA LÍNEA DE 34px. Txb.Campo, Cmb.Campo,
+		Dtp.Campo y los cuatro botones miden 34 de alto, así que en una fila de formulario sus
+		contenidos apoyan todos en la misma línea. Chk.Campo no declara alto: su caja mide 18 y
+		el alto se lo da el contenido.
+
+		Con eso, cualquier alineación vertical quedaba mal, y mal de las dos maneras. Estirada
+		—lo que hacía este estilo, que sólo fijaba el margen— la caja se centraba en todo el
+		alto de la fila, 10px POR ENCIMA de la línea de controles, porque el rótulo del campo
+		vecino ocupa 20px arriba que la casilla no tiene. Y con VerticalAlignment=Bottom, que
+		es lo que hacía Alumnos, se alineaban los BORDES de dos cajas de distinto alto: 18
+		contra 34, así que la casilla caía 8px POR DEBAJO.
+
+		Fijando el mismo alto de 34 y apoyando abajo, el borde inferior y el centro coinciden a
+		la vez con los de cualquier campo o botón de la fila, tenga el vecino rótulo o no. La
+		caja de 18 se centra sola dentro de esos 34 porque ya lo pide la plantilla.
 	-->
 	<Style x:Key="Chk.Campo.Alineada" TargetType="{ x:Type CheckBox }" BasedOn="{ StaticResource ResourceKey=Chk.Campo }">
+		<Setter Property="Height" Value="34"/>
 		<Setter Property="Margin" Value="0 0 0 16"/>
+		<Setter Property="VerticalAlignment" Value="Bottom"/>
 		<Setter Property="VerticalAlignment" Value="Bottom"/>
 		<Setter Property="Height" Value="34"/>
 	</Style>

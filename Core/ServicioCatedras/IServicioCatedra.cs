@@ -12,7 +12,7 @@ public interface IServicioCatedra
 	Task PonerEnFuncionesAsync(PonerEnFuncionesRequest request);
 	Task RelevarDeFuncionesAsync(RelevarDeFuncionesRequest request);
 
-	Task EstablecerFinDeDesignacionAsync(EstablecerFinDeDesignacionRequest request);
+	Task PasarAInterinoAsync(PasarAInterinoRequest request);
 	Task FinalizarDesignacionAsync(FinalizarDesignacionRequest request);
 
 	Task AgregarHorarioAsync(AgregarHorarioRequest request);

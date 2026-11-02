@@ -27,6 +27,16 @@
 	</behaviors:Interaction.Triggers>
 
 	<StackPanel>
+		<!-- Mismo encabezado que el ingreso: la pantalla no decía qué era. -->
+		<StackPanel Margin="0 0 0 20">
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+					   Text="Pedir un usuario"/>
+			<TextBlock Margin="0 2 0 0"
+					   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+					   Text="El acceso se solicita sobre un legajo docente activo. Dirección lo aprueba antes del primer ingreso."
+					   TextWrapping="Wrap"/>
+		</StackPanel>
+
 		<Border Margin="0 0 0 16"
 				Style="{ StaticResource ResourceKey=Superficie.Aviso }"
 				Visibility="{ Binding Path=ExistenDocentesActivos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
@@ -50,7 +60,7 @@
 
 		<HeaderedContentControl Header="Legajo docente" Style="{ StaticResource ResourceKey=Campo }">
 			<TextBox IsEnabled="{ Binding Path=ExistenDocentesActivos, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-					 Text="{ Binding Path=Legajo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+					 Text="{ Binding Path=Legajo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 		</HeaderedContentControl>
 

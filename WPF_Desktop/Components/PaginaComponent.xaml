@@ -1,0 +1,121 @@
+<UserControl x:Class="WPF_Desktop.Components.PaginaComponent"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Components"
+			 x:Name="raiz"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<!--
+		ENCABEZADO DE PANTALLA — ruta, nombre, propósito y una sola acción principal.
+
+		Reemplaza al componente Header, que sólo tenía título y subtítulo. Cada pantalla armaba
+		a mano la grilla de alrededor para meter sus botones, y de ahí salieron tres idiomas de
+		encabezado distintos: la acción de alta a la derecha del título en nueve pantallas y
+		adentro de la primera tarjeta en otras dos; el botón de volver con siete redacciones y,
+		en Registrar curso, con la flecha apuntando al otro lado; y en Divisiones un campo de
+		formulario metido en la banda del encabezado, que no pasa en ninguna otra pantalla.
+
+		La composición que fija este componente:
+
+			CURSOS / 3° B / CURSANTES                        [secundarias] [ACCIÓN]
+			Cursantes
+			Alumnos inscriptos, condición y calificaciones
+
+		La ruta arriba porque se lee antes que el título y responde la primera pregunta ("¿dónde
+		estoy?"); el título después; el subtítulo dice QUÉ se puede hacer acá, no reformula el
+		título. A la derecha, alineado al título, el único hueco para la acción principal: si
+		una pantalla necesita dos acciones destacadas, lo que necesita es decidir cuál es la
+		principal.
+	-->
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="Auto"/>
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+
+		<!--#region RUTA
+			Un ItemsControl horizontal con tres clases de tramo: enlace, contexto apagado y
+			tramo actual.
+
+			El separador va ANTES de cada tramo menos el primero, y para saber cuál es el
+			primero se usa {RelativeSource PreviousData}, que vale nulo exactamente en el
+			primer elemento de la lista. Es la única forma de preguntar por la posición desde
+			un DataTemplate sin que el ViewModel tenga que numerar sus propias migas.
+		-->
+		<ItemsControl Grid.Column="0"
+					  Grid.Row="0"
+					  Focusable="False"
+					  ItemsSource="{ Binding Path=Ruta, ElementName=raiz }"
+					  Margin="0 0 0 6"
+					  Visibility="{ Binding Path=Ruta, ElementName=raiz, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+			<ItemsControl.ItemsPanel>
+				<ItemsPanelTemplate>
+					<StackPanel Orientation="Horizontal"/>
+				</ItemsPanelTemplate>
+			</ItemsControl.ItemsPanel>
+			<ItemsControl.ItemTemplate>
+				<DataTemplate>
+					<StackPanel Orientation="Horizontal">
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Miga.Separador }"
+								   Text="/"
+								   Visibility="{ Binding RelativeSource={ RelativeSource PreviousData }, Converter={ StaticResource ResourceKey=visibleSiHay } }"/>
+
+						<Button Command="{ Binding Path=Ir }"
+								Content="{ Binding Path=Texto }"
+								Style="{ StaticResource ResourceKey=Btn.Miga }"
+								ToolTip="Volver a este nivel"
+								Visibility="{ Binding Path=EsNavegable, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="{ Binding Path=Texto }"
+								   Visibility="{ Binding Path=EsContexto, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Miga.Actual }"
+								   Text="{ Binding Path=Texto }"
+								   Visibility="{ Binding Path=EsActual, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+					</StackPanel>
+				</DataTemplate>
+			</ItemsControl.ItemTemplate>
+		</ItemsControl>
+		<!--#endregion-->
+
+		<TextBlock Grid.Column="0"
+				   Grid.Row="1"
+				   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+				   Text="{ Binding Path=Titulo, ElementName=raiz }"
+				   TextWrapping="Wrap"/>
+
+		<TextBlock Grid.Column="0"
+				   Grid.Row="2"
+				   Margin="0 2 0 0"
+				   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+				   Text="{ Binding Path=Subtitulo, ElementName=raiz }"
+				   TextWrapping="Wrap"
+				   Visibility="{ Binding Path=Subtitulo, ElementName=raiz, Converter={ StaticResource ResourceKey=visibleSiHayTexto } }"/>
+
+		<!--#region ACCIONES
+			Centradas sobre el bloque de texto completo, no sobre el título: con ruta, título y
+			subtítulo el centro óptico del encabezado está a la altura del título, y alinear al
+			título dejaba los botones pegados al borde de arriba.
+		-->
+		<StackPanel Grid.Column="1"
+					Grid.Row="0"
+					Grid.RowSpan="3"
+					Margin="24 0 0 0"
+					Orientation="Horizontal"
+					VerticalAlignment="Center">
+			<ContentPresenter Content="{ Binding Path=Secundarias, ElementName=raiz }"
+							  Margin="0 0 8 0"
+							  VerticalAlignment="Center"/>
+			<ContentPresenter Content="{ Binding Path=Accion, ElementName=raiz }"
+							  VerticalAlignment="Center"/>
+		</StackPanel>
+		<!--#endregion-->
+	</Grid>
+</UserControl>

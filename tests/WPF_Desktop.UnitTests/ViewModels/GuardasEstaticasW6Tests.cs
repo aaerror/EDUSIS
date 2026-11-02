@@ -52,29 +52,65 @@ public class GuardasEstaticasW6Tests
 	}
 
 	#region Bloque "Docente en Funciones"
+	/// <remarks>
+	/// LA GUARDA SIGUE AL ARTEFACTO A SU LUGAR NUEVO, igual que la del buscador de docentes cuando se
+	/// mudó al modal. El bloque dejó de ser una tarjeta propia con un <c>SituacionRevistaView</c>
+	/// deshabilitado adentro —que mostraba exactamente lo mismo que el detalle de la grilla, porque la
+	/// carga deja preseleccionada justo la fila en funciones— y pasó a ser la ficha del encabezado de
+	/// la tarjeta de designaciones, escrita con los estilos de texto del tema.
+	///
+	/// Lo que la guarda audita no cambió: que el bloque muestre <c>SituacionRevistaEnFunciones</c> y no
+	/// <c>SituacionRevistaUPDATE</c>, que es el defecto que la trajo al mundo.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void El_bloque_Docente_en_Funciones_tiene_como_DataContext_SituacionRevistaEnFunciones()
 	{
 		var xaml = RaizDelRepositorio.Leer(GestionSituacionRevistaXaml);
 
-		var coincidencia = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->.*?<local:SituacionRevistaView\s+DataContext=""\{\s*Binding\s+Path=(\w+)", RegexOptions.Singleline);
+		var coincidencia = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->.*?DataContext=""\{\s*Binding\s+Path=(\w+)", RegexOptions.Singleline);
 
 		coincidencia.Success.ShouldBeTrue();
 		coincidencia.Groups[1].Value.ShouldBe("SituacionRevistaEnFunciones");
 		coincidencia.Groups[1].Value.ShouldNotBe("SituacionRevistaUPDATE");
 	}
 
+	/// <remarks>
+	/// Cuelga de la <c>Visibility</c> y ya no del <c>IsEnabled</c> de un <c>Border</c>: la ficha se
+	/// dibuja SIEMPRE, y la bandera elige cuál de sus dos caras: quién está en aula, o que no hay
+	/// nadie. Antes la bandera apagaba la tarjeta entera, de modo que una cátedra sin docente frente
+	/// al curso —el estado que hay que resolver— no mostraba absolutamente nada.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void El_bloque_Docente_en_Funciones_se_habilita_con_HabilitarDocenteEnFunciones()
 	{
 		var xaml = RaizDelRepositorio.Leer(GestionSituacionRevistaXaml);
 
-		var coincidencia = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->\s*<Border[^>]*?IsEnabled=""\{\s*Binding\s+Path=(\w+)", RegexOptions.Singleline);
+		var coincidencia = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->.*?Visibility=""\{\s*Binding\s+Path=(\w+)", RegexOptions.Singleline);
 
 		coincidencia.Success.ShouldBeTrue();
 		coincidencia.Groups[1].Value.ShouldBe("HabilitarDocenteEnFunciones");
+	}
+
+	/// <summary>
+	/// La ficha "en aula" dice también que NO hay nadie en aula.
+	/// </summary>
+	/// <remarks>
+	/// Es el motivo del rediseño del bloque y no se deduce del enlace: las dos caras cuelgan de la
+	/// misma bandera, una con <c>visibilidad</c> y la otra con <c>visibilidadInversa</c>.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_bloque_Docente_en_Funciones_tiene_tambien_su_cara_vacia()
+	{
+		var xaml = RaizDelRepositorio.Leer(GestionSituacionRevistaXaml);
+
+		var bloque = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->(.*?)#endregion", RegexOptions.Singleline);
+
+		bloque.Success.ShouldBeTrue();
+		bloque.Groups[1].Value.ShouldContain("HabilitarDocenteEnFunciones, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad }");
+		bloque.Groups[1].Value.ShouldContain("HabilitarDocenteEnFunciones, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa }");
 	}
 
 	[Fact]
@@ -91,7 +127,13 @@ public class GuardasEstaticasW6Tests
 							   .ToList();
 
 		// Propiedades que pertenecen a los items de las grillas y a las vistas anidadas, no al ViewModel contenedor.
-		var delItem = new HashSet<string> { "Cargo", "Estado", "Docente", "EnFunciones", "FechaAlta", "NombreCompleto", "EstaActivo", "IsEnabled", "Foreground", "SelectedItem", "SelectedDate", "Descripcion" };
+		// "Vigente", "ReemplazaADocente" y "ExigeFechaFin" son de SituacionRevistaViewModel: las usan la
+		// insignia de estado, la columna de la cadena de suplencias y el aviso de fecha de fin obligatoria.
+		// "FechaInicio" y "FechaFin" entran con la ficha de "en aula" y con el detalle de la fila elegida,
+		// que pasaron de un formulario deshabilitado a texto y a Dato: son las dos únicas cosas que el
+		// detalle agregaba a la grilla.
+		var delItem = new HashSet<string> { "Cargo", "Estado", "Docente", "EnFunciones", "FechaAlta", "NombreCompleto", "EstaActivo", "IsEnabled", "Foreground", "SelectedItem", "SelectedDate", "Descripcion",
+											"Vigente", "ReemplazaADocente", "ExigeFechaFin", "FechaInicio", "FechaFin" };
 		var faltantes = propiedades.Where(p => !delItem.Contains(p) && tipo.GetProperty(p) is null).ToList();
 
 		faltantes.ShouldBeEmpty("propiedades bindeadas que GestionSituacionRevistaViewModel no expone");
@@ -109,7 +151,11 @@ public class GuardasEstaticasW6Tests
 		((string) grilla.Attribute("ItemsSource")!).ShouldContain("Path=DocentesEnMateria");
 
 		var columnas = ColumnasBindeadas(grilla);
-		columnas.ShouldBe(new[] { "Cargo", "Estado", "Docente", "EnFunciones" });
+		// "Vigente" entra con la insignia de estado —vigente contra finalizada se distinguía sólo
+		// leyendo la palabra— y "ReemplazaADocente" con la cadena de suplencias, que se escribía en
+		// el alta y no se mostraba en ninguna parte. "EnFunciones" pasó de casilla de sólo lectura a
+		// Celda.Booleana, cuyo enlace entra por Tag.
+		columnas.ShouldBe(new[] { "Cargo", "Vigente", "Estado", "Docente", "ReemplazaADocente", "EnFunciones" });
 		DebenExistirEn(typeof(SituacionRevistaViewModel), columnas);
 	}
 
@@ -118,6 +164,11 @@ public class GuardasEstaticasW6Tests
 	/// <c>GestionSituacionRevistaView</c> y de <c>GestionDivisionesView</c>, y ahora vive una sola vez en
 	/// <c>BuscarView</c>, el contenido del modal. La guarda sigue al mismo artefacto a su lugar nuevo:
 	/// lo que audita —que las columnas bindeadas existan en <see cref="LegajoDocenteViewModel"/>— no cambió.
+	///
+	/// EL ORDEN ES PARTE DE LA GUARDA. La grilla abría con "DESDE" —la fecha de alta del legajo—, que
+	/// es trazabilidad administrativa y no interviene en la decisión de elegir un docente: el dato
+	/// que se busca quedaba segundo. Ahora abre con el nombre y sigue con el legajo, que es como la
+	/// escuela nombra a su gente.
 	/// </summary>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
@@ -129,8 +180,34 @@ public class GuardasEstaticasW6Tests
 		((string) grilla.Attribute("ItemsSource")!).ShouldContain("Path=Resultados");
 
 		var columnas = ColumnasBindeadas(grilla);
-		columnas.ShouldBe(new[] { "FechaAlta", "NombreCompleto", "DocumentoNacionalIdentidad", "EstaActivo" });
+		// "EstaActivo" aparece ahora que la guarda también lee las columnas de plantilla: la columna
+		// del glifo booleano existía desde antes, lo que faltaba era que el helper la viera.
+		columnas.ShouldBe(new[] { "NombreCompleto", "Legajo", "DocumentoNacionalIdentidad", "EstaActivo" });
 		DebenExistirEn(typeof(LegajoDocenteViewModel), columnas);
+	}
+
+	/// <summary>
+	/// "EN FUNCIONES" era una <c>DataGridCheckBoxColumn</c> de sólo lectura: una casilla que no se
+	/// puede tildar miente sobre lo que permite. Pasa al glifo de <c>Celda.Booleana</c>, que es como
+	/// se dibujan los booleanos de las grillas en toda la aplicación, y por eso ya no aparece entre
+	/// las columnas con atributo <c>Binding</c>: su valor viaja por <c>Tag</c>.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_estado_en_funciones_se_dibuja_con_el_glifo_booleano_y_no_con_una_casilla()
+	{
+		var documento = Cargar(BuscarXaml);
+
+		documento.Descendants()
+				 .Any(e => e.Name.LocalName == "DataGridCheckBoxColumn")
+				 .ShouldBeFalse("BuscarView volvió a dibujar un booleano con una casilla de sólo lectura");
+
+		var glifo = documento.Descendants()
+							 .Single(e => e.Name.LocalName == "IconBlock"
+									   && ((string?) e.Attribute("Style") ?? string.Empty).Contains("Celda.Booleana"));
+
+		((string) glifo.Attribute("Tag")!).ShouldContain("Path=EstaActivo");
+		DebenExistirEn(typeof(LegajoDocenteViewModel), new List<string> { "EstaActivo" });
 	}
 
 	/// <summary>
@@ -175,25 +252,91 @@ public class GuardasEstaticasW6Tests
 		faltantes.ShouldBeEmpty($"propiedades bindeadas que {tipo.Name} no expone");
 	}
 
+	/// <summary>
+	/// Ninguna vista declara una fila <c>*</c> adentro de un <c>GroupBox</c>.
+	/// </summary>
+	/// <remarks>
+	/// LA PLANTILLA DEL ESTILO "Seccion" ENVUELVE SU CONTENIDO EN UN <c>StackPanel</c>, y un
+	/// <c>StackPanel</c> mide a sus hijos con alto INFINITO. Adentro de él una fila <c>*</c> no acota
+	/// nada: degenera al alto total del contenido, la lista crece con todas sus filas —sin barra de
+	/// desplazamiento, porque nunca le falta lugar— y lo que venga debajo queda empujado fuera del
+	/// contenedor y recortado.
+	///
+	/// Pasó con la lista de materias del diseño curricular: su <c>MaxHeight</c> tapaba el problema,
+	/// y al sacarlo desaparecieron de la pantalla el editor de la materia y toda la barra de
+	/// acciones, incluido "Editar materia". Una sección que necesita una fila <c>*</c> dibuja su
+	/// regla y su rótulo a mano, que son dos elementos, en vez de usar el <c>GroupBox</c>.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Ninguna_vista_pone_una_fila_estrella_adentro_de_un_GroupBox()
+	{
+		var vistas = Directory.EnumerateFiles(RaizDelRepositorio.Resolver("WPF_Desktop"), "*.xaml", SearchOption.AllDirectories)
+							  .Where(ruta => !ruta.Contains($"{ Path.DirectorySeparatorChar }obj{ Path.DirectorySeparatorChar }")
+										  && !ruta.Contains($"{ Path.DirectorySeparatorChar }bin{ Path.DirectorySeparatorChar }")
+										  && !ruta.Contains($"{ Path.DirectorySeparatorChar }Theme{ Path.DirectorySeparatorChar }"));
+
+		var infractoras = new List<string>();
+
+		foreach (var ruta in vistas)
+		{
+			var documento = XDocument.Parse(File.ReadAllText(ruta));
+
+			var hayFilaEstrella = documento.Descendants()
+										   .Where(e => e.Name.LocalName == "GroupBox")
+										   .SelectMany(grupo => grupo.Descendants())
+										   .Any(e => e.Name.LocalName == "RowDefinition"
+												  && ((string?) e.Attribute("Height"))?.Trim() == "*");
+
+			if (hayFilaEstrella)
+			{
+				infractoras.Add(Path.GetFileName(ruta));
+			}
+		}
+
+		infractoras.ShouldBeEmpty("una fila * adentro de un GroupBox no acota nada: el StackPanel de su plantilla mide con alto infinito");
+	}
+
+	/// <summary>
+	/// Las propiedades que cada columna de la grilla enlaza, en orden de documento.
+	/// </summary>
+	/// <remarks>
+	/// LEÍA SÓLO EL ATRIBUTO <c>Binding</c>, y eso dejaba ciega a la guarda frente a las columnas de
+	/// plantilla: una <c>DataGridTemplateColumn</c> no declara <c>Binding</c> —sus enlaces viven
+	/// adentro, en el <c>Tag</c> de un glifo o en la <c>Visibility</c> de una insignia—, así que
+	/// renombrar una propiedad que una de ellas usa no lo detectaba nadie y la celda se dibujaba
+	/// vacía o siempre en "no". Ahora recoge todo <c>Path=</c> que aparezca en cualquier atributo de
+	/// la columna, que es lo que hace falta para que la guarda cubra lo que dice cubrir.
+	/// </remarks>
 	private static List<string> ColumnasBindeadas(XElement grilla)
 	{
 		var columnas = new List<string>();
 
 		foreach (var columna in grilla.Descendants().Where(e => e.Name.LocalName.StartsWith("DataGrid") && e.Name.LocalName.EndsWith("Column")))
 		{
-			var enlace = (string?) columna.Attribute("Binding");
+			var enlaceDirecto = (string?) columna.Attribute("Binding");
 
-			if (enlace is null)
+			if (enlaceDirecto is not null)
 			{
+				var coincidencia = Regex.Match(enlaceDirecto, @"Path=(\w+)");
+
+				if (coincidencia.Success)
+				{
+					columnas.Add(coincidencia.Groups[1].Value);
+				}
+
 				continue;
 			}
 
-			var coincidencia = Regex.Match(enlace, @"Path=(\w+)");
+			// Columna de plantilla: los enlaces están en los atributos de sus descendientes.
+			var deLaPlantilla = columna.Descendants()
+									   .SelectMany(elemento => elemento.Attributes())
+									   .Select(atributo => Regex.Match(atributo.Value, @"Path=(\w+)"))
+									   .Where(coincidencia => coincidencia.Success)
+									   .Select(coincidencia => coincidencia.Groups[1].Value)
+									   .Distinct();
 
-			if (coincidencia.Success)
-			{
-				columnas.Add(coincidencia.Groups[1].Value);
-			}
+			columnas.AddRange(deLaPlantilla);
 		}
 
 		return columnas;
@@ -350,7 +493,7 @@ public class GuardasEstaticasW6Tests
 		foreach (var metodo in new[]
 		{
 			"ListarSituacionesRevistaAsync", "DesignarDocenteAsync", "PonerEnFuncionesAsync",
-			"RelevarDeFuncionesAsync", "EstablecerFinDeDesignacionAsync", "FinalizarDesignacionAsync"
+			"RelevarDeFuncionesAsync", "PasarAInterinoAsync", "FinalizarDesignacionAsync"
 		})
 		{
 			codigo.ShouldContain($"_servicioCatedra.{metodo}(");

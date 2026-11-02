@@ -49,6 +49,12 @@ public class GestionDivisionesViewModelTests
 		public CursoStore CursoStore { get; } = new();
 		public DivisionStore DivisionStore { get; } = new();
 		public CicloLectivoStore CicloLectivoStore { get; } = new();
+
+		/// <summary>
+		/// El parámetro de navegación del modal: para qué se lo abre. La pantalla lo declara antes
+		/// de navegar y el buscador lo lee al nacer.
+		/// </summary>
+		public BuscarContextoStore BuscarContextoStore { get; } = new();
 		public DialogServiceFalso Dialogos { get; } = new();
 		public Guid CursoID { get; } = Guid.NewGuid();
 		public GestionDivisionesViewModel ViewModel { get; }
@@ -68,6 +74,7 @@ public class GestionDivisionesViewModelTests
 													   CursoStore,
 													   DivisionStore,
 													   CicloLectivoStore,
+													   BuscarContextoStore,
 													   Dialogos,
 													   Mensajero);
 		}
@@ -316,60 +323,105 @@ public class GestionDivisionesViewModelTests
 	#region Buscador de docentes en el modal
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Asignar_preceptor_abre_la_tarjeta_y_el_buscador_en_el_modal()
+	public void Abrir_el_buscador_declara_la_division_de_destino_en_el_titulo()
 	{
+		// UI-DIV-2: el modal se titulaba "Buscar docente" y nunca nombraba la división, así que la
+		// decisión se tomaba en la pantalla con menos contexto de todo el recorrido.
 		var contexto = new Contexto();
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", preceptorID: null, preceptor: null));
 
-		await contexto.ViewModel.RegistrarCommandAsync.ExecuteAsync("Docente");
+		contexto.ViewModel.AsignarPreceptorCommand.Execute(null);
 
-		contexto.ViewModel.HabilitarRegistrarDocente.ShouldBeTrue();
+		var declarado = contexto.BuscarContextoStore.Tomar();
+		declarado.Titulo.ShouldContain("A");
+		declarado.Verbo.ShouldBe("Asignar preceptor");
 		contexto.NavegarAlBuscador.Llamadas.ShouldBe(1);
 	}
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task El_docente_elegido_en_el_modal_llega_por_el_mensajero()
+	public void Sobre_un_cargo_ocupado_el_buscador_nombra_a_quien_se_reemplaza()
 	{
 		var contexto = new Contexto();
-		await contexto.ViewModel.RegistrarCommandAsync.ExecuteAsync("Docente");
-		var docenteID = Guid.NewGuid();
-		var elegido = new LegajoDocenteViewModel(new LegajoDocenteResponse(docenteID, "Luna, Juan", "30111222", "20301112229", "L-2", new DateTime(2021, 3, 1), null, true));
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("B", Guid.NewGuid(), "Perez, Ana"));
 
-		contexto.Mensajero.Send(new DocenteElegidoMessage(elegido));
+		contexto.ViewModel.AsignarPreceptorCommand.Execute(null);
 
-		contexto.ViewModel.Docente.ShouldNotBeNull();
-		contexto.ViewModel.Docente.DocenteID.ShouldBe(docenteID);
+		var declarado = contexto.BuscarContextoStore.Tomar();
+		declarado.Detalle.ShouldContain("Perez, Ana");
+		declarado.Verbo.ShouldBe("Cambiar preceptor");
 	}
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void El_buscador_solo_se_reabre_mientras_la_tarjeta_de_asignacion_esta_abierta()
+	public void El_boton_de_preceptor_se_renombra_segun_el_cargo_este_vacante_u_ocupado()
+	{
+		// Antes eran dos botones excluyentes y siempre había uno deshabilitado a la vista.
+		var contexto = new Contexto();
+
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", preceptorID: null, preceptor: null));
+		contexto.ViewModel.VerboPreceptor.ShouldBe("Asignar preceptor");
+
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("B", Guid.NewGuid(), "Perez, Ana"));
+		contexto.ViewModel.VerboPreceptor.ShouldBe("Cambiar preceptor");
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Sin_division_elegida_no_se_puede_abrir_el_buscador()
 	{
 		var contexto = new Contexto();
 
-		contexto.ViewModel.BuscarDocenteCommand.CanExecute(null).ShouldBeFalse();
-
-		contexto.ViewModel.HabilitarRegistrarDocente = true;
-
-		contexto.ViewModel.BuscarDocenteCommand.CanExecute(null).ShouldBeTrue();
+		contexto.ViewModel.AsignarPreceptorCommand.CanExecute(null).ShouldBeFalse();
 	}
 	#endregion
 
 	#region AsignarPreceptorAsync / QuitarPreceptorAsync
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Guardar_asigna_el_preceptor_con_el_curso_la_division_y_el_docente_elegidos()
+	public async Task El_docente_elegido_en_el_modal_asigna_el_preceptor_sin_pasar_por_una_tarjeta()
 	{
+		// UI-DIV-3: el elegido aterrizaba en una propiedad y abría una tarjeta al pie cuyo único
+		// contenido era el nombre recién elegido. Ahora el mensaje CIERRA la transacción.
 		var contexto = new Contexto();
-		var division = CrearDivision("A");
+		var division = CrearDivision("A", preceptorID: null, preceptor: null);
 		var docenteID = Guid.NewGuid();
 		contexto.ViewModel.Division = new DivisionViewModel(division);
-		contexto.ViewModel.Docente = new LegajoDocenteViewModel(new LegajoDocenteResponse(docenteID, "Perez, Ana", "30111222", "20301112229", "L-1", new DateTime(2020, 3, 1), null, true));
 
-		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync("Insert");
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(docenteID)));
+		await contexto.ViewModel.PreceptorElegidoCommandAsync.ExecutionTask;
 
 		_ = contexto.ServicioDivision.Received(1).AsignarPreceptorAsync(new RegistrarPreceptorRequest(contexto.CursoID, division.DivisionID, docenteID));
-		contexto.ViewModel.Docente.ShouldBeNull();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Asignar_sobre_un_cargo_vacante_no_pide_confirmacion()
+	{
+		// El cargo está vacante: no saca a nadie de su puesto, se deshace con "Quitar preceptor" y
+		// el modal viene de nombrar la división en su primera línea. Cambiar sí la pide.
+		var contexto = new Contexto();
+		contexto.Dialogos.RespuestaDeConfirmacion = false;
+		var division = CrearDivision("A", preceptorID: null, preceptor: null);
+		contexto.ViewModel.Division = new DivisionViewModel(division);
+
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(Guid.NewGuid())));
+		await contexto.ViewModel.PreceptorElegidoCommandAsync.ExecutionTask;
+
+		_ = contexto.ServicioDivision.Received(1).AsignarPreceptorAsync(Arg.Any<RegistrarPreceptorRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Sin_division_elegida_el_docente_que_llega_no_dispara_ninguna_operacion()
+	{
+		var contexto = new Contexto();
+
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(Guid.NewGuid())));
+		await contexto.ViewModel.PreceptorElegidoCommandAsync.ExecutionTask;
+
+		_ = contexto.ServicioDivision.DidNotReceive().AsignarPreceptorAsync(Arg.Any<RegistrarPreceptorRequest>());
+		_ = contexto.ServicioDivision.DidNotReceive().ModificarPreceptorAsync(Arg.Any<ModificarPreceptorRequest>());
 	}
 
 	[Fact]
@@ -402,57 +454,17 @@ public class GestionDivisionesViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void Asignar_y_cambiar_preceptor_son_excluyentes_segun_el_cargo_este_vacante_u_ocupado()
+	public async Task Sobre_un_cargo_ocupado_el_docente_elegido_llama_a_ModificarPreceptorAsync()
 	{
-		// UI-DIV-1: el bug era que "Asignar preceptor" estaba habilitado con el cargo ocupado, así
-		// que el recorrido terminaba en CargoPreceptorNoDisponibleException mostrada como error.
-		var contexto = new Contexto();
-
-		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", preceptorID: null, preceptor: null));
-		contexto.ViewModel.RegistrarCommandAsync.CanExecute("Docente").ShouldBeTrue();
-		contexto.ViewModel.ModificarPreceptorCommand.CanExecute(null).ShouldBeFalse();
-
-		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("B", Guid.NewGuid(), "Perez, Ana"));
-		contexto.ViewModel.RegistrarCommandAsync.CanExecute("Docente").ShouldBeFalse();
-		contexto.ViewModel.ModificarPreceptorCommand.CanExecute(null).ShouldBeTrue();
-	}
-
-	[Fact]
-	[Trait("Categoria", "Unidad")]
-	public void Asignar_preceptor_sin_division_elegida_no_esta_habilitado()
-	{
-		var contexto = new Contexto();
-
-		contexto.ViewModel.RegistrarCommandAsync.CanExecute("Docente").ShouldBeFalse();
-		contexto.ViewModel.ModificarPreceptorCommand.CanExecute(null).ShouldBeFalse();
-	}
-
-	[Fact]
-	[Trait("Categoria", "Unidad")]
-	public void Cambiar_preceptor_abre_la_tarjeta_y_el_buscador_igual_que_asignar()
-	{
-		var contexto = new Contexto();
-		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", Guid.NewGuid(), "Perez, Ana"));
-
-		contexto.ViewModel.ModificarPreceptorCommand.Execute(null);
-
-		contexto.ViewModel.HabilitarRegistrarDocente.ShouldBeTrue();
-		contexto.ViewModel.ModificandoPreceptor.ShouldBeTrue();
-		contexto.NavegarAlBuscador.Llamadas.ShouldBe(1);
-	}
-
-	[Fact]
-	[Trait("Categoria", "Unidad")]
-	public async Task Guardar_despues_de_cambiar_llama_a_ModificarPreceptorAsync_y_no_a_AsignarPreceptorAsync()
-	{
+		// Reemplazar no es quitar y volver a asignar —eso dejaría el cargo vacante en el medio—
+		// sino una sola unidad de trabajo.
 		var contexto = new Contexto();
 		var division = CrearDivision("A", Guid.NewGuid(), "Perez, Ana");
-		contexto.ViewModel.Division = new DivisionViewModel(division);
 		var docenteID = Guid.NewGuid();
-		contexto.ViewModel.ModificarPreceptorCommand.Execute(null);
-		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(docenteID)));
+		contexto.ViewModel.Division = new DivisionViewModel(division);
 
-		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync(null);
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(docenteID)));
+		await contexto.ViewModel.PreceptorElegidoCommandAsync.ExecutionTask;
 
 		_ = contexto.ServicioDivision.Received(1).ModificarPreceptorAsync(new ModificarPreceptorRequest(contexto.CursoID, division.DivisionID, docenteID));
 		_ = contexto.ServicioDivision.DidNotReceive().AsignarPreceptorAsync(Arg.Any<RegistrarPreceptorRequest>());
@@ -460,20 +472,24 @@ public class GestionDivisionesViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Guardar_sin_haber_pedido_el_cambio_sigue_asignando()
+	public async Task Cual_de_los_dos_casos_de_uso_corre_lo_decide_la_division_y_no_un_flag()
 	{
-		// El mismo botón cierra los dos recorridos: si el flag se quedara pegado en true, una
-		// asignación común llamaría al caso de uso equivocado.
+		// UI-DIV-4: la intención se guardaba en ModificandoPreceptor, que esta pantalla prendía
+		// antes de navegar y apagaba al terminar; cancelar el modal NO lo apagaba, porque el
+		// buscador no conoce a sus llamadores. Preguntarle a la división no se desincroniza.
 		var contexto = new Contexto();
-		var division = CrearDivision("A", preceptorID: null, preceptor: null);
-		contexto.ViewModel.Division = new DivisionViewModel(division);
-		var docenteID = Guid.NewGuid();
-		await contexto.ViewModel.RegistrarCommandAsync.ExecuteAsync("Docente");
-		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(docenteID)));
+		var ocupada = CrearDivision("A", Guid.NewGuid(), "Perez, Ana");
+		contexto.ViewModel.Division = new DivisionViewModel(ocupada);
+		contexto.ViewModel.AsignarPreceptorCommand.Execute(null);
 
-		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync(null);
+		// El usuario cierra el modal sin elegir y se pasa a una división vacante.
+		var vacante = CrearDivision("B", preceptorID: null, preceptor: null);
+		contexto.ViewModel.Division = new DivisionViewModel(vacante);
 
-		_ = contexto.ServicioDivision.Received(1).AsignarPreceptorAsync(new RegistrarPreceptorRequest(contexto.CursoID, division.DivisionID, docenteID));
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(Guid.NewGuid())));
+		await contexto.ViewModel.PreceptorElegidoCommandAsync.ExecutionTask;
+
+		_ = contexto.ServicioDivision.Received(1).AsignarPreceptorAsync(Arg.Any<RegistrarPreceptorRequest>());
 		_ = contexto.ServicioDivision.DidNotReceive().ModificarPreceptorAsync(Arg.Any<ModificarPreceptorRequest>());
 	}
 
@@ -484,28 +500,11 @@ public class GestionDivisionesViewModelTests
 		var contexto = new Contexto();
 		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", Guid.NewGuid(), "Perez, Ana"));
 		contexto.Dialogos.RespuestaDeConfirmacion = false;
-		contexto.ViewModel.ModificarPreceptorCommand.Execute(null);
-		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(Guid.NewGuid())));
 
-		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync(null);
+		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(Guid.NewGuid())));
+		await contexto.ViewModel.PreceptorElegidoCommandAsync.ExecutionTask;
 
 		_ = contexto.ServicioDivision.DidNotReceive().ModificarPreceptorAsync(Arg.Any<ModificarPreceptorRequest>());
-	}
-
-	[Fact]
-	[Trait("Categoria", "Unidad")]
-	public void Cancelar_cierra_la_tarjeta_y_descarta_la_intencion_de_cambio()
-	{
-		var contexto = new Contexto();
-		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", Guid.NewGuid(), "Perez, Ana"));
-		contexto.ViewModel.ModificarPreceptorCommand.Execute(null);
-		contexto.Mensajero.Send(new DocenteElegidoMessage(CrearDocente(Guid.NewGuid())));
-
-		contexto.ViewModel.CancelarCommand.Execute(null);
-
-		contexto.ViewModel.HabilitarRegistrarDocente.ShouldBeFalse();
-		contexto.ViewModel.ModificandoPreceptor.ShouldBeFalse();
-		contexto.ViewModel.Docente.ShouldBeNull();
 	}
 	#endregion
 

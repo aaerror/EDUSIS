@@ -7,6 +7,47 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 
 public class MateriaViewModelTests
 {
+	/// <summary>
+	/// El combo de edición nunca puede dejar afuera la carga que la materia ya tiene.
+	/// </summary>
+	/// <remarks>
+	/// ES LA GUARDA DE UN DEFECTO QUE BORRABA DATOS. El combo tenía una lista fija de 1 a 5 y el
+	/// <c>SelectedItem</c> en <c>TwoWay</c>: una materia de 6 horas no encontraba su ítem, WPF le
+	/// escribía <c>null</c> de vuelta, la materia quedaba inválida apenas se abría el editor y
+	/// "Guardar materia" —cuya visibilidad cuelga del <c>IsEnabled</c>— desaparecía sin decir por
+	/// qué. Seis horas no es un caso raro: el response que usa el resto de este archivo ya traía esa
+	/// carga.
+	/// </remarks>
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData(6)]
+	[InlineData(8)]
+	[InlineData(1)]
+	public void Las_opciones_de_carga_horaria_contienen_siempre_la_de_la_materia(int horas)
+	{
+		var viewModel = new MateriaViewModel(new MateriaResponse(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Matematica", horas));
+
+		viewModel.OpcionesCargaHoraria.ShouldContain(horas);
+
+		// Y tampoco se pierde cuando el contenedor le aprieta el tope al cupo de la currícula.
+		viewModel.OfrecerCargasHorariaHasta(2);
+
+		viewModel.OpcionesCargaHoraria.ShouldContain(horas);
+		viewModel.HorasCatedra.ShouldBe(horas);
+	}
+
+	/// <summary>Con cupo de sobra el combo llega hasta donde le digan, empezando en 1.</summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Las_opciones_de_carga_horaria_van_de_uno_hasta_el_tope_recibido()
+	{
+		var viewModel = new MateriaViewModel(new MateriaResponse(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Matematica", 2));
+
+		viewModel.OfrecerCargasHorariaHasta(4);
+
+		viewModel.OpcionesCargaHoraria.ShouldBe(new[] { 1, 2, 3, 4 });
+	}
+
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void El_constructor_mapea_cada_campo_del_response()

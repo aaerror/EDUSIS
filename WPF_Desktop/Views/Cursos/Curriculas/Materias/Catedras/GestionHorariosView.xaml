@@ -18,6 +18,18 @@
 		horario". Al revés el horario nuevo choca con el viejo y el dominio lo rechaza por
 		superposición.
 
+		ESO NO ESTABA ESCRITO EN NINGUNA PARTE. El recorrido entero vivía en un comentario del XAML
+		y del ViewModel: la tarjeta del alta no tenía ni título, así que elegir una fila llenaba
+		cuatro campos de arriba sin que nada explicara por qué ni qué hacer después. Ahora la
+		tarjeta se llama y su detalle dice los dos pasos.
+
+		EL TOPE SE DESCUBRÍA FALLANDO. Catedra.AgregarHorario rechaza con
+		HorasCatedraCompletasException cuando HorasAsignadas —que es la cantidad de horarios
+		cargados— llega a CargaHoraria, y la pantalla no mostraba ninguno de los dos números: se
+		cargaban horarios hasta que uno reventaba. La tira dice cuántas horas van y cuántas quedan,
+		el alta se apaga al llegar al tope y la insignia explica por qué. Es la misma regla que
+		Diseño curricular ya aplica con "9 de 14 espacios · 27 de 40 horas".
+
 		El combo de día ofrece lunes a viernes solamente. Es presentación: la regla que rechaza
 		sábado y domingo vive en el dominio y no se duplica acá. Lo mismo con los límites de cada
 		turno, la superposición en la división y el docente en dos aulas a la vez: eso lo decide
@@ -37,31 +49,16 @@
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="{ Binding Path=Materia.Descripcion, Mode=OneWay }"
-							   Subtitle="Horarios de la cátedra: turno, día, hora de inicio y duración de la hora cátedra"
-							   VerticalContentAlignment="Top"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=VolverCommand }"
-					Style="{ StaticResource ResourceKey=Btn.Terciario }"
-					ToolTip="Volver a las cátedras de la materia"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="ArrowLeft"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Volver a cátedras" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<!--
+			El encabezado se queda sin acción propia: el alta de esta pantalla necesita cuatro
+			campos, así que vive en su tarjeta. Es el caso contrario al de Cátedras y Divisiones,
+			donde el alta pide un solo dato y sube al hueco de acción.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Horarios"
+									Subtitulo="Horarios de la cátedra: turno, día, hora de inicio y duración de la hora cátedra"/>
 		<!--#endregion-->
 
 		<!--#region AGREGAR HORARIO-->
@@ -69,69 +66,168 @@
 				Margin="0 0 0 16"
 				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
 			<Grid Margin="20 18">
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="Auto"/>
-					<ColumnDefinition Width="Auto"/>
-					<ColumnDefinition Width="Auto"/>
-					<ColumnDefinition Width="Auto"/>
-					<ColumnDefinition Width="*"/>
-				</Grid.ColumnDefinitions>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
 
-				<HeaderedContentControl Grid.Column="0"
-										Header="Turno"
-										Style="{ StaticResource ResourceKey=Campo.Izquierda }"
-										ToolTip="Turno de la cátedra. Cada turno tiene sus propios límites de horario.">
-					<ComboBox ItemsSource="{ Binding Path=Turnos, Mode=OneWay }"
-							  MinWidth="140"
-							  SelectedItem="{ Binding Path=Turno, Mode=TwoWay }"
-							  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-				</HeaderedContentControl>
+				<!--
+					EL TÍTULO Y LAS MEDIDAS COMPARTEN UNA LÍNEA, Y EL DETALLE BAJA A LA SUYA.
 
-				<HeaderedContentControl Grid.Column="1"
-										Header="Día"
-										Style="{ StaticResource ResourceKey=Campo.Centro }"
-										ToolTip="Día de la semana. Sólo de lunes a viernes.">
-					<ComboBox ItemsSource="{ Binding Path=Dias, Mode=OneWay }"
-							  MinWidth="140"
-							  SelectedItem="{ Binding Path=Dia, Mode=TwoWay }"
-							  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-				</HeaderedContentControl>
+					Estaban los tres en la misma fila con VerticalAlignment="Center": el título con
+					su detalle de dos renglones medía 65px, la tira de medidas 37 y la insignia 21,
+					así que centrar cada bloque contra el alto del más alto los dejaba a tres alturas
+					distintas y ninguna coincidía con otra. Centrar bloques de distinto alto no
+					alinea nada; alinea sus centros, que es justo lo que nadie mira.
 
-				<HeaderedContentControl Grid.Column="2"
-										Header="Hora de inicio"
-										Style="{ StaticResource ResourceKey=Campo.Centro }"
-										ToolTip="Hora de inicio escrita como HH:mm, por ejemplo 08:00.">
-					<TextBox MaxLength="5"
-							 Style="{ StaticResource ResourceKey=Txb.Campo }"
-							 Text="{ Binding Path=HoraInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
-							 Width="96"/>
-				</HeaderedContentControl>
+					Ahora la fila de arriba tiene sólo cosas de UN renglón —título, las dos cifras y
+					la insignia— y las tres cuelgan del borde de abajo, que es donde está la línea de
+					base que el ojo sigue. El detalle, que es el que envolvía, se lleva su propia
+					fila a lo ancho de la tarjeta.
+				-->
+				<Grid Grid.Row="0">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
 
-				<HeaderedContentControl Grid.Column="3"
-										Header="Duración (minutos)"
-										Style="{ StaticResource ResourceKey=Campo.Centro }"
-										ToolTip="Duración de la hora cátedra en minutos. Múltiplo de cinco y no menos de treinta.">
-					<TextBox MaxLength="3"
-							 Style="{ StaticResource ResourceKey=Txb.Campo }"
-							 Text="{ Binding Path=DuracionMinutos, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-							 Width="96"/>
-				</HeaderedContentControl>
+					<TextBlock Grid.Column="0"
+							   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+							   Text="Agregar un horario"
+							   VerticalAlignment="Bottom"/>
 
-				<Button Grid.Column="4"
-						Command="{ Binding Path=AgregarHorarioCommand }"
-						HorizontalAlignment="Right"
-						Margin="0 0 0 16"
-						Style="{ StaticResource ResourceKey=Btn.Primario }"
-						ToolTip="Agregar el horario a la cátedra"
-						VerticalAlignment="Bottom">
-					<StackPanel Orientation="Horizontal">
-						<fa:IconBlock FontSize="11"
-									  Icon="Plus"
-									  Margin="0 0 8 0"
-									  VerticalAlignment="Center"/>
-						<TextBlock Text="Agregar horario" VerticalAlignment="Center"/>
+					<!--
+						EL PRESUPUESTO DE LA SEMANA. Las dos cifras salen de la carga horaria de la
+						cátedra y de la cantidad de horarios ya cargados, que es exactamente lo que
+						el dominio compara para aceptar o rechazar uno más.
+
+						La insignia entró a la misma tira: es la tercera medida de la fila y no un
+						bloque aparte, así que se alinea con las otras dos en vez de flotar contra el
+						alto de toda la cabecera.
+					-->
+					<StackPanel Grid.Column="1"
+								Margin="24 0 0 0"
+								Orientation="Horizontal"
+								VerticalAlignment="Bottom">
+						<StackPanel Margin="0 0 28 0">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="CARGA HORARIA"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=CargaHoraria, Mode=OneWay }"/>
+						</StackPanel>
+						<StackPanel>
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="SIN ASIGNAR"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=HorasSinAsignar, Mode=OneWay }"/>
+						</StackPanel>
+
+						<!--
+							La insignia es el motivo por el que el botón de agregar no está. Un botón
+							que desaparece sin explicación es peor que uno gris.
+						-->
+						<Border Margin="28 0 0 0"
+								Style="{ StaticResource ResourceKey=Insignia.Activa }"
+								VerticalAlignment="Bottom"
+								Visibility="{ Binding Path=HorasCompletas, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+									   Text="SEMANA COMPLETA"/>
+						</Border>
 					</StackPanel>
-				</Button>
+				</Grid>
+
+				<!--
+					Los dos pasos de "modificar", dichos donde el usuario los ejecuta.
+
+					CON HorizontalAlignment="Left". Un TextBlock hereda HorizontalAlignment="Stretch",
+					y cuando un MaxWidth le impide llenar el hueco, WPF no lo deja pegado a la
+					izquierda: lo CENTRA. Este párrafo vivía en una columna de 1100px con MaxWidth 520,
+					así que arrancaba ~290px adentro, con un vacío a su izquierda que no era margen de
+					nada. TextAlignment no lo arregla —alinea el texto DENTRO de la caja, y la caja era
+					la que estaba corrida—.
+				-->
+				<TextBlock Grid.Row="1"
+						   HorizontalAlignment="Left"
+						   Margin="0 4 0 14"
+						   MaxWidth="520"
+						   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+						   Text="Para corregir uno que ya está, elegilo de la lista: se copia acá. Corregilo, quitá el viejo y después agregá el nuevo."
+						   TextWrapping="Wrap"/>
+
+				<Grid Grid.Row="2">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
+
+					<HeaderedContentControl Grid.Column="0"
+											Header="Turno"
+											Style="{ StaticResource ResourceKey=Campo.Izquierda }"
+											ToolTip="Turno de la cátedra. Cada turno tiene sus propios límites de horario.">
+						<ComboBox ItemsSource="{ Binding Path=Turnos, Mode=OneWay }"
+								  MinWidth="140"
+								  SelectedItem="{ Binding Path=Turno, Mode=TwoWay }"
+								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+					</HeaderedContentControl>
+
+					<HeaderedContentControl Grid.Column="1"
+											Header="Día"
+											Style="{ StaticResource ResourceKey=Campo.Centro }"
+											ToolTip="Día de la semana. Sólo de lunes a viernes.">
+						<ComboBox ItemsSource="{ Binding Path=Dias, Mode=OneWay }"
+								  MinWidth="140"
+								  SelectedItem="{ Binding Path=Dia, Mode=TwoWay }"
+								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+					</HeaderedContentControl>
+
+					<HeaderedContentControl Grid.Column="2"
+											Header="Hora de inicio"
+											Style="{ StaticResource ResourceKey=Campo.Centro }"
+											ToolTip="Hora de inicio escrita como HH:mm, por ejemplo 08:00.">
+						<TextBox MaxLength="5"
+								 Style="{ StaticResource ResourceKey=Txb.Campo }"
+								 Text="{ Binding Path=HoraInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+								 Width="96"/>
+					</HeaderedContentControl>
+
+					<HeaderedContentControl Grid.Column="3"
+											Header="Duración (minutos)"
+											Style="{ StaticResource ResourceKey=Campo.Centro }"
+											ToolTip="Duración de la hora cátedra en minutos. Múltiplo de cinco y no menos de treinta.">
+						<TextBox MaxLength="3"
+								 Style="{ StaticResource ResourceKey=Txb.Campo }"
+								 Text="{ Binding Path=DuracionMinutos, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+								 Width="96"/>
+					</HeaderedContentControl>
+
+					<!--
+						Con la semana completa el botón no se dibuja: su CanExecute ya mide el tope
+						del dominio, y la Visibility cuelga de ese mismo IsEnabled, así que la regla
+						vive en un solo lugar. La insignia de arriba dice por qué no está.
+					-->
+					<Button Grid.Column="4"
+							Command="{ Binding Path=AgregarHorarioCommand }"
+							HorizontalAlignment="Right"
+							Margin="0 0 0 16"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Agregar el horario a la cátedra"
+							VerticalAlignment="Bottom"
+							Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+						<StackPanel Orientation="Horizontal">
+							<fa:IconBlock FontSize="11"
+										  Icon="Plus"
+										  Margin="0 0 8 0"
+										  VerticalAlignment="Center"/>
+							<TextBlock Text="Agregar horario" VerticalAlignment="Center"/>
+						</StackPanel>
+					</Button>
+				</Grid>
 			</Grid>
 		</Border>
 		<!--#endregion-->
@@ -145,32 +241,62 @@
 					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
 
-				<TextBlock Grid.Row="0"
-						   Margin="0 0 0 12"
-						   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-						   Text="HORARIOS CARGADOS"/>
+				<!--
+					Título de tarjeta y no rótulo de bloque: Txt.Seccion es el rótulo que va ADENTRO
+					de una tarjeta, y acá nombra a la tarjeta entera. Sus hermanas —Cátedras,
+					Docentes de la cátedra— se encabezan con Txt.Titulo.
+				-->
+				<StackPanel Grid.Row="0" Margin="0 0 0 12">
+					<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+							   Text="Horarios cargados"/>
+					<TextBlock Margin="0 4 0 0"
+							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="Cada fila es una hora cátedra de la semana."/>
+				</StackPanel>
 
-				<DataGrid Grid.Row="1"
+				<!--
+					SIN MinHeight: la grilla toma la fila * de la tarjeta, así que el alto se lo da
+					el contenedor y no un número puesto a mano.
+
+					Las columnas estrenan ElementStyle. El TextBlock que genera DataGridTextColumn
+					no trunca —corta en seco, sin elipsis— y hereda las cifras proporcionales de
+					Fuente.Cuerpo, de modo que las horas y la duración no se podían comparar contra
+					la fila de arriba. Celda.Numero las pone tabulares, que es lo que una columna de
+					horarios necesita.
+				-->
+				<DataGrid x:Name="Grilla_Horarios"
+						  Grid.Row="1"
 						  ItemsSource="{ Binding Path=Horarios, Mode=OneWay }"
-						  MinHeight="160"
 						  SelectedItem="{ Binding Path=Horario, Mode=TwoWay }"
+						  AutomationProperties.Name="Horarios de la cátedra"
 						  Style="{ StaticResource ResourceKey=Grilla }"
 						  Tag="Esta cátedra todavía no tiene horarios. Completá el formulario de arriba y agregá el primero.">
 					<DataGrid.Columns>
 						<DataGridTextColumn Binding="{ Binding Path=Turno, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 											Header="TURNO"
+											MinWidth="100"
 											Width="*"/>
 						<DataGridTextColumn Binding="{ Binding Path=Dia, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 											Header="DÍA"
+											MinWidth="100"
 											Width="*"/>
 						<DataGridTextColumn Binding="{ Binding Path=HoraInicio, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
 											Header="DESDE"
+											MinWidth="90"
 											Width="*"/>
 						<DataGridTextColumn Binding="{ Binding Path=HoraFin, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
 											Header="HASTA"
+											MinWidth="90"
 											Width="*"/>
+						<!-- La unidad va en el encabezado: una columna de números pelados no dice de qué. -->
 						<DataGridTextColumn Binding="{ Binding Path=DuracionMinutos, Mode=OneWay }"
-											Header="DURACIÓN"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+											Header="DURACIÓN (MIN)"
+											MinWidth="130"
 											Width="*"/>
 					</DataGrid.Columns>
 				</DataGrid>
@@ -178,17 +304,29 @@
 				<!--
 					El pie lleva sólo el destructivo, así que va en el Header del estilo Acciones:
 					ahí es donde se lee lo que saca algo del flujo.
+
+					Y cuelga de que haya una fila elegida. Sin selección el botón quedaba gris y la
+					regla de 1px se dibujaba igual, sin nada que dijera que primero hay que elegir
+					un horario.
 				-->
-				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+				<HeaderedContentControl Grid.Row="2"
+										IsEnabled="{ Binding Path=SelectedItem, ElementName=Grilla_Horarios, Converter={ StaticResource ResourceKey=noEsNulo } }"
+										Style="{ StaticResource ResourceKey=Acciones }"
+										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
 					<HeaderedContentControl.Header>
 						<Button Command="{ Binding Path=QuitarHorarioCommand }"
 								Content="Quitar horario"
 								Style="{ StaticResource ResourceKey=Btn.Peligro }"
-								ToolTip="Quitar de la cátedra el horario seleccionado"/>
+								ToolTip="Quitar de la cátedra el horario elegido"/>
 					</HeaderedContentControl.Header>
 				</HeaderedContentControl>
 			</Grid>
 		</Border>
 		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="3"
+									  EstaCargando="{ Binding Path=CargarCommand.IsRunning }"
+									  Leyenda="CARGANDO LOS HORARIOS"/>
 	</Grid>
 </UserControl>

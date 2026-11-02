@@ -236,6 +236,19 @@
 							   TextWrapping="Wrap"/>
 				</StackPanel>
 
+				<!--#region AVISOS
+					Viven acá y no en cada pantalla por una razón concreta: la navegación
+					reemplaza el ViewModel de contenido, así que un aviso dibujado por la
+					pantalla se iría con ella. El éxito de "Cursante dado de baja" tiene que
+					sobrevivir a la recarga que viene justo después.
+
+					Debajo del modal en ZIndex: mientras hay un modal abierto, lo que importa es
+					la decisión que el modal pide.
+				-->
+				<components:AvisosComponent Panel.ZIndex="5"
+											Avisos="{ Binding Path=Avisos }"/>
+				<!--#endregion-->
+
 				<!--#region MODAL-->
 				<components:ModalComponent Panel.ZIndex="10"
 										   EstaAbierto="{ Binding Path=ModalEstaAbierto, UpdateSourceTrigger=PropertyChanged }">

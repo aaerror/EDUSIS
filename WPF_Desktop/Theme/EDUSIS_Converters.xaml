@@ -12,5 +12,13 @@
 	<conv:InvertBooleanConverter x:Key="negar"/>
 	<conv:NullToBooleanConverter x:Key="noEsNulo"/>
 	<conv:NullToVisibilityConverter x:Key="visibleSiHay"/>
+	<conv:TextoAVisibilidadConverter x:Key="visibleSiHayTexto"/>
 	<conv:IgualdadConverter x:Key="esIgualA"/>
+
+	<!--
+		El grado también: tres vistas lo formateaban con StringFormat={}{0}° Año sobre el NOMBRE
+		del miembro del enum, que es "Primero", así que en pantalla decía "Primero° Año". Acá
+		arriba para que ninguna vuelva a armar ese texto a mano.
+	-->
+	<conv:GradoConverter x:Key="grado"/>
 </ResourceDictionary>

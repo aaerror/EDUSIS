@@ -16,14 +16,16 @@ internal partial class LicenciaViewModel : ObservableValidator
 	[ObservableProperty]
 	private Guid _licenciaID = Guid.Empty;
 
-	[Required]
-	[EnumDataType(typeof(Articulo))]
+	// Igual que en el puesto: sin ErrorMessage el motivo sale en inglés, y ahora se lee debajo
+	// del campo.
+	[Required(ErrorMessage="Se debe elegir el artículo de la licencia.")]
+	[EnumDataType(typeof(Articulo), ErrorMessage="El artículo no es uno de los admitidos.")]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
 	private string _articulo = string.Empty;
 
-	[Required]
-	[EnumDataType(typeof(Estado))]
+	[Required(ErrorMessage="Se debe indicar el estado de la licencia.")]
+	[EnumDataType(typeof(Estado), ErrorMessage="El estado no es uno de los admitidos.")]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
 	private string _estado = string.Empty;

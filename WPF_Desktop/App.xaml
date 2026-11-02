@@ -17,10 +17,10 @@
 				<ResourceDictionary Source="/Theme/EDUSIS_Brushes.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_Typography.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_Surfaces.xaml"/>
+				<ResourceDictionary Source="/Theme/EDUSIS_Feedback.xaml"/>
 
 				<!-- CONTROLES -->
 				<ResourceDictionary Source="/Theme/EDUSIS_ButtonStyle.xaml"/>
-				<ResourceDictionary Source="/Theme/EDUSIS_ButtonWithIcon.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_Labels.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_TextBlock.xaml"/>
 				<ResourceDictionary Source="/Theme/EDUSIS_TextBox.xaml"/>

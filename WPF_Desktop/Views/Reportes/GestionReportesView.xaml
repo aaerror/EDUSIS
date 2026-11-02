@@ -11,7 +11,6 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 mc:Ignorable="d">
 	<UserControl.Resources>
-		<converters:GradoConverter x:Key="grado"/>
 
 		<!--
 			Una "pieza" es cada cosa emitible: título, qué contiene y el botón. Las cinco se
@@ -69,10 +68,10 @@
 		<!--#endregion-->
 
 		<!--#region ENCABEZADO-->
-		<components:Header Grid.Row="0"
-						   Margin="0 0 0 20"
-						   Title="Reportes"
-						   Subtitle="Matrículas, asistencias, calificaciones, materias pendientes y trayectorias, en PDF"/>
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Titulo="Reportes"
+									Subtitulo="Matrículas, asistencias, calificaciones, materias pendientes y trayectorias, en PDF"/>
 		<!--#endregion-->
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">

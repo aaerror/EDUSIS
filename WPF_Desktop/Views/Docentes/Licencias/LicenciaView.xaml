@@ -91,7 +91,7 @@
 									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
 				<TextBox MaxLength="3"
 						 Tag="30"
-						 Text="{ Binding Path=Dias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+						 Text="{ Binding Path=Dias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
 			</HeaderedContentControl>
 
@@ -100,7 +100,7 @@
 									Style="{ StaticResource ResourceKey=Campo }">
 				<TextBox MaxLength="250"
 						 Tag="motivo, certificado presentado, quién autoriza&#x2026;"
-						 Text="{ Binding Path=Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True }"
+						 Text="{ Binding Path=Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						 Style="{ StaticResource ResourceKey=Txb.Nota }"/>
 			</HeaderedContentControl>
 		</Grid>

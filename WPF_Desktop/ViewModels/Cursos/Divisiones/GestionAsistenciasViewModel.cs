@@ -10,6 +10,7 @@ using Core.ServicioDivisiones.DTOs.Requests;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using WPF_Desktop.Navigation;
@@ -18,10 +19,25 @@ using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
-internal partial class GestionAsistenciasViewModel : ObservableObject
+internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacion
 {
 	/// <summary>Título único de todos los diálogos de la pantalla.</summary>
 	private const string TITULO = "Asistencia";
+
+	#region Vistas de la división
+	/// <remarks>
+	/// Las tres responden preguntas distintas sobre la misma división y por eso son vistas y no
+	/// secciones apiladas: la planilla es el trabajo de hoy, el historial es qué se cargó estos días y
+	/// el resumen es cómo viene el período. Apilarlas obligaría a scrollear la pantalla entera para
+	/// llegar a la de abajo, y las tres quieren el alto completo para su grilla.
+	///
+	/// Son constantes y no un enum porque viajan como <c>ConverterParameter</c>, que es texto. Mismo
+	/// mecanismo que el conmutador del alumno: ver <c>GestionCursantesViewModel</c>.
+	/// </remarks>
+	public const string VISTA_PLANILLA = "Planilla";
+	public const string VISTA_HISTORIAL = "Historial";
+	public const string VISTA_RESUMEN = "Resumen";
+	#endregion
 
 	#region Servicios
 	private readonly IServicioAsistencia _servicioAsistencia;
@@ -62,6 +78,24 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 	/// <summary>Fecha de trabajo. No viene por store: es el <c>DatePicker</c> de esta pantalla.</summary>
 	[ObservableProperty]
 	private DateTime _fecha = DateTime.Today;
+
+	/// <summary>
+	/// Elegir una fecha ES pedir su planilla.
+	/// </summary>
+	/// <remarks>
+	/// Antes había un botón "Ver planilla" al lado del calendario, y era un paso que no decidía nada:
+	/// nadie cambia la fecha para quedarse mirando la planilla de la anterior. El botón además dejaba
+	/// la pantalla en un estado mentiroso —fecha nueva, planilla vieja— si uno se olvidaba de
+	/// apretarlo. El <c>DatePicker</c> sólo confirma al elegir del calendario o al salir del campo, así
+	/// que esto no dispara una consulta por tecla.
+	/// </remarks>
+	partial void OnFechaChanged(DateTime value)
+	{
+		if (CargarCommand.CanExecute(null))
+		{
+			CargarCommand.Execute(null);
+		}
+	}
 
 	/// <summary>
 	/// Hay planilla abierta para <see cref="Fecha"/>. En <c>false</c> la pantalla queda en estado
@@ -135,6 +169,113 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 	private int _tardanzas;
 	#endregion
 
+	#region Vista elegida
+	/// <summary>Cuál de las tres vistas está abierta. Es una de las constantes <c>VISTA_</c>.</summary>
+	[ObservableProperty]
+	private string _vista = VISTA_PLANILLA;
+
+	/// <summary>
+	/// Abrir una vista ES pedir sus datos: el historial y el resumen consultan al entrar y no con un
+	/// botón aparte.
+	/// </summary>
+	/// <remarks>
+	/// Es la lección del historial del alumno, que se pedía con un botón "Ver historial" y después no
+	/// había forma de cerrarlo. Colgando la consulta del conmutador, elegir otra vista es lo que la
+	/// cierra. Se reconsulta cada vez —y no sólo la primera— porque las dos miran el mismo período que
+	/// el usuario viene de marcar en la planilla del día: volver al resumen después de cerrar una
+	/// planilla y encontrarlo sin ese día sería mentirle.
+	/// </remarks>
+	partial void OnVistaChanged(string value)
+	{
+		ConsultarLaVistaAbierta();
+	}
+
+	/// <summary>
+	/// Pide los datos de la vista abierta, si esa consulta no está ya en curso.
+	/// </summary>
+	/// <remarks>
+	/// Se dispara sin <c>await</c> —un <c>partial void</c> no es asíncrono— así que pregunta por
+	/// <c>CanExecute</c> antes: <c>AsyncRelayCommand</c> lo apaga mientras corre, y dos consultas de
+	/// la misma pantalla en vuelo a la vez chocan contra el mismo <c>DbContext</c>, que no es
+	/// reentrante.
+	/// </remarks>
+	private void ConsultarLaVistaAbierta()
+	{
+		if (Vista == VISTA_HISTORIAL && ListarPlanillasCommand.CanExecute(null))
+		{
+			ListarPlanillasCommand.Execute(null);
+		}
+		else if (Vista == VISTA_RESUMEN && ConsultarResumenCommand.CanExecute(null))
+		{
+			ConsultarResumenCommand.Execute(null);
+		}
+	}
+	#endregion
+
+	#region Periodo del historial y del resumen
+	/// <summary>
+	/// Extremos del período que miran el historial y el resumen. Arrancan en el último mes.
+	/// </summary>
+	/// <remarks>
+	/// El valor inicial no es "todo el ciclo" a propósito: una división con clases desde marzo acumula
+	/// doscientas planillas, y abrir el historial con las doscientas no es mostrar más información
+	/// sino esconder las de esta semana, que son las que se vienen a buscar. El período se amplía
+	/// desde los atajos o a mano, pero el que no elige nada recibe algo que se puede leer.
+	/// </remarks>
+	[ObservableProperty]
+	private DateTime _desde = DateTime.Today.AddDays(-30);
+
+	[ObservableProperty]
+	private DateTime _hasta = DateTime.Today;
+
+	/// <summary>Las planillas ya cargadas del período, de la más reciente a la más vieja.</summary>
+	[ObservableProperty]
+	private ObservableCollection<PlanillaResumenViewModel> _planillas = new();
+
+	/// <summary>Fila elegida del historial: la fecha que <c>AbrirFechaCommand</c> lleva a la planilla.</summary>
+	[NotifyCanExecuteChangedFor(nameof(AbrirFechaCommand))]
+	[ObservableProperty]
+	private PlanillaResumenViewModel? _planillaElegida;
+	#endregion
+
+	#region Resumen del periodo
+	[ObservableProperty]
+	private ObservableCollection<ResumenCursanteViewModel> _resumenCursantes = new();
+
+	[ObservableProperty]
+	private int _planillasDelPeriodo;
+
+	[ObservableProperty]
+	private int _planillasAbiertas;
+
+	[ObservableProperty]
+	private int _presentesDelPeriodo;
+
+	[ObservableProperty]
+	private int _ausenciasDelPeriodo;
+
+	[ObservableProperty]
+	private int _inasistenciasDelPeriodo;
+
+	[ObservableProperty]
+	private int _tardanzasDelPeriodo;
+
+	/// <summary>El porcentaje de asistencia de la división en el período, ya formateado.</summary>
+	[ObservableProperty]
+	private string _asistenciaDelPeriodo = "0%";
+
+	/// <summary>
+	/// El período tiene al menos una planilla sin cerrar. La vista lo avisa porque un resumen con
+	/// planillas abiertas todavía puede cambiar: los números que muestra no son definitivos.
+	/// </summary>
+	public bool HayPlanillasAbiertas => PlanillasAbiertas > 0;
+
+	partial void OnPlanillasAbiertasChanged(int value)
+	{
+		OnPropertyChanged(nameof(HayPlanillasAbiertas));
+	}
+	#endregion
+
 	[ObservableProperty]
 	private string _curso = string.Empty;
 	[ObservableProperty]
@@ -182,28 +323,69 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 	/// </remarks>
 	public bool MostrarAvisoSinPlanilla => !HayPlanilla && TienePreceptor;
 
+	/// <summary>
+	/// Hay planilla y todavía acepta marcas. Es lo que decide qué acciones del ciclo se muestran.
+	/// </summary>
+	/// <remarks>
+	/// Las cuatro acciones de la planilla —abrir, cerrar, reabrir, eliminar— estaban las cuatro
+	/// siempre a la vista, y en cualquier estado real tres de ellas no se podían apretar: sin planilla
+	/// sólo sirve abrir, con la planilla abierta sólo cerrar o eliminar, y con la planilla cerrada sólo
+	/// reabrir. Una fila de botones apagados no informa de qué se puede hacer, obliga a leerlos todos
+	/// para descubrir cuál es el único vivo. Ahora cada estado muestra las suyas, y las tres banderas
+	/// —<see cref="MostrarAvisoSinPlanilla"/>, ésta y <see cref="Cerrada"/>— son excluyentes.
+	/// </remarks>
+	public bool PlanillaAbierta => HayPlanilla && !Cerrada;
+
 	partial void OnHayPlanillaChanged(bool value)
 	{
 		OnPropertyChanged(nameof(MostrarAvisoSinPlanilla));
+		OnPropertyChanged(nameof(PlanillaAbierta));
 	}
 
 	partial void OnTienePreceptorChanged(bool value)
 	{
 		OnPropertyChanged(nameof(MostrarAvisoSinPlanilla));
 	}
+
+	partial void OnCerradaChanged(bool value)
+	{
+		OnPropertyChanged(nameof(PlanillaAbierta));
+	}
 	#endregion
 
 	#region Commands
 	public IAsyncRelayCommand CargarCommand { get; }
 	public IAsyncRelayCommand AbrirPlanillaCommand { get; }
-	public IAsyncRelayCommand MarcarPresenteCommand { get; }
-	public IAsyncRelayCommand MarcarAusenciaCommand { get; }
-	public IAsyncRelayCommand MarcarInasistenciaCommand { get; }
-	public IAsyncRelayCommand MarcarTardanzaCommand { get; }
+
+	/// <remarks>
+	/// LOS CUATRO MARCADOS RECIBEN LA FILA POR PARÁMETRO y no trabajan sobre <see cref="Registro"/>.
+	/// Es la regla que <c>docs/ui-ux.md</c> dejó anotada: un <c>Button</c> dentro de una celda marca el
+	/// clic como manejado, así que la fila NO se selecciona al apretarlo, y un comando que operara
+	/// sobre el <c>SelectedItem</c> le marcaría la asistencia a otro alumno. Los botones del pie pasan
+	/// <c>{ Binding Path=Registro }</c>, que es la misma fila por otro camino.
+	/// </remarks>
+	public IAsyncRelayCommand<RegistroAsistenciaViewModel> MarcarPresenteCommand { get; }
+	public IAsyncRelayCommand<RegistroAsistenciaViewModel> MarcarAusenciaCommand { get; }
+	public IAsyncRelayCommand<RegistroAsistenciaViewModel> MarcarInasistenciaCommand { get; }
+	public IAsyncRelayCommand<RegistroAsistenciaViewModel> MarcarTardanzaCommand { get; }
+
 	public IAsyncRelayCommand IncorporarCursanteCommand { get; }
 	public IAsyncRelayCommand CerrarPlanillaCommand { get; }
 	public IAsyncRelayCommand ReabrirPlanillaCommand { get; }
 	public IAsyncRelayCommand EliminarPlanillaCommand { get; }
+
+	/// <summary>Abre una de las tres vistas. El parámetro es una de las constantes <c>VISTA_</c>.</summary>
+	public IRelayCommand<string> VerCommand { get; }
+
+	public IAsyncRelayCommand ListarPlanillasCommand { get; }
+	public IAsyncRelayCommand ConsultarResumenCommand { get; }
+
+	/// <summary>Mueve el período a los últimos N días. El parámetro es la cantidad de días.</summary>
+	public IRelayCommand<string> VerUltimosDiasCommand { get; }
+
+	/// <summary>Lleva la planilla elegida del historial a la vista del día.</summary>
+	public IAsyncRelayCommand AbrirFechaCommand { get; }
+
 	public IRelayCommand VolverCommand { get; }
 	#endregion
 
@@ -229,22 +411,66 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 
 		CargarCommand = new AsyncRelayCommand(ExecuteCargarCommand, CanExecuteCargarCommand);
 		AbrirPlanillaCommand = new AsyncRelayCommand(ExecuteAbrirPlanillaCommand, CanExecuteAbrirPlanillaCommand);
-		MarcarPresenteCommand = new AsyncRelayCommand(ExecuteMarcarPresenteCommand, CanExecuteMarcarPresenteCommand);
-		MarcarAusenciaCommand = new AsyncRelayCommand(ExecuteMarcarAusenciaCommand, CanExecuteMarcarAusenciaCommand);
-		MarcarInasistenciaCommand = new AsyncRelayCommand(ExecuteMarcarInasistenciaCommand, CanExecuteMarcarInasistenciaCommand);
-		MarcarTardanzaCommand = new AsyncRelayCommand(ExecuteMarcarTardanzaCommand, CanExecuteMarcarTardanzaCommand);
+		MarcarPresenteCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarPresenteCommand, PuedeMarcar);
+		MarcarAusenciaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarAusenciaCommand, PuedeMarcar);
+		MarcarInasistenciaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarInasistenciaCommand, PuedeMarcar);
+		MarcarTardanzaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarTardanzaCommand, PuedeMarcarTardanza);
 		IncorporarCursanteCommand = new AsyncRelayCommand(ExecuteIncorporarCursanteCommand, CanExecuteIncorporarCursanteCommand);
 		CerrarPlanillaCommand = new AsyncRelayCommand(ExecuteCerrarPlanillaCommand, CanExecuteCerrarPlanillaCommand);
 		ReabrirPlanillaCommand = new AsyncRelayCommand(ExecuteReabrirPlanillaCommand, CanExecuteReabrirPlanillaCommand);
 		EliminarPlanillaCommand = new AsyncRelayCommand(ExecuteEliminarPlanillaCommand, CanExecuteEliminarPlanillaCommand);
+		VerCommand = new RelayCommand<string>(ExecuteVerCommand);
+		ListarPlanillasCommand = new AsyncRelayCommand(ExecuteListarPlanillasCommand, CanExecuteConsultarPeriodoCommand);
+		ConsultarResumenCommand = new AsyncRelayCommand(ExecuteConsultarResumenCommand, CanExecuteConsultarPeriodoCommand);
+		VerUltimosDiasCommand = new RelayCommand<string>(ExecuteVerUltimosDiasCommand);
+		AbrirFechaCommand = new AsyncRelayCommand(ExecuteAbrirFechaCommand, CanExecuteAbrirFechaCommand);
 		VolverCommand = new RelayCommand(ExecuteVolverCommand, CanExecuteVolverCommand);
+
+		foreach (var consulta in new IAsyncRelayCommand[] { CargarCommand, ListarPlanillasCommand, ConsultarResumenCommand, AbrirFechaCommand })
+		{
+			consulta.PropertyChanged += (_, argumentos) =>
+			{
+				if (argumentos.PropertyName == nameof(IAsyncRelayCommand.IsRunning))
+				{
+					OnPropertyChanged(nameof(EstaCargando));
+				}
+			};
+		}
 
 		if (_cursoStore.Curso is not null)
 		{
 			Curso = _cursoStore.Curso.Grado;
 			NivelEducativo = _cursoStore.Curso.NivelEducativo;
 		}
+
+		Ruta = new[]
+		{
+			Migaja.Contexto("CURSOS"),
+			Migaja.Hacia($"{ Curso?.ToUpper() } AÑO · DIVISIONES", VolverCommand),
+			Migaja.Actual("ASISTENCIA")
+		};
 	}
+
+	/// <summary>Ruta hasta la planilla del día. El "Volver a divisiones" del encabezado era su único equivalente.</summary>
+	public IReadOnlyList<Migaja> Ruta { get; }
+
+	/// <summary>
+	/// Alguna de las cuatro consultas de la pantalla está en curso. Es lo que levanta el velo.
+	/// </summary>
+	/// <remarks>
+	/// El velo colgaba sólo de <c>CargarCommand.IsRunning</c>, que era el único comando que consultaba
+	/// algo cuando la pantalla tenía una sola vista. Con el historial y el resumen hay tres consultas
+	/// más, y sin esto "Ver período" sobre un ciclo entero no daría ninguna señal de estar trabajando:
+	/// la grilla se quedaría con los datos viejos hasta que llegara la respuesta.
+	///
+	/// Se arma por suscripción y no con un <c>MultiBinding</c> porque el tema no tiene un converter
+	/// multivalor, y porque cuál es el conjunto de comandos que cuentan como "cargando" es una
+	/// decisión del ViewModel, no del dibujo.
+	/// </remarks>
+	public bool EstaCargando => CargarCommand.IsRunning
+							 || ListarPlanillasCommand.IsRunning
+							 || ConsultarResumenCommand.IsRunning
+							 || AbrirFechaCommand.IsRunning;
 
 	#region CargarCommand
 	private bool CanExecuteCargarCommand()
@@ -411,11 +637,34 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 
 	/// <summary>
 	/// Guarda común a los cuatro comandos de marcado: hacen falta una planilla abierta —el dominio
-	/// rechaza marcar en una cerrada— y una fila elegida en la grilla.
+	/// rechaza marcar en una cerrada— y una fila sobre la que marcar.
 	/// </summary>
-	private bool PuedeMarcar()
+	private bool PuedeMarcar(RegistroAsistenciaViewModel? registro)
 	{
-		return HayPlanilla && !Cerrada && Registro is not null;
+		return HayPlanilla && !Cerrada && registro is not null;
+	}
+
+	/// <remarks>
+	/// La tardanza es la única marca que lleva un dato además del alumno, y el dominio rechaza una de
+	/// cero minutos con <c>TardanzaSinMinutosException</c>.
+	/// </remarks>
+	private bool PuedeMarcarTardanza(RegistroAsistenciaViewModel? registro)
+	{
+		return PuedeMarcar(registro) && MinutosTardanza > 0;
+	}
+
+	/// <summary>
+	/// Deja la fila elegida antes de marcarla, para que el panel de detalle hable del mismo alumno que
+	/// se acaba de tocar.
+	/// </summary>
+	/// <remarks>
+	/// Los botones de la fila no la seleccionan solos: el <c>Button</c> marca el clic como manejado y
+	/// el <c>DataGrid</c> no llega a verlo. Sin esto, marcar desde la fila dejaría el panel de abajo
+	/// mostrando al alumno anterior.
+	/// </remarks>
+	private void Elegir(RegistroAsistenciaViewModel registro)
+	{
+		Registro = registro;
 	}
 
 	/// <summary>La observación del formulario, o <c>null</c> si está en blanco: así la guarda el dominio.</summary>
@@ -424,25 +673,35 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 		return string.IsNullOrWhiteSpace(Observacion) ? null : Observacion;
 	}
 
-	#region MarcarPresenteCommand
-	private bool CanExecuteMarcarPresenteCommand()
+	/// <summary>
+	/// Cambiar de alumno vacía la observación del formulario.
+	/// </summary>
+	/// <remarks>
+	/// Con los botones por fila, la nota tipeada para un alumno y nunca aplicada se quedaba en el campo
+	/// y se la llevaba el siguiente que se marcara. La observación describe a UN registro, así que
+	/// pertenece a la fila elegida y se va con ella.
+	/// </remarks>
+	partial void OnRegistroChanged(RegistroAsistenciaViewModel? value)
 	{
-		return PuedeMarcar();
+		Observacion = string.Empty;
 	}
 
-	private async Task ExecuteMarcarPresenteCommand()
+	#region MarcarPresenteCommand
+	private async Task ExecuteMarcarPresenteCommand(RegistroAsistenciaViewModel? registro)
 	{
 		try
 		{
-			if (_divisionStore.Division is null || Registro is null)
+			if (_divisionStore.Division is null || registro is null)
 			{
 				return;
 			}
 
+			Elegir(registro);
+
 			// MarcarPresenteAsync no lleva observación: estar presente es el caso sin nada que aclarar.
 			await _servicioAsistencia.MarcarPresenteAsync(new MarcarPresenteRequest(DivisionID: _divisionStore.Division.DivisionID,
 																					Fecha: Fecha,
-																					CursanteID: Registro.CursanteID));
+																					CursanteID: registro.CursanteID));
 
 			Observacion = string.Empty;
 			await CargarPlanillaAsync();
@@ -455,23 +714,20 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 	#endregion
 
 	#region MarcarAusenciaCommand
-	private bool CanExecuteMarcarAusenciaCommand()
-	{
-		return PuedeMarcar();
-	}
-
-	private async Task ExecuteMarcarAusenciaCommand()
+	private async Task ExecuteMarcarAusenciaCommand(RegistroAsistenciaViewModel? registro)
 	{
 		try
 		{
-			if (_divisionStore.Division is null || Registro is null)
+			if (_divisionStore.Division is null || registro is null)
 			{
 				return;
 			}
 
+			Elegir(registro);
+
 			await _servicioAsistencia.MarcarAusenciaAsync(new MarcarAusenciaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																					Fecha: Fecha,
-																					CursanteID: Registro.CursanteID,
+																					CursanteID: registro.CursanteID,
 																					Observacion: ObservacionDelFormulario()));
 
 			Observacion = string.Empty;
@@ -485,23 +741,20 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 	#endregion
 
 	#region MarcarInasistenciaCommand
-	private bool CanExecuteMarcarInasistenciaCommand()
-	{
-		return PuedeMarcar();
-	}
-
-	private async Task ExecuteMarcarInasistenciaCommand()
+	private async Task ExecuteMarcarInasistenciaCommand(RegistroAsistenciaViewModel? registro)
 	{
 		try
 		{
-			if (_divisionStore.Division is null || Registro is null)
+			if (_divisionStore.Division is null || registro is null)
 			{
 				return;
 			}
 
+			Elegir(registro);
+
 			await _servicioAsistencia.MarcarInasistenciaAsync(new MarcarInasistenciaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																							Fecha: Fecha,
-																							CursanteID: Registro.CursanteID,
+																							CursanteID: registro.CursanteID,
 																							Observacion: ObservacionDelFormulario()));
 
 			Observacion = string.Empty;
@@ -515,23 +768,20 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 	#endregion
 
 	#region MarcarTardanzaCommand
-	private bool CanExecuteMarcarTardanzaCommand()
-	{
-		return PuedeMarcar() && MinutosTardanza > 0;
-	}
-
-	private async Task ExecuteMarcarTardanzaCommand()
+	private async Task ExecuteMarcarTardanzaCommand(RegistroAsistenciaViewModel? registro)
 	{
 		try
 		{
-			if (_divisionStore.Division is null || Registro is null)
+			if (_divisionStore.Division is null || registro is null)
 			{
 				return;
 			}
 
+			Elegir(registro);
+
 			await _servicioAsistencia.MarcarTardanzaAsync(new MarcarTardanzaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																					Fecha: Fecha,
-																					CursanteID: Registro.CursanteID,
+																					CursanteID: registro.CursanteID,
 																					Minutos: TimeSpan.FromMinutes(MinutosTardanza),
 																					Observacion: ObservacionDelFormulario()));
 
@@ -592,18 +842,17 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 				return;
 			}
 
-			var mensaje = $"Se va a cerrar la planilla de asistencia del { Fecha.ToString("D") }.\n" +
-						  $"Con la planilla cerrada no se puede marcar asistencia ni incorporar alumnos.\n\n" +
-						  $"¿Desea continuar?";
-
-			if (_dialogService.Confirmar(mensaje, TITULO))
+			if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+					titulo: $"Cerrar la planilla del { Fecha.ToString("D") }",
+					mensaje: $"Quedan firmados { Presentes } presentes, { Ausencias } ausencias, { Inasistencias } inasistencias y { Tardanzas } tardanzas. "
+						   + "Con la planilla cerrada no se puede marcar asistencia ni incorporar alumnos; se puede reabrir después.",
+					verbo: "Cerrar planilla")))
 			{
 				await _servicioAsistencia.CerrarPlanillaAsync(new CerrarPlanillaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																						Fecha: Fecha));
 
-				_dialogService.MostrarInformacion("Planilla de asistencia cerrada correctamente", "Operación exitosa");
-
 				await CargarPlanillaAsync();
+				_dialogService.MostrarInformacion($"Planilla del { Fecha.ToString("d") }: { Presentes } presentes y { Ausencias + Inasistencias } ausencias.", "Planilla cerrada");
 			}
 		}
 		catch (Exception ex)
@@ -619,6 +868,11 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 		return HayPlanilla && Cerrada;
 	}
 
+	/// <remarks>
+	/// Reabrir era la única operación de la pantalla que no preguntaba nada: un clic deshacía la
+	/// firma del preceptor sin aviso. No borra registros, así que no va en rojo, pero sí cambia
+	/// el estado de un documento que ya estaba cerrado.
+	/// </remarks>
 	private async Task ExecuteReabrirPlanillaCommand()
 	{
 		try
@@ -628,10 +882,20 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 				return;
 			}
 
+			if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+					titulo: $"Reabrir la planilla del { Fecha.ToString("D") }",
+					mensaje: "La planilla vuelve a aceptar marcas y la firma del cierre deja de valer. "
+						   + "Los registros ya cargados se conservan.",
+					verbo: "Reabrir planilla")))
+			{
+				return;
+			}
+
 			await _servicioAsistencia.ReabrirPlanillaAsync(new ReabrirPlanillaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																					  Fecha: Fecha));
 
 			await CargarPlanillaAsync();
+			_dialogService.MostrarInformacion($"La planilla del { Fecha.ToString("d") } vuelve a aceptar marcas.", "Planilla reabierta");
 		}
 		catch (Exception ex)
 		{
@@ -661,24 +925,193 @@ internal partial class GestionAsistenciasViewModel : ObservableObject
 				return;
 			}
 
-			var mensaje = $"Se va a eliminar la planilla de asistencia del { Fecha.ToString("D") } y todos sus registros.\n\n" +
-						  $"¿Desea continuar?";
-
-			if (_dialogService.Confirmar(mensaje, TITULO))
+			if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+					titulo: $"Eliminar la planilla del { Fecha.ToString("D") }",
+					consecuencia: $"Se borran los { Presentes + Ausencias + Inasistencias + Tardanzas } registros del día "
+								+ "y las inasistencias dejan de contar para el legajo de los alumnos. "
+								+ "Esta acción no se puede deshacer: la planilla hay que volver a abrirla y marcarla de cero.",
+					verbo: "Eliminar planilla")))
 			{
 				await _servicioAsistencia.EliminarPlanillaAsync(new EliminarPlanillaRequest(DivisionID: _divisionStore.Division.DivisionID,
 																							Fecha: Fecha));
 
-				_dialogService.MostrarInformacion("Planilla de asistencia eliminada correctamente", "Operación exitosa");
-
 				// Deja la pantalla en estado "sin planilla": es lo que corresponde después de eliminarla.
 				await CargarPlanillaAsync();
+				_dialogService.MostrarInformacion($"Planilla del { Fecha.ToString("d") }.", "Planilla eliminada");
 			}
 		}
 		catch (Exception ex)
 		{
 			_dialogService.MostrarError(ex.Message, TITULO);
 		}
+	}
+	#endregion
+
+	#region VerCommand
+	/// <summary>Abre una de las tres vistas. Un parámetro vacío o desconocido vuelve a la planilla del día.</summary>
+	private void ExecuteVerCommand(string? vista)
+	{
+		Vista = vista switch
+		{
+			VISTA_HISTORIAL => VISTA_HISTORIAL,
+			VISTA_RESUMEN => VISTA_RESUMEN,
+			_ => VISTA_PLANILLA
+		};
+	}
+	#endregion
+
+	#region Periodo
+	/// <summary>Las dos consultas del período necesitan lo mismo: una división sobre la que preguntar.</summary>
+	private bool CanExecuteConsultarPeriodoCommand()
+	{
+		return _divisionStore.Division is not null;
+	}
+
+	/// <summary>
+	/// Mueve el período a los últimos N días, contando hoy, y vuelve a consultar la vista abierta.
+	/// </summary>
+	/// <remarks>
+	/// Los atajos existen porque el período que se quiere mirar es casi siempre uno de tres, y
+	/// elegirlo con dos calendarios son seis clics para algo que el usuario ya sabe decir en voz alta.
+	/// Las fechas quedan a la vista y editables: el atajo las completa, no las reemplaza.
+	/// </remarks>
+	private void ExecuteVerUltimosDiasCommand(string? dias)
+	{
+		if (!int.TryParse(dias, out var cantidad) || cantidad <= 0)
+		{
+			return;
+		}
+
+		Hasta = DateTime.Today;
+		Desde = DateTime.Today.AddDays(-(cantidad - 1));
+
+		ConsultarLaVistaAbierta();
+	}
+	#endregion
+
+	#region ListarPlanillasCommand
+	private async Task ExecuteListarPlanillasCommand()
+	{
+		try
+		{
+			if (_divisionStore.Division is null)
+			{
+				return;
+			}
+
+			var planillas = await _servicioAsistencia.ListarPlanillasAsync(new ListarPlanillasRequest(DivisionID: _divisionStore.Division.DivisionID,
+																									  Desde: Desde,
+																									  Hasta: Hasta));
+
+			Planillas.Clear();
+
+			foreach (var planilla in planillas)
+			{
+				Planillas.Add(new PlanillaResumenViewModel(planilla));
+			}
+
+			PlanillaElegida = null;
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, TITULO);
+		}
+	}
+	#endregion
+
+	#region ConsultarResumenCommand
+	/// <remarks>
+	/// Une dos fuentes, igual que la grilla del día: <c>ResumenCursanteResponse</c> trae identificadores
+	/// y los nombres salen del listado de cursantes. Un alumno con registros en el período pero fuera
+	/// del listado vigente —se dio de baja a mitad de mes— conserva su fila, porque sus faltas de ese
+	/// período pasaron igual; lo que no se puede es nombrarlo, y la fila lo dice en lugar de aparecer
+	/// en blanco.
+	/// </remarks>
+	private async Task ExecuteConsultarResumenCommand()
+	{
+		try
+		{
+			if (_divisionStore.Division is null)
+			{
+				return;
+			}
+
+			var divisionID = _divisionStore.Division.DivisionID;
+
+			var cursantes = await _servicioCursante.ListarCursantesAsync(new BuscarListadoRequest(CursoID: _cursoStore.Curso.CursoID,
+																								  DivisionID: divisionID,
+																								  Periodo: _cicloLectivoStore.CicloLectivo));
+
+			Dictionary<Guid, string> nombres = cursantes.ToDictionary(c => c.CursanteID, c => c.NombreCompleto);
+
+			var resumen = await _servicioAsistencia.ConsultarResumenAsync(new ConsultarResumenRequest(DivisionID: divisionID,
+																									  Desde: Desde,
+																									  Hasta: Hasta));
+
+			ResumenCursantes.Clear();
+
+			foreach (var cursante in resumen.Cursantes)
+			{
+				var nombre = nombres.TryGetValue(cursante.CursanteID, out var encontrado)
+					? encontrado
+					: "Alumno sin inscripción vigente";
+
+				ResumenCursantes.Add(new ResumenCursanteViewModel(cursante, nombre));
+			}
+
+			PlanillasDelPeriodo = resumen.Planillas;
+			PlanillasAbiertas = resumen.PlanillasAbiertas;
+			PresentesDelPeriodo = resumen.Presentes;
+			AusenciasDelPeriodo = resumen.Ausencias;
+			InasistenciasDelPeriodo = resumen.Inasistencias;
+			TardanzasDelPeriodo = resumen.Tardanzas;
+			AsistenciaDelPeriodo = $"{ resumen.PorcentajeAsistencia.ToString("0.#", CultureInfo.CurrentCulture) }%";
+
+			// El período que informa el resumen es el que Core consultó, no el que tiene el formulario:
+			// si los extremos venían al revés, Core los dio vuelta y la pantalla tiene que mostrar eso.
+			Desde = resumen.Desde;
+			Hasta = resumen.Hasta;
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, TITULO);
+		}
+	}
+	#endregion
+
+	#region AbrirFechaCommand
+	private bool CanExecuteAbrirFechaCommand()
+	{
+		return PlanillaElegida is not null;
+	}
+
+	/// <summary>
+	/// Lleva la planilla elegida del historial a la vista del día.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Es lo que vuelve navegable al historial: sin esto sería una tabla de la que hay que copiar una
+	/// fecha a mano en el calendario de la otra vista.
+	/// </para>
+	/// <para>
+	/// NO CONSULTA NADA POR SU CUENTA. Cambiar <see cref="Fecha"/> ya pide la planilla de ese día
+	/// —ver el <c>remarks</c> de <c>OnFechaChanged</c>—, y agregar acá un <c>await</c> propio ponía
+	/// dos cargas en vuelo a la vez: el setter dispara la suya sin poder esperarla, porque un
+	/// <c>partial void</c> no es asíncrono. El <c>DbContext</c> no es reentrante y la segunda moría
+	/// con "A second operation was started on this context instance". Si la fecha elegida ya es la
+	/// que está en pantalla el setter no dispara nada, que también es correcto: no hay nada que
+	/// traer.
+	/// </para>
+	/// </remarks>
+	private Task ExecuteAbrirFechaCommand()
+	{
+		if (PlanillaElegida is not null)
+		{
+			Fecha = PlanillaElegida.Fecha;
+			Vista = VISTA_PLANILLA;
+		}
+
+		return Task.CompletedTask;
 	}
 	#endregion
 

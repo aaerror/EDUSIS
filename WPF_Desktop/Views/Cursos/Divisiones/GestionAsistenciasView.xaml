@@ -9,23 +9,117 @@
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
 	<!--
-		ASISTENCIA DE LA DIVISIÓN — la planilla de un día.
+		ASISTENCIA DE LA DIVISIÓN — tres vistas de la misma división.
 
-		Es la pantalla de trabajo diario del preceptor, así que todo gira alrededor de una sola
-		fecha: se elige arriba y el resto de la pantalla es la planilla de ese día. La fecha no
-		viaja por store como el curso y la división —el drill-down la trae de Divisiones—, porque
-		no es un parámetro de navegación sino lo que el usuario cambia todo el tiempo sin salir
-		de acá.
+		La pantalla respondía UNA pregunta: cómo viene hoy. Las otras dos que el preceptor trae
+		encima —qué cargué estos días, y cómo viene el mes— no tenían dónde preguntarse, así que
+		la planilla del día era también la única memoria del sistema.
 
-		"No hay planilla para esta fecha" NO es un error: es el estado normal a primera hora.
-		Por eso en lugar de un cartel rojo hay un aviso ámbar con el botón que lo resuelve, y el
-		ViewModel traduce el centinela de Core a HayPlanilla (ver el remarks de
+		Son vistas conmutables y no secciones apiladas por la misma razón que en el alumno: las
+		tres quieren el alto entero para su grilla, y apiladas la de abajo se mira scrolleando
+		toda la de arriba. El conmutador reusa el mecanismo del rail —Btn.Pestana lee de su Tag el
+		booleano que sale de comparar Vista contra el nombre con esIgualA— y abrir una vista ES
+		pedir sus datos, así que no hay un botón "consultar" que se pueda olvidar de apretar.
+
+		"No hay planilla para esta fecha" NO es un error: es el estado normal a primera hora. Por
+		eso en lugar de un cartel rojo hay un aviso ámbar que lleva adentro el botón que lo
+		resuelve, y el ViewModel traduce el centinela de Core a HayPlanilla (ver el remarks de
 		CargarPlanillaAsync).
 
-		Los cuatro contadores salen del Response y no se cuentan en la vista: son el resumen que
-		el preceptor firma al cerrar la planilla, y la insignia de alerta marca tanto las faltas
-		de cada fila como la planilla ya cerrada.
+		LAS ACCIONES DEL CICLO SON EXCLUYENTES. Abrir, cerrar, reabrir y eliminar estaban las
+		cuatro siempre a la vista y en cualquier estado real tres estaban apagadas. Cada estado
+		muestra ahora sólo las suyas, colgadas de MostrarAvisoSinPlanilla, PlanillaAbierta y
+		Cerrada, que el ViewModel mantiene excluyentes.
 	-->
+	<UserControl.Resources>
+		<!--
+			EL PERÍODO, UNA SOLA VEZ. El historial y el resumen miran exactamente el mismo rango
+			—son dos lecturas del mismo período— así que comparten el control en lugar de repetirlo
+			con la posibilidad de que se desincronicen. Es un DataTemplate y no un UserControl
+			porque no tiene estado propio: todo lo que muestra y todo lo que ejecuta vive en el
+			ViewModel, que es el DataContext que recibe.
+
+			Los tres atajos existen porque el período que se quiere mirar es casi siempre uno de
+			ellos, y armarlo con dos calendarios son seis clics para algo que el usuario ya sabe
+			decir. Las fechas quedan igual a la vista y editables: el atajo las completa.
+
+			Acá SÍ hay botón de consultar, al revés que la fecha de la planilla del día. Son dos
+			fechas y no una: elegir la primera deja el rango a medio armar, y consultar en ese
+			momento mostraría un período que nadie pidió.
+		-->
+		<DataTemplate x:Key="Periodo">
+			<Grid Margin="0 0 0 16">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+
+				<HeaderedContentControl Grid.Column="0"
+										Header="Desde"
+										Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+					<DatePicker AutomationProperties.Name="Primer día del período"
+								SelectedDate="{ Binding Path=Desde, Mode=TwoWay }"
+								Style="{ StaticResource ResourceKey=Dtp.Campo }"
+								Width="150"/>
+				</HeaderedContentControl>
+
+				<HeaderedContentControl Grid.Column="1"
+										Header="Hasta"
+										Margin="10 0 0 0"
+										Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+					<DatePicker AutomationProperties.Name="Último día del período"
+								SelectedDate="{ Binding Path=Hasta, Mode=TwoWay }"
+								Style="{ StaticResource ResourceKey=Dtp.Campo }"
+								Width="150"/>
+				</HeaderedContentControl>
+
+				<Button Grid.Column="2"
+						Command="{ Binding Path=ListarPlanillasCommand }"
+						Content="Ver período"
+						Margin="10 0 0 16"
+						Style="{ StaticResource ResourceKey=Btn.Secundario }"
+						ToolTip="Traer las planillas del período elegido"
+						VerticalAlignment="Bottom"
+						Visibility="{ Binding Path=Vista, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Historial }"/>
+
+				<Button Grid.Column="2"
+						Command="{ Binding Path=ConsultarResumenCommand }"
+						Content="Ver período"
+						Margin="10 0 0 16"
+						Style="{ StaticResource ResourceKey=Btn.Secundario }"
+						ToolTip="Recalcular el acumulado del período elegido"
+						VerticalAlignment="Bottom"
+						Visibility="{ Binding Path=Vista, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Resumen }"/>
+
+				<StackPanel Grid.Column="4"
+							Orientation="Horizontal"
+							VerticalAlignment="Bottom">
+					<Button Command="{ Binding Path=VerUltimosDiasCommand }"
+							CommandParameter="7"
+							Content="Última semana"
+							Margin="0 0 8 16"
+							Style="{ StaticResource ResourceKey=Btn.Terciario }"
+							ToolTip="Los últimos 7 días"/>
+					<Button Command="{ Binding Path=VerUltimosDiasCommand }"
+							CommandParameter="15"
+							Content="Última quincena"
+							Margin="0 0 8 16"
+							Style="{ StaticResource ResourceKey=Btn.Terciario }"
+							ToolTip="Los últimos 15 días"/>
+					<Button Command="{ Binding Path=VerUltimosDiasCommand }"
+							CommandParameter="30"
+							Content="Último mes"
+							Margin="0 0 0 16"
+							Style="{ StaticResource ResourceKey=Btn.Terciario }"
+							ToolTip="Los últimos 30 días"/>
+				</StackPanel>
+			</Grid>
+		</DataTemplate>
+	</UserControl.Resources>
+
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
 			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarCommand }"/>
@@ -38,384 +132,736 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region ENCABEZADO-->
-		<Grid Grid.Row="0" Margin="0 0 0 20">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-
-			<components:Header Grid.Column="0"
-							   Title="Asistencia de la división"
-							   Subtitle="Planilla del día: presentes, ausencias, inasistencias y tardanzas"/>
-
-			<Button Grid.Column="1"
-					Command="{ Binding Path=VolverCommand }"
-					Style="{ StaticResource ResourceKey=Btn.Terciario }"
-					ToolTip="Volver a las divisiones del curso"
-					VerticalAlignment="Center">
-				<StackPanel Orientation="Horizontal">
-					<fa:IconBlock FontSize="11"
-								  Icon="ArrowLeft"
-								  Margin="0 0 8 0"
-								  VerticalAlignment="Center"/>
-					<TextBlock Text="Volver a divisiones" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-		</Grid>
+		<!--#region ENCABEZADO
+			El "Volver a divisiones" es la miga del medio: el VolverCommand es el mismo, y así la
+			pantalla queda igual que su hermana —los alumnos de la división—, que no tenía ningún
+			botón de volver. El encabezado se queda sin acción propia: la acción principal de esta
+			pantalla depende del estado de la planilla y vive adentro, al lado de la fecha.
+		-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Ruta="{ Binding Path=Ruta }"
+									Titulo="Asistencia de la división"
+									Subtitulo="La planilla del día, las planillas ya cargadas y el acumulado del período"/>
 		<!--#endregion-->
 
-		<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-			<StackPanel>
-				<!--#region PLANILLA DEL DÍA-->
-				<Border Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
-					<Grid Margin="20 18">
-						<Grid.RowDefinitions>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-						</Grid.RowDefinitions>
+		<!--
+			LA TARJETA LLENA EL ALTO Y LA GRILLA DE CADA VISTA TOMA LA FILA *. Sin ScrollViewer de
+			página: una grilla con MaxHeight adentro de uno se come la rueda del mouse aunque no
+			tenga nada que scrollear, y deja muerta a la rueda sobre media pantalla.
+		-->
+		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid Margin="20 18">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
 
-						<!--#region FICHA DEL CURSO Y ESTADO-->
-						<Grid Grid.Row="0" Margin="0 0 0 16">
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="Auto"/>
-							</Grid.ColumnDefinitions>
+				<!--#region FICHA DEL CURSO Y ESTADO-->
+				<Grid Grid.Row="0">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
 
-							<StackPanel Grid.Column="0" VerticalAlignment="Center">
-								<TextBlock Style="{ StaticResource ResourceKey=Txt.Identificador }"
-										   Text="{ Binding Path=NivelEducativo, Mode=OneWay, FallbackValue='SIN NIVEL', TargetNullValue='SIN NIVEL' }"/>
-								<TextBlock Margin="0 2 0 0"
-										   Style="{ StaticResource ResourceKey=Txt.Titulo }"
-										   Text="{ Binding Path=Curso, Mode=OneWay, StringFormat={}{0} año, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
-								<!--
-									La letra de la división y su preceptor. No vienen por store —el
-									DivisionStore guarda sólo el identificador— sino de la misma
-									consulta que decide si "Abrir planilla" se habilita.
-								-->
-								<TextBlock Margin="0 4 0 0"
-										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-										   Text="{ Binding Path=Division, Mode=OneWay, StringFormat=División {0} }"/>
-								<TextBlock Margin="0 2 0 0"
-										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-										   Text="{ Binding Path=Preceptor, Mode=OneWay, StringFormat=Preceptor: {0} }"
-										   Visibility="{ Binding Path=TienePreceptor, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-							</StackPanel>
+					<StackPanel Grid.Column="0" VerticalAlignment="Center">
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Identificador }"
+								   Text="{ Binding Path=NivelEducativo, Mode=OneWay, FallbackValue='SIN NIVEL', TargetNullValue='SIN NIVEL' }"/>
+						<TextBlock Margin="0 2 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+								   Text="{ Binding Path=Curso, Mode=OneWay, StringFormat={}{0} año, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"/>
+						<!--
+							La letra de la división y su preceptor. No vienen por store —el
+							DivisionStore guarda sólo el identificador— sino de la misma consulta
+							que decide si "Abrir planilla" se habilita.
+						-->
+						<TextBlock Margin="0 4 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="{ Binding Path=Division, Mode=OneWay, StringFormat=División {0} }"/>
+						<TextBlock Margin="0 2 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="{ Binding Path=Preceptor, Mode=OneWay, StringFormat=Preceptor: {0} }"
+								   Visibility="{ Binding Path=TienePreceptor, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+					</StackPanel>
 
-							<!-- La planilla cerrada ya no acepta marcado: se avisa con la insignia de alerta. -->
-							<Border Grid.Column="1"
-									Style="{ StaticResource ResourceKey=Insignia.Alerta }"
-									VerticalAlignment="Center"
-									Visibility="{ Binding Path=Cerrada, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-								<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-										   Text="PLANILLA CERRADA"/>
-							</Border>
-						</Grid>
-						<!--#endregion-->
+					<!-- La planilla cerrada ya no acepta marcado: se avisa con la insignia de alerta. -->
+					<Border Grid.Column="1"
+							Style="{ StaticResource ResourceKey=Insignia.Alerta }"
+							VerticalAlignment="Center"
+							Visibility="{ Binding Path=Cerrada, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+								   Text="PLANILLA CERRADA"/>
+					</Border>
+				</Grid>
+				<!--#endregion-->
 
-						<!--#region FECHA Y ESTADO DE LA PLANILLA-->
-						<Grid Grid.Row="1">
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="Auto"/>
-								<ColumnDefinition Width="Auto"/>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="Auto"/>
-							</Grid.ColumnDefinitions>
+				<!--#region CONMUTADOR DE VISTAS
+					La regla corre a lo ancho del panel, así que las pestañas se leen como el borde
+					de una carpeta y no como tres botones sueltos.
+				-->
+				<Border Grid.Row="1"
+						BorderBrush="{ StaticResource ResourceKey=Linea }"
+						BorderThickness="0 0 0 1"
+						Margin="0 20 0 16"
+						SnapsToDevicePixels="True">
+					<StackPanel Orientation="Horizontal">
+						<Button Command="{ Binding Path=VerCommand }"
+								CommandParameter="Planilla"
+								Content="Planilla del día"
+								Style="{ StaticResource ResourceKey=Btn.Pestana }"
+								Tag="{ Binding Path=Vista, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Planilla }"
+								ToolTip="Tomar la asistencia de una fecha"/>
+						<Button Command="{ Binding Path=VerCommand }"
+								CommandParameter="Historial"
+								Content="Historial"
+								Style="{ StaticResource ResourceKey=Btn.Pestana }"
+								Tag="{ Binding Path=Vista, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Historial }"
+								ToolTip="Las planillas ya cargadas en el período elegido"/>
+						<Button Command="{ Binding Path=VerCommand }"
+								CommandParameter="Resumen"
+								Content="Resumen"
+								Style="{ StaticResource ResourceKey=Btn.Pestana }"
+								Tag="{ Binding Path=Vista, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Resumen }"
+								ToolTip="Faltas acumuladas y porcentaje de asistencia por alumno"/>
+					</StackPanel>
+				</Border>
+				<!--#endregion-->
 
-							<HeaderedContentControl Grid.Column="0"
-													Header="Fecha de la planilla"
-													Style="{ StaticResource ResourceKey=Campo.Izquierda }"
-													ToolTip="Día de clase del que se toma la asistencia">
-								<DatePicker SelectedDate="{ Binding Path=Fecha, Mode=TwoWay }"
-											Style="{ StaticResource ResourceKey=Dtp.Campo }"
-											Width="160"/>
-							</HeaderedContentControl>
+				<!--#region VISTA: PLANILLA DEL DÍA-->
+				<Grid Grid.Row="2"
+					  Visibility="{ Binding Path=Vista, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Planilla }">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
 
-							<Button Grid.Column="1"
-									Command="{ Binding Path=CargarCommand }"
-									Margin="10 0 0 16"
-									Style="{ StaticResource ResourceKey=Btn.Secundario }"
-									ToolTip="Traer la planilla de la fecha elegida"
+					<!--#region FECHA Y ACCIONES DEL CICLO
+						El botón "Ver planilla" que había acá se fue: elegir una fecha ES pedir su
+						planilla, y el paso intermedio no decidía nada —nadie cambia la fecha para
+						seguir mirando la anterior— pero sí dejaba la pantalla mintiendo si uno se
+						olvidaba de apretarlo. Ver el remarks de OnFechaChanged.
+					-->
+					<Grid Grid.Row="0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="Auto"/>
+						</Grid.ColumnDefinitions>
+
+						<HeaderedContentControl Grid.Column="0"
+												Header="Fecha de la planilla"
+												Style="{ StaticResource ResourceKey=Campo.Izquierda }"
+												ToolTip="Día de clase del que se toma la asistencia">
+							<DatePicker AutomationProperties.Name="Fecha de la planilla de asistencia"
+										SelectedDate="{ Binding Path=Fecha, Mode=TwoWay }"
+										Style="{ StaticResource ResourceKey=Dtp.Campo }"
+										Width="160"/>
+						</HeaderedContentControl>
+
+						<StackPanel Grid.Column="2"
+									Orientation="Horizontal"
 									VerticalAlignment="Bottom">
+							<!-- Con la planilla abierta: cerrarla es lo que sigue, eliminarla es la salida. -->
+							<Button Command="{ Binding Path=EliminarPlanillaCommand }"
+									Content="Eliminar planilla"
+									Margin="0 0 8 16"
+									Style="{ StaticResource ResourceKey=Btn.Peligro }"
+									ToolTip="Borrar la planilla del día y todos sus registros"
+									Visibility="{ Binding Path=PlanillaAbierta, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							<Button Command="{ Binding Path=CerrarPlanillaCommand }"
+									Content="Cerrar planilla"
+									Margin="0 0 0 16"
+									Style="{ StaticResource ResourceKey=Btn.Primario }"
+									ToolTip="Dar por terminada la asistencia del día"
+									Visibility="{ Binding Path=PlanillaAbierta, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+
+							<!-- Con la planilla cerrada sólo queda reabrirla: el dominio no la deja borrar. -->
+							<Button Command="{ Binding Path=ReabrirPlanillaCommand }"
+									Content="Reabrir planilla"
+									Margin="0 0 0 16"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Volver a habilitar el marcado de la planilla cerrada"
+									Visibility="{ Binding Path=Cerrada, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						</StackPanel>
+					</Grid>
+					<!--#endregion-->
+
+					<!--#region SIN PLANILLA
+						El estado "sin planilla" no se dibuja como error: es el punto de partida de
+						cualquier día de clase, y el aviso lleva adentro la salida. El botón de abrir
+						vive acá y en ningún otro lado: la acción principal del día está donde se
+						explica para qué sirve, en vez de apagada en una fila con otras tres.
+					-->
+					<Border Grid.Row="1"
+							Margin="0 0 0 16"
+							Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+							Visibility="{ Binding Path=MostrarAvisoSinPlanilla, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+						<StackPanel>
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+									   Text="Todavía no hay planilla para esta fecha. Al abrirla entran todos los alumnos de la división marcados como presentes, y desde ahí se marcan las faltas y las tardanzas del día."
+									   TextWrapping="Wrap"/>
+							<Button Command="{ Binding Path=AbrirPlanillaCommand }"
+									HorizontalAlignment="Left"
+									Margin="0 12 0 0"
+									Style="{ StaticResource ResourceKey=Btn.Primario }"
+									ToolTip="Crear la planilla de la fecha elegida con todos los alumnos presentes">
 								<StackPanel Orientation="Horizontal">
 									<fa:IconBlock FontSize="11"
-												  Icon="MagnifyingGlass"
+												  Icon="Plus"
 												  Margin="0 0 8 0"
 												  VerticalAlignment="Center"/>
-									<TextBlock Text="Ver planilla" VerticalAlignment="Center"/>
+									<TextBlock Text="{ Binding Path=Fecha, Mode=OneWay, StringFormat=Abrir la planilla del {0:d} }"
+											   VerticalAlignment="Center"/>
 								</StackPanel>
 							</Button>
+						</StackPanel>
+					</Border>
 
-							<StackPanel Grid.Column="3"
-										Orientation="Horizontal"
-										VerticalAlignment="Bottom">
-								<Button Command="{ Binding Path=EliminarPlanillaCommand }"
-										Content="Eliminar planilla"
-										Margin="0 0 8 16"
-										Style="{ StaticResource ResourceKey=Btn.Peligro }"
-										ToolTip="Eliminar la planilla del día y todos sus registros"/>
-								<Button Command="{ Binding Path=ReabrirPlanillaCommand }"
-										Content="Reabrir"
-										Margin="0 0 8 16"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Volver a habilitar el marcado de la planilla cerrada"/>
-								<Button Command="{ Binding Path=CerrarPlanillaCommand }"
-										Content="Cerrar planilla"
-										Margin="0 0 8 16"
+					<!--
+						SIN PRECEPTOR NO HAY PLANILLA. El dominio saca el preceptor de la división y
+						rechaza la apertura con SinDatosPreceptorException, así que "Abrir planilla"
+						está deshabilitado y este aviso reemplaza al de arriba —que señalaría un
+						botón que no se puede apretar—. Lleva adentro la salida: volver a divisiones.
+					-->
+					<Border Grid.Row="1"
+							Margin="0 0 0 16"
+							Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+							Visibility="{ Binding Path=TienePreceptor, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+						<StackPanel>
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+									   Text="Esta división no tiene preceptor asignado, y la planilla de asistencia la firma el preceptor de la división: hasta que haya uno, no se puede abrir."
+									   TextWrapping="Wrap"/>
+							<Button Command="{ Binding Path=VolverCommand }"
+									Content="Volver a divisiones y asignar preceptor"
+									HorizontalAlignment="Left"
+									Margin="0 12 0 0"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Asignar el preceptor de la división y volver"/>
+						</StackPanel>
+					</Border>
+					<!--#endregion-->
+
+					<!--#region CONTADORES DEL DÍA
+						Salen del Response y no se cuentan en la vista: son el resumen que el
+						preceptor firma al cerrar la planilla. Se muestran sólo si hay planilla,
+						porque cuatro ceros sin planilla abierta se leen como "hoy no vino nadie".
+					-->
+					<StackPanel Grid.Row="2"
+								Margin="0 0 0 16"
+								Orientation="Horizontal"
+								Visibility="{ Binding Path=HayPlanilla, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+						<StackPanel Margin="0 0 28 0">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="PRESENTES"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=Presentes, Mode=OneWay }"/>
+						</StackPanel>
+						<StackPanel Margin="0 0 28 0">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="AUSENCIAS"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=Ausencias, Mode=OneWay }"/>
+						</StackPanel>
+						<StackPanel Margin="0 0 28 0">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="INASISTENCIAS"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=Inasistencias, Mode=OneWay }"/>
+						</StackPanel>
+						<StackPanel>
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="TARDANZAS"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=Tardanzas, Mode=OneWay }"/>
+						</StackPanel>
+					</StackPanel>
+					<!--#endregion-->
+
+					<!--#region GRILLA DEL DÍA
+						LAS CUATRO MARCAS ESTÁN EN LA FILA. Antes había que elegir al alumno en la
+						grilla y bajar a un panel con los cuatro botones: dos gestos y un viaje de
+						ida y vuelta por cada falta, treinta veces por día. Ahora la marca más común
+						—la que no necesita aclarar nada— es un clic en la fila del alumno.
+
+						Los botones reciben la fila por CommandParameter y NO operan sobre el
+						SelectedItem: un Button adentro de una celda marca el clic como manejado, así
+						que la fila no se selecciona al apretarlo, y un comando que leyera la
+						selección le marcaría la asistencia a otro alumno. Es el defecto que
+						docs/ui-ux.md dejó anotado.
+					-->
+					<DataGrid x:Name="DataGrid_Registros"
+							  Grid.Row="3"
+							  AutomationProperties.Name="Asistencia del día por alumno"
+							  ItemsSource="{ Binding Path=Registros, Mode=OneWay }"
+							  SelectedItem="{ Binding Path=Registro, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Grilla }"
+							  Tag="Abrí la planilla de esta fecha y vas a ver acá a todos los alumnos de la división.">
+						<DataGrid.Columns>
+							<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+												Header="ALUMNO"
+												MinWidth="180"
+												Width="3*"/>
+							<DataGridTemplateColumn Header="ESTADO" MinWidth="110" Width="*">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<!--
+											Las dos faltas —ausencia e inasistencia— llevan la
+											insignia de alerta; presente y tardanza, la neutra. Es lo
+											que el preceptor busca de un vistazo.
+										-->
+										<Grid>
+											<Border Style="{ StaticResource ResourceKey=Insignia }"
+													Visibility="{ Binding Path=EsFalta, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+														   Text="{ Binding Path=Estado, Mode=OneTime }"/>
+											</Border>
+											<Border Style="{ StaticResource ResourceKey=Insignia.Alerta }"
+													Visibility="{ Binding Path=EsFalta, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+														   Text="{ Binding Path=Estado, Mode=OneTime }"/>
+											</Border>
+										</Grid>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
+							<DataGridTextColumn Binding="{ Binding Path=Minutos, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="MINUTOS"
+												MinWidth="80"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Observacion, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+												Header="OBSERVACIÓN"
+												MinWidth="140"
+												Width="3*"/>
+
+							<!--
+								Los cuatro iconos repiten su significado en la forma y no sólo en el
+								color, y cada uno lleva su nombre accesible: un lector de pantalla
+								anuncia a qué alumno marca, no "Button".
+							-->
+							<DataGridTemplateColumn Header="MARCAR" Width="Auto">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<StackPanel Margin="0 2" Orientation="Horizontal">
+											<Button AutomationProperties.Name="{ Binding Path=NombreCompleto, Mode=OneTime, StringFormat=Marcar presente a {0} }"
+													Command="{ Binding Path=DataContext.MarcarPresenteCommand, RelativeSource={ RelativeSource AncestorType=DataGrid } }"
+													CommandParameter="{ Binding }"
+													Style="{ StaticResource ResourceKey=Btn.Icono }"
+													ToolTip="Presente">
+												<fa:IconBlock FontSize="12" Icon="Check"/>
+											</Button>
+											<Button AutomationProperties.Name="{ Binding Path=NombreCompleto, Mode=OneTime, StringFormat=Marcar ausencia justificada a {0} }"
+													Command="{ Binding Path=DataContext.MarcarAusenciaCommand, RelativeSource={ RelativeSource AncestorType=DataGrid } }"
+													CommandParameter="{ Binding }"
+													Style="{ StaticResource ResourceKey=Btn.Icono }"
+													ToolTip="Ausencia (falta justificada)">
+												<fa:IconBlock FontSize="12" Icon="Xmark"/>
+											</Button>
+											<Button AutomationProperties.Name="{ Binding Path=NombreCompleto, Mode=OneTime, StringFormat=Marcar inasistencia a {0} }"
+													Command="{ Binding Path=DataContext.MarcarInasistenciaCommand, RelativeSource={ RelativeSource AncestorType=DataGrid } }"
+													CommandParameter="{ Binding }"
+													Style="{ StaticResource ResourceKey=Btn.Icono }"
+													ToolTip="Inasistencia (falta sin justificar)">
+												<fa:IconBlock FontSize="12" Icon="Ban"/>
+											</Button>
+											<Button AutomationProperties.Name="{ Binding Path=NombreCompleto, Mode=OneTime, StringFormat=Marcar tardanza a {0} }"
+													Command="{ Binding Path=DataContext.MarcarTardanzaCommand, RelativeSource={ RelativeSource AncestorType=DataGrid } }"
+													CommandParameter="{ Binding }"
+													Style="{ StaticResource ResourceKey=Btn.Icono }"
+													ToolTip="Tardanza, con los minutos del campo de abajo">
+												<fa:IconBlock FontSize="12" Icon="Clock"/>
+											</Button>
+										</StackPanel>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
+						</DataGrid.Columns>
+					</DataGrid>
+					<!--#endregion-->
+
+					<!--#region DETALLE Y ALTAS
+						Lo que la fila no puede hacer de un clic: los minutos de la tardanza y la
+						observación, que describen a UN registro y por eso se van cuando se cambia de
+						alumno (ver OnRegistroChanged). Se completan y después se marca en la fila.
+					-->
+					<Border Grid.Row="4"
+							Margin="0 16 0 0"
+							Style="{ StaticResource ResourceKey=Superficie.Seccion }"
+							Visibility="{ Binding Path=PlanillaAbierta, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+						<StackPanel>
+							<TextBlock Margin="0 0 0 4"
+									   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="DETALLE DE LA MARCA"/>
+							<!--
+								La sección dice cómo se conecta con la grilla. Sin esta línea, los dos
+								campos quedan sueltos: se entiende qué son, no cuándo se usan.
+							-->
+							<TextBlock Margin="0 0 0 12"
+									   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+									   Text="Completá lo que haga falta y después marcá al alumno con los botones de su fila. La observación se borra al cambiar de alumno, porque describe a un solo registro."
+									   TextWrapping="Wrap"/>
+
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<HeaderedContentControl Grid.Column="0"
+														Header="Minutos de tardanza"
+														Style="{ StaticResource ResourceKey=Campo.Izquierda }"
+														ToolTip="Los minutos que usa el botón de tardanza de la fila">
+									<TextBox AutomationProperties.Name="Minutos de tardanza"
+											 MaxLength="3"
+											 Style="{ StaticResource ResourceKey=Txb.Campo }"
+											 Tag="5"
+											 Text="{ Binding Path=MinutosTardanza, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+											 Width="90"/>
+								</HeaderedContentControl>
+
+								<HeaderedContentControl Grid.Column="1"
+														Header="{ Binding Path=Registro.NombreCompleto, Mode=OneWay, StringFormat=Observación para {0}, FallbackValue='Observación (elegí un alumno de la planilla)', TargetNullValue='Observación (elegí un alumno de la planilla)' }"
+														Margin="12 0 0 0"
+														Style="{ StaticResource ResourceKey=Campo }">
+									<TextBox AutomationProperties.Name="Observación del registro elegido"
+											 IsEnabled="{ Binding Path=Registro, Mode=OneWay, Converter={ StaticResource ResourceKey=noEsNulo } }"
+											 Style="{ StaticResource ResourceKey=Txb.Nota }"
+											 Tag="llegó con certificado, retiro anticipado&#x2026;"
+											 Text="{ Binding Path=Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+								</HeaderedContentControl>
+							</Grid>
+
+							<Rectangle Margin="0 4 0 12" Style="{ StaticResource ResourceKey=Regla }"/>
+
+							<!--
+								Dos naturalezas distintas, separadas por una regla y con su rótulo:
+								arriba se describe una marca, acá se suma a alguien a la planilla.
+								Un alumno que se inscribió después de abrirla no tiene registro en
+								ella, así que el combo lista sólo a los que faltan y queda vacío en
+								el caso normal.
+							-->
+							<TextBlock Margin="0 0 0 12"
+									   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="INCORPORAR UN ALUMNO A LA PLANILLA"/>
+
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<HeaderedContentControl Grid.Column="0"
+														Header="Alumno sin registro en la planilla"
+														Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+									<ComboBox AutomationProperties.Name="Alumno a incorporar a la planilla"
+											  DisplayMemberPath="NombreCompleto"
+											  HorizontalAlignment="Left"
+											  ItemsSource="{ Binding Path=CursantesSinRegistro, Mode=OneWay }"
+											  MinWidth="260"
+											  SelectedItem="{ Binding Path=CursanteAIncorporar, Mode=TwoWay }"
+											  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+								</HeaderedContentControl>
+
+								<Button Grid.Column="1"
+										Command="{ Binding Path=IncorporarCursanteCommand }"
+										Content="Incorporar"
+										Margin="10 0 0 16"
 										Style="{ StaticResource ResourceKey=Btn.Secundario }"
-										ToolTip="Dar por terminada la asistencia del día"/>
-								<Button Command="{ Binding Path=AbrirPlanillaCommand }"
-										Margin="0 0 0 16"
-										Style="{ StaticResource ResourceKey=Btn.Primario }"
-										ToolTip="Abrir la planilla de la fecha elegida con todos los alumnos presentes">
-									<StackPanel Orientation="Horizontal">
-										<fa:IconBlock FontSize="11"
-													  Icon="Plus"
-													  Margin="0 0 8 0"
-													  VerticalAlignment="Center"/>
-										<TextBlock Text="Abrir planilla" VerticalAlignment="Center"/>
-									</StackPanel>
-								</Button>
-							</StackPanel>
-						</Grid>
-						<!--#endregion-->
+										ToolTip="Sumar al alumno elegido a la planilla del día"
+										VerticalAlignment="Bottom"/>
+							</Grid>
+						</StackPanel>
+					</Border>
+					<!--#endregion-->
+				</Grid>
+				<!--#endregion-->
 
-						<!--#region CONTADORES-->
-						<StackPanel Grid.Row="2" Orientation="Horizontal">
+				<!--#region VISTA: HISTORIAL-->
+				<Grid Grid.Row="2"
+					  Visibility="{ Binding Path=Vista, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Historial }">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+
+					<ContentControl Grid.Row="0" ContentTemplate="{ StaticResource ResourceKey=Periodo }" Content="{ Binding }"/>
+
+					<!--
+						Cada fila trae los cuatro contadores del día, así que un mes de planillas se
+						lee como un patrón y no hay que abrir una por una para saber cuál tuvo algo
+						raro. FALTAS es la columna que se mira: ausencias más inasistencias.
+					-->
+					<DataGrid x:Name="DataGrid_Historial"
+							  Grid.Row="1"
+							  AutomationProperties.Name="Planillas de asistencia ya cargadas"
+							  ItemsSource="{ Binding Path=Planillas, Mode=OneWay }"
+							  SelectedItem="{ Binding Path=PlanillaElegida, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Grilla }"
+							  Tag="No hay planillas cargadas en este período. Probá con un período más largo, o tomá la asistencia de hoy desde “Planilla del día”.">
+						<DataGrid.Columns>
+							<DataGridTextColumn Binding="{ Binding Path=Dia, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+												Header="DÍA"
+												MinWidth="110"
+												Width="1.4*"/>
+							<DataGridTemplateColumn Header="ESTADO" MinWidth="100" Width="*">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<!--
+											La cerrada es la planilla terminada y va en neutro; la
+											abierta es la que todavía espera algo, y ésa es la que
+											hay que poder encontrar de un vistazo en un mes de filas.
+										-->
+										<Grid>
+											<Border Style="{ StaticResource ResourceKey=Insignia }"
+													Visibility="{ Binding Path=Cerrada, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+														   Text="CERRADA"/>
+											</Border>
+											<Border Style="{ StaticResource ResourceKey=Insignia.Aviso }"
+													Visibility="{ Binding Path=Cerrada, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+														   Text="ABIERTA"/>
+											</Border>
+										</Grid>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
+							<DataGridTextColumn Binding="{ Binding Path=Alumnos, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="ALUMNOS"
+												MinWidth="80"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Presentes, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="PRESENTES"
+												MinWidth="90"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Ausencias, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="AUSENCIAS"
+												MinWidth="90"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Inasistencias, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="INASIST."
+												MinWidth="80"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Tardanzas, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="TARDANZAS"
+												MinWidth="90"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Faltas, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="FALTAS"
+												MinWidth="80"
+												Width="*"/>
+						</DataGrid.Columns>
+					</DataGrid>
+
+					<!--
+						La acción opera sobre la selección, así que va al pie y con etiqueta, no como
+						un icono por fila. Sin esto el historial sería una tabla de la que hay que
+						copiar una fecha a mano en el calendario de la otra vista.
+					-->
+					<StackPanel Grid.Row="2"
+								HorizontalAlignment="Right"
+								Margin="0 12 0 0"
+								Orientation="Horizontal">
+						<Button Command="{ Binding Path=AbrirFechaCommand }"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
+								ToolTip="Ir a la planilla del día elegido para verla o corregirla">
+							<StackPanel Orientation="Horizontal">
+								<fa:IconBlock FontSize="11"
+											  Icon="ArrowRight"
+											  Margin="0 0 8 0"
+											  VerticalAlignment="Center"/>
+								<TextBlock Text="Abrir la planilla elegida" VerticalAlignment="Center"/>
+							</StackPanel>
+						</Button>
+					</StackPanel>
+				</Grid>
+				<!--#endregion-->
+
+				<!--#region VISTA: RESUMEN-->
+				<Grid Grid.Row="2"
+					  Visibility="{ Binding Path=Vista, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Resumen }">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+
+					<ContentControl Grid.Row="0" ContentTemplate="{ StaticResource ResourceKey=Periodo }" Content="{ Binding }"/>
+
+					<!--
+						EL PORCENTAJE ES EL TITULAR Y EL RESTO LO EXPLICA. Es la única cifra que
+						contesta "cómo viene la división" sin hacer una cuenta, y por eso va en el
+						cuerpo más grande de la escala mientras los contadores quedan en el tamaño de
+						siempre. La tardanza cuenta como jornada asistida: el alumno llegó tarde pero
+						estuvo en clase.
+					-->
+					<Grid Grid.Row="1" Margin="0 0 0 16">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<StackPanel Grid.Column="0" Margin="0 0 32 0">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="ASISTENCIA DEL PERÍODO"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.Display }"
+									   Text="{ Binding Path=AsistenciaDelPeriodo, Mode=OneWay }"/>
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+									   Text="{ Binding Path=PlanillasDelPeriodo, Mode=OneWay, StringFormat=sobre {0} planillas }"/>
+						</StackPanel>
+
+						<Rectangle Grid.Column="1"
+								   Margin="0 0 32 0"
+								   Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
+
+						<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
 							<StackPanel Margin="0 0 28 0">
 								<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
 										   Text="PRESENTES"/>
 								<TextBlock Margin="0 2 0 0"
-										   Style="{ StaticResource ResourceKey=Txt.Dato }"
-										   Text="{ Binding Path=Presentes, Mode=OneWay }"/>
+										   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+										   Text="{ Binding Path=PresentesDelPeriodo, Mode=OneWay }"/>
 							</StackPanel>
 							<StackPanel Margin="0 0 28 0">
 								<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
 										   Text="AUSENCIAS"/>
 								<TextBlock Margin="0 2 0 0"
-										   Style="{ StaticResource ResourceKey=Txt.Dato }"
-										   Text="{ Binding Path=Ausencias, Mode=OneWay }"/>
+										   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+										   Text="{ Binding Path=AusenciasDelPeriodo, Mode=OneWay }"/>
 							</StackPanel>
 							<StackPanel Margin="0 0 28 0">
 								<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
 										   Text="INASISTENCIAS"/>
 								<TextBlock Margin="0 2 0 0"
-										   Style="{ StaticResource ResourceKey=Txt.Dato }"
-										   Text="{ Binding Path=Inasistencias, Mode=OneWay }"/>
+										   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+										   Text="{ Binding Path=InasistenciasDelPeriodo, Mode=OneWay }"/>
 							</StackPanel>
 							<StackPanel>
 								<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
 										   Text="TARDANZAS"/>
 								<TextBlock Margin="0 2 0 0"
-										   Style="{ StaticResource ResourceKey=Txt.Dato }"
-										   Text="{ Binding Path=Tardanzas, Mode=OneWay }"/>
+										   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+										   Text="{ Binding Path=TardanzasDelPeriodo, Mode=OneWay }"/>
 							</StackPanel>
 						</StackPanel>
-						<!--#endregion-->
 					</Grid>
-				</Border>
-				<!--#endregion-->
 
-				<!--#region SIN PLANILLA-->
-				<!--
-					El estado "sin planilla" no se dibuja como error: es el punto de partida de
-					cualquier día de clase, y el aviso lleva adentro la salida.
-				-->
-				<Border Margin="0 16 0 0"
-						Style="{ StaticResource ResourceKey=Superficie.Aviso }"
-						Visibility="{ Binding Path=MostrarAvisoSinPlanilla, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-					<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-							   Text="No hay planilla de asistencia abierta para la fecha elegida. Usá &#x201C;Abrir planilla&#x201D; para crearla con todos los alumnos de la división, y después marcá las ausencias y las tardanzas del día."
-							   TextWrapping="Wrap"/>
-				</Border>
-
-				<!--
-					SIN PRECEPTOR NO HAY PLANILLA. El dominio saca el preceptor de la división y
-					rechaza la apertura con SinDatosPreceptorException, así que "Abrir planilla"
-					está deshabilitado y este aviso reemplaza al de arriba —que señalaría un botón
-					que no se puede apretar—. Lleva adentro la salida: volver a divisiones.
-				-->
-				<Border Margin="0 16 0 0"
-						Style="{ StaticResource ResourceKey=Superficie.Aviso }"
-						Visibility="{ Binding Path=TienePreceptor, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
-					<StackPanel>
+					<!--
+						Un resumen con planillas sin cerrar todavía puede cambiar. Decirlo acá es más
+						barato que dejar que alguien saque una conclusión de números provisorios.
+					-->
+					<Border Grid.Row="2"
+							Margin="0 0 0 16"
+							Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+							Visibility="{ Binding Path=HayPlanillasAbiertas, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
 						<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-								   Text="Esta división no tiene preceptor asignado, y la planilla de asistencia la firma el preceptor de la división: hasta que haya uno, no se puede abrir."
+								   Text="{ Binding Path=PlanillasAbiertas, Mode=OneWay, StringFormat=Planillas del período sin cerrar: {0}. Hasta que se cierren estos números todavía pueden cambiar. El historial muestra cuáles son. }"
 								   TextWrapping="Wrap"/>
-						<Button Command="{ Binding Path=VolverCommand }"
-								Content="Volver a divisiones y asignar preceptor"
-								HorizontalAlignment="Left"
-								Margin="0 12 0 0"
-								Style="{ StaticResource ResourceKey=Btn.Secundario }"
-								ToolTip="Asignar el preceptor de la división y volver"/>
-					</StackPanel>
-				</Border>
+					</Border>
+
+					<!--
+						ORDENADA DE MÁS FALTAS A MENOS, y el orden viene resuelto de Core. La primera
+						fila es el alumno del que hay que ocuparse. No hay umbral de "en riesgo":
+						cuántas faltas se toleran antes de perder la regularidad es una regla de la
+						institución y esta pantalla no la conoce, así que cuenta y ordena, y el corte
+						lo hace quien mira.
+					-->
+					<DataGrid x:Name="DataGrid_Resumen"
+							  Grid.Row="3"
+							  AutomationProperties.Name="Faltas acumuladas por alumno en el período"
+							  ItemsSource="{ Binding Path=ResumenCursantes, Mode=OneWay }"
+							  Style="{ StaticResource ResourceKey=Grilla }"
+							  Tag="No hay asistencia cargada en este período, así que todavía no hay nada que acumular.">
+						<DataGrid.Columns>
+							<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+												Header="ALUMNO"
+												MinWidth="180"
+												Width="3*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Jornadas, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="JORNADAS"
+												MinWidth="90"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Presentes, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="PRESENTES"
+												MinWidth="90"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Ausencias, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="AUSENCIAS"
+												MinWidth="90"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Inasistencias, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="INASIST."
+												MinWidth="80"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=Tardanzas, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="TARDANZAS"
+												MinWidth="90"
+												Width="*"/>
+							<!--
+								FALTAS lleva insignia y no número pelado: es la columna por la que la
+								grilla está ordenada y la que se viene a buscar. La forma distingue
+								los dos casos —el cero no lleva caja— así que el color sólo refuerza.
+							-->
+							<DataGridTemplateColumn Header="FALTAS" MinWidth="80" Width="*">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<Grid>
+											<TextBlock Style="{ StaticResource ResourceKey=Celda.Numero }"
+													   Text="{ Binding Path=Faltas, Mode=OneTime }"
+													   Visibility="{ Binding Path=TieneFaltas, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }"/>
+											<Border HorizontalAlignment="Left"
+													Style="{ StaticResource ResourceKey=Insignia.Alerta }"
+													Visibility="{ Binding Path=TieneFaltas, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+														   Text="{ Binding Path=Faltas, Mode=OneTime }"/>
+											</Border>
+										</Grid>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
+							<DataGridTextColumn Binding="{ Binding Path=Asistencia, Mode=OneTime }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="ASISTENCIA"
+												MinWidth="90"
+												Width="*"/>
+						</DataGrid.Columns>
+					</DataGrid>
+				</Grid>
 				<!--#endregion-->
+			</Grid>
+		</Border>
 
-				<!--#region REGISTROS-->
-				<Border Margin="0 16 0 0"
-						Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
-					<Grid Margin="20 18">
-						<Grid.RowDefinitions>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-						</Grid.RowDefinitions>
-
-						<TextBlock Grid.Row="0"
-								   Margin="0 0 0 12"
-								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-								   Text="ASISTENCIA DEL DÍA"/>
-
-						<DataGrid x:Name="DataGrid_Registros"
-								  Grid.Row="1"
-								  ItemsSource="{ Binding Path=Registros, Mode=OneWay }"
-								  SelectedItem="{ Binding Path=Registro, Mode=TwoWay }"
-								  MaxHeight="320"
-								  MinHeight="140"
-								  Style="{ StaticResource ResourceKey=Grilla }"
-								  Tag="La planilla de esta fecha no tiene registros.">
-							<DataGrid.Columns>
-								<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime }"
-													Header="ALUMNO"
-													Width="3*"/>
-								<DataGridTemplateColumn Header="ESTADO" Width="*">
-									<DataGridTemplateColumn.CellTemplate>
-										<DataTemplate>
-											<!--
-												Las dos faltas —ausencia e inasistencia— llevan la
-												insignia de alerta; presente y tardanza, la neutra.
-												Es lo que el preceptor busca de un vistazo.
-											-->
-											<Grid>
-												<Border Style="{ StaticResource ResourceKey=Insignia }"
-														Visibility="{ Binding Path=EsFalta, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
-													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-															   Text="{ Binding Path=Estado, Mode=OneTime }"/>
-												</Border>
-												<Border Style="{ StaticResource ResourceKey=Insignia.Alerta }"
-														Visibility="{ Binding Path=EsFalta, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-															   Text="{ Binding Path=Estado, Mode=OneTime }"/>
-												</Border>
-											</Grid>
-										</DataTemplate>
-									</DataGridTemplateColumn.CellTemplate>
-								</DataGridTemplateColumn>
-								<DataGridTextColumn Binding="{ Binding Path=Minutos, Mode=OneTime }"
-													Header="MINUTOS"
-													Width="*"/>
-								<DataGridTextColumn Binding="{ Binding Path=Observacion, Mode=OneTime }"
-													Header="OBSERVACIÓN"
-													Width="3*"/>
-							</DataGrid.Columns>
-						</DataGrid>
-					</Grid>
-				</Border>
-				<!--#endregion-->
-
-				<!--#region MARCAR ASISTENCIA-->
-				<Border Margin="0 16 0 0"
-						Style="{ StaticResource ResourceKey=Superficie.Seccion }">
-					<StackPanel>
-						<TextBlock Margin="0 0 0 12"
-								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-								   Text="MARCAR AL ALUMNO ELEGIDO"/>
-
-						<TextBlock Margin="0 0 0 12"
-								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-								   Text="{ Binding Path=Registro.NombreCompleto, Mode=OneWay, FallbackValue='Elegí primero un alumno de la planilla', TargetNullValue='Elegí primero un alumno de la planilla' }"/>
-
-						<HeaderedContentControl Header="Observación"
-												Style="{ StaticResource ResourceKey=Campo }">
-							<TextBox Tag="llegó con certificado, retiro anticipado&#x2026;"
-									 Style="{ StaticResource ResourceKey=Txb.Nota }"
-									 Text="{ Binding Path=Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
-						</HeaderedContentControl>
-
-						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="Auto"/>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="Auto"/>
-							</Grid.ColumnDefinitions>
-
-							<HeaderedContentControl Grid.Column="0"
-													Header="Minutos de tardanza"
-													Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-								<TextBox MaxLength="3"
-										 Tag="5"
-										 Style="{ StaticResource ResourceKey=Txb.Campo }"
-										 Text="{ Binding Path=MinutosTardanza, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-										 Width="90"/>
-							</HeaderedContentControl>
-
-							<StackPanel Grid.Column="2"
-										Orientation="Horizontal"
-										VerticalAlignment="Bottom">
-								<Button Command="{ Binding Path=MarcarTardanzaCommand }"
-										Content="Tardanza"
-										Margin="0 0 8 16"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Registrar la llegada tarde con los minutos indicados"/>
-								<Button Command="{ Binding Path=MarcarInasistenciaCommand }"
-										Content="Inasistencia"
-										Margin="0 0 8 16"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Falta sin justificar"/>
-								<Button Command="{ Binding Path=MarcarAusenciaCommand }"
-										Content="Ausencia"
-										Margin="0 0 8 16"
-										Style="{ StaticResource ResourceKey=Btn.Secundario }"
-										ToolTip="Falta justificada"/>
-								<Button Command="{ Binding Path=MarcarPresenteCommand }"
-										Content="Presente"
-										Margin="0 0 0 16"
-										Style="{ StaticResource ResourceKey=Btn.Primario }"
-										ToolTip="Volver a marcar presente al alumno elegido"/>
-							</StackPanel>
-						</Grid>
-
-						<Rectangle Margin="0 4 0 12" Style="{ StaticResource ResourceKey=Regla }"/>
-
-						<!--
-							Un alumno que se inscribió después de abrir la planilla no tiene registro
-							en ella: hay que incorporarlo a mano. Por eso el combo lista sólo a los
-							que faltan y queda vacío en el caso normal.
-						-->
-						<TextBlock Margin="0 0 0 12"
-								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-								   Text="INCORPORAR UN ALUMNO A LA PLANILLA"/>
-
-						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="Auto"/>
-							</Grid.ColumnDefinitions>
-
-							<HeaderedContentControl Grid.Column="0"
-													Header="Alumno sin registro en la planilla"
-													Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-								<ComboBox DisplayMemberPath="NombreCompleto"
-										  HorizontalAlignment="Left"
-										  ItemsSource="{ Binding Path=CursantesSinRegistro, Mode=OneWay }"
-										  MinWidth="260"
-										  SelectedItem="{ Binding Path=CursanteAIncorporar, Mode=TwoWay }"
-										  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-							</HeaderedContentControl>
-
-							<Button Grid.Column="1"
-									Command="{ Binding Path=IncorporarCursanteCommand }"
-									Content="Incorporar"
-									Margin="10 0 0 16"
-									Style="{ StaticResource ResourceKey=Btn.Secundario }"
-									ToolTip="Sumar al alumno elegido a la planilla del día"
-									VerticalAlignment="Bottom"/>
-						</Grid>
-					</StackPanel>
-				</Border>
-				<!--#endregion-->
-			</StackPanel>
-		</ScrollViewer>
+		<!-- Cuelga de EstaCargando y no de un comando: las cuatro consultas de la pantalla lo levantan. -->
+		<components:CargandoComponent Grid.Row="1"
+									  EstaCargando="{ Binding Path=EstaCargando }"
+									  Leyenda="CARGANDO LA ASISTENCIA"/>
 	</Grid>
 </UserControl>

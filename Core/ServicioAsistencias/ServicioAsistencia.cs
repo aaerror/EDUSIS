@@ -280,9 +280,153 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 			throw;
 		}
 	}
+
+	/// <remarks>
+	/// Ordena de la más reciente a la más vieja, al revés que el repositorio. Es un historial: lo que
+	/// se busca en él es "qué cargué estos días", y la planilla de ayer está más cerca de esa pregunta
+	/// que la del primer día de clase. El repositorio ordena ascendente porque su otro consumidor es la
+	/// emisión de certificados, que lee el período como una línea de tiempo.
+	/// </remarks>
+	public async Task<IReadOnlyCollection<PlanillaResumenResponse>> ListarPlanillasAsync(ListarPlanillasRequest request)
+	{
+		try
+		{
+			var planillas = await BuscarRangoAsync(request.DivisionID, request.Desde, request.Hasta);
+
+			return planillas
+				.OrderByDescending(p => p.Fecha)
+				.Select(p => new PlanillaResumenResponse(
+					PlanillaID: p.Id,
+					Fecha: p.Fecha,
+					Cerrada: p.Cerrada,
+					Registros: p.Registros.Count,
+					Presentes: p.CantidadCon(TipoAsistencia.Presente),
+					Ausencias: p.CantidadCon(TipoAsistencia.Ausencia),
+					Inasistencias: p.CantidadCon(TipoAsistencia.Inasistencia),
+					Tardanzas: p.CantidadCon(TipoAsistencia.Tardanza)))
+				.ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	/// <remarks>
+	/// Recorre las planillas del período UNA vez y agrupa sus registros por cursante. La alternativa
+	/// —preguntarle al repositorio por cada alumno— no existe: <c>ContarFaltasAsync</c> es por cursante
+	/// y por tipo, no acepta fechas, y daría cuatro consultas por alumno contando toda su historia en
+	/// lugar del período pedido.
+	/// </remarks>
+	public async Task<ResumenAsistenciaResponse> ConsultarResumenAsync(ConsultarResumenRequest request)
+	{
+		try
+		{
+			var (desde, hasta) = Ordenar(request.Desde, request.Hasta);
+
+			var planillas = await BuscarRangoAsync(request.DivisionID, desde, hasta);
+
+			var registros = planillas.SelectMany(p => p.Registros).ToList();
+
+			var cursantes = registros
+				.GroupBy(r => r.CursanteID)
+				.Select(grupo =>
+				{
+					var ausencias = grupo.Count(r => r.Tipo.Equals(TipoAsistencia.Ausencia));
+					var inasistencias = grupo.Count(r => r.Tipo.Equals(TipoAsistencia.Inasistencia));
+
+					return new ResumenCursanteResponse(
+						CursanteID: grupo.Key,
+						Jornadas: grupo.Count(),
+						Presentes: grupo.Count(r => r.Tipo.Equals(TipoAsistencia.Presente)),
+						Ausencias: ausencias,
+						Inasistencias: inasistencias,
+						Tardanzas: grupo.Count(r => r.Tipo.Equals(TipoAsistencia.Tardanza)),
+						Faltas: ausencias + inasistencias,
+						PorcentajeAsistencia: Porcentaje(asistidas: grupo.Count() - ausencias - inasistencias,
+														sobre: grupo.Count()));
+				})
+				// De más faltas a menos: la primera fila es el alumno del que hay que ocuparse. A
+				// igual cantidad de faltas, primero el que menos jornadas tuvo, porque las mismas
+				// faltas sobre menos días son más graves.
+				.OrderByDescending(c => c.Faltas)
+				.ThenBy(c => c.Jornadas)
+				.ToList();
+
+			var ausenciasTotales = registros.Count(r => r.Tipo.Equals(TipoAsistencia.Ausencia));
+			var inasistenciasTotales = registros.Count(r => r.Tipo.Equals(TipoAsistencia.Inasistencia));
+
+			return new ResumenAsistenciaResponse(
+				Desde: desde,
+				Hasta: hasta,
+				Planillas: planillas.Count,
+				PlanillasAbiertas: planillas.Count(p => !p.Cerrada),
+				Marcas: registros.Count,
+				Presentes: registros.Count(r => r.Tipo.Equals(TipoAsistencia.Presente)),
+				Ausencias: ausenciasTotales,
+				Inasistencias: inasistenciasTotales,
+				Tardanzas: registros.Count(r => r.Tipo.Equals(TipoAsistencia.Tardanza)),
+				PorcentajeAsistencia: Porcentaje(asistidas: registros.Count - ausenciasTotales - inasistenciasTotales,
+												 sobre: registros.Count),
+				Cursantes: cursantes);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
 	#endregion
 
 	#region Privados
+	/// <summary>
+	/// Las planillas del período, con los extremos ya ordenados. Si vienen al revés se los da vuelta en
+	/// lugar de devolver vacío: un rango invertido es casi siempre un par de fechas elegidas en el orden
+	/// equivocado, y una lista vacía no se lo diría a nadie.
+	/// </summary>
+	private async Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarRangoAsync(Guid divisionID, DateTime desde, DateTime hasta)
+	{
+		var (inicio, fin) = Ordenar(desde, hasta);
+
+		return await _unitOfWork.PlanillasAsistencia.BuscarPorDivisionYRangoAsync(divisionID, inicio, fin);
+	}
+
+	/// <summary>
+	/// Los dos extremos en orden, sin hora.
+	/// </summary>
+	/// <remarks>
+	/// Lo usan la búsqueda Y el armado del response, y ése es el punto: el resumen informa el período
+	/// que efectivamente consultó. Normalizar sólo para buscar devolvía los números correctos dentro de
+	/// una cabecera que se describía al revés —"del 02/11 al 31/10"—, y la pantalla muestra esa
+	/// cabecera.
+	/// </remarks>
+	private static (DateTime Desde, DateTime Hasta) Ordenar(DateTime desde, DateTime hasta)
+	{
+		return desde.Date <= hasta.Date
+			? (desde.Date, hasta.Date)
+			: (hasta.Date, desde.Date);
+	}
+
+	/// <summary>
+	/// El porcentaje de asistencia, redondeado a un decimal. Sin marcas devuelve cero: no hay período
+	/// del que opinar, y un 100% sobre cero días diría que la división no faltó nunca.
+	/// </summary>
+	/// <remarks>
+	/// La tardanza cuenta como asistida. El alumno llegó tarde pero estuvo en clase, y un porcentaje que
+	/// la descontara diría que faltó un día entero por cinco minutos. Los minutos de la tardanza quedan
+	/// en el registro del día, que es donde significan algo.
+	/// </remarks>
+	private static decimal Porcentaje(int asistidas, int sobre)
+	{
+		if (sobre <= 0)
+		{
+			return decimal.Zero;
+		}
+
+		return Math.Round(asistidas * 100m / sobre, 1, MidpointRounding.AwayFromZero);
+	}
+
 	private async Task<PlanillaAsistencia> BuscarPlanillaAsync(Guid divisionID, DateTime fecha)
 	{
 		var planilla = await _unitOfWork.PlanillasAsistencia.BuscarPorDivisionYFechaAsync(divisionID, fecha);
