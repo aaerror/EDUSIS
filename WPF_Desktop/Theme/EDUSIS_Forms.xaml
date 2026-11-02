@@ -516,12 +516,28 @@
 	</Style>
 
 	<!--
-		Casilla que comparte fila con campos de texto. Sin rótulo propio arriba, el tilde
-		queda pegado al borde superior de la fila y a 20px del campo vecino; este margen lo
-		baja hasta la línea de los controles.
+		Casilla que comparte fila con campos de texto.
+
+		LA CASILLA ERA EL ÚNICO CONTROL FUERA DE LA LÍNEA DE 34px. Txb.Campo, Cmb.Campo,
+		Dtp.Campo y los cuatro botones miden 34 de alto, así que en una fila de formulario sus
+		contenidos apoyan todos en la misma línea. Chk.Campo no declara alto: su caja mide 18 y
+		el alto se lo da el contenido.
+
+		Con eso, cualquier alineación vertical quedaba mal, y mal de las dos maneras. Estirada
+		—lo que hacía este estilo, que sólo fijaba el margen— la caja se centraba en todo el
+		alto de la fila, 10px POR ENCIMA de la línea de controles, porque el rótulo del campo
+		vecino ocupa 20px arriba que la casilla no tiene. Y con VerticalAlignment=Bottom, que
+		es lo que hacía Alumnos, se alineaban los BORDES de dos cajas de distinto alto: 18
+		contra 34, así que la casilla caía 8px POR DEBAJO.
+
+		Fijando el mismo alto de 34 y apoyando abajo, el borde inferior y el centro coinciden a
+		la vez con los de cualquier campo o botón de la fila, tenga el vecino rótulo o no. La
+		caja de 18 se centra sola dentro de esos 34 porque ya lo pide la plantilla.
 	-->
 	<Style x:Key="Chk.Campo.Alineada" TargetType="{ x:Type CheckBox }" BasedOn="{ StaticResource ResourceKey=Chk.Campo }">
+		<Setter Property="Height" Value="34"/>
 		<Setter Property="Margin" Value="0 0 0 16"/>
+		<Setter Property="VerticalAlignment" Value="Bottom"/>
 		<Setter Property="VerticalAlignment" Value="Bottom"/>
 		<Setter Property="Height" Value="34"/>
 	</Style>
