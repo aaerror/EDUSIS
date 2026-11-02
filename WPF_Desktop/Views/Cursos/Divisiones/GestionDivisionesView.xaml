@@ -58,7 +58,7 @@
 
 			La letra se queda al lado de su botón, y es a propósito: es el único dato que la
 			acción principal necesita, así que el campo y el botón son UN grupo de acción. Las
-			pantallas cuya alta necesita un formulario entero —cátedras, horarios— lo tienen en
+			pantallas cuya alta necesita un formulario entero —horarios— lo tienen en
 			su propia tarjeta y dejan el encabezado sin acción que compita.
 		-->
 		<components:PaginaComponent Grid.Row="0"

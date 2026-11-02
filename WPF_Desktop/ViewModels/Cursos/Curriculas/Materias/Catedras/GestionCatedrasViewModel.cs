@@ -42,6 +42,25 @@ internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 	[ObservableProperty]
 	private ObservableCollection<DivisionViewModel> _divisionesSinCatedra = new();
 
+	/// <summary>
+	/// Horas cátedra de la materia que todavía no tienen lugar en el horario semanal, sumadas sobre
+	/// todas sus cátedras.
+	/// </summary>
+	/// <remarks>
+	/// NO son horas sin docente. <c>Catedra.HorasAsignadas</c> es <c>_horarios.Count</c> y
+	/// <c>HorasSinAsignar</c> es <c>CargaHoraria - HorasAsignadas</c>: lo que falta asignar es el
+	/// LUGAR EN LA SEMANA, y lo que resuelve ese número es la pantalla de Horarios, no la de
+	/// designaciones. Es además la regla con la que <c>Catedra.AgregarHorario</c> rechaza un horario
+	/// de más (<c>HorasCatedraCompletasException</c>).
+	///
+	/// Sale de <see cref="Catedras"/>, que ya está en memoria: no hay consulta de más. Antes había
+	/// que sumar la columna a ojo, fila por fila. El otro contador de la tira es
+	/// <see cref="DivisionesSinCatedra"/>.<c>Count</c>, que se enlaza directo porque
+	/// <c>ObservableCollection</c> ya avisa cuando cambia.
+	/// </remarks>
+	[ObservableProperty]
+	private int _horasSinAsignar;
+
 	[NotifyCanExecuteChangedFor(nameof(CrearCatedraCommand))]
 	[ObservableProperty]
 	private DivisionViewModel? _divisionSeleccionada;
@@ -143,6 +162,8 @@ internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 			viewModel.Division = letras.TryGetValue(catedra.DivisionID, out var letra) ? letra : string.Empty;
 			Catedras.Add(viewModel);
 		}
+
+		HorasSinAsignar = Catedras.Sum(catedra => catedra.HorasSinAsignar);
 
 		HashSet<Guid> conCatedra = catedras.Select(c => c.DivisionID).ToHashSet();
 
