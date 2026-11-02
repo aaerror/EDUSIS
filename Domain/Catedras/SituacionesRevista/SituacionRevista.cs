@@ -88,13 +88,39 @@ public sealed class SituacionRevista : Entity
 	public bool EsOcupante() =>
 		EsCargoOcupante(Cargo);
 
-	internal void EstablecerFechaFinalizacion(DateTime fechaFin)
+	/// <summary>
+	/// Le pone término a una designación indeterminada: el cargo pasa a ser interino y vence en
+	/// <paramref name="fechaFin"/>.
+	/// </summary>
+	/// <remarks>
+	/// SE LLAMABA <c>EstablecerFechaFinalizacion</c> Y SÓLO MOVÍA EL PERÍODO. El cargo quedaba en
+	/// <see cref="Cargo.Titular"/> con una fecha de fin encima, que es un estado que el negocio no
+	/// reconoce: un cargo a término es interino. El constructor ya prohíbe el camino inverso
+	/// —interino sin fecha de fin, <see cref="CargoTemporalSinFechaFinalizacionException"/>—, así
+	/// que el invariante estaba escrito a medias y esta era la mitad que faltaba.
+	///
+	/// Por eso el único cargo sobre el que puede correr es el titular: el interino y el suplente
+	/// nacen con fecha de fin, <see cref="EsTemporal"/> ya les da <c>true</c> y se van por
+	/// <see cref="CargoConFechaFinalizacionException"/>.
+	///
+	/// El término tiene que ser posterior a hoy. Un fin que cae hoy no agenda nada: cierra la
+	/// designación en el acto, que es lo que hace <see cref="Finalizar"/>. Mismo criterio —y mismo
+	/// mensaje— que <c>Licencia.EstablecerFechaFinalizacion</c>.
+	/// </remarks>
+	internal void PasarAInterinoHasta(DateTime fechaFin)
 	{
 		if (EsTemporal())
 		{
 			throw new CargoConFechaFinalizacionException();
 		}
 
+		if (fechaFin.Date <= DateTime.Today.Date)
+		{
+			var msg = "La fecha de finalización debe ser posterior al día de hoy.";
+			throw new ArgumentException(msg);
+		}
+
+		Cargo = Cargo.Interino;
 		Periodo = Periodo.ActualizarFechaFin(fechaFin);
 	}
 

@@ -25,7 +25,7 @@ namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 internal partial class GestionSituacionRevistaViewModel : ObservableValidator, IUbicacion
 {
 	#region Services
-	private readonly INavigationService _gestionMateriasNavigationService;
+	private readonly INavigationService _gestionCatedrasNavigationService;
 	private readonly INavigationService _buscarDocenteModalNavigationService;
 	private readonly IServicioDocente _servicioDocente;
 	private readonly IServicioCatedra _servicioCatedra;
@@ -112,6 +112,66 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	[ObservableProperty]
 	private ObservableCollection<SituacionRevistaViewModel> _situacionesReemplazables = new();
 
+	#region Censo de la cátedra
+	/// <summary>Cuántas designaciones de la cátedra están vigentes.</summary>
+	/// <remarks>
+	/// Las dos cifras salen de <see cref="DocentesEnMateria"/>, que ya está en memoria: no hay consulta de más.
+	/// Contestan de un vistazo lo que la grilla obliga a contar fila por fila desde que es también el historial
+	/// —cuántos cargos están vivos y cuánto de lo que se ve es historia—, y la vigencia es la que calcula el
+	/// dominio en <c>EsCargoVigente()</c>, no una comparación contra el texto del estado.
+	/// </remarks>
+	[ObservableProperty]
+	private int _designacionesVigentes;
+
+	/// <summary>Cuántas designaciones de la cátedra ya no están vigentes.</summary>
+	[ObservableProperty]
+	private int _designacionesHistoricas;
+	#endregion
+
+	#region Pasar a interino
+	/// <summary>Hasta cuándo va a durar la designación que está por pasar a interina.</summary>
+	/// <remarks>
+	/// EL COMANDO MANDABA <c>DateTime.Today</c>. Un fin que cae hoy no agenda ningún término: cierra
+	/// la designación en el acto, que es lo que hace "Finalizar designación". Un cargo interino es un
+	/// cargo A TÉRMINO, y el término hay que elegirlo, así que ahora lo pide la pantalla y el dominio
+	/// lo exige posterior a hoy.
+	///
+	/// Se vacía con cada fila elegida: el término es de ESTA designación y no del formulario.
+	/// </remarks>
+	[NotifyCanExecuteChangedFor(nameof(EditarCommand))]
+	[ObservableProperty]
+	private DateTime? _terminoDeLaDesignacion;
+
+	/// <summary>Primer día elegible como término: mañana, o el inicio si la designación no empezó.</summary>
+	/// <remarks>
+	/// LAS DOS COTAS SON DEL DOMINIO, no de la vista. <c>SituacionRevista.PasarAInterinoHasta</c> pide
+	/// un fin posterior a hoy, y <c>RangoFechas</c> rechaza un fin anterior al inicio con
+	/// <c>FechasInconsistentesException</c>. El calendario deja de ofrecer lo que iba a reventar.
+	/// </remarks>
+	public DateTime PrimerTerminoPosible
+	{
+		get
+		{
+			var manana = DateTime.Today.AddDays(1);
+			var inicio = SituacionRevistaUPDATE?.FechaInicio ?? manana;
+
+			return inicio > manana ? inicio : manana;
+		}
+	}
+
+	/// <summary>
+	/// <c>true</c> cuando la designación elegida admite término. Dibuja el campo de fecha; el botón
+	/// espera además a que la fecha esté puesta.
+	/// </summary>
+	/// <remarks>
+	/// Vigente y sin fecha de fin es, en los hechos, un titular: el interino y el suplente nacen con
+	/// término —<c>CargoTemporalSinFechaFinalizacionException</c>— y el dominio los rechaza acá con
+	/// <c>CargoConFechaFinalizacionException</c>.
+	/// </remarks>
+	public bool PuedePasarAInterino =>
+		SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.Vigente && SituacionRevistaUPDATE.FechaFin is null;
+	#endregion
+
 	#region Commands
 	public IAsyncRelayCommand CargarSituacionRevistasCommandAsync { get; }
 	public IAsyncRelayCommand CancelarCommand { get; }
@@ -125,7 +185,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	#endregion
 
 
-	public GestionSituacionRevistaViewModel(INavigationService gestionMateriasNavigationService,
+	public GestionSituacionRevistaViewModel(INavigationService gestionCatedrasNavigationService,
 											INavigationService buscarDocenteModalNavigationService,
 											IServicioDocente servicioDocente,
 											IServicioCatedra servicioCatedra,
@@ -136,7 +196,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 											BuscarContextoStore buscarContextoStore,
 											IMessenger messenger)
 	{
-		_gestionMateriasNavigationService = gestionMateriasNavigationService;
+		_gestionCatedrasNavigationService = gestionCatedrasNavigationService;
 		_buscarDocenteModalNavigationService = buscarDocenteModalNavigationService;
 		_servicioDocente = servicioDocente;
 		_servicioCatedra = servicioCatedra;
@@ -170,13 +230,14 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 
 		// Sin parámetro, a diferencia de NavigationCommand: la miga ejecuta el comando con null
 		// y el switch por string no haría nada.
-		VolverCommand = new RelayCommand(gestionMateriasNavigationService.Navigate);
+		VolverCommand = new RelayCommand(gestionCatedrasNavigationService.Navigate);
 
 		Ruta = new[]
 		{
 			Migaja.Contexto("CURSOS"),
-			Migaja.Hacia("DISEÑO CURRICULAR", VolverCommand),
-			Migaja.Actual($"{ Materia?.Descripcion?.ToUpper() } · DOCENTES")
+			Migaja.Contexto("DISEÑO CURRICULAR"),
+			Migaja.Hacia($"{ Materia?.Descripcion?.ToUpper() } · CÁTEDRAS", VolverCommand),
+			Migaja.Actual("DOCENTES")
 		};
 	}
 
@@ -184,10 +245,53 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	/// Ruta hasta los docentes de la cátedra. La materia era el título de la pantalla —el mismo
 	/// que en Cátedras y en Horarios—, así que las tres se llamaban igual.
 	/// </summary>
+	/// <remarks>
+	/// LA MIGA DEL MEDIO DECÍA UN DESTINO Y LLEVABA A OTRO. Era <c>Hacia("DISEÑO CURRICULAR")</c>
+	/// colgada de <see cref="VolverCommand"/>, pero el servicio de navegación que la fábrica le pasa
+	/// a esta pantalla es el de CÁTEDRAS —<c>CreateGestionCatedrasNavigationService</c>—, así que el
+	/// clic aterrizaba un nivel más abajo del que prometía el texto. Ahora tiene la forma de su
+	/// pantalla hermana, Horarios: el diseño curricular es un tramo de contexto, al que desde acá no
+	/// hay salto directo, y el enlace es el nivel del que efectivamente se viene.
+	/// </remarks>
 	public IReadOnlyList<Migaja> Ruta { get; }
 
-	/// <summary>Vuelve al diseño curricular. Es el destino del viejo botón "Volver a materias".</summary>
+	/// <summary>Vuelve a las cátedras de la materia. Es el destino del viejo botón "Volver a materias".</summary>
 	public IRelayCommand VolverCommand { get; }
+
+	/// <summary>
+	/// La designación elegida admite al menos una de las cuatro acciones del pie.
+	/// </summary>
+	/// <remarks>
+	/// EL PIE SE DIBUJA SÓLO SI TIENE ALGO ADENTRO. Cada botón cuelga su <c>Visibility</c> del
+	/// <c>IsEnabled</c> que su propio <c>CanExecute</c> decide, así que sobre una designación cerrada
+	/// —ni vigente ni en funciones— los cuatro se colapsan y el <c>HeaderedContentControl</c> seguía
+	/// poniendo igual su regla de 1px y sus 36px de margen: una línea huérfana bajo el detalle, sin
+	/// nada que explicara por qué no había acciones.
+	///
+	/// Se pregunta por los mismos <c>CanExecute</c> en lugar de reimplementar las cuatro condiciones:
+	/// la regla sigue viviendo en un solo lugar, medida contra el dominio.
+	/// </remarks>
+	/// <remarks>
+	/// Para el pase a interino se pregunta por <see cref="PuedePasarAInterino"/> y no por el
+	/// <c>CanExecute</c> del comando: ese espera además a que el término esté elegido, y el campo
+	/// donde se lo elige vive en este mismo pie. Colgarlo del comando lo escondía justo cuando hacía
+	/// falta, y el botón no aparecía nunca.
+	/// </remarks>
+	public bool HayAccionesSobreLaDesignacion =>
+		EliminarCommand.CanExecute("Docente")
+	 || PuedePasarAInterino
+	 || EditarCommand.CanExecute("Docente")
+	 || GuardarCommand.CanExecute("Docente");
+
+	partial void OnSituacionRevistaUPDATEChanged(SituacionRevistaViewModel value)
+	{
+		// El término es de la designación elegida: cambiar de fila lo descarta.
+		TerminoDeLaDesignacion = null;
+
+		OnPropertyChanged(nameof(PuedePasarAInterino));
+		OnPropertyChanged(nameof(PrimerTerminoPosible));
+		OnPropertyChanged(nameof(HayAccionesSobreLaDesignacion));
+	}
 
 	#region BuscarDocenteCommand
 	/// <summary>
@@ -220,6 +324,8 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 			SituacionesReemplazables.Clear();
 			SituacionRevistaEnFunciones = null;
 			HabilitarDocenteEnFunciones = false;
+			DesignacionesVigentes = 0;
+			DesignacionesHistoricas = 0;
 
 			var request = new ListarSituacionesRevistaRequest(CatedraID: _catedraStore.Catedra);
 			var situaciones = await _servicioCatedra.ListarSituacionesRevistaAsync(request);
@@ -236,6 +342,10 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 				ReemplazaADocente = x.ReemplazaADocenteID.HasValue ? Nombrar(nombresPorDocente, x.ReemplazaADocenteID.Value) : string.Empty
 			});
 			DocentesEnMateria = new ObservableCollection<SituacionRevistaViewModel>(items);
+
+			// El censo de la ficha, sobre la lista que ya está en memoria.
+			DesignacionesVigentes = DocentesEnMateria.Count(situacion => situacion.Vigente);
+			DesignacionesHistoricas = DocentesEnMateria.Count - DesignacionesVigentes;
 
 			// Candidatos a ser reemplazados: vigentes Y sin suplente vigente encima. La segunda
 			// condición es la que faltaba, y es la misma con la que el dominio rechaza una segunda
@@ -393,16 +503,19 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	/// vigente: una aceptada cuyo período ya terminó sigue diciendo "Aceptado". Ahora se usa
 	/// <c>Vigente</c>, que viene calculado de <c>SituacionRevista.EsCargoVigente()</c>.
 	///
-	/// "Rescindir" exige además que NO tenga fecha de fin. Llama a <c>EstablecerFechaFinalizacion</c>,
-	/// que rechaza toda designación temporal con <c>CargoConFechaFinalizacionException</c>, y como el
+	/// "Interino" exige además que NO tenga fecha de fin. Llama a <c>PasarAInterinoHasta</c>, que
+	/// rechaza toda designación temporal con <c>CargoConFechaFinalizacionException</c>, y como el
 	/// suplente y el interino siempre llevan fecha de fin, para esas dos filas el botón estaba
 	/// encendido y garantizado a fallar: sólo sirve sobre un titular.
+	///
+	/// Y exige el término elegido, porque el dominio lo pide posterior a hoy: sin esa condición el
+	/// botón abría su confirmación para después reventar con un <c>ArgumentException</c>.
 	/// </remarks>
 	private bool CanExecuteEditarCommand(object obj) => obj switch
 	{
 		// Quitar del aula: el dominio sólo pide que haya alguien en funciones.
 		"Docente" => SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.EnFunciones,
-		"Rescindir" => SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.Vigente && SituacionRevistaUPDATE.FechaFin is null,
+		"Interino" => PuedePasarAInterino && TerminoDeLaDesignacion.HasValue,
 		_ => false
 	};
 
@@ -434,31 +547,46 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 				await CargarSituacionRevistasAsync();
 				break;
 
-			case "Rescindir":
-				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
-						titulo: $"Poner fin a la designación de { SituacionRevistaUPDATE.Docente }",
-						consecuencia: $"La designación de { SituacionRevistaUPDATE.Cargo.ToLower() }, vigente desde el "
-									+ $"{ SituacionRevistaUPDATE.FechaInicio.ToString("D") }, se cierra hoy "
-									+ $"({ DateTime.Today.ToString("D") }) y el cargo vuelve a estar disponible en la cátedra.",
-						verbo: "Poner fin")))
+			case "Interino":
+				// EL CUERPO NO CONFÍA EN EL GATE. AsyncRelayCommand.ExecuteAsync no consulta
+				// CanExecute: el botón de la pantalla sí, pero cualquier otro llamador —una prueba,
+				// un atajo, el día que esto se dispare desde otro lado— entraba acá sin término y se
+				// iba en un NullReferenceException sobre .Value.
+				if (!PuedePasarAInterino || !TerminoDeLaDesignacion.HasValue)
 				{
-					// El cargo se lee ANTES de recargar. La recarga reapunta SituacionRevistaUPDATE
-					// a quien haya quedado en funciones, así que leerlo después nombraba otra
-					// designación en el cartel de éxito.
-					var cargoRescindido = SituacionRevistaUPDATE.Cargo.ToLower();
+					break;
+				}
+
+				// No es destructiva: no se pierde nada, el cargo pasa a tener término. Revisar es la
+				// forma que corresponde —un dato que cambia el expediente del docente—, y además el
+				// rojo estaba diciendo "esto no se puede deshacer" sobre algo que sí se puede volver
+				// a designar.
+				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Pasar a interino a { SituacionRevistaUPDATE.Docente }",
+						mensaje: $"La designación de { SituacionRevistaUPDATE.Cargo.ToLower() }, vigente desde el "
+							   + $"{ SituacionRevistaUPDATE.FechaInicio.ToString("D") }, pasa a ser un cargo interino "
+							   + $"que vence el { TerminoDeLaDesignacion.Value.ToString("D") }. "
+							   + "Hasta esa fecha el docente sigue en el cargo; después, la cátedra queda libre para designar a otro.",
+						verbo: "Pasar a interino")))
+				{
+					// El término se lee ANTES de recargar: CargarSituacionRevistasAsync reapunta
+					// SituacionRevistaUPDATE y, con él, vacía TerminoDeLaDesignacion.
+					var termino = TerminoDeLaDesignacion.Value;
+					var docenteInterino = SituacionRevistaUPDATE.Docente;
 
 					try
 					{
-						var request = new EstablecerFinDeDesignacionRequest(CatedraID: _catedraStore.Catedra,
-																			SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID,
-																			FechaFin: DateTime.Today);
-						await _servicioCatedra.EstablecerFinDeDesignacionAsync(request);
+						var request = new PasarAInterinoRequest(CatedraID: _catedraStore.Catedra,
+																SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID,
+																FechaFin: termino);
+						await _servicioCatedra.PasarAInterinoAsync(request);
 
-						_dialogService.MostrarInformacion($"El cargo de { cargoRescindido } vuelve a estar disponible.", "Designación con fecha de fin");
+						_dialogService.MostrarInformacion($"{ docenteInterino } queda como interino hasta el { termino.ToString("d") }.",
+														  "Designación a término");
 					}
 					catch (Exception ex)
 					{
-						_dialogService.MostrarError(ex.Message, "No se pudo poner fin a la designación");
+						_dialogService.MostrarError(ex.Message, "No se pudo pasar la designación a interina");
 					}
 				}
 
@@ -489,8 +617,14 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 			case "Docente":
 				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
 						titulo: $"Finalizar la designación de { SituacionRevistaUPDATE.Docente }",
+						// NO DICE QUE LAS HORAS VUELVEN A ESTAR SIN ASIGNAR, que es lo que decía y era falso.
+						// Catedra.HorasAsignadas es _horarios.Count y HorasSinAsignar es
+						// CargaHoraria - HorasAsignadas: lo que se asigna ahí es el lugar en el horario
+						// semanal, y finalizar una designación no toca ningún horario. Una consecuencia
+						// inventada en un diálogo destructivo es peor que ninguna.
 						consecuencia: $"La designación vigente desde el { SituacionRevistaUPDATE.FechaInicio.ToString("D") } queda finalizada "
-									+ "y el cargo deja de estar vigente en la cátedra. Las horas que ocupaba vuelven a estar sin asignar.",
+									+ "y el cargo deja de estar vigente en la cátedra, así que se puede designar a otro docente en su lugar. "
+									+ "Los horarios de la cátedra no cambian.",
 						verbo: "Finalizar designación")))
 				{
 					// El nombre se lee ANTES de recargar: la recarga reapunta SituacionRevistaUPDATE a
@@ -650,7 +784,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 		switch (obj)
 		{
 			case "Materias":
-				_gestionMateriasNavigationService.Navigate();
+				_gestionCatedrasNavigationService.Navigate();
 				break;
 		}
 	}

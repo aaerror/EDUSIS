@@ -157,7 +157,11 @@ public sealed class Catedra : Entity
 		AgregarEvento(new CatedraSinDocenteEnFuncionesEvent(Id));
 	}
 
-	public void EstablecerFinDeDesignacion(Guid unaSituacionRevista, DateTime fechaFin)
+	/// <summary>
+	/// Le pone término a una designación indeterminada de la cátedra: su cargo pasa a interino y
+	/// vence en <paramref name="fechaFin"/>.
+	/// </summary>
+	public void PasarAInterinoHasta(Guid unaSituacionRevista, DateTime fechaFin)
 	{
 		var situacionRevista = _situaciones.FirstOrDefault(situacion => situacion.Id.Equals(unaSituacionRevista));
 		if (situacionRevista is null)
@@ -165,7 +169,7 @@ public sealed class Catedra : Entity
 			throw new SituacionRevistaNoEncontradaException();
 		}
 
-		situacionRevista.EstablecerFechaFinalizacion(fechaFin);
+		situacionRevista.PasarAInterinoHasta(fechaFin);
 	}
 
 	public void FinalizarDesignacion(Guid unaSituacionRevista)

@@ -693,21 +693,109 @@ public class GestionSituacionRevistaViewModelTests
 		await contexto.ServicioCatedra.Received(1).RelevarDeFuncionesAsync(Arg.Is<RelevarDeFuncionesRequest>(r => r.CatedraID == contexto.CatedraID));
 	}
 
+	/// <summary>
+	/// EL TÉRMINO ES EL QUE SE ELIGIÓ, NO HOY. El comando mandaba <c>DateTime.Today</c>, que cierra
+	/// la designación en el acto en lugar de agendarle un vencimiento.
+	/// </summary>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Establecer_fin_de_designacion_llega_a_EstablecerFinDeDesignacionAsync_con_fecha_de_hoy()
+	public async Task Pasar_a_interino_llega_a_PasarAInterinoAsync_con_el_termino_elegido()
 	{
 		var contexto = new Contexto();
 		var titular = contexto.Agregar();
 		await contexto.ViewModel.CargarSituacionRevistasAsync();
 		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(titular.SituacionRevistaID);
 
-		await contexto.ViewModel.EditarCommand.ExecuteAsync("Rescindir");
+		var termino = DateTime.Today.AddMonths(4);
+		contexto.ViewModel.TerminoDeLaDesignacion = termino;
 
-		await contexto.ServicioCatedra.Received(1).EstablecerFinDeDesignacionAsync(Arg.Is<EstablecerFinDeDesignacionRequest>(r =>
+		await contexto.ViewModel.EditarCommand.ExecuteAsync("Interino");
+
+		await contexto.ServicioCatedra.Received(1).PasarAInterinoAsync(Arg.Is<PasarAInterinoRequest>(r =>
 			r.CatedraID == contexto.CatedraID &&
 			r.SituacionRevistaID == titular.SituacionRevistaID &&
-			r.FechaFin == DateTime.Today));
+			r.FechaFin == termino));
+	}
+
+	/// <summary>
+	/// Sin término el dominio tira <c>ArgumentException</c>: el botón no puede abrir su confirmación
+	/// para reventar después.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Sin_termino_elegido_el_pase_a_interino_no_se_habilita()
+	{
+		var contexto = new Contexto();
+		var titular = contexto.Agregar();
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(titular.SituacionRevistaID);
+
+		// La designación admite término —es un titular vigente—, pero la fecha todavía no está.
+		contexto.ViewModel.PuedePasarAInterino.ShouldBeTrue();
+		contexto.ViewModel.EditarCommand.CanExecute("Interino").ShouldBeFalse();
+
+		await contexto.ViewModel.EditarCommand.ExecuteAsync("Interino");
+
+		await contexto.ServicioCatedra.DidNotReceive().PasarAInterinoAsync(Arg.Any<PasarAInterinoRequest>());
+	}
+
+	/// <summary>
+	/// Una designación que ya es temporal —interino o suplente— se va por
+	/// <c>CargoConFechaFinalizacionException</c>: el campo de fecha ni siquiera se dibuja.
+	/// </summary>
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData("Interino")]
+	[InlineData("Suplente")]
+	public async Task Una_designacion_que_ya_tiene_termino_no_admite_el_pase_a_interino(string cargo)
+	{
+		var contexto = new Contexto();
+		var temporal = contexto.Agregar(cargo: cargo, fin: DateTime.Today.AddMonths(2));
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(temporal.SituacionRevistaID);
+
+		contexto.ViewModel.PuedePasarAInterino.ShouldBeFalse();
+	}
+
+	/// <summary>
+	/// El término es de la designación elegida. Si sobrevive al cambio de fila, la fecha que se puso
+	/// mirando a una designación viaja en el request de otra.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cambiar_de_designacion_descarta_el_termino_elegido()
+	{
+		var contexto = new Contexto();
+		var primera = contexto.Agregar();
+		var segunda = contexto.Agregar();
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(primera.SituacionRevistaID);
+		contexto.ViewModel.TerminoDeLaDesignacion = DateTime.Today.AddMonths(4);
+
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(segunda.SituacionRevistaID);
+
+		contexto.ViewModel.TerminoDeLaDesignacion.ShouldBeNull();
+	}
+
+	/// <summary>
+	/// Las dos cotas del calendario salen del dominio: posterior a hoy —<c>PasarAInterinoHasta</c>— y
+	/// no anterior al inicio —<c>RangoFechas</c>—.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task El_primer_termino_posible_es_manana_o_el_inicio_si_la_designacion_no_empezo()
+	{
+		var contexto = new Contexto();
+		var enCurso = contexto.Agregar(inicio: DateTime.Today.AddDays(-30));
+		var futura = contexto.Agregar(inicio: DateTime.Today.AddDays(20), vigente: false);
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(enCurso.SituacionRevistaID);
+		contexto.ViewModel.PrimerTerminoPosible.ShouldBe(DateTime.Today.AddDays(1));
+
+		contexto.ViewModel.SituacionRevistaUPDATE = contexto.Fila(futura.SituacionRevistaID);
+		contexto.ViewModel.PrimerTerminoPosible.ShouldBe(DateTime.Today.AddDays(20));
 	}
 
 	[Fact]

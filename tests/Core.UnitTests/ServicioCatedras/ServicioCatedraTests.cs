@@ -229,26 +229,27 @@ public class ServicioCatedraTests
 	}
 	#endregion
 
-	#region EstablecerFinDeDesignacionAsync / FinalizarDesignacionAsync
+	#region PasarAInterinoAsync / FinalizarDesignacionAsync
 	[Fact]
-	public async Task EstablecerFinDeDesignacionAsync_fija_la_fecha_de_fin_de_la_situacion_y_guarda()
+	public async Task PasarAInterinoAsync_le_pone_termino_al_cargo_lo_deja_interino_y_guarda()
 	{
 		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
 		var situacionID = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
 		var fechaFin = DateTime.Today.AddDays(30);
 
-		await _servicio.EstablecerFinDeDesignacionAsync(new EstablecerFinDeDesignacionRequest(catedra.Id, situacionID, fechaFin));
+		await _servicio.PasarAInterinoAsync(new PasarAInterinoRequest(catedra.Id, situacionID, fechaFin));
 
 		var situacion = catedra.SituacionesRevista.Single(x => x.Id.Equals(situacionID));
+		situacion.Cargo.ShouldBe(Cargo.Interino);
 		situacion.Periodo.FechaFin.ShouldBe(fechaFin);
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
 	}
 
 	[Fact]
-	public async Task EstablecerFinDeDesignacionAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
+	public async Task PasarAInterinoAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
-		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.EstablecerFinDeDesignacionAsync(
-			new EstablecerFinDeDesignacionRequest(Guid.NewGuid(), Guid.NewGuid(), DateTime.Today.AddDays(30))));
+		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.PasarAInterinoAsync(
+			new PasarAInterinoRequest(Guid.NewGuid(), Guid.NewGuid(), DateTime.Today.AddDays(30))));
 	}
 
 	[Fact]

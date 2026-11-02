@@ -10,21 +10,31 @@
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
 	<!--
-		SITUACIÓN DE REVISTA DE LA CÁTEDRA — qué docente está designado y con qué cargo.
+		DOCENTES DE LA CÁTEDRA — qué docente está designado, con qué cargo y quién está en aula.
 
-		Eran cuatro tarjetas apiladas con la misma sombra, tres de ellas con el título
-		centrado y un ícono al lado (CircleInfo, ChalkboardTeacher, Users). Un título centrado
-		con ícono en una app que alinea todo a la izquierda es el idioma de otra pantalla.
+		LA TARJETA LLENA EL ALTO Y LA GRILLA TOMA LA FILA *. Eran tres tarjetas apiladas dentro de
+		un ScrollViewer de página, y la grilla vivía en una fila Auto adentro de un StackPanel, que
+		mide a sus hijos con alto infinito: nunca le faltaba lugar, así que nunca sacaba su barra de
+		desplazamiento. Desde que la grilla es también el historial de la cátedra, quince
+		designaciones empujaban el detalle y el pie de acciones fuera de la vista. Es el defecto que
+		docs/ui-ux.md nombra con todas las letras, y la forma correcta es la de Asistencias y
+		Cursantes: sin scroll de página, la tarjeta en la fila * y la grilla en la fila * de adentro.
 
-		Las dos partes de abajo son dos MODOS, no dos secciones: o se mira quién está
-		designado, o se designa a alguien nuevo. Van en tarjetas distintas, cada una con su
-		pie de acciones.
+		LA MISMA DESIGNACIÓN SE DIBUJABA DOS VECES. "Docente de aula" era una tarjeta propia con un
+		SituacionRevistaView deshabilitado, y abajo el detalle de la fila elegida era OTRO
+		SituacionRevistaView deshabilitado. Como la carga deja preseleccionada justamente la fila en
+		funciones —SituacionRevistaUPDATE = SituacionRevistaEnFunciones— al abrir la pantalla las dos
+		mostraban el mismo registro, con los mismos cinco controles grises. Dos superficies idénticas
+		no comunican dos cosas: quién está en aula pasó a ser la ficha del encabezado de la tarjeta,
+		como el estado de la planilla en Asistencias.
 
-		El bloque "Buscar Docente" es el mismo que está escrito en GestionDivisiones y el que
-		BuscarView —el modal— tiene que reemplazar cuando se cablee.
+		Y SE VE TAMBIÉN CUANDO NO HAY NADIE. La tarjeta colgaba entera de HabilitarDocenteEnFunciones,
+		o sea que una cátedra sin nadie frente al curso —el estado que hay que resolver— no mostraba
+		nada en absoluto.
 
-		Se sacó el EnumConverter de los recursos locales: estaba declarado y sin usar, y un
-		bloque comentado con un botón "Ver docentes".
+		Se fue el bloque de aviso: HabilitarNotificacion sólo recibe false y Mensaje no se asigna
+		nunca, así que era markup que no podía dibujarse, y los fallos de carga ya van por
+		MostrarError.
 	-->
 	<UserControl.Resources>
 		<converters:CargoConverter x:Key="cargoConverter"/>
@@ -39,21 +49,32 @@
 	<Grid Margin="28 24 28 24">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
+		<!--
+			El título era el nombre de la materia, igual que en Cátedras y en Horarios: tres
+			pantallas hermanas con el mismo título y sin la palabra que dice qué es cada una. La
+			materia pasó a la ruta, donde es contexto y no nombre de pantalla.
+
+			LA ACCIÓN NO SE DIBUJA CON EL ALTA ABIERTA. Su CanExecute ya la apagaba, pero apagada
+			seguía estando: con el formulario abierto había un "Designar docente" gris arriba y un
+			"Designar docente" primario abajo, que son dos acciones distintas con el mismo nombre.
+			La Visibility cuelga del IsEnabled que el CanExecute decide, así que la regla sigue
+			viviendo en un solo lugar.
+		-->
 		<components:PaginaComponent Grid.Row="0"
 									Margin="0 0 0 20"
 									Ruta="{ Binding Path=Ruta }"
 									Titulo="Docentes de la cátedra"
-									Subtitulo="Docentes designados en la cátedra, con su cargo y su período">
+									Subtitulo="Quién está en aula, quién más está designado y quién lo estuvo antes">
 			<components:PaginaComponent.Accion>
 				<Button Command="{ Binding Path=RegistrarCommand }"
 						CommandParameter="SituacionRevista"
 						Style="{ StaticResource ResourceKey=Btn.Primario }"
-						ToolTip="Designar un docente en esta cátedra">
+						ToolTip="Designar un docente en esta cátedra"
+						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
 					<StackPanel Orientation="Horizontal">
 						<fa:IconBlock FontSize="11"
 									  Icon="Plus"
@@ -66,326 +87,513 @@
 		</components:PaginaComponent>
 		<!--#endregion-->
 
-		<!--#region AVISO-->
+		<!--#region DESIGNACIONES-->
+		<!--
+			Las dos tarjetas comparten la fila *: son dos MODOS —o se mira la cátedra, o se designa
+			a alguien— y nunca conviven. La de designar se apoya arriba en lugar de estirarse,
+			porque es un formulario corto y un pie de acciones flotando a media tarjeta no se lee
+			como pie de nada.
+		-->
 		<Border Grid.Row="1"
-				IsEnabled="{ Binding Path=HabilitarNotificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Margin="0 0 0 16"
-				Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+				IsEnabled="{ Binding Path=HabilitarInfoSituacionRevista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
 				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-			<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-					   Text="{ Binding Path=Mensaje, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-					   TextWrapping="Wrap"/>
-		</Border>
-		<!--#endregion-->
+			<Grid Margin="20 18">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
 
-		<ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-			<StackPanel>
 				<!--
 					El nombre de esta región lo usa de ancla la guarda estática
 					GuardasEstaticasW6Tests: comprueba que el bloque siga enlazado a
-					SituacionRevistaEnFunciones y no a SituacionRevistaUPDATE. El título que ve
-					el usuario es "Docente de aula"; el marcador del código, el de siempre.
+					SituacionRevistaEnFunciones y no a SituacionRevistaUPDATE, y que su visibilidad
+					cuelgue de HabilitarDocenteEnFunciones. El título que ve el usuario es "EN
+					AULA"; el marcador del código, el de siempre.
 				-->
 				<!--#region DOCENTE EN FUNCIONES-->
-				<Border IsEnabled="{ Binding Path=HabilitarDocenteEnFunciones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-						Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
-						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-					<Grid Margin="20 18">
-						<Grid.RowDefinitions>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-						</Grid.RowDefinitions>
+				<Grid Grid.Row="0" Margin="0 0 0 18">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
 
-						<StackPanel Grid.Row="0" Margin="0 0 0 4">
-							<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
-									   Text="Docente de aula"/>
-							<TextBlock Margin="0 4 0 0"
-									   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-									   Text="El que está dando clase en esta cátedra ahora mismo."/>
+					<!-- Hay alguien frente al curso: es el titular de la pantalla. -->
+					<StackPanel Grid.Column="0"
+								Visibility="{ Binding Path=HabilitarDocenteEnFunciones, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"
+								VerticalAlignment="Center">
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="EN AULA"/>
+						<StackPanel DataContext="{ Binding Path=SituacionRevistaEnFunciones, Mode=OneWay }">
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+									   Text="{ Binding Path=Docente, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+									   TextTrimming="CharacterEllipsis"/>
+							<TextBlock Margin="0 4 0 0" Style="{ StaticResource ResourceKey=Txt.Detalle }">
+								<Run Text="{ Binding Path=Cargo, Mode=OneWay }"/><Run Text=" · desde el "/><Run Text="{ Binding Path=FechaInicio, Mode=OneWay, StringFormat=d }"/>
+							</TextBlock>
 						</StackPanel>
+					</StackPanel>
 
-						<!-- DataContext primero: es donde lo busca la guarda estática. -->
-						<local:SituacionRevistaView DataContext="{ Binding Path=SituacionRevistaEnFunciones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-													Grid.Row="1"
-													IsEnabled="False"/>
-					</Grid>
-				</Border>
+					<!--
+						LA CÁTEDRA SIN NADIE EN AULA ES EL ESTADO QUE HAY QUE RESOLVER, así que es
+						el que más falta hacía mostrar, y era justo el que no se dibujaba. Dice qué
+						pasa y con qué botón se arregla.
+					-->
+					<StackPanel Grid.Column="0"
+								Visibility="{ Binding Path=HabilitarDocenteEnFunciones, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }"
+								VerticalAlignment="Center">
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="EN AULA"/>
+						<TextBlock Foreground="{ StaticResource ResourceKey=TintaSuave }"
+								   Margin="0 2 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+								   Text="Nadie"/>
+						<!--
+							CON HorizontalAlignment="Left" Y SIN TextAlignment. Un TextBlock hereda
+							HorizontalAlignment="Stretch", y cuando un MaxWidth le impide llenar el
+							hueco WPF lo CENTRA en lugar de dejarlo a la izquierda: el párrafo nacía
+							corrido, con un vacío a su izquierda que no era margen de nada.
+							TextAlignment no alcanzaba porque alinea el texto DENTRO de la caja, y la
+							caja era la que estaba corrida.
+						-->
+						<TextBlock HorizontalAlignment="Left"
+								   Margin="0 4 0 0"
+								   MaxWidth="420"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="La cátedra no tiene docente frente al curso. Elegí una designación vigente de la lista y usá &#x201C;Poner en aula&#x201D;."
+								   TextWrapping="Wrap"/>
+					</StackPanel>
+
+					<Rectangle Grid.Column="1"
+							   Margin="32 0"
+							   Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
+
+					<!--
+						El censo de la cátedra. Los dos números salen de la misma lista que alimenta
+						la grilla —no hay consulta de más— y contestan de un vistazo lo que antes
+						había que contar fila por fila: cuántos cargos están vivos y cuánto de lo
+						que se ve es historia.
+					-->
+					<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+						<StackPanel Margin="0 0 28 0">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="VIGENTES"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=DesignacionesVigentes, Mode=OneWay }"/>
+						</StackPanel>
+						<StackPanel>
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="EN EL HISTORIAL"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+									   Text="{ Binding Path=DesignacionesHistoricas, Mode=OneWay }"/>
+						</StackPanel>
+					</StackPanel>
+				</Grid>
 				<!--#endregion-->
 
-				<!--#region DESIGNACIONES-->
-				<Border IsEnabled="{ Binding Path=HabilitarInfoSituacionRevista, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-						Margin="0 16 0 0"
-						Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
-						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-					<Grid Margin="20 18">
-						<Grid.RowDefinitions>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-						</Grid.RowDefinitions>
+				<!--
+					TÍTULO DE TARJETA Y NO RÓTULO DE BLOQUE. Era un Txt.Seccion de 12px —el rótulo
+					que va ADENTRO de una tarjeta— mientras sus dos hermanas se encabezaban con
+					Txt.Titulo: el contenido principal de la pantalla era el que llevaba el título
+					más chico. Y decía "EN LA MATERIA", que contradice a la pantalla, a su subtítulo
+					y al AutomationProperties.Name de esta misma grilla: los docentes se designan en
+					la cátedra, que es la materia en UNA división. "Designados" tampoco era cierto
+					desde que la grilla es también el historial.
+				-->
+				<StackPanel Grid.Row="1" Margin="0 0 0 12">
+					<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+							   Text="Designaciones de la cátedra"/>
+					<TextBlock Margin="0 4 0 0"
+							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="Quién está designado hoy y quién lo estuvo antes."/>
+				</StackPanel>
 
-						<TextBlock Grid.Row="0"
-								   Margin="0 0 0 12"
-								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-								   Text="DOCENTES DESIGNADOS EN LA MATERIA"/>
-
-						<DataGrid x:Name="DataGrid_Docentes"
-								  Grid.Row="1"
-								  ItemsSource="{ Binding Path=DocentesEnMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-								  SelectedItem="{ Binding Path=SituacionRevistaUPDATE, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-								  AutomationProperties.Name="Designaciones de la cátedra"
-								  IsReadOnly="True"
-								  IsSynchronizedWithCurrentItem="True"
-								  Style="{ StaticResource ResourceKey=Grilla }"
-								  Tag="Esta cátedra todavía no tiene docentes designados. Empezá con &#x201C;Designar docente&#x201D;."
-								  d:ItemsSource="{ d:SampleData ItemCount=4 }">
-							<DataGrid.Columns>
-								<!-- El orden de estas columnas lo fija la guarda estática W6. -->
-								<DataGridTextColumn Binding="{ Binding Path=Cargo, FallbackValue='Sin datos', TargetNullValue='Sin datos', Converter={ StaticResource ResourceKey=cargoConverter } }"
-													ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-													Header="CARGO"
-													MinWidth="90"
-													Width="*"/>
-								<!--
-									EL ESTADO SE LEE DE UN VISTAZO. Era texto plano con el ToString()
-									del enum, así que una designación vigente y una finalizada se
-									distinguían sólo leyendo la palabra. En una grilla que ahora es
-									también el historial de la cátedra, encontrar las vigentes entre
-									las viejas era el trabajo. La insignia lo resuelve por forma y
-									color, y el texto sigue estando.
-								-->
-								<DataGridTemplateColumn Header="ESTADO" MinWidth="110" Width="*">
-									<DataGridTemplateColumn.CellTemplate>
-										<DataTemplate>
-											<Grid>
-												<Border Style="{ StaticResource ResourceKey=Insignia.Activa }"
-														Visibility="{ Binding Path=Vigente, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-															   Text="VIGENTE"/>
-												</Border>
-												<Border Style="{ StaticResource ResourceKey=Insignia }"
-														Visibility="{ Binding Path=Vigente, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
-													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-															   Text="{ Binding Path=Estado, Mode=OneWay }"/>
-												</Border>
-											</Grid>
-										</DataTemplate>
-									</DataGridTemplateColumn.CellTemplate>
-								</DataGridTemplateColumn>
-								<DataGridTextColumn Binding="{ Binding Path=Docente, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-													ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-													Header="DOCENTE"
-													MinWidth="160"
-													Width="2*"/>
-								<!--
-									LA CADENA DE SUPLENCIAS, VISIBLE. ReemplazaA se escribía en el alta
-									y no se mostraba en ninguna parte: un suplente ya cargado era
-									indistinguible de un titular salvo por la palabra del cargo, y a
-									quién cubría no se podía averiguar desde la pantalla. El salto de
-									designación reemplazada a docente lo resuelve Core.
-								-->
-								<DataGridTextColumn Binding="{ Binding Path=ReemplazaADocente, Mode=OneWay }"
-													ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-													Header="SUPLE A"
-													MinWidth="140"
-													Width="2*"/>
-								<!--
-									Celda.Booleana y no DataGridCheckBoxColumn: la grilla es de sólo
-									lectura, así que la casilla dibujaba un control de entrada que no
-									acepta entrada.
-								-->
-								<DataGridTemplateColumn Header="EN AULA" Width="Auto">
-									<DataGridTemplateColumn.CellTemplate>
-										<DataTemplate>
-											<fa:IconBlock Style="{ StaticResource ResourceKey=Celda.Booleana }"
-														  Tag="{ Binding Path=EnFunciones, Mode=OneWay }"/>
-										</DataTemplate>
-									</DataGridTemplateColumn.CellTemplate>
-								</DataGridTemplateColumn>
-							</DataGrid.Columns>
-						</DataGrid>
-
-						<!-- Detalle de la designación elegida en la grilla. -->
-						<local:SituacionRevistaView Grid.Row="2"
-													DataContext="{ Binding Path=SelectedItem, ElementName=DataGrid_Docentes }"
-													IsEnabled="False"
-													Margin="0 16 0 0"/>
-
+				<DataGrid x:Name="DataGrid_Docentes"
+						  Grid.Row="2"
+						  ItemsSource="{ Binding Path=DocentesEnMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+						  SelectedItem="{ Binding Path=SituacionRevistaUPDATE, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+						  AutomationProperties.Name="Designaciones de la cátedra"
+						  IsReadOnly="True"
+						  IsSynchronizedWithCurrentItem="True"
+						  Style="{ StaticResource ResourceKey=Grilla }"
+						  Tag="Esta cátedra todavía no tiene docentes designados. Empezá con &#x201C;Designar docente&#x201D;."
+						  d:ItemsSource="{ d:SampleData ItemCount=4 }">
+					<DataGrid.Columns>
+						<!-- El orden de estas columnas lo fija la guarda estática W6. -->
+						<DataGridTextColumn Binding="{ Binding Path=Cargo, FallbackValue='Sin datos', TargetNullValue='Sin datos', Converter={ StaticResource ResourceKey=cargoConverter } }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+											Header="CARGO"
+											MinWidth="90"
+											Width="*"/>
 						<!--
-							LAS DOS ACCIONES QUE ESTABAN EN ÍCONOS, AHORA CON NOMBRE.
-
-							La grilla traía una columna con un UserAltSlash ("quitar de
-							funciones") y un Ban ("establecer el fin de la designación"): dos
-							operaciones de ciclo de vida de una designación representadas con un
-							ícono sin etiqueta. Además llamaban al comando con un parámetro fijo
-							y sin pasar la fila, y los comandos trabajan sobre la fila
-							SELECCIONADA: como un Button dentro de una celda marca el clic como
-							manejado, la fila no llegaba a seleccionarse y el ícono de una fila
-							operaba sobre otra.
-
-							Las cuatro acciones de la designación elegida viven ahora juntas en
-							el pie, que es donde el detalle de arriba muestra a quién se le van a
-							aplicar.
+							EL ESTADO SE LEE DE UN VISTAZO. Era texto plano con el ToString() del
+							enum, así que una designación vigente y una finalizada se distinguían
+							sólo leyendo la palabra. En una grilla que ahora es también el historial
+							de la cátedra, encontrar las vigentes entre las viejas era el trabajo.
+							La insignia lo resuelve por forma y color, y el texto sigue estando.
 						-->
+						<DataGridTemplateColumn Header="ESTADO" MinWidth="110" Width="*">
+							<DataGridTemplateColumn.CellTemplate>
+								<DataTemplate>
+									<Grid>
+										<Border Style="{ StaticResource ResourceKey=Insignia.Activa }"
+												Visibility="{ Binding Path=Vigente, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+											<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+													   Text="VIGENTE"/>
+										</Border>
+										<Border Style="{ StaticResource ResourceKey=Insignia }"
+												Visibility="{ Binding Path=Vigente, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+											<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+													   Text="{ Binding Path=Estado, Mode=OneWay }"/>
+										</Border>
+									</Grid>
+								</DataTemplate>
+							</DataGridTemplateColumn.CellTemplate>
+						</DataGridTemplateColumn>
+						<DataGridTextColumn Binding="{ Binding Path=Docente, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+											Header="DOCENTE"
+											MinWidth="160"
+											Width="2*"/>
 						<!--
-							CADA ESTADO MUESTRA SÓLO SUS ACCIONES. Los cuatro botones vivían
-							permanentemente en el pie y lo único que cambiaba era su IsEnabled, así
-							que en cualquier fila real había dos o tres apagados y ninguno decía por
-							qué. Peor: dos de los gates eran más laxos que el dominio —finalizar una
-							designación ya finalizada, poner en aula a quien ya estaba— y uno estaba
-							garantizado a fallar sobre suplentes e interinos.
-
-							La visibilidad cuelga del IsEnabled que el propio CanExecute decide, así
-							que la regla vive en un solo lugar: el ViewModel, medido contra el
-							dominio. Un botón que no aplica no se dibuja.
+							LA CADENA DE SUPLENCIAS, VISIBLE. ReemplazaA se escribía en el alta y no
+							se mostraba en ninguna parte: un suplente ya cargado era indistinguible
+							de un titular salvo por la palabra del cargo, y a quién cubría no se
+							podía averiguar desde la pantalla. El salto de designación reemplazada a
+							docente lo resuelve Core.
 						-->
-						<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
-							<HeaderedContentControl.Header>
-								<StackPanel Orientation="Horizontal">
-									<Button Command="{ Binding Path=EliminarCommand }"
-											CommandParameter="Docente"
-											Content="Finalizar designación"
-											Margin="0 0 8 0"
-											Style="{ StaticResource ResourceKey=Btn.Peligro }"
-											ToolTip="Cerrar hoy la designación elegida y liberar el cargo"
-											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-									<Button Command="{ Binding Path=EditarCommand }"
-											CommandParameter="Rescindir"
-											Content="Poner fin de designación"
-											Style="{ StaticResource ResourceKey=Btn.Peligro }"
-											ToolTip="Ponerle fecha de fin a una designación por tiempo indeterminado"
-											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-								</StackPanel>
-							</HeaderedContentControl.Header>
+						<DataGridTextColumn Binding="{ Binding Path=ReemplazaADocente, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+											Header="SUPLE A"
+											MinWidth="140"
+											Width="2*"/>
+						<!--
+							Celda.Booleana y no DataGridCheckBoxColumn: la grilla es de sólo
+							lectura, así que la casilla dibujaba un control de entrada que no
+							acepta entrada.
+						-->
+						<DataGridTemplateColumn Header="EN AULA" Width="Auto">
+							<DataGridTemplateColumn.CellTemplate>
+								<DataTemplate>
+									<fa:IconBlock Style="{ StaticResource ResourceKey=Celda.Booleana }"
+												  Tag="{ Binding Path=EnFunciones, Mode=OneWay }"/>
+								</DataTemplate>
+							</DataGridTemplateColumn.CellTemplate>
+						</DataGridTemplateColumn>
+					</DataGrid.Columns>
+				</DataGrid>
 
-							<StackPanel Orientation="Horizontal">
-								<Button Command="{ Binding Path=EditarCommand }"
-										CommandParameter="Docente"
-										Content="Quitar del aula"
-										Margin="0 0 8 0"
-										Style="{ StaticResource ResourceKey=Btn.Secundario }"
-										ToolTip="Dejar la cátedra sin docente frente al curso"
-										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-								<Button Command="{ Binding Path=GuardarCommand }"
-										CommandParameter="Docente"
-										Content="Poner en aula"
-										Style="{ StaticResource ResourceKey=Btn.Primario }"
-										ToolTip="Poner al docente elegido frente al curso"
-										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-							</StackPanel>
+				<!--
+					DETALLE DE LA FILA ELEGIDA, LEÍDO Y NO SIMULADO. Era otro SituacionRevistaView
+					deshabilitado: un combo gris y dos DatePicker grises para mostrar tres datos que
+					no se editan desde acá. Lo único que agregaba a la grilla eran las dos fechas,
+					así que ahora son eso: cuatro Dato, que es el estilo que existe justamente
+					porque un campo gris dice "no podés ahora" y un dato sin caja dice "esto no se
+					edita".
+
+					Y SE ESCONDE SIN SELECCIÓN. Sobre una cátedra recién creada la grilla mostraba
+					su estado vacío —"Empezá con Designar docente"— y justo debajo se dibujaba igual
+					una ficha con "Sin docente seleccionado" y dos fechas en blanco, que parecía un
+					formulario esperando que lo completaran.
+				-->
+				<StackPanel Grid.Row="3"
+							DataContext="{ Binding Path=SelectedItem, ElementName=DataGrid_Docentes }"
+							Margin="0 18 0 0"
+							Visibility="{ Binding Path=SelectedItem, ElementName=DataGrid_Docentes, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+					<TextBlock Margin="0 0 0 2"
+							   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+							   Text="DESIGNACIÓN ELEGIDA"/>
+
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="2*"/>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<HeaderedContentControl Grid.Column="0"
+												Content="{ Binding Path=Docente, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+												Header="Docente"
+												Style="{ StaticResource ResourceKey=Dato.Izquierda }"/>
+						<HeaderedContentControl Grid.Column="1"
+												Content="{ Binding Path=Cargo, Mode=OneWay, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+												Header="Cargo"
+												Style="{ StaticResource ResourceKey=Dato.Centro }"/>
+						<!--
+							LAS DOS FECHAS VAN EN UN TextBlock PROPIO Y NO EN Content. Content es de
+							tipo object, y ahí el StringFormat del enlace no está garantizado: la
+							fecha podía terminar dibujada con el ToString() completo, hora incluida.
+							Text sí es string, así que el formato corto se aplica siempre, y el
+							TextBlock hereda el estilo implícito que Dato declara en su
+							ContentPresenter —el mismo recurso con el que una vista que necesita el
+							valor en monoespaciada pasa su Txt.Dato—.
+						-->
+						<HeaderedContentControl Grid.Column="2"
+												Header="Desde"
+												Style="{ StaticResource ResourceKey=Dato.Centro }">
+							<TextBlock Text="{ Binding Path=FechaInicio, Mode=OneWay, StringFormat=d }"/>
+						</HeaderedContentControl>
+						<!--
+							Una designación sin fecha de fin no es un dato que falte: es un titular
+							por tiempo indeterminado. La celda lo dice en lugar de quedar en blanco,
+							que se lee como "falta cargarlo".
+						-->
+						<HeaderedContentControl Grid.Column="3"
+												Header="Hasta"
+												Style="{ StaticResource ResourceKey=Dato.Derecha }">
+							<TextBlock Text="{ Binding Path=FechaFin, Mode=OneWay, StringFormat=d, TargetNullValue='Sin fecha de fin' }"/>
 						</HeaderedContentControl>
 					</Grid>
-				</Border>
-				<!--#endregion-->
 
-				<!--#region DESIGNAR-->
-				<Border IsEnabled="{ Binding Path=HabilitarInsert, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-						Margin="0 16 0 0"
-						Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
-						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-					<Grid Margin="20 18">
-						<Grid.RowDefinitions>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
-						</Grid.RowDefinitions>
+					<!--
+						Una designación cerrada no admite ninguna de las cuatro acciones, así que el
+						pie entero se colapsaba y dejaba su regla de 1px huérfana, sin nada que
+						explicara por qué no había botones.
+					-->
+					<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="Esta designación ya está cerrada: no hay acciones sobre ella."
+							   TextWrapping="Wrap"
+							   Visibility="{ Binding Path=HayAccionesSobreLaDesignacion, Mode=OneWay, RelativeSource={ RelativeSource AncestorType=UserControl }, Converter={ StaticResource ResourceKey=visibilidadInversa } }"/>
+				</StackPanel>
 
-						<StackPanel Grid.Row="0" Margin="0 0 0 16">
-							<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
-									   Text="Designar un docente"/>
-							<TextBlock Margin="0 4 0 0"
-									   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-									   Text="Buscá al docente, elegilo de la lista y cargá su cargo y su período."/>
-						</StackPanel>
+				<!--
+					EL TÉRMINO DEL CARGO INTERINO. Un cargo a término es, por definición, un cargo
+					con fecha de fin: el dominio lo exige en el alta —un interino o un suplente sin
+					fecha de fin se va por CargoTemporalSinFechaFinalizacionException— y lo exige
+					también acá, posterior a hoy. El ViewModel mandaba DateTime.Today, que no agenda
+					ningún término: cerraba la designación en el acto, igual que "Finalizar
+					designación", de modo que las dos acciones hacían casi lo mismo con nombres
+					distintos y ninguna de las dos hacía lo que el negocio llama pasar a interino.
 
-						<!--
-							El buscador de docentes estaba acá: campo con Query validado, lupa,
-							un Expander con la grilla de resultados y un botón "Seleccionar".
-							Era la misma pieza que tenía GestionDivisiones escrita aparte. Las dos
-							se reemplazaron por el modal (BuscarView); el docente elegido vuelve
-							por DocenteElegidoMessage y dispara el mismo SeleccionarCommand.
-						-->
-						<!--#region BUSCAR-->
-						<Button Grid.Row="1"
-								Command="{ Binding Path=BuscarDocenteCommand }"
-								HorizontalAlignment="Left"
-								Margin="0 0 0 16"
-								Style="{ StaticResource ResourceKey=Btn.Secundario }"
-								ToolTip="Abrir el buscador de docentes">
-							<StackPanel Orientation="Horizontal">
-								<fa:IconBlock FontSize="11"
-											  Icon="MagnifyingGlass"
-											  Margin="0 0 8 0"
-											  VerticalAlignment="Center"/>
-								<TextBlock Text="Buscar docente" VerticalAlignment="Center"/>
-							</StackPanel>
-						</Button>
-						<!--#endregion-->
+					El campo se dibuja sólo sobre una designación que admite término —vigente y sin
+					fecha de fin, o sea un titular—, que es la misma condición con la que aparece el
+					botón. El calendario no ofrece días que el dominio iba a rechazar: arranca en
+					PrimerTerminoPosible, que es mañana o el inicio si todavía no empezó.
+				-->
+				<Grid Grid.Row="4"
+					  Margin="0 16 0 0"
+					  Visibility="{ Binding Path=PuedePasarAInterino, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
 
-						<!--#region DESIGNACIÓN-->
-						<ContentControl Grid.Row="2"
-										IsEnabled="{ Binding Path=HabilitarNuevaSituacionRevista, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
-										Margin="0 16 0 0"
+					<HeaderedContentControl Grid.Column="0"
+											Header="Interino hasta"
+											Style="{ StaticResource ResourceKey=Campo }"
+											Width="190">
+						<DatePicker x:Name="DatePicker_TerminoDesignacion"
+									AutomationProperties.Name="Hasta cuándo dura el cargo interino"
+									DisplayDate="{ Binding Path=PrimerTerminoPosible, Mode=OneWay }"
+									DisplayDateStart="{ Binding Path=PrimerTerminoPosible, Mode=OneWay }"
+									SelectedDate="{ Binding Path=TerminoDeLaDesignacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+									Style="{ StaticResource ResourceKey=Dtp.Campo }"
+									ToolTip="El cargo interino vence en esta fecha"/>
+					</HeaderedContentControl>
+
+					<!-- Left explícito: el MaxWidth lo centraría en la columna *. -->
+					<TextBlock Grid.Column="1"
+							   HorizontalAlignment="Left"
+							   Margin="16 0 0 0"
+							   MaxWidth="440"
+							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="Poner un término convierte la designación en un cargo interino: el docente sigue hasta esa fecha y después la cátedra queda libre."
+							   TextWrapping="Wrap"
+							   VerticalAlignment="Bottom"/>
+				</Grid>
+
+				<!--
+					LAS CUATRO ACCIONES DE LA DESIGNACIÓN ELEGIDA. Estaban en dos íconos dentro de
+					una celda —un UserAltSlash y un Ban, sin etiqueta— que además llamaban al
+					comando con un parámetro fijo y sin pasar la fila: como un Button adentro de una
+					celda marca el clic como manejado, la fila no llegaba a seleccionarse y el ícono
+					de una fila operaba sobre otra.
+
+					CADA ESTADO MUESTRA SÓLO SUS ACCIONES. Los cuatro vivían permanentemente en el
+					pie y lo único que cambiaba era su IsEnabled, así que en cualquier fila real
+					había dos o tres apagados y ninguno decía por qué. La Visibility cuelga del
+					IsEnabled que el propio CanExecute decide, así que la regla vive en un solo
+					lugar: el ViewModel, medido contra el dominio.
+
+					UN SOLO BOTÓN ROJO POR PIE. "Finalizar designación" y "Poner fecha de fin" eran
+					dos Btn.Peligro pegados, con nombres casi iguales, visibles a la vez sobre un
+					titular vigente y haciendo casi lo mismo. Ahora son dos cosas distintas y se
+					nombran distinto: finalizar CIERRA la designación hoy —rojo, destructiva—, y
+					"Pasar a interino" le pone término a futuro, que no destruye nada y por eso es
+					secundario y confirma con Revisar en lugar de Destructiva.
+
+					"Quitar del aula" también se mudó al Header: abre una confirmación destructiva,
+					así que va del lado izquierdo, que por contrato de Acciones es el de lo que
+					destruye o sale del flujo. A la derecha queda la única acción que suma.
+				-->
+				<HeaderedContentControl Grid.Row="5"
+										IsEnabled="{ Binding Path=HayAccionesSobreLaDesignacion, Mode=OneWay }"
+										Style="{ StaticResource ResourceKey=Acciones }"
 										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-							<local:SituacionRevistaView DataContext="{ Binding Path=SituacionRevistaINSERT, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
-						</ContentControl>
+					<HeaderedContentControl.Header>
+						<StackPanel Orientation="Horizontal">
+							<Button Command="{ Binding Path=EliminarCommand }"
+									CommandParameter="Docente"
+									Content="Finalizar designación"
+									Margin="0 0 8 0"
+									Style="{ StaticResource ResourceKey=Btn.Peligro }"
+									ToolTip="Cerrar hoy la designación elegida y liberar el cargo"
+									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							<!--
+								NO SE COLAPSA SIN FECHA. Su CanExecute espera el término, y el campo
+								donde se elige está justo encima: colgar la Visibility del IsEnabled
+								—como hacen sus tres hermanos— lo escondía hasta tener la fecha, y
+								entonces nada explicaba para qué servía el calendario. Acá el botón
+								apagado SÍ dice algo: "falta la fecha", y el ToolTip lo nombra.
+							-->
+							<Button Command="{ Binding Path=EditarCommand }"
+									CommandParameter="Interino"
+									Content="Pasar a interino"
+									Margin="0 0 8 0"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Convertir la designación en un cargo interino que vence en la fecha elegida"
+									Visibility="{ Binding Path=PuedePasarAInterino, Mode=OneWay, RelativeSource={ RelativeSource AncestorType=UserControl }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							<Button Command="{ Binding Path=EditarCommand }"
+									CommandParameter="Docente"
+									Content="Quitar del aula"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"
+									ToolTip="Dejar la cátedra sin docente en aula"
+									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						</StackPanel>
+					</HeaderedContentControl.Header>
 
-						<!-- Sólo para el cargo Suplente: a quién reemplaza. -->
-						<HeaderedContentControl Grid.Row="3"
-												Header="¿A quién reemplaza?"
-												Style="{ StaticResource ResourceKey=Campo }"
-												Visibility="{ Binding Path=HabilitarReemplazaA, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
-							<ComboBox ItemsSource="{ Binding Path=SituacionesReemplazables, Mode=OneWay }"
-									  SelectedValue="{ Binding Path=SituacionRevistaINSERT.ReemplazaA, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-									  SelectedValuePath="SituacionRevistaID"
-									  Style="{ StaticResource ResourceKey=Cmb.Campo }">
-								<ComboBox.ItemTemplate>
-									<DataTemplate>
-										<StackPanel Orientation="Horizontal">
-											<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-													   Text="{ Binding Path=Docente }"/>
-											<TextBlock Margin="8 0"
-													   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-													   Text="·"/>
-											<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
-													   Text="{ Binding Path=Cargo }"/>
-										</StackPanel>
-									</DataTemplate>
-								</ComboBox.ItemTemplate>
-							</ComboBox>
-						</HeaderedContentControl>
-						<!--#endregion-->
+					<Button Command="{ Binding Path=GuardarCommand }"
+							CommandParameter="Docente"
+							Content="Poner en aula"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Poner al docente elegido frente al curso"
+							Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+				</HeaderedContentControl>
+			</Grid>
+		</Border>
+		<!--#endregion-->
 
-						<HeaderedContentControl Grid.Row="4" Style="{ StaticResource ResourceKey=Acciones }">
-							<HeaderedContentControl.Header>
-								<Button Command="{ Binding Path=CancelarCommand }"
-										CommandParameter="Insert"
-										Content="Cancelar"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Descartar la designación"/>
-							</HeaderedContentControl.Header>
+		<!--#region DESIGNAR-->
+		<Border Grid.Row="1"
+				IsEnabled="{ Binding Path=HabilitarInsert, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				VerticalAlignment="Top"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<Grid Margin="20 18">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
 
-							<Button Command="{ Binding Path=GuardarCommand }"
-									CommandParameter="Insert"
-									Content="Designar docente"
-									Style="{ StaticResource ResourceKey=Btn.Primario }"
-									ToolTip="Guardar la designación"/>
-						</HeaderedContentControl>
-					</Grid>
-				</Border>
+				<StackPanel Grid.Row="0" Margin="0 0 0 16">
+					<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
+							   Text="Designar un docente"/>
+					<TextBlock Margin="0 4 0 0"
+							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+							   Text="Buscá al docente, elegilo de la lista y cargá su cargo y su período."/>
+				</StackPanel>
+
+				<!--
+					El buscador de docentes estaba acá: campo con Query validado, lupa, un Expander
+					con la grilla de resultados y un botón "Seleccionar". Era la misma pieza que
+					tenía GestionDivisiones escrita aparte. Las dos se reemplazaron por el modal
+					(BuscarView); el docente elegido vuelve por DocenteElegidoMessage y dispara el
+					mismo SeleccionarCommand.
+				-->
+				<!--#region BUSCAR-->
+				<Button Grid.Row="1"
+						Command="{ Binding Path=BuscarDocenteCommand }"
+						HorizontalAlignment="Left"
+						Style="{ StaticResource ResourceKey=Btn.Secundario }"
+						ToolTip="Abrir el buscador de docentes">
+					<StackPanel Orientation="Horizontal">
+						<fa:IconBlock FontSize="11"
+									  Icon="MagnifyingGlass"
+									  Margin="0 0 8 0"
+									  VerticalAlignment="Center"/>
+						<TextBlock Text="Buscar docente" VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>
 				<!--#endregion-->
-			</StackPanel>
-		</ScrollViewer>
+
+				<!--#region DESIGNACIÓN-->
+				<!--
+					Superficie.Seccion hace el corte contra el botón de arriba con una regla y sin
+					rótulo. Antes lo hacía el GroupBox "SITUACIÓN DE REVISTA" de SituacionRevistaView,
+					que además de la regla ponía un título en jerga para la única sección del
+					formulario, debajo del "Designar un docente" que ya decía lo mismo.
+				-->
+				<Border Grid.Row="2"
+						IsEnabled="{ Binding Path=HabilitarNuevaSituacionRevista, TargetNullValue='false', UpdateSourceTrigger=PropertyChanged }"
+						Margin="0 20 0 0"
+						Style="{ StaticResource ResourceKey=Superficie.Seccion }"
+						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+					<local:SituacionRevistaView DataContext="{ Binding Path=SituacionRevistaINSERT, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+				</Border>
+
+				<!-- Sólo para el cargo Suplente: a quién reemplaza. -->
+				<HeaderedContentControl Grid.Row="3"
+										Header="¿A quién reemplaza?"
+										Style="{ StaticResource ResourceKey=Campo }"
+										Visibility="{ Binding Path=HabilitarReemplazaA, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+					<ComboBox ItemsSource="{ Binding Path=SituacionesReemplazables, Mode=OneWay }"
+							  SelectedValue="{ Binding Path=SituacionRevistaINSERT.ReemplazaA, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+							  SelectedValuePath="SituacionRevistaID"
+							  Style="{ StaticResource ResourceKey=Cmb.Campo }">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<StackPanel Orientation="Horizontal">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+											   Text="{ Binding Path=Docente }"/>
+									<TextBlock Margin="8 0"
+											   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="·"/>
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="{ Binding Path=Cargo }"/>
+								</StackPanel>
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+				</HeaderedContentControl>
+				<!--#endregion-->
+
+				<HeaderedContentControl Grid.Row="4" Style="{ StaticResource ResourceKey=Acciones }">
+					<HeaderedContentControl.Header>
+						<Button Command="{ Binding Path=CancelarCommand }"
+								CommandParameter="Insert"
+								Content="Cancelar"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								ToolTip="Descartar la designación"/>
+					</HeaderedContentControl.Header>
+
+					<Button Command="{ Binding Path=GuardarCommand }"
+							CommandParameter="Insert"
+							Content="Designar docente"
+							Style="{ StaticResource ResourceKey=Btn.Primario }"
+							ToolTip="Guardar la designación"/>
+				</HeaderedContentControl>
+			</Grid>
+		</Border>
+		<!--#endregion-->
 
 		<!--
 			Era la única de las tres pantallas hermanas sin velo de carga, y el comando ya exponía su
 			IsRunning: nadie lo leía.
 		-->
 		<components:CargandoComponent Grid.Row="0"
-									  Grid.RowSpan="3"
+									  Grid.RowSpan="2"
 									  EstaCargando="{ Binding Path=CargarSituacionRevistasCommandAsync.IsRunning }"
 									  Leyenda="CARGANDO LOS DOCENTES"/>
 	</Grid>

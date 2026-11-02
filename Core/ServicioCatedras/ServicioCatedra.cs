@@ -190,20 +190,20 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 	}
 	#endregion
 
-	#region Establecer fin de designación / Finalizar designación
-	public async Task EstablecerFinDeDesignacionAsync(EstablecerFinDeDesignacionRequest request)
+	#region Pasar a interino / Finalizar designación
+	public async Task PasarAInterinoAsync(PasarAInterinoRequest request)
 	{
 		try
 		{
 			_sesion.Exigir(Permiso.GestionarCatedras);
 
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
-			catedra.EstablecerFinDeDesignacion(request.SituacionRevistaID, request.FechaFin);
+			catedra.PasarAInterinoHasta(request.SituacionRevistaID, request.FechaFin);
 
 			_unitOfWork.Catedras.Modificar(catedra);
 			var result = await _unitOfWork.GuardarCambiosAsync();
 
-			_logger.LogInformation($"{ result } fin de designación establecido correctamente.");
+			_logger.LogInformation($"{ result } designación pasada a interina correctamente.");
 		}
 		catch (Exception ex)
 		{

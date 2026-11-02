@@ -52,29 +52,65 @@ public class GuardasEstaticasW6Tests
 	}
 
 	#region Bloque "Docente en Funciones"
+	/// <remarks>
+	/// LA GUARDA SIGUE AL ARTEFACTO A SU LUGAR NUEVO, igual que la del buscador de docentes cuando se
+	/// mudó al modal. El bloque dejó de ser una tarjeta propia con un <c>SituacionRevistaView</c>
+	/// deshabilitado adentro —que mostraba exactamente lo mismo que el detalle de la grilla, porque la
+	/// carga deja preseleccionada justo la fila en funciones— y pasó a ser la ficha del encabezado de
+	/// la tarjeta de designaciones, escrita con los estilos de texto del tema.
+	///
+	/// Lo que la guarda audita no cambió: que el bloque muestre <c>SituacionRevistaEnFunciones</c> y no
+	/// <c>SituacionRevistaUPDATE</c>, que es el defecto que la trajo al mundo.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void El_bloque_Docente_en_Funciones_tiene_como_DataContext_SituacionRevistaEnFunciones()
 	{
 		var xaml = RaizDelRepositorio.Leer(GestionSituacionRevistaXaml);
 
-		var coincidencia = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->.*?<local:SituacionRevistaView\s+DataContext=""\{\s*Binding\s+Path=(\w+)", RegexOptions.Singleline);
+		var coincidencia = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->.*?DataContext=""\{\s*Binding\s+Path=(\w+)", RegexOptions.Singleline);
 
 		coincidencia.Success.ShouldBeTrue();
 		coincidencia.Groups[1].Value.ShouldBe("SituacionRevistaEnFunciones");
 		coincidencia.Groups[1].Value.ShouldNotBe("SituacionRevistaUPDATE");
 	}
 
+	/// <remarks>
+	/// Cuelga de la <c>Visibility</c> y ya no del <c>IsEnabled</c> de un <c>Border</c>: la ficha se
+	/// dibuja SIEMPRE, y la bandera elige cuál de sus dos caras: quién está en aula, o que no hay
+	/// nadie. Antes la bandera apagaba la tarjeta entera, de modo que una cátedra sin docente frente
+	/// al curso —el estado que hay que resolver— no mostraba absolutamente nada.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void El_bloque_Docente_en_Funciones_se_habilita_con_HabilitarDocenteEnFunciones()
 	{
 		var xaml = RaizDelRepositorio.Leer(GestionSituacionRevistaXaml);
 
-		var coincidencia = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->\s*<Border[^>]*?IsEnabled=""\{\s*Binding\s+Path=(\w+)", RegexOptions.Singleline);
+		var coincidencia = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->.*?Visibility=""\{\s*Binding\s+Path=(\w+)", RegexOptions.Singleline);
 
 		coincidencia.Success.ShouldBeTrue();
 		coincidencia.Groups[1].Value.ShouldBe("HabilitarDocenteEnFunciones");
+	}
+
+	/// <summary>
+	/// La ficha "en aula" dice también que NO hay nadie en aula.
+	/// </summary>
+	/// <remarks>
+	/// Es el motivo del rediseño del bloque y no se deduce del enlace: las dos caras cuelgan de la
+	/// misma bandera, una con <c>visibilidad</c> y la otra con <c>visibilidadInversa</c>.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_bloque_Docente_en_Funciones_tiene_tambien_su_cara_vacia()
+	{
+		var xaml = RaizDelRepositorio.Leer(GestionSituacionRevistaXaml);
+
+		var bloque = Regex.Match(xaml, @"DOCENTE EN FUNCIONES-->(.*?)#endregion", RegexOptions.Singleline);
+
+		bloque.Success.ShouldBeTrue();
+		bloque.Groups[1].Value.ShouldContain("HabilitarDocenteEnFunciones, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad }");
+		bloque.Groups[1].Value.ShouldContain("HabilitarDocenteEnFunciones, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa }");
 	}
 
 	[Fact]
@@ -93,8 +129,11 @@ public class GuardasEstaticasW6Tests
 		// Propiedades que pertenecen a los items de las grillas y a las vistas anidadas, no al ViewModel contenedor.
 		// "Vigente", "ReemplazaADocente" y "ExigeFechaFin" son de SituacionRevistaViewModel: las usan la
 		// insignia de estado, la columna de la cadena de suplencias y el aviso de fecha de fin obligatoria.
+		// "FechaInicio" y "FechaFin" entran con la ficha de "en aula" y con el detalle de la fila elegida,
+		// que pasaron de un formulario deshabilitado a texto y a Dato: son las dos únicas cosas que el
+		// detalle agregaba a la grilla.
 		var delItem = new HashSet<string> { "Cargo", "Estado", "Docente", "EnFunciones", "FechaAlta", "NombreCompleto", "EstaActivo", "IsEnabled", "Foreground", "SelectedItem", "SelectedDate", "Descripcion",
-											"Vigente", "ReemplazaADocente", "ExigeFechaFin" };
+											"Vigente", "ReemplazaADocente", "ExigeFechaFin", "FechaInicio", "FechaFin" };
 		var faltantes = propiedades.Where(p => !delItem.Contains(p) && tipo.GetProperty(p) is null).ToList();
 
 		faltantes.ShouldBeEmpty("propiedades bindeadas que GestionSituacionRevistaViewModel no expone");
@@ -454,7 +493,7 @@ public class GuardasEstaticasW6Tests
 		foreach (var metodo in new[]
 		{
 			"ListarSituacionesRevistaAsync", "DesignarDocenteAsync", "PonerEnFuncionesAsync",
-			"RelevarDeFuncionesAsync", "EstablecerFinDeDesignacionAsync", "FinalizarDesignacionAsync"
+			"RelevarDeFuncionesAsync", "PasarAInterinoAsync", "FinalizarDesignacionAsync"
 		})
 		{
 			codigo.ShouldContain($"_servicioCatedra.{metodo}(");
