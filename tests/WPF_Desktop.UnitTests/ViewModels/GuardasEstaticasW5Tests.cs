@@ -335,7 +335,13 @@ public class GuardasEstaticasW5Tests
 
 		foreach (var columna in grilla.Descendants().Where(e => e.Name.LocalName.StartsWith("DataGrid") && e.Name.LocalName.EndsWith("Column") || e.Name.LocalName == "GridViewColumn"))
 		{
-			var enlace = (string?) columna.Attribute("Binding") ?? (string?) columna.Attribute("DisplayMemberBinding");
+			// Una columna de plantilla no declara Binding. Las booleanas —RINDIÓ, APROBADO,
+			// RECURSANTE— dibujan un glifo cuyo estado entra por el Tag, así que el enlace
+			// está ahí: sin leerlo, cambiar "Rindio" por un nombre que CalificacionViewModel
+			// no expone dejaba de detectarlo nadie, y la columna se dibujaría siempre en "no".
+			var enlace = (string?) columna.Attribute("Binding")
+					  ?? (string?) columna.Attribute("DisplayMemberBinding")
+					  ?? columna.Descendants().Select(e => (string?) e.Attribute("Tag")).FirstOrDefault(tag => tag is not null);
 
 			if (enlace is null)
 			{
