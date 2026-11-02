@@ -16,4 +16,16 @@ public interface IServicioAsistencia
 	Task EliminarPlanillaAsync(EliminarPlanillaRequest request);
 	Task<PlanillaAsistenciaResponse> ConsultarPlanillaAsync(ConsultarPlanillaRequest request);
 	Task<int> ContarFaltasAsync(ContarFaltasRequest request);
+
+	/// <summary>
+	/// Las planillas ya cargadas de una división dentro del rango, de la más reciente a la más vieja.
+	/// Devuelve una colección vacía si no hay ninguna: no tener planillas en un período no es un error.
+	/// </summary>
+	Task<IReadOnlyCollection<PlanillaResumenResponse>> ListarPlanillasAsync(ListarPlanillasRequest request);
+
+	/// <summary>
+	/// El acumulado de asistencia de una división en un período, con una fila por alumno ordenada de
+	/// más faltas a menos.
+	/// </summary>
+	Task<ResumenAsistenciaResponse> ConsultarResumenAsync(ConsultarResumenRequest request);
 }
