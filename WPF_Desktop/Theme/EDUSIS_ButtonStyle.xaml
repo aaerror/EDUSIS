@@ -293,6 +293,20 @@
 								   SnapsToDevicePixels="True"/>
 					</Grid>
 					<ControlTemplate.Triggers>
+						<!--
+							PESTAÑA ABIERTA. La vista enlaza Tag contra el estado del ViewModel
+							con el converter esIgualA; acá sólo se lee el booleano que sale de
+							ahí. Es el mismo mecanismo con el que Btn.Menu marca la sección del
+							rail: dos conmutadores de la aplicación contestando "dónde estoy" con
+							el mismo recurso, en lugar de un estilo repetido por pestaña.
+
+							Va PRIMERO para que el hover y el clic se sigan viendo sobre la
+							pestaña abierta: el subrayado es suyo y nadie más lo escribe.
+						-->
+						<DataTrigger Binding="{ Binding Path=Tag, RelativeSource={ RelativeSource Self } }" Value="True">
+							<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+						</DataTrigger>
 						<Trigger Property="IsMouseOver" Value="True">
 							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
 						</Trigger>

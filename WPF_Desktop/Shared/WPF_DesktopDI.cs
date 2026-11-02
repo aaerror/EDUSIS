@@ -197,6 +197,7 @@ internal static class WPF_DesktopDI
 										  provider.GetRequiredService<IServicioMateria>(),
 										  provider.GetRequiredService<IServicioCurricula>(),
 										  provider.GetRequiredService<IServicioDivision>(),
+										  provider.GetRequiredService<IServicioAsistencia>(),
 										  provider.GetRequiredService<IDialogService>(),
 										  CreateGestionDivisionesNavigationService(provider),
 										  provider.GetRequiredService<CursoStore>(),

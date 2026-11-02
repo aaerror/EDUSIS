@@ -11,40 +11,33 @@
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
 	<!--
-		ALUMNOS DE LA DIVISIÓN Y SUS CALIFICACIONES.
+		ALUMNOS DE LA DIVISIÓN.
 
-		ERA UNA COLUMNA DE 1520px DENTRO DE UN VIEWPORT DE 620. Ocho bloques apilados —búsqueda,
-		grilla de alumnos, ficha, inscripción, historial, calificaciones, observación, pie— en
-		un ScrollViewer de página, con las tres grillas limitadas a 260, 200 y 300px de alto.
-		Eso producía tres defectos que eran el mismo:
+		ÍNDICE + DETALLE, el esqueleto de GestionCursosView y GestionDocentesView: la tarjeta
+		llena el alto disponible y no hay scroll de página, así que cada panel scrollea lo suyo
+		y la rueda del mouse funciona en los dos lados. Antes era una columna de 1520px dentro
+		de un viewport de 620, con tres grillas de alto fijo que se comían la rueda.
 
-		1. LA RUEDA DEL MOUSE MORÍA sobre la mitad de la pantalla. El ScrollViewer de WPF marca
-		   el evento como manejado aunque no tenga nada que scrollear, y las tres grillas
-		   sumaban 760 de los 1520px de contenido.
-		2. "CARGAR NOTA" ABRÍA UN FORMULARIO FUERA DE PANTALLA, debajo de una página que ya no
-		   entraba. Apretabas el botón y no pasaba nada visible.
-		3. EL ANCHO NO SE USABA. La fila del ciclo lectivo dejaba 750px vacíos y la columna EDAD
-		   recibía 243px para decir "15 años", mientras se scrolleaba 2,5 pantallas de alto.
+		EL DETALLE SON CUATRO VISTAS DEL MISMO ALUMNO, no cuatro secciones apiladas. El
+		conmutador de arriba enlaza su Tag contra VistaDelAlumno con el converter esIgualA, el
+		mismo mecanismo con el que el rail marca la sección abierta.
 
-		Ahora es ÍNDICE + DETALLE, el mismo esqueleto de GestionCursosView, GestionDocentesView
-		y GestionPuestosView: la tarjeta llena el alto disponible y no hay scroll de página, así
-		que cada panel scrollea lo suyo y la rueda funciona en los dos lados. La grilla de
-		calificaciones toma la fila * del detalle: a 1320x800 muestra lo mismo que antes, y
-		maximizada muestra el doble, porque ya no está clavada en 300px.
+		Eso arregla dos cosas. Una: el historial se pedía con un botón y después NO HABÍA FORMA
+		DE VOLVER —la sección aparecía y se quedaba—; ahora abrir la vista ES pedirla, y cerrarla
+		es elegir otra. Dos: apiladas, las cuatro peleaban por el alto, y la que perdía siempre
+		era la grilla de calificaciones, que es el trabajo diario. Cada vista se queda ahora con
+		la fila * entera.
 
-		El listado de alumnos DEJA DE IRSE DE PANTALLA. Antes, para llegar al pie donde se
-		cargaba una nota había que scrollear hasta perder de vista a quién se le estaba poniendo
-		esa nota.
+		INSCRIPCIÓN ES UNA VISTA Y NO UNA FRANJA porque mezclaba dos naturalezas en una fila.
+		La condición de recursante es una CORRECCIÓN —lo único que el dominio deja editar de una
+		inscripción—; la baja y el traslado son operaciones de CICLO DE VIDA que cierran y abren
+		inscripciones. Estaban una al lado de la otra, sin nada que las distinguiera. Separadas
+		por una regla y con su propio rótulo, se ve de qué clase es cada una.
 
-		"Cargar nota" sube al hueco de acción principal del encabezado, que es donde el sistema
-		la pone. El alta sigue siendo una tarjeta aparte, pero como fila Auto DEBAJO de la
-		tarjeta principal —igual que "Asignar preceptor" en GestionDivisionesView—: al abrirse,
-		la de arriba cede alto y el formulario nace a la vista.
-
-		PENDIENTE: DÓNDE VIVE EL HISTORIAL. Por ahora es una sección del detalle que sólo existe
-		cuando tiene filas, así que no cuesta alto hasta que se pide con "Ver historial". Las
-		dos salidas que quedaron sobre la mesa son dos solapas junto a CALIFICACIONES, o una
-		pantalla propia del alumno. No se decidió.
+		ASISTENCIAS CUENTA Y NO LISTA, y no es una decisión de diseño: ContarFaltasAsync es la
+		única consulta de asistencias que acepta un cursante, porque el agregado es la planilla
+		—división y fecha—. Listar por alumno necesita una consulta nueva en Core; está anotado
+		en docs/ui-ux.md.
 	-->
 	<UserControl.Resources>
 		<ObjectDataProvider x:Key="instancias" MethodName="GetNames" ObjectType="{ x:Type sys:Enum }">
@@ -52,6 +45,11 @@
 				<x:Type TypeName="domainCalificaciones:Instancia"/>
 			</ObjectDataProvider.MethodParameters>
 		</ObjectDataProvider>
+
+		<!-- El número de un contador de asistencias: grande, y en cifras de ancho fijo para que los cuatro se comparen. -->
+		<Style x:Key="Contador" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Display }">
+			<Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
+		</Style>
 	</UserControl.Resources>
 
 	<behaviors:Interaction.Triggers>
@@ -72,7 +70,7 @@
 									Margin="0 0 0 20"
 									Ruta="{ Binding Path=Ruta }"
 									Titulo="Alumnos de la división"
-									Subtitulo="Inscripción, traslados y calificaciones de cada alumno">
+									Subtitulo="Inscripción, asistencias y calificaciones de cada alumno">
 			<components:PaginaComponent.Accion>
 				<Button Command="{ Binding Path=NuevaCalificacionCommand }"
 						Style="{ StaticResource ResourceKey=Btn.Primario }"
@@ -89,7 +87,7 @@
 		</components:PaginaComponent>
 		<!--#endregion-->
 
-		<!--#region ALUMNOS Y CALIFICACIONES-->
+		<!--#region ALUMNOS-->
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
 			<Grid>
 				<Grid.ColumnDefinitions>
@@ -193,9 +191,9 @@
 								   Text="Elegí un alumno"/>
 						<TextBlock HorizontalAlignment="Center"
 								   Margin="0 6 0 0"
-								   MaxWidth="300"
+								   MaxWidth="320"
 								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-								   Text="Acá se cargan sus calificaciones y se corrige su inscripción: condición de recursante, baja y traslado de división."
+								   Text="Acá se cargan sus calificaciones, se ve su asistencia y su historial, y se corrige su inscripción."
 								   TextAlignment="Center"
 								   TextWrapping="Wrap"/>
 					</StackPanel>
@@ -205,81 +203,357 @@
 						<Grid.RowDefinitions>
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="Auto"/>
-							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="*"/>
-							<RowDefinition Height="Auto"/>
 						</Grid.RowDefinitions>
 
-						<!--#region FICHA DEL ALUMNO ELEGIDO-->
-						<Grid Grid.Row="0" Margin="0 0 0 20">
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="Auto"/>
-							</Grid.ColumnDefinitions>
+						<local:CursanteView Grid.Row="0"
+											DataContext="{ Binding Path=Cursante, Mode=OneWay }"/>
 
-							<local:CursanteView Grid.Column="0"
-												DataContext="{ Binding Path=Cursante, Mode=OneWay }"/>
+						<!--#region CONMUTADOR DE VISTAS
+							Cada pestaña enlaza su Tag contra VistaDelAlumno con esIgualA y
+							Btn.Pestana lee ese booleano para pintarse el subrayado. La regla de
+							abajo corre a lo ancho del panel, así que las pestañas se leen como
+							el borde de una carpeta y no como cuatro botones sueltos.
+						-->
+						<Border Grid.Row="1"
+								BorderBrush="{ StaticResource ResourceKey=Linea }"
+								BorderThickness="0 0 0 1"
+								Margin="0 20 0 16"
+								SnapsToDevicePixels="True">
+							<StackPanel Orientation="Horizontal">
+								<Button Command="{ Binding Path=VerCommand }"
+										CommandParameter="Calificaciones"
+										Content="Calificaciones"
+										Style="{ StaticResource ResourceKey=Btn.Pestana }"
+										Tag="{ Binding Path=VistaDelAlumno, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Calificaciones }"
+										ToolTip="Notas del alumno en este ciclo lectivo"/>
+								<Button Command="{ Binding Path=VerCommand }"
+										CommandParameter="Asistencias"
+										Content="Asistencias"
+										Style="{ StaticResource ResourceKey=Btn.Pestana }"
+										Tag="{ Binding Path=VistaDelAlumno, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Asistencias }"
+										ToolTip="Resumen de presentes, ausencias, inasistencias y tardanzas"/>
+								<Button Command="{ Binding Path=VerCommand }"
+										CommandParameter="Historial"
+										Content="Historial"
+										Style="{ StaticResource ResourceKey=Btn.Pestana }"
+										Tag="{ Binding Path=VistaDelAlumno, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Historial }"
+										ToolTip="Todas las inscripciones del alumno, de cualquier ciclo lectivo"/>
+								<Button Command="{ Binding Path=VerCommand }"
+										CommandParameter="Inscripcion"
+										Content="Inscripción"
+										Style="{ StaticResource ResourceKey=Btn.Pestana }"
+										Tag="{ Binding Path=VistaDelAlumno, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Inscripcion }"
+										ToolTip="Condición de recursante, baja y traslado de división"/>
+							</StackPanel>
+						</Border>
+						<!--#endregion-->
 
-							<!--
-								"Ver historial" vive acá y no sobre su sección porque la sección
-								no existe hasta que esta consulta la trae. Es una acción sobre el
-								alumno elegido, así que su lugar es la ficha del alumno elegido.
-							-->
-							<Button Grid.Column="1"
-									Command="{ Binding Path=CargarHistorialCommandAsync }"
-									Content="Ver historial"
-									Margin="16 0 0 0"
-									Style="{ StaticResource ResourceKey=Btn.Terciario }"
-									ToolTip="Todas las inscripciones del alumno, de cualquier ciclo lectivo"
-									VerticalAlignment="Center"/>
+						<!--#region VISTA: CALIFICACIONES
+							Sin rótulo de sección: lo dice la pestaña, y esos 28px le hacen falta
+							a la grilla. Las columnas llevan MinWidth para que, en una ventana
+							angosta, scrollee en horizontal en vez de apretar siete columnas hasta
+							volverlas ilegibles.
+						-->
+						<Grid Grid.Row="2"
+							  Visibility="{ Binding Path=VistaDelAlumno, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Calificaciones }">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="*"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+							</Grid.RowDefinitions>
+
+							<DataGrid x:Name="DataGrid_Calificaciones"
+									  Grid.Row="0"
+									  AutomationProperties.Name="Calificaciones del alumno"
+									  ItemsSource="{ Binding Path=Calificaciones, Mode=OneWay }"
+									  SelectedItem="{ Binding Path=CalificacionSeleccionada, Mode=TwoWay }"
+									  MinHeight="120"
+									  Style="{ StaticResource ResourceKey=Grilla }"
+									  Tag="El alumno elegido todavía no tiene calificaciones cargadas. Empezá con &#x201C;Cargar nota&#x201D;.">
+								<DataGrid.Columns>
+									<DataGridTextColumn Binding="{ Binding Path=Materia, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+														Header="MATERIA"
+														MinWidth="140"
+														Width="2*"/>
+									<DataGridTextColumn Binding="{ Binding Path=Fecha, Mode=OneTime, StringFormat=d }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+														Header="FECHA"
+														Width="Auto"/>
+									<DataGridTextColumn Binding="{ Binding Path=Instancia, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+														Header="INSTANCIA"
+														Width="Auto"/>
+									<DataGridTemplateColumn Header="RINDIÓ" Width="Auto">
+										<DataGridTemplateColumn.CellTemplate>
+											<DataTemplate>
+												<fa:IconBlock Style="{ StaticResource ResourceKey=Celda.Booleana }"
+															  Tag="{ Binding Path=Rindio, Mode=OneWay }"/>
+											</DataTemplate>
+										</DataGridTemplateColumn.CellTemplate>
+									</DataGridTemplateColumn>
+									<DataGridTextColumn Binding="{ Binding Path=Nota, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+														Header="NOTA"
+														Width="Auto"/>
+									<DataGridTemplateColumn Header="APROBADO" Width="Auto">
+										<DataGridTemplateColumn.CellTemplate>
+											<DataTemplate>
+												<fa:IconBlock Style="{ StaticResource ResourceKey=Celda.Booleana }"
+															  Tag="{ Binding Path=Aprobado, Mode=OneWay }"/>
+											</DataTemplate>
+										</DataGridTemplateColumn.CellTemplate>
+									</DataGridTemplateColumn>
+									<DataGridTextColumn Binding="{ Binding Path=Observacion, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+														Header="OBSERVACIÓN"
+														MinWidth="160"
+														Width="2*"/>
+								</DataGrid.Columns>
+							</DataGrid>
+
+							<!-- La nota no se corrige: se quita y se vuelve a cargar. Sólo la observación es editable. -->
+							<HeaderedContentControl Grid.Row="1"
+													Header="Observación de la calificación elegida"
+													Margin="0 16 0 0"
+													Style="{ StaticResource ResourceKey=Campo }">
+								<TextBox Tag="recuperatorio pendiente, ausente con certificado&#x2026;"
+										 Text="{ Binding Path=ObservacionEdicion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+										 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+							</HeaderedContentControl>
+
+							<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+								<HeaderedContentControl.Header>
+									<Button Command="{ Binding Path=QuitarCalificacionCommandAsync }"
+											Content="Quitar calificación"
+											Style="{ StaticResource ResourceKey=Btn.Peligro }"
+											ToolTip="Quitar la calificación elegida"/>
+								</HeaderedContentControl.Header>
+
+								<!--
+									"Editar observación" lo exige una guarda estática: distingue
+									la única corrección que el dominio permite de corregir la
+									nota, que no se puede. El rótulo no se cambia sin tocar esa
+									guarda.
+								-->
+								<Button Command="{ Binding Path=ModificarObservacionCommandAsync }"
+										Content="Editar observación"
+										Style="{ StaticResource ResourceKey=Btn.Terciario }"
+										ToolTip="Guardar la observación de la calificación elegida"/>
+							</HeaderedContentControl>
 						</Grid>
 						<!--#endregion-->
 
-						<!--#region INSCRIPCIÓN
-							Las tres operaciones sobre la inscripción del alumno elegido. La
-							condición de recursante es lo único que el dominio deja corregir: la
-							baja y el traslado son operaciones de ciclo de vida, no ediciones.
-							Tildar el checkbox no escribe nada hasta que se guarda.
+						<!--#region VISTA: ASISTENCIAS-->
+						<Grid Grid.Row="2"
+							  Visibility="{ Binding Path=VistaDelAlumno, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Asistencias }">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+
+							<Grid Grid.Row="0">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0">
+									<TextBlock Style="{ StaticResource ResourceKey=Contador }"
+											   Text="{ Binding Path=Presentes, Mode=OneWay }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="PRESENTES"/>
+								</StackPanel>
+
+								<StackPanel Grid.Column="1">
+									<TextBlock Style="{ StaticResource ResourceKey=Contador }"
+											   Text="{ Binding Path=Ausencias, Mode=OneWay }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="AUSENCIAS"/>
+								</StackPanel>
+
+								<StackPanel Grid.Column="2">
+									<TextBlock Style="{ StaticResource ResourceKey=Contador }"
+											   Text="{ Binding Path=Inasistencias, Mode=OneWay }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="INASISTENCIAS"/>
+								</StackPanel>
+
+								<StackPanel Grid.Column="3">
+									<TextBlock Style="{ StaticResource ResourceKey=Contador }"
+											   Text="{ Binding Path=Tardanzas, Mode=OneWay }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="TARDANZAS"/>
+								</StackPanel>
+							</Grid>
+
+							<!--
+								El aviso dice QUÉ es este número y DÓNDE está el detalle, porque
+								un contador sin período se lee como "este ciclo" y no lo es.
+							-->
+							<Border Grid.Row="1"
+									Margin="0 24 0 0"
+									Style="{ StaticResource ResourceKey=Superficie.Aviso }">
+								<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+										   Text="Es el total del alumno en todas sus planillas, sin separar por ciclo lectivo. El detalle por fecha se toma y se consulta en la planilla de asistencia de la división."
+										   TextWrapping="Wrap"/>
+							</Border>
+
+							<components:CargandoComponent Grid.Row="0"
+														  Grid.RowSpan="3"
+														  EstaCargando="{ Binding Path=CargarAsistenciasCommandAsync.IsRunning }"
+														  Leyenda="CONTANDO LAS ASISTENCIAS"/>
+						</Grid>
+						<!--#endregion-->
+
+						<!--#region VISTA: HISTORIAL-->
+						<Grid Grid.Row="2"
+							  Visibility="{ Binding Path=VistaDelAlumno, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Historial }">
+							<DataGrid x:Name="DataGrid_Historial"
+									  AutomationProperties.Name="Historial de divisiones del alumno"
+									  ItemsSource="{ Binding Path=Historial, Mode=OneWay }"
+									  MinHeight="120"
+									  Style="{ StaticResource ResourceKey=Grilla }"
+									  Tag="Este alumno no tiene inscripciones registradas.">
+								<DataGrid.Columns>
+									<DataGridTextColumn Binding="{ Binding Path=CicloLectivo, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+														Header="CICLO"
+														Width="Auto"/>
+									<DataGridTextColumn Binding="{ Binding Path=Division, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+														Header="DIVISIÓN"
+														Width="Auto"/>
+									<DataGridTextColumn Binding="{ Binding Path=Grado, Mode=OneTime }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+														Header="AÑO"
+														Width="*"/>
+									<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneTime, StringFormat=d }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+														Header="DESDE"
+														Width="Auto"/>
+									<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneTime, StringFormat=d }"
+														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+														Header="HASTA"
+														Width="Auto"/>
+									<DataGridTemplateColumn Header="RECURSANTE" Width="Auto">
+										<DataGridTemplateColumn.CellTemplate>
+											<DataTemplate>
+												<fa:IconBlock Style="{ StaticResource ResourceKey=Celda.Booleana }"
+															  Tag="{ Binding Path=EsRecursante, Mode=OneWay }"/>
+											</DataTemplate>
+										</DataGridTemplateColumn.CellTemplate>
+									</DataGridTemplateColumn>
+									<DataGridTemplateColumn Header="ESTADO" Width="Auto">
+										<DataGridTemplateColumn.CellTemplate>
+											<DataTemplate>
+												<!--
+													LA INSIGNIA SEGUÍA EL ESTADO MAL. Estaba fija
+													en Insignia.Alerta para toda fila, así que la
+													inscripción VIGENTE —la sana, la que el alumno
+													está cursando— se señalaba con el color de
+													alerta igual que las cerradas. El rótulo decía
+													"Vigente" y el color decía lo contrario.
+												-->
+												<Border>
+													<Border.Style>
+														<Style TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Insignia.Alerta }">
+															<Style.Triggers>
+																<DataTrigger Binding="{ Binding Path=EstaActiva, Mode=OneTime }" Value="True">
+																	<Setter Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+																</DataTrigger>
+															</Style.Triggers>
+														</Style>
+													</Border.Style>
+
+													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+															   Text="{ Binding Path=Estado, Mode=OneTime }"/>
+												</Border>
+											</DataTemplate>
+										</DataGridTemplateColumn.CellTemplate>
+									</DataGridTemplateColumn>
+								</DataGrid.Columns>
+							</DataGrid>
+
+							<components:CargandoComponent EstaCargando="{ Binding Path=CargarHistorialCommandAsync.IsRunning }"
+														  Leyenda="CARGANDO EL HISTORIAL"/>
+						</Grid>
+						<!--#endregion-->
+
+						<!--#region VISTA: INSCRIPCIÓN
+							DOS NATURALEZAS, DOS BLOQUES. Antes compartían una fila: la casilla de
+							recursante al lado de la fecha de baja, sin nada que dijera que una
+							corrige un dato y la otra cierra la inscripción.
 						-->
-						<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Seccion }">
-							<StackPanel>
-								<TextBlock Margin="0 0 0 12"
-										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-										   Text="INSCRIPCIÓN"/>
+						<Grid Grid.Row="2"
+							  Visibility="{ Binding Path=VistaDelAlumno, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Inscripcion }">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+
+							<StackPanel Grid.Row="0">
+								<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="CONDICIÓN DEL ALUMNO"/>
+								<TextBlock Margin="0 4 0 14"
+										   MaxWidth="520"
+										   HorizontalAlignment="Left"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="Lo único que el dominio deja corregir de una inscripción. Tildar la casilla no escribe nada hasta que se guarda."
+										   TextWrapping="Wrap"/>
+
+								<StackPanel Orientation="Horizontal">
+									<CheckBox Content="Recursante"
+											  IsChecked="{ Binding Path=EsRecursante, Mode=TwoWay }"
+											  Margin="0 0 16 16"
+											  Style="{ StaticResource ResourceKey=Chk.Campo.Alineada }"
+											  ToolTip="El alumno vuelve a cursar el año"/>
+
+									<Button Command="{ Binding Path=ModificarRecursanteCommandAsync }"
+											Content="Guardar condición"
+											Margin="0 0 0 16"
+											Style="{ StaticResource ResourceKey=Btn.Terciario }"
+											ToolTip="Guardar la condición de recursante del alumno elegido"
+											VerticalAlignment="Bottom"/>
+								</StackPanel>
+							</StackPanel>
+
+							<StackPanel Grid.Row="1">
+								<Rectangle Margin="0 4 0 20" Style="{ StaticResource ResourceKey=Regla }"/>
+
+								<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="CICLO DE VIDA DE LA INSCRIPCIÓN"/>
+								<TextBlock Margin="0 4 0 14"
+										   MaxWidth="520"
+										   HorizontalAlignment="Left"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="No son ediciones: la baja cierra la inscripción, y el traslado la cierra y abre otra en la división de destino."
+										   TextWrapping="Wrap"/>
 
 								<Grid>
 									<Grid.ColumnDefinitions>
 										<ColumnDefinition Width="Auto"/>
 										<ColumnDefinition Width="Auto"/>
-										<ColumnDefinition Width="Auto"/>
-										<ColumnDefinition Width="Auto"/>
 										<ColumnDefinition Width="*"/>
 									</Grid.ColumnDefinitions>
 
-									<CheckBox Grid.Column="0"
-											  Content="Recursante"
-											  IsChecked="{ Binding Path=EsRecursante, Mode=TwoWay }"
-											  Margin="0 0 10 16"
-											  Style="{ StaticResource ResourceKey=Chk.Campo }"
-											  ToolTip="El alumno vuelve a cursar el año"
-											  VerticalAlignment="Bottom"/>
-
-									<Button Grid.Column="1"
-											Command="{ Binding Path=ModificarRecursanteCommandAsync }"
-											Content="Guardar condición"
-											Margin="0 0 24 16"
-											Style="{ StaticResource ResourceKey=Btn.Terciario }"
-											ToolTip="Guardar la condición de recursante del alumno elegido"
-											VerticalAlignment="Bottom"/>
-
-									<HeaderedContentControl Grid.Column="2"
+									<HeaderedContentControl Grid.Column="0"
 															Header="Fecha de baja"
-															Style="{ StaticResource ResourceKey=Campo }">
+															Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 										<DatePicker SelectedDate="{ Binding Path=FechaBaja, Mode=TwoWay }"
 													Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 									</HeaderedContentControl>
 
-									<Button Grid.Column="3"
+									<Button Grid.Column="1"
 											Command="{ Binding Path=RegistrarBajaCommandAsync }"
 											Content="Dar de baja"
 											Margin="10 0 0 16"
@@ -287,8 +561,6 @@
 											ToolTip="Cerrar la inscripción del alumno elegido"
 											VerticalAlignment="Bottom"/>
 								</Grid>
-
-								<Rectangle Margin="0 4 0 12" Style="{ StaticResource ResourceKey=Regla }"/>
 
 								<Grid>
 									<Grid.ColumnDefinitions>
@@ -325,215 +597,17 @@
 											VerticalAlignment="Bottom"/>
 								</Grid>
 							</StackPanel>
-						</Border>
-						<!--#endregion-->
-
-						<!--#region HISTORIAL DE DIVISIONES
-							PENDIENTE de ubicación definitiva. Mientras tanto no ocupa alto hasta
-							que la consulta trae filas: con el disparador sobre Count, la sección
-							entera se colapsa y la grilla de calificaciones se queda con todo el
-							espacio, que es el reparto correcto mientras nadie pidió el historial.
-						-->
-						<Border Grid.Row="2">
-							<Border.Style>
-								<Style TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Superficie.Seccion }">
-									<Style.Triggers>
-										<DataTrigger Binding="{ Binding Path=Historial.Count }" Value="0">
-											<Setter Property="Visibility" Value="Collapsed"/>
-										</DataTrigger>
-									</Style.Triggers>
-								</Style>
-							</Border.Style>
-
-							<StackPanel>
-								<TextBlock Margin="0 0 0 12"
-										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-										   Text="HISTORIAL DE DIVISIONES"/>
-
-								<DataGrid x:Name="DataGrid_Historial"
-										  AutomationProperties.Name="Historial de divisiones del alumno"
-										  ItemsSource="{ Binding Path=Historial, Mode=OneWay }"
-										  Margin="0 0 0 16"
-										  MaxHeight="180"
-										  Style="{ StaticResource ResourceKey=Grilla }"
-										  Tag="Todavía no pediste el historial. Traelo con &#x201C;Ver historial&#x201D;.">
-									<DataGrid.Columns>
-										<DataGridTextColumn Binding="{ Binding Path=CicloLectivo, Mode=OneTime }"
-															ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
-															Header="CICLO"
-															Width="Auto"/>
-										<DataGridTextColumn Binding="{ Binding Path=Division, Mode=OneTime }"
-															ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-															Header="DIVISIÓN"
-															Width="Auto"/>
-										<DataGridTextColumn Binding="{ Binding Path=Grado, Mode=OneTime }"
-															ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-															Header="AÑO"
-															Width="*"/>
-										<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneTime, StringFormat=d }"
-															ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
-															Header="DESDE"
-															Width="Auto"/>
-										<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneTime, StringFormat=d }"
-															ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
-															Header="HASTA"
-															Width="Auto"/>
-										<DataGridCheckBoxColumn Binding="{ Binding Path=EsRecursante, Mode=OneWay }"
-																Header="RECURSANTE"
-																IsReadOnly="True"
-																Width="Auto"/>
-										<DataGridTemplateColumn Header="ESTADO" Width="Auto">
-											<DataGridTemplateColumn.CellTemplate>
-												<DataTemplate>
-													<!--
-														LA INSIGNIA SEGUÍA EL ESTADO MAL. Estaba
-														fija en Insignia.Alerta para toda fila, así
-														que la inscripción VIGENTE —la sana, la que
-														el alumno está cursando— se señalaba con el
-														color de alerta igual que las cerradas. El
-														rótulo decía "Vigente" y el color decía lo
-														contrario.
-
-														Ahora la vigente lleva la insignia activa y
-														la cerrada la de alerta. El texto sigue
-														nombrando el estado: el color sólo lo
-														refuerza.
-													-->
-													<Border>
-														<Border.Style>
-															<Style TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Insignia.Alerta }">
-																<Style.Triggers>
-																	<DataTrigger Binding="{ Binding Path=EstaActiva, Mode=OneTime }" Value="True">
-																		<Setter Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
-																	</DataTrigger>
-																</Style.Triggers>
-															</Style>
-														</Border.Style>
-
-														<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-																   Text="{ Binding Path=Estado, Mode=OneTime }"/>
-													</Border>
-												</DataTemplate>
-											</DataGridTemplateColumn.CellTemplate>
-										</DataGridTemplateColumn>
-									</DataGrid.Columns>
-								</DataGrid>
-							</StackPanel>
-						</Border>
-						<!--#endregion-->
-
-						<!--#region CALIFICACIONES
-							La fila * del detalle: la grilla llena lo que sobra en lugar de estar
-							clavada en 300px. Las columnas llevan MinWidth para que, en una
-							ventana angosta, la grilla scrollee en horizontal en vez de apretar
-							siete columnas hasta volverlas ilegibles.
-						-->
-						<Grid Grid.Row="3" Margin="0 4 0 0">
-							<Grid.RowDefinitions>
-								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="*"/>
-							</Grid.RowDefinitions>
-
-							<TextBlock Grid.Row="0"
-									   Margin="0 0 0 12"
-									   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-									   Text="CALIFICACIONES"/>
-
-							<DataGrid x:Name="DataGrid_Calificaciones"
-									  Grid.Row="1"
-									  AutomationProperties.Name="Calificaciones del alumno"
-									  ItemsSource="{ Binding Path=Calificaciones, Mode=OneWay }"
-									  SelectedItem="{ Binding Path=CalificacionSeleccionada, Mode=TwoWay }"
-									  MinHeight="120"
-									  Style="{ StaticResource ResourceKey=Grilla }"
-									  Tag="El alumno elegido todavía no tiene calificaciones cargadas. Empezá con &#x201C;Cargar nota&#x201D;.">
-								<DataGrid.Columns>
-									<DataGridTextColumn Binding="{ Binding Path=Materia, Mode=OneTime }"
-														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-														Header="MATERIA"
-														MinWidth="140"
-														Width="2*"/>
-									<DataGridTextColumn Binding="{ Binding Path=Fecha, Mode=OneTime, StringFormat=d }"
-														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
-														Header="FECHA"
-														Width="Auto"/>
-									<DataGridTextColumn Binding="{ Binding Path=Instancia, Mode=OneTime }"
-														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-														Header="INSTANCIA"
-														Width="Auto"/>
-									<DataGridCheckBoxColumn Binding="{ Binding Path=Rindio, Mode=OneWay }"
-															Header="RINDIÓ"
-															IsReadOnly="True"
-															Width="Auto"/>
-									<DataGridTextColumn Binding="{ Binding Path=Nota, Mode=OneTime }"
-														ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
-														Header="NOTA"
-														Width="Auto"/>
-									<DataGridCheckBoxColumn Binding="{ Binding Path=Aprobado, Mode=OneWay }"
-															Header="APROBADO"
-															IsReadOnly="True"
-															Width="Auto"/>
-									<DataGridTextColumn Binding="{ Binding Path=Observacion, Mode=OneTime }"
-														ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-														Header="OBSERVACIÓN"
-														MinWidth="160"
-														Width="2*"/>
-								</DataGrid.Columns>
-							</DataGrid>
 						</Grid>
-						<!--#endregion-->
-
-						<!--#region PIE-->
-						<StackPanel Grid.Row="4">
-							<!-- La nota no se corrige: se quita y se vuelve a cargar. Sólo la observación es editable. -->
-							<HeaderedContentControl Header="Observación de la calificación elegida"
-													Margin="0 16 0 0"
-													Style="{ StaticResource ResourceKey=Campo }">
-								<TextBox Tag="recuperatorio pendiente, ausente con certificado&#x2026;"
-										 Text="{ Binding Path=ObservacionEdicion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-										 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
-							</HeaderedContentControl>
-
-							<HeaderedContentControl Style="{ StaticResource ResourceKey=Acciones }">
-								<HeaderedContentControl.Header>
-									<Button Command="{ Binding Path=QuitarCalificacionCommandAsync }"
-											Content="Quitar calificación"
-											Style="{ StaticResource ResourceKey=Btn.Peligro }"
-											ToolTip="Quitar la calificación elegida"/>
-								</HeaderedContentControl.Header>
-
-								<!--
-									"Editar observación" lo exige una guarda estática: distingue
-									la única corrección que el dominio permite de corregir la
-									nota, que no se puede. El rótulo no se cambia sin tocar esa
-									guarda.
-
-									"Cargar nota" se fue al encabezado de la pantalla, que es el
-									hueco que el sistema reserva para la acción principal. Acá
-									abajo quedaba sepultada al final de una página de 1520px.
-								-->
-								<Button Command="{ Binding Path=ModificarObservacionCommandAsync }"
-										Content="Editar observación"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Guardar la observación de la calificación elegida"/>
-							</HeaderedContentControl>
-						</StackPanel>
 						<!--#endregion-->
 					</Grid>
 				</Grid>
 				<!--#endregion-->
 
 				<!--
-					EL VELO DE CARGA FALTABA, y era la única de las seis pantallas hermanas sin
-					él. Importa especialmente acá: al elegir un alumno, OnCursanteChanged vacía
-					Calificaciones de forma sincrónica y recién después dispara la consulta, así
-					que entre un paso y el otro la grilla AFIRMABA que el alumno no tenía notas.
-					Un estado vacío que miente es peor que no tener estado vacío.
-
-					Uno por panel y no uno sobre la tarjeta entera: elegir un alumno no deja de
-					saber quiénes son los demás, así que el índice se queda a la vista mientras
-					el detalle espera. Cada velo cubre la columna que efectivamente está
-					esperando.
+					Un velo por panel y no uno sobre la tarjeta entera: elegir un alumno no deja
+					de saber quiénes son los demás, así que el índice se queda a la vista mientras
+					el detalle espera. Los de historial y asistencias viven dentro de su propia
+					vista, que es lo único que esa consulta hace esperar.
 				-->
 				<components:CargandoComponent Grid.Column="0"
 											  EstaCargando="{ Binding Path=BuscarCommandAsync.IsRunning }"

@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Core.ServicioAsistencias.DTOs.Requests;
+using Core.ServicioAsistencias;
 using Core.ServicioCurriculas.DTOs.Requests;
 using Core.ServicioCurriculas;
 using Core.ServicioCursantes.DTOs.Requests;
@@ -14,6 +16,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using Domain.Asistencias;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
@@ -25,6 +28,19 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 {
 	private const string INSTANCIA_POR_DEFECTO = "Parcial";
 
+	#region Vistas del alumno
+	/// <remarks>
+	/// El panel del alumno elegido muestra una de estas cuatro a la vez, y el conmutador de
+	/// arriba enlaza su Tag contra <see cref="VistaDelAlumno"/> con el converter
+	/// <c>esIgualA</c>, igual que el rail contra <c>SeccionActual</c>. Son constantes y no un
+	/// enum porque viajan como <c>ConverterParameter</c>, que es texto.
+	/// </remarks>
+	public const string VISTA_CALIFICACIONES = "Calificaciones";
+	public const string VISTA_ASISTENCIAS = "Asistencias";
+	public const string VISTA_HISTORIAL = "Historial";
+	public const string VISTA_INSCRIPCION = "Inscripcion";
+	#endregion
+
 	#region Servicios
 	private readonly IServicioCursante _servicioCursante;
 	private readonly IServicioMateria _servicioMateria;
@@ -32,6 +48,14 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 	/// <summary>Las divisiones del curso, que son los destinos posibles de un traslado.</summary>
 	private readonly IServicioDivision _servicioDivision;
+
+	/// <summary>
+	/// El resumen de asistencias del alumno. Es lo ÚNICO que se puede preguntar por cursante:
+	/// <c>IPlanillaAsistenciaRepository</c> sólo expone <c>ContarFaltasAsync(cursanteID, tipo)</c>,
+	/// porque el agregado es la planilla —división y fecha— y un alumno no tiene asistencias
+	/// propias que listar. Ver el pendiente anotado en docs/ui-ux.md.
+	/// </summary>
+	private readonly IServicioAsistencia _servicioAsistencia;
 	#endregion
 
 	#region Stores
@@ -62,6 +86,8 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 	[NotifyCanExecuteChangedFor(nameof(RegistrarBajaCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(CambiarDivisionCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(CargarHistorialCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(CargarAsistenciasCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(VerCommand))]
 	[ObservableProperty]
 	private CursanteViewModel? _cursante;
 
@@ -124,6 +150,24 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 	[ObservableProperty]
 	private ObservableCollection<InscripcionHistoricaViewModel> _historial = new();
+
+	/// <summary>Cuál de las cuatro vistas del alumno está abierta.</summary>
+	[ObservableProperty]
+	private string _vistaDelAlumno = VISTA_CALIFICACIONES;
+
+	#region Resumen de asistencias
+	[ObservableProperty]
+	private int _presentes;
+
+	[ObservableProperty]
+	private int _ausencias;
+
+	[ObservableProperty]
+	private int _inasistencias;
+
+	[ObservableProperty]
+	private int _tardanzas;
+	#endregion
 	#endregion
 
 	#region Commands
@@ -139,6 +183,10 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 	public IAsyncRelayCommand RegistrarBajaCommandAsync { get; }
 	public IAsyncRelayCommand CambiarDivisionCommandAsync { get; }
 	public IAsyncRelayCommand CargarHistorialCommandAsync { get; }
+	public IAsyncRelayCommand CargarAsistenciasCommandAsync { get; }
+
+	/// <summary>Abre una de las cuatro vistas del alumno. El parámetro es una de las constantes VISTA_.</summary>
+	public IRelayCommand<string> VerCommand { get; }
 
 	public IRelayCommand NuevaCalificacionCommand { get; }
 	public IRelayCommand CancelarCalificacionCommand { get; }
@@ -152,6 +200,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 									 IServicioMateria servicioMateria,
 									 IServicioCurricula servicioCurricula,
 									 IServicioDivision servicioDivision,
+									 IServicioAsistencia servicioAsistencia,
 									 IDialogService dialogService,
 									 INavigationService gestionDivisionesNavigationService,
 									 CursoStore cursoStore,
@@ -162,6 +211,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 		_servicioMateria = servicioMateria;
 		_servicioCurricula = servicioCurricula;
 		_servicioDivision = servicioDivision;
+		_servicioAsistencia = servicioAsistencia;
 		_dialogService = dialogService;
 		_cursoStore = cursoStore;
 		_divisionStore = divisionStore;
@@ -179,6 +229,9 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 		RegistrarBajaCommandAsync = new AsyncRelayCommand(RegistrarBajaAsync, CanExecuteCursanteSeleccionado);
 		CambiarDivisionCommandAsync = new AsyncRelayCommand(CambiarDivisionAsync, CanExecuteCambiarDivision);
 		CargarHistorialCommandAsync = new AsyncRelayCommand(CargarHistorialAsync, CanExecuteCursanteSeleccionado);
+		CargarAsistenciasCommandAsync = new AsyncRelayCommand(CargarAsistenciasAsync, CanExecuteCursanteSeleccionado);
+
+		VerCommand = new RelayCommand<string>(ExecuteVer, _ => CanExecuteCursanteSeleccionado());
 
 		NuevaCalificacionCommand = new RelayCommand(ExecuteNuevaCalificacion, CanExecuteNuevaCalificacion);
 		CancelarCalificacionCommand = new RelayCommand(ExecuteCancelarCalificacion, CanExecuteCancelarCalificacion);
@@ -218,9 +271,21 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 		// El historial y el destino son del alumno elegido: se limpian al cambiar de alumno para no
 		// dejar en pantalla datos del anterior. El historial no se recarga solo —es una consulta
-		// aparte y se pide con su botón—, a diferencia de las calificaciones.
+		// aparte, y ahora la dispara abrir su vista—, a diferencia de las calificaciones.
 		Historial = new ObservableCollection<InscripcionHistoricaViewModel>();
 		DivisionDestino = null;
+
+		// El resumen de asistencias es del alumno anterior: se pone en cero y se vuelve a pedir
+		// cuando se abra su vista.
+		Presentes = 0;
+		Ausencias = 0;
+		Inasistencias = 0;
+		Tardanzas = 0;
+
+		// Se vuelve a Calificaciones antes de cargar nada. Si el alumno anterior se estaba
+		// mirando por Asistencias, dejar esa vista abierta mostraría los contadores recién
+		// puestos en cero como si fueran los del alumno nuevo.
+		VistaDelAlumno = VISTA_CALIFICACIONES;
 		EsRecursante = value?.EsRecursante ?? false;
 		FechaBaja = DateTime.Today;
 		FechaCambio = DateTime.Today;
@@ -234,6 +299,36 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 	partial void OnCalificacionSeleccionadaChanged(CalificacionViewModel? value)
 	{
 		ObservacionEdicion = value?.Observacion;
+	}
+
+	/// <summary>
+	/// Cada vista trae lo suyo al abrirse. Antes el historial se pedía con un botón y después
+	/// no había forma de volver atrás: la sección aparecía y se quedaba. Colgando la consulta
+	/// de la vista, abrirla ES pedirla, y cerrarla es elegir otra.
+	/// </summary>
+	partial void OnVistaDelAlumnoChanged(string value)
+	{
+		if (Cursante is null)
+		{
+			return;
+		}
+
+		// El historial no cambia mientras se mira al mismo alumno, así que se trae una sola vez.
+		// Los contadores de asistencia sí pueden haber cambiado —la planilla del día se toma en
+		// la pantalla de al lado—, así que se releen cada vez que se abre la vista.
+		if (value == VISTA_HISTORIAL && Historial.Count == 0)
+		{
+			CargarHistorialCommandAsync.Execute(null);
+		}
+		else if (value == VISTA_ASISTENCIAS)
+		{
+			CargarAsistenciasCommandAsync.Execute(null);
+		}
+	}
+
+	private void ExecuteVer(string? vista)
+	{
+		VistaDelAlumno = string.IsNullOrWhiteSpace(vista) ? VISTA_CALIFICACIONES : vista;
 	}
 	#endregion
 
@@ -472,6 +567,42 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 			_dialogService.MostrarError(ex.Message, "Error al cargar el historial");
 		}
 	}
+
+	/// <summary>
+	/// El resumen de asistencias del alumno: una consulta por cada <see cref="TipoAsistencia"/>.
+	/// </summary>
+	/// <remarks>
+	/// Son cuatro llamadas y no una porque <c>ContarFaltasAsync(cursanteID, tipo)</c> es la
+	/// única consulta de asistencias que acepta un cursante. El agregado es la planilla
+	/// —división y fecha—, de modo que las asistencias de un alumno viven repartidas en los
+	/// registros de todas las planillas de su división.
+	///
+	/// Por eso esta vista cuenta y no lista: armar el listado desde acá exigiría traer todas
+	/// las planillas del ciclo con <c>BuscarPorDivisionYRangoAsync</c> y filtrarlas por
+	/// cursante, que es construir un read model en la capa de presentación. Lo que falta es una
+	/// consulta en Core con su método de repositorio; está anotado en docs/ui-ux.md.
+	/// </remarks>
+	private async Task CargarAsistenciasAsync()
+	{
+		if (Cursante is null)
+		{
+			return;
+		}
+
+		try
+		{
+			var cursanteID = Cursante.CursanteID;
+
+			Presentes = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Presente));
+			Ausencias = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Ausencia));
+			Inasistencias = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Inasistencia));
+			Tardanzas = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Tardanza));
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "Error al cargar las asistencias");
+		}
+	}
 	#endregion
 
 	#region Alta de calificación
@@ -482,6 +613,11 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 	private void ExecuteNuevaCalificacion()
 	{
+		// El alta es de una calificación, así que el panel vuelve a Calificaciones: abrir el
+		// formulario mientras se miraba el historial dejaba el alta sin la grilla a la que se
+		// le está agregando una fila.
+		VistaDelAlumno = VISTA_CALIFICACIONES;
+
 		Calificacion = new CalificacionViewModel(null)
 		{
 			Instancia = INSTANCIA_POR_DEFECTO,
