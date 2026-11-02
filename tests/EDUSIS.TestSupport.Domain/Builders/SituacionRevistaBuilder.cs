@@ -12,8 +12,10 @@ namespace EDUSIS.TestSupport.Builders;
 /// indeterminado.
 /// </summary>
 /// <remarks>
-/// Ojo con las invariantes del constructor: un cargo <see cref="Cargo.Interino"/> o
-/// <see cref="Cargo.Suplente"/> exige fecha de fin.
+/// Ojo con las invariantes del constructor, que van en las DOS direcciones: un cargo
+/// <see cref="Cargo.Interino"/> o <see cref="Cargo.Suplente"/> exige fecha de fin, y un
+/// <see cref="Cargo.Titular"/> no la admite —es por tiempo indeterminado—. O sea que
+/// <c>ConCargo</c> y <c>ConFechaFin</c> se eligen de a pares, no por separado.
 /// </remarks>
 public sealed class SituacionRevistaBuilder
 {

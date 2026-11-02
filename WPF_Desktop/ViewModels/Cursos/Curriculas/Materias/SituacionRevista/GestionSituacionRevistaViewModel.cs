@@ -721,8 +721,15 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 				// Antes la designación ponía al docente frente al curso por su cuenta —el formulario
 				// nacía con "en aula" prendido y la casilla deshabilitada— y la confirmación no lo
 				// mencionaba: el usuario aceptaba una cosa y pasaban dos.
-				var hastaCuando = SituacionRevistaINSERT.FechaFin.HasValue
-					? $" hasta el { SituacionRevistaINSERT.FechaFin.Value.ToString("D") }"
+				// EL TÉRMINO SÓLO EXISTE PARA EL CARGO QUE LO ADMITE. El dominio rechaza un titular
+				// con fecha de fin —TitularConFechaFinalizacionException—, y el campo ya no se
+				// dibuja para ese cargo, pero el valor puede haber quedado de un cargo anterior.
+				// Mismo criterio que ReemplazaA, que se limpia acá abajo por la misma razón: lo que
+				// el formulario no está mostrando no viaja.
+				var terminoDelAlta = SituacionRevistaINSERT.ExigeFechaFin ? SituacionRevistaINSERT.FechaFin : null;
+
+				var hastaCuando = terminoDelAlta.HasValue
+					? $" hasta el { terminoDelAlta.Value.ToString("D") }"
 					: " por tiempo indeterminado";
 
 				var tambienAlAula = SituacionRevistaINSERT.EnFunciones
@@ -743,7 +750,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 																 DocenteID: SituacionRevistaINSERT.DocenteID,
 																 Cargo: SituacionRevistaINSERT.Cargo,
 																 FechaInicio: SituacionRevistaINSERT.FechaInicio,
-																 FechaFin: SituacionRevistaINSERT.FechaFin,
+																 FechaFin: terminoDelAlta,
 																 ReemplazaA: HabilitarReemplazaA ? SituacionRevistaINSERT.ReemplazaA : null);
 						var situacionRevistaID = await _servicioCatedra.DesignarDocenteAsync(request);
 

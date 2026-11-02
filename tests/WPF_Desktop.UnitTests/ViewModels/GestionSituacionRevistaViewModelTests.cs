@@ -553,6 +553,52 @@ public class GestionSituacionRevistaViewModelTests
 			r.ReemplazaA == null));
 	}
 
+	/// <summary>
+	/// El dominio rechaza un titular con fecha de fin —<c>TitularConFechaFinalizacionException</c>—
+	/// porque se designa por tiempo indeterminado. El campo ya no se dibuja para ese cargo, pero el
+	/// valor puede quedar de un cargo elegido antes: lo que el formulario no muestra no viaja.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task La_fecha_de_fin_no_viaja_cuando_el_cargo_es_titular_aunque_haya_quedado_cargada()
+	{
+		var contexto = new Contexto();
+		var alta = contexto.PrepararAlta("Titular");
+
+		// Estado residual: se eligió Interino, se puso el término y después se volvió a Titular.
+		alta.FechaFin = DateTime.Today.AddMonths(3);
+
+		await contexto.ViewModel.GuardarCommand.ExecuteAsync("Insert");
+
+		await contexto.ServicioCatedra.Received(1).DesignarDocenteAsync(Arg.Is<DesignarDocenteRequest>(r =>
+			r.Cargo == "Titular" &&
+			r.FechaFin == null));
+		contexto.Dialogos.Errores.ShouldBeEmpty();
+	}
+
+	/// <summary>Y para los dos cargos temporales sí viaja: es obligatoria.</summary>
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData("Interino")]
+	[InlineData("Suplente")]
+	public async Task La_fecha_de_fin_viaja_cuando_el_cargo_la_exige(string cargo)
+	{
+		var contexto = new Contexto();
+		var titular = contexto.Agregar();
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		var alta = contexto.PrepararAlta(cargo);
+		var termino = DateTime.Today.AddMonths(3);
+		alta.FechaFin = termino;
+		alta.ReemplazaA = titular.SituacionRevistaID;
+
+		await contexto.ViewModel.GuardarCommand.ExecuteAsync("Insert");
+
+		await contexto.ServicioCatedra.Received(1).DesignarDocenteAsync(Arg.Is<DesignarDocenteRequest>(r =>
+			r.Cargo == cargo &&
+			r.FechaFin == termino));
+	}
+
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public async Task Designar_un_suplente_sin_ReemplazaA_no_llega_al_servicio_y_se_avisa_por_dialogo()

@@ -51,6 +51,31 @@ public class SituacionRevistaTests
 
 		ex.GetType().Name.ShouldBe("CargoTemporalSinFechaFinalizacionException");
 	}
+
+	/// <summary>
+	/// La otra mitad del mismo invariante. "El cargo a término es interino o suplente" es una
+	/// equivalencia, y el alta tenía escrita sólo la dirección de arriba: podía crear un titular con
+	/// fecha de fin, que es exactamente el estado que <c>PasarAInterinoHasta</c> rechaza.
+	/// </summary>
+	[Fact]
+	public void Un_titular_con_fecha_de_fin_lanza_TitularConFechaFinalizacionException()
+	{
+		var builder = new SituacionRevistaBuilder().ConCargo(Cargo.Titular).ConFechaFin(DateTime.Today.AddMonths(3));
+
+		var ex = Should.Throw<Exception>(() => builder.Build());
+
+		ex.GetType().Name.ShouldBe("TitularConFechaFinalizacionException");
+	}
+
+	/// <summary>El titular SÍ se designa sin fecha de fin: su período es indeterminado.</summary>
+	[Fact]
+	public void Un_titular_sin_fecha_de_fin_se_designa_por_tiempo_indeterminado()
+	{
+		var situacion = new SituacionRevistaBuilder().ConCargo(Cargo.Titular).ConFechaFin(null).Build();
+
+		situacion.EsTemporal().ShouldBeFalse();
+		situacion.Periodo.FechaFin.ShouldBeNull();
+	}
 	#endregion
 
 	#region Cargo ocupante
@@ -140,8 +165,10 @@ public class SituacionRevistaTests
 	[Fact]
 	public void PasarAInterinoHasta_sobre_un_cargo_temporal_lanza_CargoConFechaFinalizacionException()
 	{
+		// Interino y no Titular: desde que el constructor cierra el invariante en las dos
+		// direcciones, un titular con fecha de fin ya no se puede crear ni para armar el escenario.
 		var catedra = new CatedraBuilder().Build();
-		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today, DateTime.Today.AddMonths(3));
+		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Interino, DateTime.Today, DateTime.Today.AddMonths(3));
 
 		var ex = Should.Throw<Exception>(() => catedra.PasarAInterinoHasta(designacion, DateTime.Today.AddMonths(6)));
 

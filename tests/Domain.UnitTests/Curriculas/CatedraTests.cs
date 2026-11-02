@@ -304,8 +304,10 @@ public class CatedraTests
 	[Fact]
 	public void PonerEnFunciones_sobre_un_cargo_no_vigente_lanza_CargoNoVigenteException()
 	{
+		// Interino y no Titular: el cargo a término es el que lleva fecha de fin, y el titular
+		// —por tiempo indeterminado— ya no se puede crear con una.
 		var catedra = new CatedraBuilder().Build();
-		catedra.Designar(Guid.NewGuid(), Cargo.Titular, new DateTime(2020, 1, 1), new DateTime(2020, 6, 1));
+		catedra.Designar(Guid.NewGuid(), Cargo.Interino, new DateTime(2020, 1, 1), new DateTime(2020, 6, 1));
 		var situacion = catedra.SituacionesRevista.Single();
 
 		var ex = Should.Throw<Exception>(() => catedra.PonerEnFunciones(situacion.Id));

@@ -427,8 +427,9 @@ public class ServicioCatedraTests
 	public async Task ListarSituacionesRevistaAsync_ordena_de_la_designacion_mas_reciente_a_la_mas_vieja()
 	{
 		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
-		var vieja = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-3), DateTime.Today.AddYears(-2));
-		var intermedia = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-2), DateTime.Today.AddYears(-1));
+		// Las dos cerradas van como interinas: el cargo a término es el que lleva fecha de fin.
+		var vieja = catedra.Designar(Guid.NewGuid(), Cargo.Interino, DateTime.Today.AddYears(-3), DateTime.Today.AddYears(-2));
+		var intermedia = catedra.Designar(Guid.NewGuid(), Cargo.Interino, DateTime.Today.AddYears(-2), DateTime.Today.AddYears(-1));
 		var reciente = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddMonths(-1), null);
 
 		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
@@ -442,7 +443,7 @@ public class ServicioCatedraTests
 		// Vigente sale de SituacionRevista.EsCargoVigente() y no de comparar Estado con "Finalizado":
 		// una designación aceptada cuyo período ya terminó también está vencida.
 		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
-		catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-2), DateTime.Today.AddYears(-1));
+		catedra.Designar(Guid.NewGuid(), Cargo.Interino, DateTime.Today.AddYears(-2), DateTime.Today.AddYears(-1));
 
 		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
 
@@ -455,7 +456,7 @@ public class ServicioCatedraTests
 	public async Task ListarSituacionesRevistaAsync_marca_vigente_una_designacion_con_el_periodo_en_curso()
 	{
 		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
-		catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddMonths(-1), DateTime.Today.AddMonths(6));
+		catedra.Designar(Guid.NewGuid(), Cargo.Interino, DateTime.Today.AddMonths(-1), DateTime.Today.AddMonths(6));
 
 		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
 

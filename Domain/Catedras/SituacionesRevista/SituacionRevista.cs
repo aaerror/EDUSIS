@@ -32,9 +32,19 @@ public sealed class SituacionRevista : Entity
 			throw new ArgumentNullException(nameof(unDocente), msg);
 		}
 
+		// EL INVARIANTE VA EN LAS DOS DIRECCIONES. "El cargo a término es interino o suplente" es una
+		// equivalencia, y acá estaba escrita una sola mitad: la que prohíbe el cargo temporal sin
+		// término. Sin la otra, el alta dejaba crear un titular CON fecha de fin —un titular a
+		// término, que es lo que el negocio llama interino—, de modo que el mismo estado que
+		// PasarAInterinoHasta declara ilegal se alcanzaba por la puerta de al lado.
 		if (unPeriodo.EsIndeterminado() && (unCargo.Equals(Cargo.Interino) || unCargo.Equals(Cargo.Suplente)))
 		{
 			throw new CargoTemporalSinFechaFinalizacionException();
+		}
+
+		if (!unPeriodo.EsIndeterminado() && unCargo.Equals(Cargo.Titular))
+		{
+			throw new TitularConFechaFinalizacionException();
 		}
 
 		DocenteID = unDocente;
@@ -95,9 +105,9 @@ public sealed class SituacionRevista : Entity
 	/// <remarks>
 	/// SE LLAMABA <c>EstablecerFechaFinalizacion</c> Y SÓLO MOVÍA EL PERÍODO. El cargo quedaba en
 	/// <see cref="Cargo.Titular"/> con una fecha de fin encima, que es un estado que el negocio no
-	/// reconoce: un cargo a término es interino. El constructor ya prohíbe el camino inverso
-	/// —interino sin fecha de fin, <see cref="CargoTemporalSinFechaFinalizacionException"/>—, así
-	/// que el invariante estaba escrito a medias y esta era la mitad que faltaba.
+	/// reconoce: un cargo a término es interino. Es el mismo estado que el constructor rechaza en el
+	/// alta con <see cref="TitularConFechaFinalizacionException"/>; mientras esta operación no mudara
+	/// el cargo, lo que el alta prohibía se alcanzaba igual por acá.
 	///
 	/// Por eso el único cargo sobre el que puede correr es el titular: el interino y el suplente
 	/// nacen con fecha de fin, <see cref="EsTemporal"/> ya les da <c>true</c> y se van por
