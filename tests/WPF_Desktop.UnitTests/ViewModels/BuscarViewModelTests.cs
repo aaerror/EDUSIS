@@ -4,6 +4,7 @@ using Core.ServicioDocentes.DTOs.Responses;
 using Core.Shared.DTOs.Personas.Requests;
 using NSubstitute;
 using Shouldly;
+using WPF_Desktop.Store;
 using WPF_Desktop.Store.NavigationStore;
 using WPF_Desktop.UnitTests.Dobles;
 using WPF_Desktop.ViewModels.Shared.Messages;
@@ -23,15 +24,21 @@ public class BuscarViewModelTests
 		public IServicioDocente ServicioDocente { get; } = Substitute.For<IServicioDocente>();
 		public DialogServiceFalso Dialogos { get; } = new();
 		public ModalWindowNavigationStore ModalStore { get; } = new();
+		public BuscarContextoStore ContextoStore { get; } = new();
 		public IMessenger Mensajero { get; } = new WeakReferenceMessenger();
 		public BuscarViewModel ViewModel { get; }
 
-		public Contexto()
+		public Contexto(BuscarContexto contexto = null)
 		{
 			DevolverDeLaNomina();
 			DevolverDeLaBusqueda();
 
-			ViewModel = new BuscarViewModel(ServicioDocente, Dialogos, ModalStore, Mensajero);
+			if (contexto is not null)
+			{
+				ContextoStore.Declarar(contexto);
+			}
+
+			ViewModel = new BuscarViewModel(ServicioDocente, Dialogos, ModalStore, ContextoStore, Mensajero);
 
 			// El modal está abierto: el store lo tiene como contenido, igual que en la app.
 			ModalStore.ViewModel = ViewModel;
@@ -220,6 +227,62 @@ public class BuscarViewModelTests
 		contexto.ViewModel.Termino.ShouldBeEmpty();
 		contexto.ViewModel.Resultados.ShouldBeEmpty();
 		contexto.ViewModel.Seleccionado.ShouldBeNull();
+	}
+	#endregion
+
+	#region Contexto de la apertura
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_encabezado_lo_escribe_quien_abre_el_buscador()
+	{
+		var contexto = new Contexto(new BuscarContexto(Titulo: "Preceptor de primer año A",
+													   Detalle: "El cargo está vacante.",
+													   Verbo: "Asignar preceptor"));
+
+		contexto.ViewModel.Titulo.ShouldBe("Preceptor de primer año A");
+		contexto.ViewModel.Detalle.ShouldBe("El cargo está vacante.");
+		contexto.ViewModel.Verbo.ShouldBe("Asignar preceptor");
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Sin_contexto_declarado_el_buscador_habla_de_si_mismo()
+	{
+		var contexto = new Contexto();
+
+		contexto.ViewModel.Titulo.ShouldBe(BuscarContexto.Generico.Titulo);
+		contexto.ViewModel.Verbo.ShouldBe(BuscarContexto.Generico.Verbo);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_contexto_vale_para_una_sola_apertura()
+	{
+		// Si quedara pegado, el recorrido que olvide declarar el suyo abriría el modal con el
+		// título del anterior: "Preceptor de primer año A" encima de una designación de cátedra.
+		var store = new BuscarContextoStore();
+		store.Declarar(new BuscarContexto("Preceptor de primer año A", "El cargo está vacante.", "Asignar preceptor"));
+
+		store.Tomar().Titulo.ShouldBe("Preceptor de primer año A");
+
+		store.Tomar().ShouldBe(BuscarContexto.Generico);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Elegir_cierra_el_modal_antes_de_avisar_quien_fue_el_elegido()
+	{
+		// El receptor puede terminar la transacción al recibir el mensaje —asignar un preceptor
+		// pide confirmación—, y con el orden inverso ese diálogo se abría sobre el modal todavía
+		// en pantalla.
+		var contexto = new Contexto();
+		contexto.ViewModel.Seleccionado = new WPF_Desktop.ViewModels.Docentes.LegajoDocenteViewModel(CrearDocente());
+		var modalAbiertoAlRecibir = true;
+		contexto.Mensajero.Register<DocenteElegidoMessage>(this, (_, _) => modalAbiertoAlRecibir = contexto.ModalStore.EstaAbierto);
+
+		contexto.ViewModel.ElegirCommand.Execute(null);
+
+		modalAbiertoAlRecibir.ShouldBeFalse();
 	}
 	#endregion
 }

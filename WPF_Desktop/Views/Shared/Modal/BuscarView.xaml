@@ -22,6 +22,12 @@
 
 		Con el término vacío lista a todos los docentes activos: el mismo botón sirve para buscar
 		y para ver la nómina, que antes eran dos.
+
+		EL ENCABEZADO Y EL VERBO LOS ESCRIBE QUIEN ABRE (BuscarContexto). El título decía
+		"Buscar docente" y el subtítulo explicaba cómo usar el campo: nombraba la herramienta y su
+		manual, nunca el destino. El destino —a qué división le falta preceptor, qué cátedra hay
+		que cubrir— es el único dato de la decisión que no está en la grilla, así que ocupa la
+		primera línea. Cómo se busca lo dice el texto de guía del campo, que es donde se mira.
 	-->
 	<Grid MinWidth="560">
 		<Grid.RowDefinitions>
@@ -34,10 +40,12 @@
 		<!--#region ENCABEZADO-->
 		<StackPanel Grid.Row="0" Margin="0 0 0 20">
 			<TextBlock Style="{ StaticResource ResourceKey=Txt.Titulo }"
-					   Text="Buscar docente"/>
+					   Text="{ Binding Path=Titulo, Mode=OneTime }"
+					   TextWrapping="Wrap"/>
 			<TextBlock Margin="0 4 0 0"
 					   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-					   Text="Por apellido y nombre. Sin texto, lista a todos los docentes en funciones."/>
+					   Text="{ Binding Path=Detalle, Mode=OneTime }"
+					   TextWrapping="Wrap"/>
 		</StackPanel>
 		<!--#endregion-->
 
@@ -51,7 +59,7 @@
 			<TextBox x:Name="CampoTermino"
 					 Grid.Column="0"
 					 Margin="0 0 8 0"
-					 Tag="Pérez, María"
+					 Tag="Apellido y nombre — vacío, lista a todos los docentes en funciones"
 					 Text="{ Binding Path=Termino, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 					 Style="{ StaticResource ResourceKey=Txb.Campo }">
 				<TextBox.InputBindings>
@@ -86,19 +94,38 @@
 					  Style="{ StaticResource ResourceKey=Grilla }"
 					  Tag="Escribí un apellido y tocá Buscar, o buscá sin texto para ver la nómina completa."
 					  d:ItemsSource="{ d:SampleData ItemCount=4 }">
+				<!--
+					EL NOMBRE PRIMERO. La grilla abría con "DESDE" —la fecha de alta del legajo—,
+					que es trazabilidad administrativa y no interviene en esta decisión; el dato que
+					se busca quedaba en la segunda columna. Ahora abre con el docente, sigue el
+					legajo, que es como la escuela lo nombra, y el documento queda para desempatar
+					homónimos.
+
+					"EN FUNCIONES" era una DataGridCheckBoxColumn de sólo lectura: una casilla que
+					no se puede tildar miente sobre lo que permite. Pasa al glifo de Celda.Booleana,
+					que es como se dibujan los booleanos de las grillas en toda la aplicación.
+				-->
 				<DataGrid.Columns>
-					<DataGridTextColumn Binding="{ Binding Path=FechaAlta, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-										Header="DESDE"
-										Width="*"/>
 					<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+										ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 										Header="DOCENTE"
 										Width="2*"/>
+					<DataGridTextColumn Binding="{ Binding Path=Legajo, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+										ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+										Header="LEGAJO"
+										Width="*"/>
 					<DataGridTextColumn Binding="{ Binding Path=DocumentoNacionalIdentidad, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+										ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
 										Header="DOCUMENTO"
 										Width="*"/>
-					<DataGridCheckBoxColumn Binding="{ Binding Path=EstaActivo }"
-											Header="EN FUNCIONES"
-											Width="Auto"/>
+					<DataGridTemplateColumn Header="EN FUNCIONES" Width="Auto">
+						<DataGridTemplateColumn.CellTemplate>
+							<DataTemplate>
+								<fa:IconBlock Style="{ StaticResource ResourceKey=Celda.Booleana }"
+											  Tag="{ Binding Path=EstaActivo, Mode=OneWay }"/>
+							</DataTemplate>
+						</DataGridTemplateColumn.CellTemplate>
+					</DataGridTemplateColumn>
 				</DataGrid.Columns>
 
 				<!-- Doble clic sobre una fila elige ese docente, igual que el botón. -->
@@ -119,8 +146,14 @@
 						ToolTip="Cerrar sin elegir"/>
 			</HeaderedContentControl.Header>
 
+			<!--
+				El verbo lo pone quien abre. En Divisiones dice "Asignar preceptor" porque este
+				botón TERMINA la transacción; en Situación de Revista dice "Elegir docente" porque
+				después hay cargo y período que cargar. La etiqueta nombra lo que pasa al apretarla,
+				que es lo único que distingue los dos recorridos desde acá adentro.
+			-->
 			<Button Command="{ Binding Path=ElegirCommand }"
-					Content="Elegir docente"
+					Content="{ Binding Path=Verbo, Mode=OneTime }"
 					Style="{ StaticResource ResourceKey=Btn.Primario }"
 					ToolTip="Usar el docente seleccionado"/>
 		</HeaderedContentControl>

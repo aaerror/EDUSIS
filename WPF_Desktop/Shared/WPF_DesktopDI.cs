@@ -71,6 +71,8 @@ internal static class WPF_DesktopDI
 		services.AddSingleton<MateriaStore>();
 		services.AddSingleton<CicloLectivoStore>();
 		services.AddSingleton<CatedraStore>();
+		// Parámetro de navegación del modal: PARA QUÉ se lo abre. Ver BuscarContexto.
+		services.AddSingleton<BuscarContextoStore>();
 
 		// La cola de avisos al pie es estado compartido por toda la ventana, igual que los
 		// stores: la escribe el DialogService desde cualquier pantalla y la dibuja el shell.
@@ -118,6 +120,7 @@ internal static class WPF_DesktopDI
 			new BuscarViewModel(provider.GetRequiredService<IServicioDocente>(),
 								provider.GetRequiredService<IDialogService>(),
 								provider.GetRequiredService<ModalWindowNavigationStore>(),
+								provider.GetRequiredService<BuscarContextoStore>(),
 								provider.GetRequiredService<IMessenger>()));
 
 		#region Docentes

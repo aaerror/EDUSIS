@@ -118,6 +118,11 @@ public class GuardasEstaticasW6Tests
 	/// <c>GestionSituacionRevistaView</c> y de <c>GestionDivisionesView</c>, y ahora vive una sola vez en
 	/// <c>BuscarView</c>, el contenido del modal. La guarda sigue al mismo artefacto a su lugar nuevo:
 	/// lo que audita —que las columnas bindeadas existan en <see cref="LegajoDocenteViewModel"/>— no cambió.
+	///
+	/// EL ORDEN ES PARTE DE LA GUARDA. La grilla abría con "DESDE" —la fecha de alta del legajo—, que
+	/// es trazabilidad administrativa y no interviene en la decisión de elegir un docente: el dato
+	/// que se busca quedaba segundo. Ahora abre con el nombre y sigue con el legajo, que es como la
+	/// escuela nombra a su gente.
 	/// </summary>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
@@ -129,8 +134,32 @@ public class GuardasEstaticasW6Tests
 		((string) grilla.Attribute("ItemsSource")!).ShouldContain("Path=Resultados");
 
 		var columnas = ColumnasBindeadas(grilla);
-		columnas.ShouldBe(new[] { "FechaAlta", "NombreCompleto", "DocumentoNacionalIdentidad", "EstaActivo" });
+		columnas.ShouldBe(new[] { "NombreCompleto", "Legajo", "DocumentoNacionalIdentidad" });
 		DebenExistirEn(typeof(LegajoDocenteViewModel), columnas);
+	}
+
+	/// <summary>
+	/// "EN FUNCIONES" era una <c>DataGridCheckBoxColumn</c> de sólo lectura: una casilla que no se
+	/// puede tildar miente sobre lo que permite. Pasa al glifo de <c>Celda.Booleana</c>, que es como
+	/// se dibujan los booleanos de las grillas en toda la aplicación, y por eso ya no aparece entre
+	/// las columnas con atributo <c>Binding</c>: su valor viaja por <c>Tag</c>.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_estado_en_funciones_se_dibuja_con_el_glifo_booleano_y_no_con_una_casilla()
+	{
+		var documento = Cargar(BuscarXaml);
+
+		documento.Descendants()
+				 .Any(e => e.Name.LocalName == "DataGridCheckBoxColumn")
+				 .ShouldBeFalse("BuscarView volvió a dibujar un booleano con una casilla de sólo lectura");
+
+		var glifo = documento.Descendants()
+							 .Single(e => e.Name.LocalName == "IconBlock"
+									   && ((string?) e.Attribute("Style") ?? string.Empty).Contains("Celda.Booleana"));
+
+		((string) glifo.Attribute("Tag")!).ShouldContain("Path=EstaActivo");
+		DebenExistirEn(typeof(LegajoDocenteViewModel), new List<string> { "EstaActivo" });
 	}
 
 	/// <summary>

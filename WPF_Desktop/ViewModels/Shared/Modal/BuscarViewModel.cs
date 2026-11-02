@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System;
 using WPF_Desktop.Shared;
+using WPF_Desktop.Store;
 using WPF_Desktop.Store.NavigationStore;
 using WPF_Desktop.ViewModels.Docentes;
 using WPF_Desktop.ViewModels.Shared.Messages;
@@ -30,6 +31,11 @@ namespace WPF_Desktop.ViewModels.Shared.Modal;
 /// No avisa por cuadro de mensaje cuántas coincidencias hubo. La grilla está a la vista y su estado
 /// vacío lo dice; un cuadro que hay que cerrar para ver el resultado que ya está en pantalla es el
 /// mismo ruido que se le sacó al aviso del ingreso. Los errores del servicio sí se avisan.
+///
+/// EL ENCABEZADO LO ESCRIBE QUIEN ABRE, no este ViewModel: ver <see cref="BuscarContexto"/>. El
+/// buscador no sabe —ni tiene por qué— si lo abrieron para poner un preceptor al frente de una
+/// división o para designar a alguien en una cátedra, pero el que elige sí necesita saberlo, y es el
+/// único dato de la decisión que no está en la grilla.
 /// </remarks>
 internal partial class BuscarViewModel : ObservableObject
 {
@@ -37,6 +43,17 @@ internal partial class BuscarViewModel : ObservableObject
 	private readonly IDialogService _dialogService;
 	private readonly ModalWindowNavigationStore _modalNavigationStore;
 	private readonly IMessenger _messenger;
+
+	#region Contexto
+	/// <summary>Nombra el DESTINO de la búsqueda, no la herramienta.</summary>
+	public string Titulo { get; }
+
+	/// <summary>El estado del destino: qué cargo se está cubriendo y cómo está hoy.</summary>
+	public string Detalle { get; }
+
+	/// <summary>Etiqueta del botón primario. Dice qué pasa al apretarlo, no qué control es.</summary>
+	public string Verbo { get; }
+	#endregion
 
 	[ObservableProperty]
 	private string _termino = string.Empty;
@@ -56,12 +73,21 @@ internal partial class BuscarViewModel : ObservableObject
 	public BuscarViewModel(IServicioDocente servicioDocente,
 						   IDialogService dialogService,
 						   ModalWindowNavigationStore modalNavigationStore,
+						   BuscarContextoStore contextoStore,
 						   IMessenger messenger)
 	{
 		_servicioDocente = servicioDocente;
 		_dialogService = dialogService;
 		_modalNavigationStore = modalNavigationStore;
 		_messenger = messenger;
+
+		// Se toma una sola vez, en el constructor: el ViewModel nace con cada apertura del modal y
+		// el contexto es el parámetro de esa navegación. Tomar() repone el genérico.
+		var contexto = contextoStore.Tomar();
+
+		Titulo = contexto.Titulo;
+		Detalle = contexto.Detalle;
+		Verbo = contexto.Verbo;
 
 		BuscarCommandAsync = new AsyncRelayCommand(ExecuteBuscarCommandAsync);
 		ElegirCommand = new RelayCommand(ExecuteElegirCommand, CanExecuteElegirCommand);
@@ -95,10 +121,23 @@ internal partial class BuscarViewModel : ObservableObject
 	private bool CanExecuteElegirCommand() =>
 		Seleccionado is not null;
 
+	/// <summary>
+	/// CIERRA Y DESPUÉS AVISA, en ese orden.
+	/// </summary>
+	/// <remarks>
+	/// Antes mandaba el mensaje y después cerraba, y ahora que el receptor puede terminar la
+	/// transacción al recibirlo —asignar el preceptor pide confirmación— ese orden levantaba el
+	/// cuadro de diálogo con el modal todavía en pantalla: un diálogo encima de un modal encima de
+	/// la página, para una sola decisión.
+	///
+	/// El elegido se copia antes porque <see cref="Cerrar"/> vacía <see cref="Seleccionado"/>.
+	/// </remarks>
 	private void ExecuteElegirCommand()
 	{
-		_messenger.Send(new DocenteElegidoMessage(Seleccionado));
+		var elegido = Seleccionado;
+
 		Cerrar();
+		_messenger.Send(new DocenteElegidoMessage(elegido));
 	}
 	#endregion
 
