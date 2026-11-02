@@ -77,8 +77,8 @@ public class GestionCursantesViewModelTests
 				DivisionStore.Division = new DivisionSeleccionada(DivisionID);
 			}
 
-			DevolverCurriculas(new CurriculaResponse(CursoID, CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31)),
-							   new CurriculaResponse(CursoID, CurriculaVigenteID, new DateTime(2024, 3, 1), null));
+			DevolverCurriculas(new CurriculaResponse(CursoID, CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31), Vigente: false),
+							   new CurriculaResponse(CursoID, CurriculaVigenteID, new DateTime(2024, 3, 1), null, Vigente: true));
 			DevolverMaterias(CrearMateria("Matematica"), CrearMateria("Lengua"));
 			DevolverCursantes();
 			DevolverCalificaciones();
@@ -261,8 +261,8 @@ public class GestionCursantesViewModelTests
 	public async Task Cargar_elige_la_vigente_aunque_venga_primera_en_la_lista()
 	{
 		var contexto = new Contexto();
-		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, contexto.CurriculaVigenteID, new DateTime(2024, 3, 1), null),
-									new CurriculaResponse(contexto.CursoID, contexto.CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31)));
+		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, contexto.CurriculaVigenteID, new DateTime(2024, 3, 1), null, Vigente: true),
+									new CurriculaResponse(contexto.CursoID, contexto.CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31), Vigente: false));
 
 		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
 
@@ -288,7 +288,7 @@ public class GestionCursantesViewModelTests
 	public async Task Sin_curricula_vigente_Materias_queda_vacia_se_advierte_y_no_se_piden_materias()
 	{
 		var contexto = new Contexto();
-		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, contexto.CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31)));
+		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, contexto.CurriculaCerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31), Vigente: false));
 
 		await contexto.ViewModel.CargarCommandAsync.ExecuteAsync(null);
 

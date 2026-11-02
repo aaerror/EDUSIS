@@ -47,8 +47,12 @@ public class GestionCurriculasViewModelTests
 		{
 			CursoStore.Curso = new CursoSeleccionado(CursoID, Grado.Primero.ToString(), NivelEducativo.Secundaria.ToString());
 
-			DevolverCurriculas(new CurriculaResponse(CursoID, CurriculaID, new DateTime(2024, 3, 1), null));
+			DevolverCurriculas(new CurriculaResponse(CursoID, CurriculaID, new DateTime(2024, 3, 1), null, Vigente: true));
 			DevolverMaterias();
+
+			// Una currícula holgada por defecto: elegir una currícula consulta su ocupación, y sin
+			// este doble todos los casos recibirían un cupo nulo y un error que no están probando.
+			DevolverOcupacion(espaciosOcupados: 3, horasOcupadas: 9);
 
 			ViewModel = new GestionCurriculasViewModel(NavegarACursos,
 													   NavegarACatedras,
@@ -65,6 +69,16 @@ public class GestionCurriculasViewModelTests
 							 .Returns(Task.FromResult<IReadOnlyCollection<CurriculaResponse>>(curriculas.ToList()));
 		}
 
+		/// <summary>Los topes son los reales del dominio: 14 espacios y 40 horas cátedra semanales.</summary>
+		public void DevolverOcupacion(int espaciosOcupados, int horasOcupadas)
+		{
+			ServicioCurricula.ConsultarOcupacionAsync(Arg.Any<CurriculaRequest>())
+							 .Returns(Task.FromResult(new OcupacionCurricularResponse(EspaciosOcupados: espaciosOcupados,
+																					  EspaciosMaximos: 14,
+																					  HorasOcupadas: horasOcupadas,
+																					  HorasMaximas: 40)));
+		}
+
 		public void DevolverMaterias(params MateriaResponse[] materias)
 		{
 			ServicioMateria.ListarMateriasSegunCurriculaAsync(Arg.Any<ListarMateriasSegunCurriculaRequest>())
@@ -77,10 +91,19 @@ public class GestionCurriculasViewModelTests
 		}
 
 		/// <summary>Deja cargada y seleccionada la curricula vigente, como lo hace la vista al abrirse.</summary>
+		/// <remarks>
+		/// Termina llamando a <c>CargarMateriasCommandAsync</c> porque es lo que hace la pantalla:
+		/// elegir una fila dispara ese comando desde el <c>SelectionChanged</c> de la grilla, y es
+		/// esa misma cadena la que después pide la ocupación de la currícula. El setter de
+		/// <c>Curricula</c> no consulta nada por su cuenta —dos consultas en vuelo chocan contra el
+		/// mismo <c>DbContext</c>—, así que un helper que sólo asignara la propiedad dejaría el cupo
+		/// sin cargar y no se parecería al recorrido real.
+		/// </remarks>
 		public async Task SeleccionarCurriculaAsync()
 		{
 			await ViewModel.CargarCurriculasCommandAsync.ExecuteAsync(null);
 			ViewModel.Curricula = ViewModel.Curriculas[0];
+			await ViewModel.CargarMateriasCommandAsync.ExecuteAsync(null);
 		}
 
 		/// <summary>Deja cargadas las materias y seleccionada la primera, como el ListView de la pantalla.</summary>
@@ -201,21 +224,75 @@ public class GestionCurriculasViewModelTests
 		contexto.Dialogos.Informaciones.Count.ShouldBe(1);
 	}
 
+	/// <summary>
+	/// Un alta rechazada muestra el error y CONSERVA lo que el usuario había escrito.
+	/// </summary>
+	/// <remarks>
+	/// Antes el <c>finally</c> vaciaba descripción y carga horaria pasara lo que pasara, y el
+	/// <c>catch</c> cerraba el formulario. Los dos motivos de rechazo son el nombre repetido y el tope
+	/// de la currícula, y en los dos lo que corresponde es corregir el dato que está a la vista: tirar
+	/// el formulario obligaba a escribir la materia de nuevo para cambiarle un número.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Si_el_alta_falla_el_error_se_muestra_y_el_formulario_tambien_vuelve_a_1()
+	public async Task Un_alta_rechazada_conserva_lo_que_el_usuario_escribio()
 	{
 		var contexto = new Contexto();
 		await contexto.SeleccionarCurriculaAsync();
 		contexto.ServicioMateria.RegistrarMateriaAsync(Arg.Any<RegistrarMateriaRequest>())
 								.Returns(Task.FromException<Guid>(new InvalidOperationException("duplicada")));
+
+		// Se abre el alta como lo hace el botón: es el recorrido que deja el formulario a la vista.
+		await contexto.ViewModel.RegistrarCommand.ExecuteAsync("Materia");
 		contexto.ViewModel.Descripcion = "Quimica";
 		contexto.ViewModel.CargaHoraria = 5;
 
 		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync("Materia");
 
 		contexto.Dialogos.Errores.Single().Mensaje.ShouldBe("duplicada");
-		contexto.ViewModel.CargaHoraria.ShouldBe(1);
+		contexto.ViewModel.Descripcion.ShouldBe("Quimica");
+		contexto.ViewModel.CargaHoraria.ShouldBe(5);
+		contexto.ViewModel.HabilitarRegistrarMateria.ShouldBeTrue("el formulario queda abierto para corregir");
+	}
+
+	/// <summary>
+	/// Un alta exitosa vacía el formulario y devuelve a la vista la tarjeta de currículas.
+	/// </summary>
+	/// <remarks>
+	/// Es la guarda de la pantalla que se quedaba en blanco: abrir el alta colapsa la tarjeta —su
+	/// <c>Visibility</c> cuelga de <c>HabilitarCurriculas</c>— y nadie la volvía a encender, así que
+	/// después de agregar una materia quedaba el encabezado y nada debajo.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Un_alta_exitosa_cierra_el_formulario_y_devuelve_la_tarjeta()
+	{
+		var contexto = new Contexto();
+		await contexto.SeleccionarCurriculaAsync();
+		await contexto.ViewModel.RegistrarCommand.ExecuteAsync("Materia");
+		contexto.ViewModel.HabilitarCurriculas.ShouldBeFalse("el alta oculta la tarjeta mientras dura");
+		contexto.ViewModel.Descripcion = "Quimica";
+
+		await contexto.ViewModel.GuardarCommandAsync.ExecuteAsync("Materia");
+
+		contexto.ViewModel.HabilitarRegistrarMateria.ShouldBeFalse();
+		contexto.ViewModel.HabilitarCurriculas.ShouldBeTrue();
+		contexto.ViewModel.Descripcion.ShouldBeEmpty();
+	}
+
+	/// <summary>Cancelar el alta también devuelve la tarjeta.</summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Cancelar_el_alta_devuelve_la_tarjeta()
+	{
+		var contexto = new Contexto();
+		await contexto.SeleccionarCurriculaAsync();
+		await contexto.ViewModel.RegistrarCommand.ExecuteAsync("Materia");
+
+		await contexto.ViewModel.CancelarCommand.ExecuteAsync("Nueva");
+
+		contexto.ViewModel.HabilitarRegistrarMateria.ShouldBeFalse();
+		contexto.ViewModel.HabilitarCurriculas.ShouldBeTrue();
 	}
 
 	[Fact]
@@ -422,18 +499,98 @@ public class GestionCurriculasViewModelTests
 		contexto.ViewModel.HabilitarCurriculas.ShouldBeTrue();
 	}
 
+	/// <summary>
+	/// Un curso sin currículas deja la tarjeta a la vista con la grilla vacía.
+	/// </summary>
+	/// <remarks>
+	/// Antes colapsaba la tarjeta entera y la reemplazaba por un aviso, con lo cual el estado vacío de
+	/// la grilla —que ya trae su frase y dice qué hacer— era código inalcanzable. El contrato de
+	/// <c>docs/ui-ux.md</c> es que toda grilla declara su vacío y que ese vacío se vea.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Sin_curriculas_se_muestra_la_notificacion_y_no_se_piden_materias()
+	public async Task Sin_curriculas_la_grilla_queda_vacia_y_a_la_vista()
 	{
 		var contexto = new Contexto();
 		contexto.DevolverCurriculas();
 
 		await contexto.ViewModel.CargarCurriculasCommandAsync.ExecuteAsync(null);
 
-		contexto.ViewModel.HabilitarNotificacion.ShouldBeTrue();
-		contexto.ViewModel.HabilitarCurriculas.ShouldBeFalse();
+		contexto.ViewModel.Curriculas.ShouldBeEmpty();
+		contexto.ViewModel.HabilitarCurriculas.ShouldBeTrue();
+		contexto.ViewModel.HabilitarNotificacion.ShouldBeFalse();
 		_ = contexto.ServicioMateria.DidNotReceiveWithAnyArgs().ListarMateriasSegunCurriculaAsync(default!);
+	}
+
+	/// <summary>
+	/// La ocupación de la currícula elegida se consulta sola y apaga el alta cuando no entra nada más.
+	/// </summary>
+	/// <remarks>
+	/// Es el arreglo del tope invisible: <c>ServicioMateria</c> calculaba estos dos números justo
+	/// antes de rechazar un alta y los descartaba, así que el usuario descubría el límite chocándose.
+	/// </remarks>
+	[Theory]
+	[Trait("Categoria", "Unidad")]
+	[InlineData(3, 9, true)]
+	[InlineData(14, 9, false)]
+	[InlineData(3, 40, false)]
+	public async Task El_cupo_de_la_curricula_decide_si_se_puede_agregar_otra_materia(int espacios, int horas, bool admite)
+	{
+		var contexto = new Contexto();
+		contexto.DevolverOcupacion(espaciosOcupados: espacios, horasOcupadas: horas);
+
+		await contexto.SeleccionarCurriculaAsync();
+
+		contexto.ViewModel.EspaciosOcupados.ShouldBe(espacios);
+		contexto.ViewModel.EspaciosMaximos.ShouldBe(14);
+		contexto.ViewModel.HorasOcupadas.ShouldBe(horas);
+		contexto.ViewModel.HorasMaximas.ShouldBe(40);
+		contexto.ViewModel.AdmiteOtraMateria.ShouldBe(admite);
+		contexto.ViewModel.RegistrarCommand.CanExecute("Materia").ShouldBe(admite);
+	}
+
+	/// <summary>
+	/// El combo del alta ofrece sólo las horas que la currícula todavía admite.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task El_combo_de_horas_se_recorta_a_las_que_entran()
+	{
+		var contexto = new Contexto();
+		contexto.DevolverOcupacion(espaciosOcupados: 3, horasOcupadas: 38);
+
+		await contexto.SeleccionarCurriculaAsync();
+
+		// Quedan 2 horas libres: el tope de 5 por materia deja de mandar.
+		contexto.ViewModel.OpcionesCargaHoraria.ShouldBe(new[] { 1, 2 });
+	}
+
+	/// <summary>
+	/// Sobre una currícula cerrada no se puede agregar, editar ni quitar materias.
+	/// </summary>
+	/// <remarks>
+	/// <c>ServicioMateria</c> exige currícula vigente para las tres operaciones. La grilla lista
+	/// también las cerradas —son el registro de los años anteriores— y sobre ellas los botones
+	/// quedaban encendidos hasta que Core contestaba <c>CurriculaNoVigenteException</c>.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Una_curricula_cerrada_no_acepta_cambios_en_sus_materias()
+	{
+		var contexto = new Contexto();
+		var cerradaID = Guid.NewGuid();
+		contexto.DevolverCurriculas(new CurriculaResponse(contexto.CursoID, cerradaID, new DateTime(2020, 3, 1), new DateTime(2023, 12, 31), Vigente: false));
+		contexto.DevolverMaterias(contexto.CrearMateria("Historia"));
+
+		await contexto.ViewModel.CargarCurriculasCommandAsync.ExecuteAsync(null);
+		contexto.ViewModel.Curricula = contexto.ViewModel.Curriculas.Single();
+		await contexto.ViewModel.CargarMateriasCommandAsync.ExecuteAsync(null);
+		contexto.ViewModel.Materia = contexto.ViewModel.Materias.Single();
+
+		contexto.ViewModel.CurriculaVigente.ShouldBeFalse();
+		contexto.ViewModel.RegistrarCommand.CanExecute("Materia").ShouldBeFalse();
+		contexto.ViewModel.EditarCommand.CanExecute("Materia").ShouldBeFalse();
+		contexto.ViewModel.EliminarCommandAsync.CanExecute("Materia").ShouldBeFalse();
 	}
 
 	[Fact]
@@ -442,9 +599,10 @@ public class GestionCurriculasViewModelTests
 	{
 		var contexto = new Contexto();
 		contexto.DevolverMaterias(contexto.CrearMateria("A", 1), contexto.CrearMateria("B", 2));
-		await contexto.SeleccionarCurriculaAsync();
 
-		await contexto.ViewModel.CargarMateriasCommandAsync.ExecuteAsync(null);
+		// Elegir la currícula ES lo que pide sus materias: el helper hace el mismo recorrido que la
+		// grilla, que dispara CargarMateriasCommandAsync desde su SelectionChanged.
+		await contexto.SeleccionarCurriculaAsync();
 
 		_ = contexto.ServicioMateria.Received(1).ListarMateriasSegunCurriculaAsync(new ListarMateriasSegunCurriculaRequest(contexto.CursoID, contexto.CurriculaID));
 		contexto.ViewModel.Materias.Select(m => m.Descripcion).ShouldBe(new[] { "A", "B" });
@@ -547,7 +705,7 @@ public class GestionCurriculasViewModelTests
 	public void Curricula_notifica_a_Registrar()
 	{
 		var contexto = new Contexto();
-		var curricula = new CurriculaViewModel(new CurriculaResponse(contexto.CursoID, contexto.CurriculaID, DateTime.Today, null));
+		var curricula = new CurriculaViewModel(new CurriculaResponse(contexto.CursoID, contexto.CurriculaID, DateTime.Today, null, Vigente: true));
 
 		ContarNotificaciones(contexto.ViewModel.RegistrarCommand, () => { contexto.ViewModel.Curricula = curricula; }).ShouldBeGreaterThan(0);
 	}

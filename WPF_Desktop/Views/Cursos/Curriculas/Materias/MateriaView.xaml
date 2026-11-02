@@ -16,17 +16,13 @@
 		Las columnas de la grilla raíz eran 240*/121* y después una grilla interna las volvía a
 		partir en mitades, así que la proporción declarada no se aplicaba a nada.
 	-->
-	<UserControl.Resources>
-		<!-- Horas cátedra válidas (1 a 5): el combo expone el valor de dominio, no su índice. -->
-		<x:Array x:Key="horasCatedra" Type="{ x:Type TypeName=sys:Int32 }">
-			<sys:Int32>1</sys:Int32>
-			<sys:Int32>2</sys:Int32>
-			<sys:Int32>3</sys:Int32>
-			<sys:Int32>4</sys:Int32>
-			<sys:Int32>5</sys:Int32>
-		</x:Array>
-	</UserControl.Resources>
-
+	<!--
+		EL COMBO DE HORAS SALE DE LA MATERIA Y YA NO DE UNA LISTA FIJA. Era un x:Array de 1 a 5 con
+		el SelectedItem en TwoWay, así que una materia con una carga fuera de esa lista no encontraba
+		su ítem y WPF le escribía null de vuelta: la materia quedaba inválida sola al abrir el editor
+		y "Guardar materia" —que cuelga su visibilidad del IsEnabled— desaparecía sin explicación.
+		OpcionesCargaHoraria incluye siempre el valor actual.
+	-->
 	<GroupBox Header="MATERIA" Style="{ StaticResource ResourceKey=Seccion }">
 		<Grid>
 			<Grid.ColumnDefinitions>
@@ -46,8 +42,9 @@
 			<HeaderedContentControl Grid.Column="1"
 									Header="Horas cátedra"
 									Style="{ StaticResource ResourceKey=Campo.Derecha }">
-				<ComboBox ItemsSource="{ StaticResource ResourceKey=horasCatedra }"
-						  SelectedItem="{ Binding Path=HorasCatedra, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+				<ComboBox AutomationProperties.Name="Horas cátedra de la materia"
+						  ItemsSource="{ Binding Path=OpcionesCargaHoraria, Mode=OneWay }"
+						  SelectedItem="{ Binding Path=HorasCatedra, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 						  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
 			</HeaderedContentControl>
 		</Grid>

@@ -30,17 +30,12 @@
 		El formulario de materia nueva tenía los rótulos en una columna a la derecha de su
 		propio campo. Pasan arriba, como en el resto de la app.
 	-->
-	<UserControl.Resources>
-		<!-- Horas cátedra válidas (1 a 5): el combo expone el valor de dominio, no su índice. -->
-		<x:Array x:Key="horasCatedra" Type="{ x:Type TypeName=sys:Int32 }">
-			<sys:Int32>1</sys:Int32>
-			<sys:Int32>2</sys:Int32>
-			<sys:Int32>3</sys:Int32>
-			<sys:Int32>4</sys:Int32>
-			<sys:Int32>5</sys:Int32>
-		</x:Array>
-	</UserControl.Resources>
-
+	<!--
+		EL COMBO DE HORAS YA NO ES UNA LISTA FIJA. Era un x:Array de 1 a 5 escrito acá y repetido en
+		MateriaView, así que con 38 de las 40 horas consumidas seguía ofreciendo 5 y el alta fallaba.
+		Ahora sale de OpcionesCargaHoraria, que el ViewModel arma con las horas que la currícula
+		todavía tiene libres: ofrecer una carga que no entra es ofrecer un error.
+	-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
 			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarCurriculasCommandAsync }"/>
@@ -152,7 +147,8 @@
 					<HeaderedContentControl Grid.Column="1"
 											Header="Horas cátedra"
 											Style="{ StaticResource ResourceKey=Campo.Derecha }">
-						<ComboBox ItemsSource="{ StaticResource ResourceKey=horasCatedra }"
+						<ComboBox AutomationProperties.Name="Horas cátedra de la materia nueva"
+								  ItemsSource="{ Binding Path=OpcionesCargaHoraria, Mode=OneWay }"
 								  SelectedItem="{ Binding Path=CargaHoraria, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
 					</HeaderedContentControl>
@@ -182,82 +178,174 @@
 				IsEnabled="{ Binding Path=HabilitarCurriculas, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
 				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-			<ScrollViewer VerticalScrollBarVisibility="Auto">
-				<Grid Margin="20 18">
+			<Grid Margin="20 18">
 					<Grid.RowDefinitions>
 						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="2*"/>
 						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="3*"/>
 					</Grid.RowDefinitions>
 
-					<!--#region CURRÍCULAS-->
-					<Grid Grid.Row="0">
+					<!--#region CURRÍCULAS
+						SE FUE EL ScrollViewer DE PÁGINA Y LOS DOS MaxHeight. La grilla y la lista
+						traen su propio ScrollViewer por plantilla, y uno de ellos adentro de un
+						ScrollViewer de página se come la rueda del mouse aunque no tenga nada que
+						desplazar: media pantalla quedaba muerta al gesto principal de navegación.
+						La forma correcta es la que usan las pantallas de gestión y la que describe
+						docs/ui-ux.md: la tarjeta llena el alto y cada lista toma una fila *.
+					-->
+					<TextBlock Grid.Row="0"
+							   Margin="0 0 0 12"
+							   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+							   Text="DISEÑOS CURRICULARES DEL CURSO"/>
+
+					<DataGrid x:Name="DataGrid_Curriculas"
+							  Grid.Row="1"
+							  AutomationProperties.Name="Diseños curriculares del curso"
+							  ItemsSource="{ Binding Path=Curriculas, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+							  SelectedItem="{ Binding Path=Curricula, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
+							  IsReadOnly="True"
+							  IsSynchronizedWithCurrentItem="True"
+							  Loaded="DataGridCurriculas_Loaded"
+							  Style="{ StaticResource ResourceKey=Grilla }"
+							  Tag="El curso todavía no tiene diseño curricular. Empezá con &#x201C;Nueva currícula&#x201D;."
+							  d:ItemsSource="{ d:SampleData ItemCount=5 }">
+						<DataGrid.Columns>
+							<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:yyyy}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="CICLO"
+												Width="Auto"/>
+							<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="DESDE"
+												Width="*"/>
+							<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Vigente' }"
+												ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+												Header="HASTA"
+												Width="*"/>
+							<!--
+								Celda.Booleana y no DataGridCheckBoxColumn: la grilla es de sólo
+								lectura, así que la casilla dibujaba un control de entrada que no
+								acepta entrada. El glifo distingue los dos estados por la forma y no
+								sólo por el color.
+							-->
+							<DataGridTemplateColumn Header="VIGENTE" Width="Auto">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<fa:IconBlock Style="{ StaticResource ResourceKey=Celda.Booleana }"
+													  Tag="{ Binding Path=Vigente, Mode=OneWay }"/>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
+						</DataGrid.Columns>
+
+						<behaviors:Interaction.Triggers>
+							<behaviors:EventTrigger EventName="SelectionChanged"
+													SourceObject="{ Binding ElementName=DataGrid_Curriculas }">
+								<behaviors:InvokeCommandAction Command="{ Binding Path=CargarMateriasCommandAsync }"/>
+							</behaviors:EventTrigger>
+						</behaviors:Interaction.Triggers>
+					</DataGrid>
+					<!--#endregion-->
+
+					<!--#region CUPO DE LA CURRÍCULA
+						EL TOPE DEJA DE SER UNA SORPRESA. La currícula admite 14 espacios y 40 horas
+						cátedra semanales, y ninguno de los dos números aparecía en la pantalla: se
+						descubrían cuando el alta fallaba. Los dos salen de ConsultarOcupacionAsync,
+						que lee los mismos contadores que Core usa para decidir el rechazo.
+					-->
+					<Grid Grid.Row="2" Margin="0 16 0 12">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<StackPanel Grid.Column="0"
+									Margin="0 0 32 0"
+									Visibility="{ Binding Path=Curricula, Mode=OneWay, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="ESPACIOS CURRICULARES"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }">
+								<Run Text="{ Binding Path=EspaciosOcupados, Mode=OneWay }"/><Run Text=" de "/><Run Text="{ Binding Path=EspaciosMaximos, Mode=OneWay }"/>
+							</TextBlock>
+						</StackPanel>
+
+						<StackPanel Grid.Column="1"
+									Visibility="{ Binding Path=Curricula, Mode=OneWay, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="HORAS CÁTEDRA SEMANALES"/>
+							<TextBlock Margin="0 2 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.DatoFuerte }">
+								<Run Text="{ Binding Path=HorasOcupadas, Mode=OneWay }"/><Run Text=" de "/><Run Text="{ Binding Path=HorasMaximas, Mode=OneWay }"/>
+							</TextBlock>
+						</StackPanel>
+					</Grid>
+					<!--#endregion-->
+
+					<!--#region MATERIAS
+						SIN GroupBox, Y NO ES COSMÉTICO. La plantilla del estilo "Seccion" envuelve su
+						contenido en un StackPanel, y un StackPanel mide a sus hijos con alto
+						INFINITO: adentro de él una fila * no acota nada, degenera al alto total del
+						contenido. La lista crecía con todas las materias —por eso no aparecía su
+						barra de desplazamiento, nunca le faltaba lugar— y empujaba el editor y la
+						barra de acciones fuera de la tarjeta, así que "Editar materia" existía pero
+						quedaba recortada. El MaxHeight="240" que esta lista tenía antes estaba
+						tapando exactamente esto.
+
+						La regla superior y el rótulo que daba el GroupBox se dibujan acá a mano, que
+						son dos elementos, y así la fila * vuelve a significar lo que dice.
+					-->
+					<Grid Grid.Row="3">
 						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="*"/>
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="Auto"/>
 						</Grid.RowDefinitions>
 
-						<TextBlock Grid.Row="0"
-								   Margin="0 0 0 12"
-								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-								   Text="DISEÑOS CURRICULARES DEL CURSO"/>
+						<Border Grid.Row="0"
+								BorderBrush="{ StaticResource ResourceKey=Linea }"
+								BorderThickness="0 1 0 0"
+								Margin="0 0 0 16"
+								SnapsToDevicePixels="True">
+							<TextBlock Margin="0 14 0 0"
+									   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="MATERIAS DEL DISEÑO ELEGIDO"/>
+						</Border>
 
-						<DataGrid x:Name="DataGrid_Curriculas"
-								  Grid.Row="1"
-								  ItemsSource="{ Binding Path=Curriculas, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-								  SelectedItem="{ Binding Path=Curricula, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
-								  IsReadOnly="True"
-								  IsSynchronizedWithCurrentItem="True"
-								  Loaded="DataGridCurriculas_Loaded"
-								  MaxHeight="220"
-								  MinHeight="120"
-								  Style="{ StaticResource ResourceKey=Grilla }"
-								  Tag="El curso todavía no tiene diseño curricular. Empezá con &#x201C;Nueva currícula&#x201D;."
-								  d:ItemsSource="{ d:SampleData ItemCount=5 }">
-							<DataGrid.Columns>
-								<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:yyyy}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-													Header="CICLO"
-													Width="Auto"/>
-								<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-													Header="DESDE"
-													Width="*"/>
-								<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Sin datos', TargetNullValue='Vigente' }"
-													Header="HASTA"
-													Width="*"/>
-								<DataGridCheckBoxColumn Binding="{ Binding Path=EstaActiva, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, FallbackValue=False, TargetNullValue=False }"
-														Header="ACTIVO"
-														Width="Auto"/>
-							</DataGrid.Columns>
+						<!--
+							Los dos motivos por los que esta currícula no acepta materias, cada uno
+							con su salida. Comparten fila porque son excluyentes: una currícula
+							cerrada no se mide por cupo.
+						-->
+						<Border Grid.Row="1"
+								Margin="0 0 0 12"
+								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								Visibility="{ Binding Path=CurriculaVigente, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+									   Text="Este diseño curricular está cerrado: sus materias son el registro de un ciclo anterior y no se pueden agregar, editar ni quitar. Para trabajar, elegí el diseño vigente de la lista de arriba."
+									   TextWrapping="Wrap"/>
+						</Border>
 
-							<behaviors:Interaction.Triggers>
-								<behaviors:EventTrigger EventName="SelectionChanged"
-														SourceObject="{ Binding ElementName=DataGrid_Curriculas }">
-									<behaviors:InvokeCommandAction Command="{ Binding Path=CargarMateriasCommandAsync }"/>
-								</behaviors:EventTrigger>
-							</behaviors:Interaction.Triggers>
-						</DataGrid>
-					</Grid>
-					<!--#endregion-->
+						<Border Grid.Row="1"
+								Margin="0 0 0 12"
+								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								Visibility="{ Binding Path=MostrarAvisoSinCupo, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+							<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+									   TextWrapping="Wrap">
+								<Run Text="Este diseño curricular llegó a su tope: "/><Run Text="{ Binding Path=EspaciosOcupados, Mode=OneWay }"/><Run Text=" de "/><Run Text="{ Binding Path=EspaciosMaximos, Mode=OneWay }"/><Run Text=" espacios y "/><Run Text="{ Binding Path=HorasOcupadas, Mode=OneWay }"/><Run Text=" de "/><Run Text="{ Binding Path=HorasMaximas, Mode=OneWay }"/><Run Text=" horas cátedra. Para agregar otra materia hay que quitar alguna o bajarle la carga horaria."/>
+							</TextBlock>
+						</Border>
 
-					<!--#region MATERIAS-->
-					<GroupBox Grid.Row="1"
-							  Header="MATERIAS DEL DISEÑO ELEGIDO"
-							  Margin="0 20 0 0"
-							  Style="{ StaticResource ResourceKey=Seccion }">
-						<Grid>
-							<Grid.RowDefinitions>
-								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="Auto"/>
-							</Grid.RowDefinitions>
-
-							<ListView x:Name="ListView_Materias"
-									  Grid.Row="0"
+						<ListView x:Name="ListView_Materias"
+								  Grid.Row="2"
+									  AutomationProperties.Name="Materias del diseño curricular elegido"
 									  ItemsSource="{ Binding Path=Materias, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 									  SelectedItem="{ Binding Path=Materia, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged }"
 									  IsSynchronizedWithCurrentItem="True"
-									  MaxHeight="240"
-									  MinHeight="120"
 									  Style="{ StaticResource ResourceKey=Lista.Indice }"
 									  Tag="Este diseño curricular todavía no tiene materias. Agregá la primera con &#x201C;Nueva materia&#x201D;."
 									  d:ItemsSource="{ d:SampleData ItemCount=5 }">
@@ -272,6 +360,23 @@
 										<GridViewColumn DisplayMemberBinding="{ Binding Path=Descripcion, Mode=OneWay }"
 														Header="MATERIA"
 														Width="420"/>
+										<!--
+											La carga horaria faltaba, y es la mitad del dato: las
+											horas de cada materia son las que suman contra el tope de
+											40, así que sin esta columna no había forma de saber cuál
+											bajar cuando la currícula se llena.
+
+											LA UNIDAD VA EN LA CELDA Y NO EN EL ENCABEZADO, porque el
+											encabezado NO SE DIBUJA: la plantilla de Lista.Indice
+											tiene sólo un ItemsPresenter y ningún
+											GridViewHeaderRowPresenter, así que este ListView nunca
+											muestra los Header de su GridView. Un número suelto al
+											lado del nombre no dice qué es. Ver el pendiente anotado
+											en docs/ui-ux.md.
+										-->
+										<GridViewColumn DisplayMemberBinding="{ Binding Path=HorasCatedra, Mode=OneWay, StringFormat={}{0} h cátedra }"
+														Header="HORAS CÁTEDRA"
+														Width="140"/>
 										<!--
 											ACÁ HABÍA DOS BOTONES QUE OPERABAN SOBRE OTRA FILA.
 
@@ -293,17 +398,17 @@
 							</ListView>
 
 							<!-- Edición de la materia elegida en la lista de arriba. -->
-							<ContentControl Grid.Row="1"
+							<ContentControl Grid.Row="3"
 											IsEnabled="{ Binding Path=HabilitarEditarMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 											Margin="0 16 0 0"
 											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
 								<vMaterias:MateriaView DataContext="{ Binding Path=SelectedItem, ElementName=ListView_Materias }"/>
 							</ContentControl>
 
-							<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+							<HeaderedContentControl Grid.Row="4" Style="{ StaticResource ResourceKey=Acciones }">
 								<HeaderedContentControl.Header>
 									<StackPanel Orientation="Horizontal">
-										<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"
+										<Button Command="{ Binding Path=EliminarCommandAsync }"
 												CommandParameter="Materia"
 												Content="Quitar materia"
 												Margin="0 0 8 0"
@@ -325,7 +430,7 @@
 											Margin="0 0 8 0"
 											Style="{ StaticResource ResourceKey=Btn.Secundario }"
 											ToolTip="Abrir la materia elegida para editarla"/>
-									<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+									<Button Command="{ Binding Path=GuardarCommandAsync }"
 											CommandParameter="Update"
 											Content="Guardar materia"
 											Margin="0 0 8 0"
@@ -339,11 +444,9 @@
 											ToolTip="Cátedras y docentes de la materia elegida"/>
 								</StackPanel>
 							</HeaderedContentControl>
-						</Grid>
-					</GroupBox>
+					</Grid>
 					<!--#endregion-->
-				</Grid>
-			</ScrollViewer>
+			</Grid>
 		</Border>
 		<!--#endregion-->
 

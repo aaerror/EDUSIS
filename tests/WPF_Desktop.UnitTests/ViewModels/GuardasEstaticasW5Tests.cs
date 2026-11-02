@@ -50,37 +50,76 @@ public class GuardasEstaticasW5Tests
 		combo.Elements().ShouldBeEmpty(); // sin ComboBoxItem con IsSelected="True" que empuje un valor al cargar
 	}
 
+	/// <summary>
+	/// Ningún combo de horas cátedra sale de una lista fija declarada en el XAML.
+	/// </summary>
+	/// <remarks>
+	/// Reemplaza a las dos guardas que exigían el <c>x:Array</c> de 1 a 5, porque ese arreglo era la
+	/// causa de dos defectos distintos. En el ALTA ofrecía 5 horas con la currícula casi llena y el
+	/// alta moría en <c>LimiteHorasSemanalesException</c>. En la EDICIÓN era peor: con el
+	/// <c>SelectedItem</c> en <c>TwoWay</c>, una materia cuya carga no estuviera en la lista no
+	/// encontraba su ítem y WPF le escribía <c>null</c> de vuelta, así que la materia quedaba
+	/// inválida sola al abrir el editor y el botón de guardar —cuya visibilidad cuelga del
+	/// <c>IsEnabled</c>— desaparecía sin explicación.
+	///
+	/// Que los ítems sigan siendo valores de dominio y no índices lo cubre
+	/// <c>El_combo_de_horas_liga_SelectedItem_al_valor_y_no_SelectedIndex</c>.
+	/// </remarks>
 	[Theory]
 	[Trait("Categoria", "Unidad")]
 	[InlineData(GestionCurriculas)]
 	[InlineData(MateriaView)]
-	public void El_primer_valor_del_combo_es_1_y_los_items_son_1_a_5_sin_corrimiento(string vista)
+	public void Ningun_combo_de_horas_sale_de_una_lista_fija(string vista)
 	{
 		var documento = Cargar(vista);
-		var arreglo = documento.Descendants().Single(e => e.Name.LocalName == "Array" && (string?) e.Attribute(Xaml + "Key") == "horasCatedra");
 
-		var valores = arreglo.Elements().Where(e => e.Name.LocalName == "Int32").Select(e => int.Parse(e.Value.Trim())).ToList();
+		documento.Descendants()
+				 .Any(e => e.Name.LocalName == "Array" && (string?) e.Attribute(Xaml + "Key") == "horasCatedra")
+				 .ShouldBeFalse($"{ vista } volvió a declarar la lista fija de horas cátedra");
 
-		valores.ShouldBe(new[] { 1, 2, 3, 4, 5 });
-		valores.First().ShouldBe(1);
-	}
-
-	[Theory]
-	[Trait("Categoria", "Unidad")]
-	[InlineData(GestionCurriculas)]
-	[InlineData(MateriaView)]
-	public void El_combo_de_horas_apunta_al_arreglo_de_enteros_declarado_en_la_misma_vista(string vista)
-	{
-		var documento = Cargar(vista);
 		var combo = Combos(documento).Single(c => ((string?) c.Attribute("SelectedItem") ?? string.Empty).Contains("Binding"));
 
-		var origen = (string?) combo.Attribute("ItemsSource");
+		((string?) combo.Attribute("ItemsSource")).ShouldNotBeNull();
+		((string) combo.Attribute("ItemsSource")!).ShouldContain("OpcionesCargaHoraria");
+	}
 
-		origen.ShouldNotBeNull();
-		Regex.IsMatch(origen!, @"StaticResource\s+(ResourceKey=)?horasCatedra").ShouldBeTrue();
-		var arreglo = documento.Descendants().Single(e => e.Name.LocalName == "Array" && (string?) e.Attribute(Xaml + "Key") == "horasCatedra");
-		((string?) arreglo.Attribute("Type")).ShouldNotBeNull();
-		((string) arreglo.Attribute("Type")!).ShouldContain("Int32");
+	/// <summary>
+	/// El combo de la edición sale de la MATERIA, que es la única que puede garantizar que su propio
+	/// valor esté entre las opciones.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_combo_de_la_edicion_ofrece_las_opciones_de_la_materia()
+	{
+		var combo = Combos(Cargar(MateriaView)).Single(c => ((string?) c.Attribute("SelectedItem") ?? string.Empty).Contains("HorasCatedra"));
+
+		((string) combo.Attribute("ItemsSource")!).ShouldContain("OpcionesCargaHoraria");
+
+		DebenExistirEn(typeof(MateriaViewModel), new[] { "OpcionesCargaHoraria", "HorasCatedra" });
+	}
+
+	/// <summary>
+	/// El combo del alta sale del ViewModel y no de una lista fija.
+	/// </summary>
+	/// <remarks>
+	/// Es la guarda del defecto que reemplazó al arreglo: con 38 de las 40 horas de la currícula
+	/// consumidas, un combo fijo de 1 a 5 seguía ofreciendo 5 y el alta moría en
+	/// <c>LimiteHorasSemanalesException</c>. Ofrecer una carga que no entra es ofrecer un error.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_combo_del_alta_ofrece_solo_las_horas_que_entran()
+	{
+		var documento = Cargar(GestionCurriculas);
+		var combo = Combos(documento).Single(c => ((string?) c.Attribute("SelectedItem") ?? string.Empty).Contains("CargaHoraria"));
+
+		((string) combo.Attribute("ItemsSource")!).ShouldContain("OpcionesCargaHoraria");
+
+		documento.Descendants()
+				 .Any(e => e.Name.LocalName == "Array" && (string?) e.Attribute(Xaml + "Key") == "horasCatedra")
+				 .ShouldBeFalse("el alta ya no usa la lista fija de horas");
+
+		DebenExistirEn(typeof(GestionCurriculasViewModel), new[] { "OpcionesCargaHoraria", "AdmiteOtraMateria", "EspaciosOcupados", "EspaciosMaximos", "HorasOcupadas", "HorasMaximas" });
 	}
 
 	[Theory]
@@ -266,13 +305,18 @@ public class GuardasEstaticasW5Tests
 		var curriculas = documento.Descendants().Single(e => e.Name.LocalName == "DataGrid" && (string?) e.Attribute(Xaml + "Name") == "DataGrid_Curriculas");
 		((string) curriculas.Attribute("ItemsSource")!).ShouldContain("Curriculas");
 		var columnasCurricula = ColumnasBindeadas(curriculas);
-		columnasCurricula.ShouldBe(new[] { "FechaInicio", "FechaInicio", "FechaFin", "EstaActiva" }); // sin "Materias": la elimino W3.B
+		// "Vigente" reemplaza a "EstaActiva": la vigencia la decide el dominio y viaja en el response,
+		// en vez de deducirse de que la fecha de fin sea nula. La columna además dejó de ser un
+		// DataGridCheckBoxColumn de sólo lectura y pasó a Celda.Booleana, cuyo enlace entra por Tag.
+		columnasCurricula.ShouldBe(new[] { "FechaInicio", "FechaInicio", "FechaFin", "Vigente" });
 		DebenExistirEn(typeof(CurriculaViewModel), columnasCurricula);
 
 		var materias = documento.Descendants().Single(e => e.Name.LocalName == "ListView" && (string?) e.Attribute(Xaml + "Name") == "ListView_Materias");
 		((string) materias.Attribute("ItemsSource")!).ShouldContain("Path=Materias");
 		var columnasMateria = ColumnasBindeadas(materias);
-		columnasMateria.ShouldBe(new[] { "Descripcion" });
+		// La carga horaria es la mitad del dato: es lo que suma contra el tope de 40 horas de la
+		// currícula, y sin la columna no había forma de saber a qué materia bajarle horas.
+		columnasMateria.ShouldBe(new[] { "Descripcion", "HorasCatedra" });
 		DebenExistirEn(typeof(MateriaViewModel), columnasMateria);
 	}
 

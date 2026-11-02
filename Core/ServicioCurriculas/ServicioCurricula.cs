@@ -40,6 +40,37 @@ internal class ServicioCurricula : IServicio, IServicioCurricula
 		return unaCurricula;
 	}
 
+	/// <remarks>
+	/// Reusa los dos contadores del repositorio de materias —los mismos que <c>ServicioMateria</c> le
+	/// pasa a <c>TopesCurriculares</c> antes de un alta— y les agrega los máximos. No valida nada: es
+	/// una consulta, y la regla la sigue decidiendo el dominio en el momento del alta. Que los dos
+	/// caminos lean exactamente los mismos contadores es lo que evita que la pantalla prometa un cupo
+	/// que después el alta rechaza.
+	/// </remarks>
+	public async Task<OcupacionCurricularResponse> ConsultarOcupacionAsync(CurriculaRequest request)
+	{
+		try
+		{
+			// Exige que la currícula exista y pertenezca al curso: preguntar la ocupación de una
+			// currícula de otro curso devolvería un número correcto sobre el objeto equivocado.
+			await BuscarCurriculaAsync(request);
+
+			var espacios = await _unitOfWork.Materias.TotalEspaciosSegunCurriculaAsync(request.CurriculaID);
+			var horas = await _unitOfWork.Materias.TotalHorasCatedraSegunCurriculaAsync(request.CurriculaID);
+
+			return new OcupacionCurricularResponse(
+				EspaciosOcupados: espacios,
+				EspaciosMaximos: TopesCurriculares.MAXIMO_ESPACIOS_CURRICULARES,
+				HorasOcupadas: horas,
+				HorasMaximas: TopesCurriculares.MAXIMO_HORAS_CATEDRA_SEMANALES);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
 	public async Task<IReadOnlyCollection<CurriculaResponse>> ListarCurriculasSegunCursoAsync(CursoRequest request)
 	{
 		try
@@ -53,7 +84,8 @@ internal class ServicioCurricula : IServicio, IServicioCurricula
 					CursoID: x.CursoID,
 					CurriculaID: x.Id,
 					FechaInicio: x.Periodo.FechaInicio,
-					FechaFin: x.Periodo.FechaFin))
+					FechaFin: x.Periodo.FechaFin,
+					Vigente: x.EstaVigente()))
 				.ToList();
 		}
 		catch (Exception ex)
