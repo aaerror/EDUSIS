@@ -187,11 +187,25 @@ internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacio
 	/// </remarks>
 	partial void OnVistaChanged(string value)
 	{
-		if (value == VISTA_HISTORIAL)
+		ConsultarLaVistaAbierta();
+	}
+
+	/// <summary>
+	/// Pide los datos de la vista abierta, si esa consulta no está ya en curso.
+	/// </summary>
+	/// <remarks>
+	/// Se dispara sin <c>await</c> —un <c>partial void</c> no es asíncrono— así que pregunta por
+	/// <c>CanExecute</c> antes: <c>AsyncRelayCommand</c> lo apaga mientras corre, y dos consultas de
+	/// la misma pantalla en vuelo a la vez chocan contra el mismo <c>DbContext</c>, que no es
+	/// reentrante.
+	/// </remarks>
+	private void ConsultarLaVistaAbierta()
+	{
+		if (Vista == VISTA_HISTORIAL && ListarPlanillasCommand.CanExecute(null))
 		{
 			ListarPlanillasCommand.Execute(null);
 		}
-		else if (value == VISTA_RESUMEN)
+		else if (Vista == VISTA_RESUMEN && ConsultarResumenCommand.CanExecute(null))
 		{
 			ConsultarResumenCommand.Execute(null);
 		}
@@ -971,14 +985,7 @@ internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacio
 		Hasta = DateTime.Today;
 		Desde = DateTime.Today.AddDays(-(cantidad - 1));
 
-		if (Vista == VISTA_HISTORIAL)
-		{
-			ListarPlanillasCommand.Execute(null);
-		}
-		else if (Vista == VISTA_RESUMEN)
-		{
-			ConsultarResumenCommand.Execute(null);
-		}
+		ConsultarLaVistaAbierta();
 	}
 	#endregion
 
@@ -1082,27 +1089,29 @@ internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacio
 	/// Lleva la planilla elegida del historial a la vista del día.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Es lo que vuelve navegable al historial: sin esto sería una tabla de la que hay que copiar una
 	/// fecha a mano en el calendario de la otra vista.
+	/// </para>
+	/// <para>
+	/// NO CONSULTA NADA POR SU CUENTA. Cambiar <see cref="Fecha"/> ya pide la planilla de ese día
+	/// —ver el <c>remarks</c> de <c>OnFechaChanged</c>—, y agregar acá un <c>await</c> propio ponía
+	/// dos cargas en vuelo a la vez: el setter dispara la suya sin poder esperarla, porque un
+	/// <c>partial void</c> no es asíncrono. El <c>DbContext</c> no es reentrante y la segunda moría
+	/// con "A second operation was started on this context instance". Si la fecha elegida ya es la
+	/// que está en pantalla el setter no dispara nada, que también es correcto: no hay nada que
+	/// traer.
+	/// </para>
 	/// </remarks>
-	private async Task ExecuteAbrirFechaCommand()
+	private Task ExecuteAbrirFechaCommand()
 	{
-		try
+		if (PlanillaElegida is not null)
 		{
-			if (PlanillaElegida is null)
-			{
-				return;
-			}
-
 			Fecha = PlanillaElegida.Fecha;
 			Vista = VISTA_PLANILLA;
+		}
 
-			await CargarPlanillaAsync();
-		}
-		catch (Exception ex)
-		{
-			_dialogService.MostrarError(ex.Message, TITULO);
-		}
+		return Task.CompletedTask;
 	}
 	#endregion
 
