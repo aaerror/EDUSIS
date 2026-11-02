@@ -227,6 +227,7 @@ internal static class WPF_DesktopDI
 										   provider.GetRequiredService<CursoStore>(),
 										   provider.GetRequiredService<DivisionStore>(),
 										   provider.GetRequiredService<CicloLectivoStore>(),
+										   provider.GetRequiredService<BuscarContextoStore>(),
 										   provider.GetRequiredService<IDialogService>(),
 										   provider.GetRequiredService<IMessenger>()));
 

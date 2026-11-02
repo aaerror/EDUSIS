@@ -37,6 +37,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	private readonly CursoStore _cursoStore;
 	private readonly DivisionStore _divisionStore;
 	private readonly CicloLectivoStore _cicloLectivoStore;
+	private readonly BuscarContextoStore _buscarContextoStore;
 	#endregion
 
 	#region Dialogos
@@ -45,12 +46,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 	#region Request
 	private EliminarDivisionRequest request;
-	#endregion
-
-	#region ViewModels
-	[NotifyCanExecuteChangedFor(nameof(GuardarCommandAsync))]
-	[ObservableProperty]
-	private LegajoDocenteViewModel _docente;
 	#endregion
 
 	private ObservableCollection<DivisionViewModel> _divisiones;
@@ -81,23 +76,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	#region Flags
 	[ObservableProperty]
 	private bool _habilitarDivisiones;
-
-	[NotifyCanExecuteChangedFor(nameof(CancelarCommand))]
-	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
-	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
-	[NotifyCanExecuteChangedFor(nameof(RegistrarCommandAsync))]
-	[NotifyCanExecuteChangedFor(nameof(ModificarPreceptorCommand))]
-	[ObservableProperty]
-	private bool _habilitarRegistrarDocente;
-
-	/// <summary>
-	/// Distingue si la tarjeta de asignación se abrió para asignar un preceptor a un cargo vacante
-	/// o para reemplazar al que ya está. Hace falta porque el buscador vive en el modal y devuelve
-	/// el docente por <c>DocenteElegidoMessage</c> sin saber quién lo abrió: la intención se
-	/// registra acá antes de navegar y <c>GuardarCommandAsync</c> la lee para elegir el caso de uso.
-	/// </summary>
-	[ObservableProperty]
-	private bool _modificandoPreceptor;
 	#endregion
 
 	#region Notificaciones
@@ -110,21 +88,32 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarCommandAsync))]
-	[NotifyCanExecuteChangedFor(nameof(ModificarPreceptorCommand))]
+	[NotifyCanExecuteChangedFor(nameof(AsignarPreceptorCommand))]
+	[NotifyPropertyChangedFor(nameof(VerboPreceptor))]
 	[ObservableProperty]
 	private DivisionViewModel _division;
 	[ObservableProperty]
 	private ListCollectionView _listCollectionDocentes;
 
+	/// <summary>
+	/// La etiqueta del único botón de preceptor: dice lo que va a pasar con la división elegida.
+	/// </summary>
+	/// <remarks>
+	/// Antes eran DOS botones excluyentes, "Asignar preceptor" y "Cambiar preceptor", uno al lado
+	/// del otro y habilitados por condiciones inversas: siempre había uno muerto a la vista, y la
+	/// regla —que no se puede asignar sobre un cargo ocupado— se aprendía mirando cuál se encendía.
+	/// Un solo botón que se renombra dice la misma regla sin gastar un control en deshabilitarse.
+	/// </remarks>
+	public string VerboPreceptor =>
+		Division?.PreceptorID is null ? "Asignar preceptor" : "Cambiar preceptor";
+
 	#region Commands
 	public IAsyncRelayCommand CargarDivisionesCommandAsync { get; }
 	public IAsyncRelayCommand EliminarCommandAsync { get; }
-	public IRelayCommand BuscarDocenteCommand { get; }
-	public IAsyncRelayCommand GuardarCommandAsync { get; }
 	public IAsyncRelayCommand RegistrarCommandAsync { get; }
-	public IRelayCommand ModificarPreceptorCommand { get; }
+	public IRelayCommand AsignarPreceptorCommand { get; }
+	public IAsyncRelayCommand PreceptorElegidoCommandAsync { get; }
 
-	public IRelayCommand CancelarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	public IRelayCommand VolverCommand { get; }
 	#endregion
@@ -150,6 +139,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 									  CursoStore cursoStore,
 									  DivisionStore divisionStore,
 									  CicloLectivoStore cicloLectivoStore,
+									  BuscarContextoStore buscarContextoStore,
 									  IDialogService dialogService,
 									  IMessenger messenger)
 	{
@@ -161,6 +151,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		_cursoStore = cursoStore;
 		_divisionStore = divisionStore;
 		_cicloLectivoStore = cicloLectivoStore;
+		_buscarContextoStore = buscarContextoStore;
 		_dialogService = dialogService;
 		_messenger = messenger;
 
@@ -171,13 +162,11 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 		CargarDivisionesCommandAsync = new AsyncRelayCommand(CargarDivisionesAsync);
 		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
-		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, CanExecuteRegistrarCommand);
 
-		ModificarPreceptorCommand = new RelayCommand(ExecuteModificarPreceptorCommand, CanExecuteModificarPreceptorCommand);
+		AsignarPreceptorCommand = new RelayCommand(ExecuteAsignarPreceptorCommand, CanExecuteAsignarPreceptorCommand);
+		PreceptorElegidoCommandAsync = new AsyncRelayCommand<LegajoDocenteViewModel>(ExecutePreceptorElegidoCommandAsync);
 
-		BuscarDocenteCommand = new RelayCommand(ExecuteBuscarDocenteCommand, () => HabilitarRegistrarDocente);
-		CancelarCommand = new RelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 		VolverCommand = new RelayCommand(gestionCursosNavigationService.Navigate);
 
@@ -187,22 +176,12 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 			Migaja.Actual($"{ Grados.Decir(Curso).ToUpper() } · { NivelEducativo.ToUpper() } · DIVISIONES")
 		};
 
-		// El buscador vive en el modal y no conoce a sus llamadores: el elegido vuelve por acá.
+		// El buscador vive en el modal y no conoce a sus llamadores: el elegido vuelve por acá y la
+		// transacción TERMINA en este comando. Antes el mensaje sólo dejaba el docente en una
+		// propiedad y abría una tarjeta al pie de la página para que el usuario confirmara ahí.
 		_messenger.Register<GestionDivisionesViewModel, DocenteElegidoMessage>(this, (receptor, mensaje) =>
-			receptor.Docente = mensaje.Docente);
-
-		HabilitarRegistrarDocente = false;
+			receptor.PreceptorElegidoCommandAsync.Execute(mensaje.Docente));
 	}
-
-	#region BuscarDocenteCommand
-	/// <summary>
-	/// Abre el buscador de docentes en el modal. Antes esta pantalla traía su propia copia del
-	/// buscador —campo, lupa, "Ver docentes" y grilla de resultados— dentro de la tarjeta de
-	/// asignación, con su propio <c>Query</c> validado y su propia colección de docentes.
-	/// </summary>
-	private void ExecuteBuscarDocenteCommand() =>
-		_buscarDocenteModalNavigationService.Navigate();
-	#endregion
 
 	private async Task CargarDivisionesAsync()
 	{
@@ -261,33 +240,59 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		}
 	}
 
-	#region CancelarCommand
-	private bool CanExecuteCancelarCommand(object obj) =>
-		HabilitarRegistrarDocente;
-
-	private void ExecuteCancelarCommand(object obj)
-	{
-		HabilitarRegistrarDocente = false;
-		ModificandoPreceptor = false;
-		Docente = null;
-	}
-	#endregion
-
-	#region ModificarPreceptorCommand
+	#region AsignarPreceptorCommand
 	/// <summary>
-	/// Abre la misma tarjeta y el mismo buscador que la asignación; lo único que cambia es el caso
-	/// de uso que ejecuta <c>GuardarCommandAsync</c> después. No lleva el sufijo <c>Async</c>
-	/// porque no hace trabajo asincrónico: deja la intención registrada y navega al modal. El
-	/// trabajo contra <c>Core</c> ocurre al guardar, cuando ya hay un docente elegido.
+	/// Declara a qué división le está buscando preceptor y abre el modal. Es todo lo que hace: el
+	/// trabajo contra <c>Core</c> ocurre en <see cref="PreceptorElegidoCommandAsync"/>, cuando el
+	/// buscador devuelve al elegido.
 	/// </summary>
-	private bool CanExecuteModificarPreceptorCommand() =>
-		!HabilitarRegistrarDocente && Division is not null && Division.PreceptorID is not null;
+	/// <remarks>
+	/// Un solo comando para asignar y para cambiar. Son dos casos de uso distintos en <c>Core</c>
+	/// —el cargo vacante y el cargo ocupado— pero UNA sola intención del usuario: poner a alguien al
+	/// frente de esta división. Cuál de los dos corre lo decide el estado de la división al recibir
+	/// al docente, no un flag que esta pantalla tenga que acordarse de prender y apagar.
+	/// </remarks>
+	private bool CanExecuteAsignarPreceptorCommand() =>
+		Division is not null;
 
-	private void ExecuteModificarPreceptorCommand()
+	private void ExecuteAsignarPreceptorCommand()
 	{
-		ModificandoPreceptor = true;
-		HabilitarRegistrarDocente = true;
-		ExecuteBuscarDocenteCommand();
+		_buscarContextoStore.Declarar(ContextoDelBuscador());
+		_buscarDocenteModalNavigationService.Navigate();
+	}
+
+	/// <summary>
+	/// El encabezado con el que se abre el buscador: la división de destino y el estado del cargo.
+	/// </summary>
+	/// <remarks>
+	/// ES LA PRIMERA LÍNEA QUE SE LEE ANTES DE ELEGIR, y por eso dice el destino y no la
+	/// herramienta. El detalle nombra la consecuencia de cada caso: con el cargo vacante, que sin
+	/// preceptor no hay planilla de asistencia; con el cargo ocupado, a quién se está reemplazando,
+	/// que es el dato que convierte "cambiar preceptor" en una decisión informada.
+	///
+	/// EL DETALLE NOMBRA EL CARGO Y EL TÍTULO NOMBRA LA DIVISIÓN, sin repetirse. "El cargo está
+	/// vacante" es como se dice en la escuela, pero solo —sin decir QUÉ cargo— obliga a deducirlo
+	/// del título; "la preceptoría" lo nombra con la palabra de la institución y en una línea que
+	/// no tiene que volver a decir de qué división se trata, porque el renglón de arriba acaba de
+	/// decirlo. No hay una forma oficial en la jerga: se usa tanto "el cargo está vacante" como
+	/// "la preceptoría de tal división está vacante".
+	///
+	/// En el caso ocupado el preceptor saliente se nombra DOS VECES a propósito. "El docente que
+	/// elijas lo reemplaza y pierde el acceso" deja sin sujeto claro quién pierde el acceso: el
+	/// que entra o el que sale. Repetir el nombre cuesta unas palabras y no deja lugar a la duda
+	/// en el único renglón donde la duda importa.
+	/// </remarks>
+	private BuscarContexto ContextoDelBuscador()
+	{
+		var division = $"{ Grados.Decir(Curso) } { Division.Descripcion }";
+
+		return Division.PreceptorID is null
+			? new BuscarContexto(Titulo: $"Preceptor de { division }",
+								 Detalle: "La preceptoría está vacante. Sin preceptor no se puede abrir la planilla de asistencia de la división.",
+								 Verbo: "Asignar preceptor")
+			: new BuscarContexto(Titulo: $"Preceptor de { division }",
+								 Detalle: $"La preceptoría está a cargo de { Division.Preceptor }. El docente que elijas toma el cargo y { Division.Preceptor } pierde el acceso a las planillas de la división.",
+								 Verbo: "Cambiar preceptor");
 	}
 	#endregion
 
@@ -295,7 +300,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	private bool CanExecuteEliminarCommand(object obj) => obj switch
 	{
 		"Division" => Division is not null,
-		"Preceptor" => !HabilitarRegistrarDocente && Division is not null && Division.PreceptorID is not null,
+		"Preceptor" => Division is not null && Division.PreceptorID is not null,
 		_ => false
 	};
 
@@ -358,11 +363,17 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 
 	#region NavigationCommand
+	/// <remarks>
+	/// Los tres pedían además <c>!HabilitarRegistrarDocente</c>: con la tarjeta de asignación
+	/// abierta al pie, navegar la habría dejado a medio camino. La tarjeta ya no existe —la
+	/// transacción entera ocurre en el modal, que es modal— así que no hay estado a medias que
+	/// proteger y los destinos sólo dependen de que haya una división elegida.
+	/// </remarks>
 	private bool CanExecuteNavigationCommand(object obj) => obj switch
 	{
-		"Curso" => !HabilitarRegistrarDocente,
-		"Cursantes" => Division is not null && !HabilitarRegistrarDocente,
-		"Asistencias" => Division is not null && !HabilitarRegistrarDocente,
+		"Curso" => true,
+		"Cursantes" => Division is not null,
+		"Asistencias" => Division is not null,
 		_ => false
 	};
 
@@ -391,33 +402,20 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 	#region RegistrarCommandAsync
 	/// <remarks>
-	/// El caso "Docente" exige que el cargo esté <strong>vacante</strong>. Antes pedía sólo
-	/// <c>!HabilitarRegistrarDocente</c>, así que "Asignar preceptor" quedaba habilitado con el
-	/// cargo ya ocupado y el recorrido terminaba en un <c>CargoPreceptorNoDisponibleException</c>
-	/// mostrado como error: el usuario descubría la regla chocándose con ella. Para reemplazar al
-	/// preceptor está <c>ModificarPreceptorCommand</c>, que se habilita con la condición inversa.
+	/// El caso "Docente" se fue a <see cref="AsignarPreceptorCommand"/>. Acá no pintaba: registrar
+	/// una división crea un registro y asignar un preceptor modifica uno que ya existe, y lo único
+	/// que los juntaba era el nombre del comando.
 	/// </remarks>
 	private bool CanExecuteRegistrarCommand(object obj) => obj switch
 	{
-		"Division" => !HabilitarRegistrarDocente && !string.IsNullOrWhiteSpace(Descripcion) && !HasErrors,
-		"Docente" => !HabilitarRegistrarDocente && Division is not null && Division.PreceptorID is null,
+		"Division" => !string.IsNullOrWhiteSpace(Descripcion) && !HasErrors,
 		_ => false
 	};
 
 	private async Task ExecuteRegistrarCommandAsync (object obj)
 	{
-		string messageBoxText = string.Empty;
-		string caption = string.Empty;
-
 		switch (obj)
 		{
-			case "Docente":
-				// Abre la tarjeta de asignacion y, encima, el buscador en el modal.
-				ModificandoPreceptor = false;
-				HabilitarRegistrarDocente = true;
-				ExecuteBuscarDocenteCommand();
-				break;
-
 			case "Division":
 				// Se confirma porque la letra que se propone no es la que se guarda: el campo
 				// viene precargado con la sugerencia de Core y el usuario pudo escribir otra.
@@ -446,30 +444,44 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	}
 	#endregion
 
-	#region GuardarCommandAsync
-	private bool CanExecuteGuardarCommand(object obj) =>
-		Docente is not null;
-
+	#region PreceptorElegidoCommandAsync
 	/// <summary>
-	/// Un solo botón "Guardar" cierra los dos recorridos, porque los dos terminan con un docente
-	/// elegido en el modal: <c>ModificandoPreceptor</c> decide cuál. Reemplazar al preceptor no es
-	/// quitar y volver a asignar —eso dejaría el cargo vacante en el medio— sino
-	/// <c>ModificarPreceptorAsync</c>, una sola unidad de trabajo.
+	/// Cierra la transacción con el docente que devolvió el buscador.
 	/// </summary>
-	private async Task ExecuteGuardarCommandAsync(object obj)
+	/// <remarks>
+	/// ACÁ TERMINA EL RECORRIDO, y antes no: el docente elegido en el modal aterrizaba en una
+	/// propiedad y abría una tarjeta al pie de la página cuyo único contenido era el nombre que el
+	/// usuario acababa de elegir, más un botón para confirmarlo. Esa tarjeta no agregaba
+	/// información —el docente es el único dato de esta operación— así que era un paso de
+	/// confirmación disfrazado de formulario. El patrón viene de Situación de Revista, donde SÍ se
+	/// gana el lugar porque después del docente todavía hay cargo, período y a quién reemplaza.
+	///
+	/// CUÁL DE LOS DOS CASOS DE USO CORRE LO DECIDE LA DIVISIÓN, no un flag. La intención se
+	/// deducía de <c>ModificandoPreceptor</c>, que esta pantalla prendía antes de navegar y
+	/// apagaba al terminar; cancelar el modal no lo apagaba, porque el buscador no conoce a sus
+	/// llamadores. Preguntarle a <c>Division.PreceptorID</c> no se puede desincronizar: la grilla
+	/// no se recarga mientras el modal está arriba.
+	///
+	/// Reemplazar al preceptor no es quitar y volver a asignar —eso dejaría el cargo vacante en el
+	/// medio— sino <c>ModificarPreceptorAsync</c>, una sola unidad de trabajo.
+	/// </remarks>
+	private async Task ExecutePreceptorElegidoCommandAsync(LegajoDocenteViewModel docente)
 	{
+		if (docente is null || Division is null)
+		{
+			return;
+		}
+
 		try
 		{
-			if (ModificandoPreceptor)
+			if (Division.PreceptorID is null)
 			{
-				await ModificarPreceptorAsync();
+				await AsignarPreceptorAsync(docente);
 			}
 			else
 			{
-				await AsignarPreceptorAsync();
+				await ModificarPreceptorAsync(docente);
 			}
-
-			Docente = null;
 		}
 		catch (Exception ex)
 		{
@@ -477,26 +489,27 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		}
 	}
 
-	private async Task AsignarPreceptorAsync()
+	/// <remarks>
+	/// NO PIDE CONFIRMACIÓN. El cargo está vacante: no saca a nadie de su puesto, se deshace con
+	/// "Quitar preceptor" y el modal viene de decir, en su primera línea, a qué división se le
+	/// estaba buscando preceptor. Un diálogo acá repetiría el encabezado que el usuario acaba de
+	/// leer para tomar justamente esta decisión. El caso que sí saca a alguien —cambiar— conserva
+	/// el suyo, en rojo.
+	/// </remarks>
+	private async Task AsignarPreceptorAsync(LegajoDocenteViewModel docente)
 	{
-		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
-				titulo: $"Asignar a { Docente.NombreCompleto } como preceptor",
-				mensaje: $"Queda a cargo de la división { Division.Descripcion } de { Grados.Decir(Curso) } ({ NivelEducativo }) y podrá abrir y firmar sus planillas de asistencia.",
-				verbo: "Asignar preceptor")))
-		{
-			return;
-		}
-
 		try
 		{
 			var request = new RegistrarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
 														DivisionID: Division.DivisionID,
-														DocenteID: Docente.DocenteID);
+														DocenteID: docente.DocenteID);
 
 			await _servicioDivision.AsignarPreceptorAsync(request);
 
+			var division = Division.Descripcion;
+
 			await CargarDivisionesAsync();
-			_dialogService.MostrarInformacion($"{ Docente.NombreCompleto } quedó a cargo de { Division.Descripcion }.", "Preceptor asignado");
+			_dialogService.MostrarInformacion($"{ docente.NombreCompleto } quedó a cargo de { Grados.Decir(Curso) } { division }. Ya puede abrir y firmar las planillas de asistencia.", "Preceptor asignado");
 		}
 		catch (Exception ex)
 		{
@@ -504,12 +517,12 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		}
 	}
 
-	private async Task ModificarPreceptorAsync()
+	private async Task ModificarPreceptorAsync(LegajoDocenteViewModel docente)
 	{
 		// Cambiar el preceptor saca a alguien de su cargo, así que se avisa en rojo: no es lo
 		// mismo que asignar uno a una división que no tenía.
 		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
-				titulo: $"Pasar la división { Division.Descripcion } a { Docente.NombreCompleto }",
+				titulo: $"Pasar la división { Division.Descripcion } a { docente.NombreCompleto }",
 				consecuencia: $"{ Division.Preceptor } deja el cargo de preceptor de { Grados.Decir(Curso) } { Division.Descripcion } "
 							+ "y pierde el acceso a las planillas de asistencia de la división.",
 				verbo: "Cambiar preceptor")))
@@ -521,20 +534,19 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		{
 			var request = new ModificarPreceptorRequest(CursoID: _cursoStore.Curso.CursoID,
 														DivisionID: Division.DivisionID,
-														DocenteID: Docente.DocenteID);
+														DocenteID: docente.DocenteID);
 
 			await _servicioDivision.ModificarPreceptorAsync(request);
 
+			var division = Division.Descripcion;
+
 			await CargarDivisionesAsync();
-			_dialogService.MostrarInformacion($"{ Division.Descripcion } quedó a cargo de { Docente.NombreCompleto }.", "Preceptor cambiado");
+			_dialogService.MostrarInformacion($"{ Grados.Decir(Curso) } { division } quedó a cargo de { docente.NombreCompleto }.", "Preceptor cambiado");
 		}
 		catch (Exception ex)
 		{
 			_dialogService.MostrarError(ex.Message, "No se pudo cambiar el preceptor");
 		}
-
-		ModificandoPreceptor = false;
-		HabilitarRegistrarDocente = false;
 	}
 	#endregion
 }
