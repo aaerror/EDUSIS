@@ -45,6 +45,7 @@
 				<RowDefinition Height="Auto"/>
 				<RowDefinition Height="Auto"/>
 				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
 			</Grid.RowDefinitions>
 
 			<!-- El docente lo elige el buscador de la pantalla, no este formulario. -->
@@ -65,9 +66,16 @@
 			<HeaderedContentControl Grid.Column="0" Grid.Row="1"
 									Header="Fecha de inicio"
 									Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+				<!--
+					SIN DisplayDateStart. Tenía fijado "hoy" como primer día elegible, así que no se
+					podía cargar una designación retroactiva: el docente que empezó el lunes pasado y
+					recién ahora se registra no entraba. El dominio no lo prohíbe —RangoFechas acepta
+					un inicio pasado, y HaIniciado() existe justamente para contemplarlo—, era una
+					regla inventada por la vista.
+				-->
 				<DatePicker x:Name="DatePicker_FechaInicio"
+							AutomationProperties.Name="Fecha de inicio de la designación"
 							DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
-							DisplayDateStart="{ x:Static sys:DateTime.Now }"
 							SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 			</HeaderedContentControl>
@@ -76,22 +84,39 @@
 									Header="Fecha de fin"
 									Style="{ StaticResource ResourceKey=Campo.Derecha }">
 				<DatePicker x:Name="DatePicker_FechaFin"
+							AutomationProperties.Name="Fecha de fin de la designación"
 							DisplayDateStart="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={ x:Static sys:DateTime.Now } }"
 							SelectedDate="{ Binding Path=FechaFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 			</HeaderedContentControl>
 
 			<!--
-				Lo decide el circuito de designación, no este formulario: viene deshabilitada
-				en los tres usos de la vista. La casilla se nombra sola, así que no lleva
-				rótulo encima.
+				LA FECHA DE FIN DEJÓ DE RELLENARSE SOLA. El ViewModel le ponía la fecha de inicio a
+				todo suplente o interino para esquivar CargoTemporalSinFechaFinalizacionException, con
+				lo cual esquivaba la excepción guardando un dato falso: una designación de UN DÍA que
+				nadie eligió. Ahora el campo nace vacío, esta línea dice que hace falta y el comando
+				de guardar no se habilita sin ella.
+			-->
+			<TextBlock Grid.Column="1" Grid.Row="2"
+					   Margin="0 0 0 12"
+					   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+					   Text="El suplente y el interino necesitan fecha de fin: el cargo es temporal."
+					   TextWrapping="Wrap"
+					   Visibility="{ Binding Path=ExigeFechaFin, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+
+			<!--
+				La casilla se nombra sola, así que no lleva rótulo encima. Dejó de estar
+				deshabilitada: poner al docente frente al curso es una decisión aparte de designarlo,
+				y el formulario la tomaba solo —nacía marcada y sin poder desmarcarse—, de modo que
+				designar disparaba un PonerEnFunciones que nadie pidió ni vio. En los dos usos de
+				sólo lectura la casilla sigue apagada porque el contenedor entero lo está.
 			-->
 			<CheckBox x:Name="CheckBox_EnFunciones"
-					  Grid.ColumnSpan="2" Grid.Row="2"
-					  Content="Es el docente de aula de la cátedra"
+					  Grid.ColumnSpan="2" Grid.Row="3"
+					  Content="Ponerlo también frente al curso desde ya"
 					  IsChecked="{ Binding Path=EnFunciones, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-					  IsEnabled="False"
-					  Style="{ StaticResource ResourceKey=Chk.Campo }"/>
+					  Style="{ StaticResource ResourceKey=Chk.Campo }"
+					  ToolTip="Si queda sin marcar, el docente queda designado pero el aula no cambia"/>
 		</Grid>
 	</GroupBox>
 </UserControl>

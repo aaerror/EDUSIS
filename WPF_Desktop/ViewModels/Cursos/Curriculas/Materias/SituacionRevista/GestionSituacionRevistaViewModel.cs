@@ -223,34 +223,26 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 
 			var request = new ListarSituacionesRevistaRequest(CatedraID: _catedraStore.Catedra);
 			var situaciones = await _servicioCatedra.ListarSituacionesRevistaAsync(request);
-			if (situaciones.Count is 0)
-			{
-				string messageBoxText = "No existen docentes registrados para esta materia.";
-				string caption = "Docentes";
-				_dialogService.MostrarAdvertencia(messageBoxText, caption);
 
-				Mensaje = messageBoxText;
-				HabilitarNotificacion = true;
-				HabilitarGestionSituacionRevista = false;
-
-				return;
-			}
-
-			// SituacionRevistaResponse trae DocenteID y no el nombre: una sola consulta y cruce en memoria.
-			var docentes = await _servicioDocente.ListarDocentesActivosAsync();
-			var nombresPorDocente = new System.Collections.Generic.Dictionary<Guid, string>();
-			foreach (var docente in docentes)
-			{
-				nombresPorDocente.TryAdd(docente.DocenteID, docente.NombreCompleto);
-			}
+			// SIN EL RETORNO TEMPRANO. Una cátedra sin designaciones apagaba la tarjeta entera y lo
+			// avisaba con un cartel interruptor, de modo que el estado vacío de la grilla —que ya
+			// trae su frase y dice qué hacer— era código inalcanzable. Es el caso normal de una
+			// cátedra recién creada, no un problema que merezca interrumpir.
+			var nombresPorDocente = await NombresDeLosDocentesAsync(situaciones.Select(x => x.DocenteID));
 
 			var items = situaciones.Select(x => new SituacionRevistaViewModel(x)
 			{
-				Docente = nombresPorDocente.TryGetValue(x.DocenteID, out var nombre) ? nombre : "Docente no disponible"
+				Docente = Nombrar(nombresPorDocente, x.DocenteID),
+				ReemplazaADocente = x.ReemplazaADocenteID.HasValue ? Nombrar(nombresPorDocente, x.ReemplazaADocenteID.Value) : string.Empty
 			});
 			DocentesEnMateria = new ObservableCollection<SituacionRevistaViewModel>(items);
 
-			SituacionesReemplazables = new ObservableCollection<SituacionRevistaViewModel>(DocentesEnMateria.Where(EsVigente));
+			// Candidatos a ser reemplazados: vigentes Y sin suplente vigente encima. La segunda
+			// condición es la que faltaba, y es la misma con la que el dominio rechaza una segunda
+			// suplencia sobre el mismo ausente (DocenteYaReemplazadoException). El combo ofrecía
+			// activamente la opción que Core iba a rechazar.
+			SituacionesReemplazables = new ObservableCollection<SituacionRevistaViewModel>(
+				DocentesEnMateria.Where(situacion => situacion.Vigente && !situacion.TieneSuplenteVigente));
 
 			// El bloque "Docente en Aula" se muestra sólo si hay alguien en funciones, y apunta a esa situación.
 			SituacionRevistaEnFunciones = DocentesEnMateria.FirstOrDefault(x => x.EnFunciones);
@@ -263,19 +255,73 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 		}
 		catch (Exception ex)
 		{
-			string messageBoxText = $"Error al cargar los docentes de la materia.\nError: {ex.Message}";
-			_dialogService.MostrarAdvertencia(messageBoxText, "Error en la operación");
+			// Un fallo de carga es un error y no una advertencia: es la única pista de por qué la
+			// grilla está vacía.
+			_dialogService.MostrarError($"No se pudieron traer los docentes de la cátedra. { ex.Message }", "Docentes de la cátedra");
 
-			Mensaje = messageBoxText;
-			HabilitarNotificacion = true;
+			HabilitarNotificacion = false;
+			HabilitarGestionSituacionRevista = true;
+			HabilitarInfoSituacionRevista = true;
 		}
 	}
 
+	#region Nombres de los docentes
+	/// <summary>
+	/// Resuelve los nombres de los docentes que aparecen en el listado.
+	/// </summary>
+	/// <remarks>
+	/// <c>SituacionRevistaResponse</c> identifica a cada docente por su identificador, así que el
+	/// nombre se cruza acá. Arranca por el listado de activos —una sola consulta para todos— y recién
+	/// después pide de a uno los que falten.
+	///
+	/// Esos que faltan son los docentes DADOS DE BAJA, y son justamente los que el historial existe
+	/// para mostrar: antes salían como "Docente no disponible", así que la designación de alguien que
+	/// ya no trabaja en la escuela perdía el nombre de la persona. Son pocos y sólo se los pide cuando
+	/// aparecen, de modo que el caso normal sigue costando una consulta.
+	/// </remarks>
+	private async Task<Dictionary<Guid, string>> NombresDeLosDocentesAsync(IEnumerable<Guid> docentesID)
+	{
+		var nombres = new Dictionary<Guid, string>();
+
+		var buscados = docentesID.Distinct().ToList();
+
+		// Una cátedra sin designaciones no tiene nombres que resolver: no se consulta el listado.
+		if (buscados.Count is 0)
+		{
+			return nombres;
+		}
+
+		var activos = await _servicioDocente.ListarDocentesActivosAsync();
+		foreach (var docente in activos)
+		{
+			nombres.TryAdd(docente.DocenteID, docente.NombreCompleto);
+		}
+
+		foreach (var docenteID in buscados.Where(id => !nombres.ContainsKey(id)))
+		{
+			try
+			{
+				var legajo = await _servicioDocente.MostrarLegajoDocenteAsync(new DocenteIDRequest(docenteID));
+				if (legajo is not null)
+				{
+					nombres.TryAdd(docenteID, legajo.NombreCompleto);
+				}
+			}
+			catch (Exception)
+			{
+				// Un legajo que no se puede traer no invalida el resto del listado: esa fila cae en
+				// el texto de reemplazo y las demás se muestran igual.
+			}
+		}
+
+		return nombres;
+	}
+
+	private static string Nombrar(Dictionary<Guid, string> nombres, Guid docenteID) =>
+		nombres.TryGetValue(docenteID, out var nombre) ? nombre : "Docente sin legajo";
+	#endregion
+
 	#region Suplencia
-	private static bool EsVigente(SituacionRevistaViewModel situacion) =>
-		!situacion.Estado.Equals("Finalizado")
-		&& situacion.FechaInicio.Date <= DateTime.Today
-		&& (situacion.FechaFin is null || situacion.FechaFin.Value.Date >= DateTime.Today);
 
 	partial void OnSituacionRevistaINSERTChanged(SituacionRevistaViewModel oldValue, SituacionRevistaViewModel newValue)
 	{
@@ -292,12 +338,19 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 		ActualizarReemplazaA();
 	}
 
+	/// <remarks>
+	/// El formulario del alta es OTRO ViewModel, así que sus cambios no reevalúan solos el
+	/// <c>CanExecute</c> de esta pantalla. Sin esto, completar la fecha de fin que falta no encendía
+	/// el botón de guardar hasta que algo más lo notificara.
+	/// </remarks>
 	private void OnSituacionRevistaINSERTPropertyChanged(object sender, PropertyChangedEventArgs e)
 	{
 		if (e.PropertyName is nameof(SituacionRevistaViewModel.Cargo))
 		{
 			ActualizarReemplazaA();
 		}
+
+		GuardarCommand.NotifyCanExecuteChanged();
 	}
 
 	private void ActualizarReemplazaA()
@@ -334,10 +387,22 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	#endregion
 
 	#region EditarCommand
+	/// <remarks>
+	/// LOS CUATRO GATES SE MIDEN CONTRA EL DOMINIO Y NO CONTRA EL TEXTO DEL ESTADO. Comparar
+	/// <c>Estado</c> con la cadena "Finalizado" no es lo mismo que preguntar si la designación está
+	/// vigente: una aceptada cuyo período ya terminó sigue diciendo "Aceptado". Ahora se usa
+	/// <c>Vigente</c>, que viene calculado de <c>SituacionRevista.EsCargoVigente()</c>.
+	///
+	/// "Rescindir" exige además que NO tenga fecha de fin. Llama a <c>EstablecerFechaFinalizacion</c>,
+	/// que rechaza toda designación temporal con <c>CargoConFechaFinalizacionException</c>, y como el
+	/// suplente y el interino siempre llevan fecha de fin, para esas dos filas el botón estaba
+	/// encendido y garantizado a fallar: sólo sirve sobre un titular.
+	/// </remarks>
 	private bool CanExecuteEditarCommand(object obj) => obj switch
 	{
-		"Docente" => SituacionRevistaUPDATE is not null && !SituacionRevistaUPDATE.Estado.Equals("Finalizado") && SituacionRevistaUPDATE.EnFunciones,
-		"Rescindir" => SituacionRevistaUPDATE is not null && !SituacionRevistaUPDATE.Estado.Equals("Finalizado"),
+		// Quitar del aula: el dominio sólo pide que haya alguien en funciones.
+		"Docente" => SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.EnFunciones,
+		"Rescindir" => SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.Vigente && SituacionRevistaUPDATE.FechaFin is null,
 		_ => false
 	};
 
@@ -377,15 +442,19 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 									+ $"({ DateTime.Today.ToString("D") }) y el cargo vuelve a estar disponible en la cátedra.",
 						verbo: "Poner fin")))
 				{
+					// El cargo se lee ANTES de recargar. La recarga reapunta SituacionRevistaUPDATE
+					// a quien haya quedado en funciones, así que leerlo después nombraba otra
+					// designación en el cartel de éxito.
+					var cargoRescindido = SituacionRevistaUPDATE.Cargo.ToLower();
+
 					try
 					{
 						var request = new EstablecerFinDeDesignacionRequest(CatedraID: _catedraStore.Catedra,
 																			SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID,
 																			FechaFin: DateTime.Today);
 						await _servicioCatedra.EstablecerFinDeDesignacionAsync(request);
-						await CargarSituacionRevistasAsync();
 
-						_dialogService.MostrarInformacion($"El cargo de { SituacionRevistaUPDATE.Cargo.ToLower() } vuelve a estar disponible.", "Designación con fecha de fin");
+						_dialogService.MostrarInformacion($"El cargo de { cargoRescindido } vuelve a estar disponible.", "Designación con fecha de fin");
 					}
 					catch (Exception ex)
 					{
@@ -393,6 +462,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 					}
 				}
 
+				// Una sola recarga, al salir. Antes había dos en el camino feliz.
 				await CargarSituacionRevistasAsync();
 				break;
 		}
@@ -400,9 +470,15 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	#endregion
 
 	#region EliminarCommand
+	/// <remarks>
+	/// Exige <c>Vigente</c>: <c>SituacionRevista.Finalizar()</c> rechaza una designación que no empezó
+	/// —<c>CargoNoIniciadoException</c>— y una que ya terminó —<c>CargoNoVigenteException</c>—, y el
+	/// gate sólo pedía que hubiera una fila elegida. Sobre una designación ya finalizada el botón
+	/// quedaba vivo, abría su confirmación destructiva y recién después reventaba.
+	/// </remarks>
 	private bool CanExecuteEliminarCommand(object obj) => obj switch
 	{
-		"Docente" => SituacionRevistaUPDATE is not null,
+		"Docente" => SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.Vigente,
 		_ => false
 	};
 
@@ -417,32 +493,58 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 									+ "y el cargo deja de estar vigente en la cátedra. Las horas que ocupaba vuelven a estar sin asignar.",
 						verbo: "Finalizar designación")))
 				{
+					// El nombre se lee ANTES de recargar: la recarga reapunta SituacionRevistaUPDATE a
+					// quien quedó en funciones, y el cartel terminaba diciendo que el docente que
+					// sigue en el aula ya no está designado.
+					var docenteFinalizado = SituacionRevistaUPDATE.Docente;
+
 					try
 					{
 						var request = new FinalizarDesignacionRequest(CatedraID: _catedraStore.Catedra,
 																	  SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID);
 						await _servicioCatedra.FinalizarDesignacionAsync(request);
-						await CargarSituacionRevistasAsync();
 
-						_dialogService.MostrarInformacion($"{ SituacionRevistaUPDATE.Docente } ya no está designado en la cátedra.", "Designación finalizada");
+						_dialogService.MostrarInformacion($"{ docenteFinalizado } ya no está designado en la cátedra.", "Designación finalizada");
 					}
 					catch (Exception ex)
 					{
 						_dialogService.MostrarError(ex.Message, "No se pudo finalizar la designación");
 					}
+
+					// Dentro del if: cancelar el diálogo no tiene por qué mover la fila que el
+					// usuario tenía elegida.
+					await CargarSituacionRevistasAsync();
 				}
 
-				SituacionRevistaUPDATE = SituacionRevistaEnFunciones;
 				break;
 		}
 	}
 	#endregion
 
 	#region GuardarCommand
+	/// <remarks>
+	/// <para>
+	/// "Docente" (poner en aula) EXCLUÍA AL SUPLENTE, y eso no es una regla del dominio:
+	/// <c>Catedra.PonerEnFunciones</c> acepta cualquier designación vigente. Un suplente existe
+	/// justamente para ponerse al frente del curso mientras dura la ausencia del titular, así que la
+	/// pantalla le prohibía lo único para lo que se lo designa. Lo que sí hay que exigir —y faltaba—
+	/// es que no esté YA en funciones, porque el dominio lo rechaza con
+	/// <c>DocenteEnFuncionesException</c>.
+	/// </para>
+	/// <para>
+	/// "Insert" exige la fecha de fin cuando el cargo la necesita. El dominio rechaza un interino o un
+	/// suplente sin ella con <c>CargoTemporalSinFechaFinalizacionException</c>, y el ViewModel lo venía
+	/// esquivando de la peor manera: le ponía como fecha de fin la de inicio, o sea una designación de
+	/// un solo día que nadie pidió ni vio.
+	/// </para>
+	/// </remarks>
 	private bool CanExecuteGuardarCommand(object obj) => obj switch
 	{
-		"Insert" => SituacionRevistaINSERT is not null,
-		"Docente" => SituacionRevistaUPDATE is not null && !SituacionRevistaUPDATE.Estado.Equals("Finalizado") && (SituacionRevistaUPDATE.Cargo.Equals("Titular") || SituacionRevistaUPDATE.Cargo.Equals("Interino")),
+		"Insert" => SituacionRevistaINSERT is not null
+				 && !SituacionRevistaINSERT.HasErrors
+				 && (!SituacionRevistaINSERT.ExigeFechaFin || SituacionRevistaINSERT.FechaFin is not null)
+				 && (!SituacionRevistaINSERT.ExigeReemplazo || SituacionRevistaINSERT.ReemplazaA is not null),
+		"Docente" => SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.Vigente && !SituacionRevistaUPDATE.EnFunciones,
 		_ => false
 	};
 
@@ -481,10 +583,23 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 					return;
 				}
 
+				// El diálogo nombra TODO lo que la operación va a hacer, incluido el paso al aula.
+				// Antes la designación ponía al docente frente al curso por su cuenta —el formulario
+				// nacía con "en aula" prendido y la casilla deshabilitada— y la confirmación no lo
+				// mencionaba: el usuario aceptaba una cosa y pasaban dos.
+				var hastaCuando = SituacionRevistaINSERT.FechaFin.HasValue
+					? $" hasta el { SituacionRevistaINSERT.FechaFin.Value.ToString("D") }"
+					: " por tiempo indeterminado";
+
+				var tambienAlAula = SituacionRevistaINSERT.EnFunciones
+					? " Además queda frente al curso desde ya, en lugar de quien estuviera en el aula."
+					: " No queda frente al curso: para eso está “Poner en aula”.";
+
 				if (_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
 						titulo: $"Designar a { SituacionRevistaINSERT.Docente } en { _materiaStore.Materia.Descripcion }",
-						mensaje: $"Cargo: { SituacionRevistaINSERT.Cargo }. Desde el { SituacionRevistaINSERT.FechaInicio.ToString("D") }. "
-							   + "La designación ocupa horas de la cátedra.",
+						mensaje: $"Cargo: { SituacionRevistaINSERT.Cargo }. Desde el { SituacionRevistaINSERT.FechaInicio.ToString("D") }{ hastaCuando }. "
+							   + "La designación ocupa horas de la cátedra."
+							   + tambienAlAula,
 						verbo: "Designar docente")))
 				{
 					try

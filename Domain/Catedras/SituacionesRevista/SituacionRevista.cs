@@ -72,6 +72,22 @@ public sealed class SituacionRevista : Entity
 	public bool EsTemporal() =>
 		!Periodo.EsIndeterminado();
 
+	/// <summary>
+	/// Titular e interino son dos formas de ocupar el mismo puesto; el suplente no lo ocupa, reemplaza
+	/// a quien corresponda mientras dura la ausencia.
+	/// </summary>
+	/// <remarks>
+	/// La regla vivía como un método privado de <see cref="Catedra"/>, que es donde se la necesitaba
+	/// para decidir un alta. Sube acá porque es una propiedad DEL CARGO y no de la cátedra, y porque
+	/// la pantalla necesita la misma distinción para saber qué designaciones pueden ir al frente del
+	/// curso sin reimplementarla contra el texto del enum.
+	/// </remarks>
+	public static bool EsCargoOcupante(Cargo unCargo) =>
+		unCargo.Equals(Cargo.Titular) || unCargo.Equals(Cargo.Interino);
+
+	public bool EsOcupante() =>
+		EsCargoOcupante(Cargo);
+
 	internal void EstablecerFechaFinalizacion(DateTime fechaFin)
 	{
 		if (EsTemporal())

@@ -3,6 +3,7 @@ using Core.ServicioCatedras;
 using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.DTOs.Responses;
 using Core.ServicioDocentes;
+using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes.DTOs.Responses;
 using Core.ServicioMaterias.DTOs.Responses;
 using NSubstitute;
@@ -79,13 +80,23 @@ public class GestionSituacionRevistaViewModelTests
 															 Mensajero);
 		}
 
+		/// <remarks>
+		/// <paramref name="vigente"/> y <c>EsOcupante</c> los calcula Core a partir del dominio. Acá se
+		/// los deriva de los mismos datos para que el fixture no se contradiga solo —una designación
+		/// "Finalizado" marcada como vigente no existe—, y <paramref name="vigente"/> queda abierto
+		/// para los casos que necesitan justamente esa combinación rara: aceptada pero con el período
+		/// terminado, que es la que distingue vigencia real de estado.
+		/// </remarks>
 		public SituacionRevistaResponse Agregar(string cargo = "Titular",
 												string estado = "Aceptado",
 												DateTime? inicio = null,
 												DateTime? fin = null,
 												bool enFunciones = false,
 												Guid? reemplazaA = null,
-												Guid? docenteID = null)
+												Guid? docenteID = null,
+												bool? vigente = null,
+												Guid? reemplazaADocenteID = null,
+												bool tieneSuplenteVigente = false)
 		{
 			var situacion = new SituacionRevistaResponse(Guid.NewGuid(),
 														 CatedraID,
@@ -95,7 +106,14 @@ public class GestionSituacionRevistaViewModelTests
 														 inicio ?? DateTime.Today.AddDays(-30),
 														 fin,
 														 reemplazaA,
-														 enFunciones);
+														 enFunciones,
+														 // Misma cuenta que RangoFechas.EstaVigente: ya empezó y todavía no terminó.
+													 Vigente: vigente ?? (!string.Equals(estado, "Finalizado")
+																		  && (inicio ?? DateTime.Today.AddDays(-30)) <= DateTime.Today
+																		  && (fin is null || fin >= DateTime.Today)),
+														 EsOcupante: string.Equals(cargo, "Titular") || string.Equals(cargo, "Interino"),
+														 ReemplazaADocenteID: reemplazaADocenteID,
+														 TieneSuplenteVigente: tieneSuplenteVigente);
 			Situaciones.Add(situacion);
 
 			return situacion;
@@ -156,18 +174,27 @@ public class GestionSituacionRevistaViewModelTests
 		contexto.ViewModel.DocentesEnMateria.Count.ShouldBe(1);
 	}
 
+	/// <summary>
+	/// Una cátedra sin designaciones deja la grilla vacía y a la vista, sin interrumpir.
+	/// </summary>
+	/// <remarks>
+	/// Antes retornaba temprano, apagaba la tarjeta entera y lo avisaba con un cartel: el estado
+	/// vacío de la grilla —que ya trae su frase y dice qué hacer— era código inalcanzable, y una
+	/// cátedra recién creada es el caso normal, no un problema que merezca interrumpir.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Cargar_sin_situaciones_avisa_y_no_habilita_la_gestion()
+	public async Task Cargar_sin_situaciones_deja_la_grilla_vacia_y_a_la_vista()
 	{
 		var contexto = new Contexto();
 
 		await contexto.ViewModel.CargarSituacionRevistasAsync();
 
 		contexto.ViewModel.DocentesEnMateria.ShouldBeEmpty();
-		contexto.ViewModel.HabilitarGestionSituacionRevista.ShouldBeFalse();
-		contexto.ViewModel.HabilitarNotificacion.ShouldBeTrue();
-		contexto.Dialogos.Advertencias.Count.ShouldBe(1);
+		contexto.ViewModel.HabilitarGestionSituacionRevista.ShouldBeTrue();
+		contexto.ViewModel.HabilitarInfoSituacionRevista.ShouldBeTrue();
+		contexto.ViewModel.HabilitarNotificacion.ShouldBeFalse();
+		contexto.Dialogos.Advertencias.ShouldBeEmpty();
 	}
 	#endregion
 
@@ -228,7 +255,54 @@ public class GestionSituacionRevistaViewModelTests
 		await contexto.ViewModel.CargarSituacionRevistasAsync();
 
 		contexto.Fila(situacionConocida.SituacionRevistaID).Docente.ShouldBe("Gomez Maria");
-		contexto.Fila(situacionDesconocida.SituacionRevistaID).Docente.ShouldBe("Docente no disponible");
+		contexto.Fila(situacionDesconocida.SituacionRevistaID).Docente.ShouldBe("Docente sin legajo");
+	}
+
+	/// <summary>
+	/// El docente DADO DE BAJA conserva su nombre en el historial.
+	/// </summary>
+	/// <remarks>
+	/// Es el caso que el cruce contra <c>ListarDocentesActivosAsync</c> perdía: el listado de activos
+	/// no lo trae, así que una designación de alguien que ya no trabaja en la escuela aparecía sin
+	/// nombre —y el historial existe justamente para mostrar por quién pasó la cátedra—. Se lo busca
+	/// de a uno y sólo cuando falta, así que el caso normal sigue costando una sola consulta.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Un_docente_dado_de_baja_conserva_su_nombre_en_el_historial()
+	{
+		var contexto = new Contexto();
+		var deBaja = Guid.NewGuid();
+		var situacion = contexto.Agregar(docenteID: deBaja, estado: "Finalizado");
+		contexto.ServicioDocente.MostrarLegajoDocenteAsync(Arg.Is<DocenteIDRequest>(r => r.DocenteID == deBaja))
+								.Returns(Task.FromResult(new LegajoDocenteResponse(deBaja, "Ruiz Carlos", "28999111", "20289991113", "L-9", DateTime.Today.AddYears(-10), DateTime.Today.AddMonths(-2), false)));
+
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		contexto.Fila(situacion.SituacionRevistaID).Docente.ShouldBe("Ruiz Carlos");
+	}
+
+	/// <summary>
+	/// El combo de reemplazo no ofrece a quien ya tiene un suplente vigente.
+	/// </summary>
+	/// <remarks>
+	/// Es la regla con la que <c>Catedra.Designar</c> rechaza una segunda suplencia sobre el mismo
+	/// ausente (<c>DocenteYaReemplazadoException</c>). El combo filtraba sólo por vigencia, así que
+	/// ofrecía activamente la opción que el dominio iba a rechazar.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task SituacionesReemplazables_excluye_a_quien_ya_tiene_suplente_vigente()
+	{
+		var contexto = new Contexto();
+		var yaReemplazado = contexto.Agregar(cargo: "Titular", tieneSuplenteVigente: true);
+		var libre = contexto.Agregar(cargo: "Interino", tieneSuplenteVigente: false);
+
+		await contexto.ViewModel.CargarSituacionRevistasAsync();
+
+		var reemplazables = contexto.ViewModel.SituacionesReemplazables.Select(x => x.SituacionRevistaID).ToList();
+		reemplazables.ShouldNotContain(yaReemplazado.SituacionRevistaID);
+		reemplazables.ShouldContain(libre.SituacionRevistaID);
 	}
 	#endregion
 

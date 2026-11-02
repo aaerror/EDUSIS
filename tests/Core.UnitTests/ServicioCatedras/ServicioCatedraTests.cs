@@ -423,6 +423,106 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
+	public async Task ListarSituacionesRevistaAsync_ordena_de_la_designacion_mas_reciente_a_la_mas_vieja()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		var vieja = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-3), DateTime.Today.AddYears(-2));
+		var intermedia = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-2), DateTime.Today.AddYears(-1));
+		var reciente = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddMonths(-1), null);
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		situaciones.Select(x => x.SituacionRevistaID).ShouldBe(new[] { reciente, intermedia, vieja });
+	}
+
+	[Fact]
+	public async Task ListarSituacionesRevistaAsync_marca_no_vigente_una_designacion_aceptada_con_el_periodo_terminado()
+	{
+		// Vigente sale de SituacionRevista.EsCargoVigente() y no de comparar Estado con "Finalizado":
+		// una designación aceptada cuyo período ya terminó también está vencida.
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-2), DateTime.Today.AddYears(-1));
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		var situacion = situaciones.ShouldHaveSingleItem();
+		situacion.Estado.ShouldBe("Aceptado");
+		situacion.Vigente.ShouldBeFalse();
+	}
+
+	[Fact]
+	public async Task ListarSituacionesRevistaAsync_marca_vigente_una_designacion_con_el_periodo_en_curso()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddMonths(-1), DateTime.Today.AddMonths(6));
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		situaciones.ShouldHaveSingleItem().Vigente.ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task ListarSituacionesRevistaAsync_marca_ocupantes_al_titular_y_al_interino_pero_no_al_suplente()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		// El interino va con el período ya terminado: dos ocupantes vigentes no pueden convivir.
+		catedra.Designar(Guid.NewGuid(), Cargo.Interino, DateTime.Today.AddYears(-3), DateTime.Today.AddYears(-2));
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+		catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddMonths(1), titular);
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		situaciones.Single(x => x.Cargo.Equals("Titular")).EsOcupante.ShouldBeTrue();
+		situaciones.Single(x => x.Cargo.Equals("Interino")).EsOcupante.ShouldBeTrue();
+		situaciones.Single(x => x.Cargo.Equals("Suplente")).EsOcupante.ShouldBeFalse();
+	}
+
+	[Fact]
+	public async Task ListarSituacionesRevistaAsync_resuelve_el_docente_reemplazado_por_el_suplente()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		var ausenteID = Guid.NewGuid();
+		var titular = catedra.Designar(ausenteID, Cargo.Titular, DateTime.Today.AddYears(-1), null);
+		var suplencia = catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddMonths(1), titular);
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		// ReemplazaA es el id de la DESIGNACIÓN; ReemplazaADocenteID hace el salto al docente.
+		var designacionSuplente = situaciones.Single(x => x.SituacionRevistaID.Equals(suplencia));
+		designacionSuplente.ReemplazaA.ShouldBe(titular);
+		designacionSuplente.ReemplazaADocenteID.ShouldBe(ausenteID);
+
+		var designacionTitular = situaciones.Single(x => x.SituacionRevistaID.Equals(titular));
+		designacionTitular.ReemplazaA.ShouldBeNull();
+		designacionTitular.ReemplazaADocenteID.ShouldBeNull();
+	}
+
+	[Fact]
+	public async Task ListarSituacionesRevistaAsync_marca_la_designacion_que_ya_tiene_un_suplente_vigente()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+		var suplencia = catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddMonths(1), titular);
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		situaciones.Single(x => x.SituacionRevistaID.Equals(titular)).TieneSuplenteVigente.ShouldBeTrue();
+		situaciones.Single(x => x.SituacionRevistaID.Equals(suplencia)).TieneSuplenteVigente.ShouldBeFalse();
+	}
+
+	[Fact]
+	public async Task ListarSituacionesRevistaAsync_no_marca_suplente_vigente_cuando_la_suplencia_ya_termino()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-2), null);
+		catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddMonths(-6), DateTime.Today.AddMonths(-3), titular);
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		situaciones.Single(x => x.SituacionRevistaID.Equals(titular)).TieneSuplenteVigente.ShouldBeFalse();
+	}
+
+	[Fact]
 	public async Task ListarSituacionesRevistaAsync_con_una_catedra_inexistente_lanza_CatedraNoEncontradaException()
 	{
 		await Should.ThrowAsync<CatedraNoEncontradaException>(() => _servicio.ListarSituacionesRevistaAsync(

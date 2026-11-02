@@ -91,7 +91,10 @@ public class GuardasEstaticasW6Tests
 							   .ToList();
 
 		// Propiedades que pertenecen a los items de las grillas y a las vistas anidadas, no al ViewModel contenedor.
-		var delItem = new HashSet<string> { "Cargo", "Estado", "Docente", "EnFunciones", "FechaAlta", "NombreCompleto", "EstaActivo", "IsEnabled", "Foreground", "SelectedItem", "SelectedDate", "Descripcion" };
+		// "Vigente", "ReemplazaADocente" y "ExigeFechaFin" son de SituacionRevistaViewModel: las usan la
+		// insignia de estado, la columna de la cadena de suplencias y el aviso de fecha de fin obligatoria.
+		var delItem = new HashSet<string> { "Cargo", "Estado", "Docente", "EnFunciones", "FechaAlta", "NombreCompleto", "EstaActivo", "IsEnabled", "Foreground", "SelectedItem", "SelectedDate", "Descripcion",
+											"Vigente", "ReemplazaADocente", "ExigeFechaFin" };
 		var faltantes = propiedades.Where(p => !delItem.Contains(p) && tipo.GetProperty(p) is null).ToList();
 
 		faltantes.ShouldBeEmpty("propiedades bindeadas que GestionSituacionRevistaViewModel no expone");
@@ -109,7 +112,11 @@ public class GuardasEstaticasW6Tests
 		((string) grilla.Attribute("ItemsSource")!).ShouldContain("Path=DocentesEnMateria");
 
 		var columnas = ColumnasBindeadas(grilla);
-		columnas.ShouldBe(new[] { "Cargo", "Estado", "Docente", "EnFunciones" });
+		// "Vigente" entra con la insignia de estado —vigente contra finalizada se distinguía sólo
+		// leyendo la palabra— y "ReemplazaADocente" con la cadena de suplencias, que se escribía en
+		// el alta y no se mostraba en ninguna parte. "EnFunciones" pasó de casilla de sólo lectura a
+		// Celda.Booleana, cuyo enlace entra por Tag.
+		columnas.ShouldBe(new[] { "Cargo", "Vigente", "Estado", "Docente", "ReemplazaADocente", "EnFunciones" });
 		DebenExistirEn(typeof(SituacionRevistaViewModel), columnas);
 	}
 
@@ -134,7 +141,9 @@ public class GuardasEstaticasW6Tests
 		((string) grilla.Attribute("ItemsSource")!).ShouldContain("Path=Resultados");
 
 		var columnas = ColumnasBindeadas(grilla);
-		columnas.ShouldBe(new[] { "NombreCompleto", "Legajo", "DocumentoNacionalIdentidad" });
+		// "EstaActivo" aparece ahora que la guarda también lee las columnas de plantilla: la columna
+		// del glifo booleano existía desde antes, lo que faltaba era que el helper la viera.
+		columnas.ShouldBe(new[] { "NombreCompleto", "Legajo", "DocumentoNacionalIdentidad", "EstaActivo" });
 		DebenExistirEn(typeof(LegajoDocenteViewModel), columnas);
 	}
 
@@ -204,25 +213,91 @@ public class GuardasEstaticasW6Tests
 		faltantes.ShouldBeEmpty($"propiedades bindeadas que {tipo.Name} no expone");
 	}
 
+	/// <summary>
+	/// Ninguna vista declara una fila <c>*</c> adentro de un <c>GroupBox</c>.
+	/// </summary>
+	/// <remarks>
+	/// LA PLANTILLA DEL ESTILO "Seccion" ENVUELVE SU CONTENIDO EN UN <c>StackPanel</c>, y un
+	/// <c>StackPanel</c> mide a sus hijos con alto INFINITO. Adentro de él una fila <c>*</c> no acota
+	/// nada: degenera al alto total del contenido, la lista crece con todas sus filas —sin barra de
+	/// desplazamiento, porque nunca le falta lugar— y lo que venga debajo queda empujado fuera del
+	/// contenedor y recortado.
+	///
+	/// Pasó con la lista de materias del diseño curricular: su <c>MaxHeight</c> tapaba el problema,
+	/// y al sacarlo desaparecieron de la pantalla el editor de la materia y toda la barra de
+	/// acciones, incluido "Editar materia". Una sección que necesita una fila <c>*</c> dibuja su
+	/// regla y su rótulo a mano, que son dos elementos, en vez de usar el <c>GroupBox</c>.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Ninguna_vista_pone_una_fila_estrella_adentro_de_un_GroupBox()
+	{
+		var vistas = Directory.EnumerateFiles(RaizDelRepositorio.Resolver("WPF_Desktop"), "*.xaml", SearchOption.AllDirectories)
+							  .Where(ruta => !ruta.Contains($"{ Path.DirectorySeparatorChar }obj{ Path.DirectorySeparatorChar }")
+										  && !ruta.Contains($"{ Path.DirectorySeparatorChar }bin{ Path.DirectorySeparatorChar }")
+										  && !ruta.Contains($"{ Path.DirectorySeparatorChar }Theme{ Path.DirectorySeparatorChar }"));
+
+		var infractoras = new List<string>();
+
+		foreach (var ruta in vistas)
+		{
+			var documento = XDocument.Parse(File.ReadAllText(ruta));
+
+			var hayFilaEstrella = documento.Descendants()
+										   .Where(e => e.Name.LocalName == "GroupBox")
+										   .SelectMany(grupo => grupo.Descendants())
+										   .Any(e => e.Name.LocalName == "RowDefinition"
+												  && ((string?) e.Attribute("Height"))?.Trim() == "*");
+
+			if (hayFilaEstrella)
+			{
+				infractoras.Add(Path.GetFileName(ruta));
+			}
+		}
+
+		infractoras.ShouldBeEmpty("una fila * adentro de un GroupBox no acota nada: el StackPanel de su plantilla mide con alto infinito");
+	}
+
+	/// <summary>
+	/// Las propiedades que cada columna de la grilla enlaza, en orden de documento.
+	/// </summary>
+	/// <remarks>
+	/// LEÍA SÓLO EL ATRIBUTO <c>Binding</c>, y eso dejaba ciega a la guarda frente a las columnas de
+	/// plantilla: una <c>DataGridTemplateColumn</c> no declara <c>Binding</c> —sus enlaces viven
+	/// adentro, en el <c>Tag</c> de un glifo o en la <c>Visibility</c> de una insignia—, así que
+	/// renombrar una propiedad que una de ellas usa no lo detectaba nadie y la celda se dibujaba
+	/// vacía o siempre en "no". Ahora recoge todo <c>Path=</c> que aparezca en cualquier atributo de
+	/// la columna, que es lo que hace falta para que la guarda cubra lo que dice cubrir.
+	/// </remarks>
 	private static List<string> ColumnasBindeadas(XElement grilla)
 	{
 		var columnas = new List<string>();
 
 		foreach (var columna in grilla.Descendants().Where(e => e.Name.LocalName.StartsWith("DataGrid") && e.Name.LocalName.EndsWith("Column")))
 		{
-			var enlace = (string?) columna.Attribute("Binding");
+			var enlaceDirecto = (string?) columna.Attribute("Binding");
 
-			if (enlace is null)
+			if (enlaceDirecto is not null)
 			{
+				var coincidencia = Regex.Match(enlaceDirecto, @"Path=(\w+)");
+
+				if (coincidencia.Success)
+				{
+					columnas.Add(coincidencia.Groups[1].Value);
+				}
+
 				continue;
 			}
 
-			var coincidencia = Regex.Match(enlace, @"Path=(\w+)");
+			// Columna de plantilla: los enlaces están en los atributos de sus descendientes.
+			var deLaPlantilla = columna.Descendants()
+									   .SelectMany(elemento => elemento.Attributes())
+									   .Select(atributo => Regex.Match(atributo.Value, @"Path=(\w+)"))
+									   .Where(coincidencia => coincidencia.Success)
+									   .Select(coincidencia => coincidencia.Groups[1].Value)
+									   .Distinct();
 
-			if (coincidencia.Success)
-			{
-				columnas.Add(coincidencia.Groups[1].Value);
-			}
+			columnas.AddRange(deLaPlantilla);
 		}
 
 		return columnas;

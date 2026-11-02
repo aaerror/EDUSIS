@@ -53,6 +53,66 @@ public class SituacionRevistaTests
 	}
 	#endregion
 
+	#region Cargo ocupante
+	[Theory]
+	[InlineData(nameof(Cargo.Titular))]
+	[InlineData(nameof(Cargo.Interino))]
+	public void EsCargoOcupante_es_true_para_el_titular_y_el_interino(string cargo)
+	{
+		SituacionRevista.EsCargoOcupante(Enum.Parse<Cargo>(cargo)).ShouldBeTrue();
+	}
+
+	[Fact]
+	public void EsCargoOcupante_es_false_para_el_suplente()
+	{
+		// El suplente no ocupa el puesto: reemplaza a quien lo ocupa mientras dura la ausencia.
+		SituacionRevista.EsCargoOcupante(Cargo.Suplente).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void EsOcupante_de_una_designacion_titular_es_true()
+	{
+		var situacion = new SituacionRevistaBuilder().ConCargo(Cargo.Titular).Build();
+
+		situacion.EsOcupante().ShouldBeTrue();
+	}
+
+	[Fact]
+	public void EsOcupante_de_una_designacion_interina_es_true()
+	{
+		var situacion = new SituacionRevistaBuilder()
+			.ConCargo(Cargo.Interino)
+			.ConFechaFin(DateTime.Today.AddMonths(6))
+			.Build();
+
+		situacion.EsOcupante().ShouldBeTrue();
+	}
+
+	[Fact]
+	public void EsOcupante_de_una_suplencia_es_false()
+	{
+		var situacion = new SituacionRevistaBuilder()
+			.ConCargo(Cargo.Suplente)
+			.ConFechaFin(DateTime.Today.AddMonths(1))
+			.Build();
+
+		situacion.EsOcupante().ShouldBeFalse();
+	}
+
+	[Fact]
+	public void EsOcupante_depende_del_cargo_y_no_de_la_vigencia_del_periodo()
+	{
+		var situacion = new SituacionRevistaBuilder()
+			.ConCargo(Cargo.Interino)
+			.ConFechaInicio(DateTime.Today.AddYears(-3))
+			.ConFechaFin(DateTime.Today.AddYears(-2))
+			.Build();
+
+		situacion.EsCargoVigente().ShouldBeFalse();
+		situacion.EsOcupante().ShouldBeTrue();
+	}
+	#endregion
+
 	#region Finalización
 	[Fact]
 	public void EstablecerFechaFinalizacion_sobre_un_cargo_temporal_lanza_CargoConFechaFinalizacionException()

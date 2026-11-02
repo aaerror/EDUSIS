@@ -375,17 +375,27 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		{
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 
-			return catedra.SituacionesRevista.Select(situacion =>
-				new SituacionRevistaResponse(
-					SituacionRevistaID: situacion.Id,
-					CatedraID: catedra.Id,
-					DocenteID: situacion.DocenteID,
-					Estado: situacion.Estado.ToString(),
-					Cargo: situacion.Cargo.ToString(),
-					FechaInicio: situacion.Periodo.FechaInicio,
-					FechaFin: situacion.Periodo.FechaFin,
-					ReemplazaA: situacion.ReemplazaA,
-					EnFunciones: catedra.SituacionEnFuncionesID.HasValue && catedra.SituacionEnFuncionesID.Value.Equals(situacion.Id)))
+			// De la más reciente a la más vieja: la grilla es también el historial de la cátedra, y lo
+			// que se busca en un historial es lo último que pasó.
+			return catedra.SituacionesRevista
+				.OrderByDescending(situacion => situacion.Periodo.FechaInicio)
+				.Select(situacion =>
+					new SituacionRevistaResponse(
+						SituacionRevistaID: situacion.Id,
+						CatedraID: catedra.Id,
+						DocenteID: situacion.DocenteID,
+						Estado: situacion.Estado.ToString(),
+						Cargo: situacion.Cargo.ToString(),
+						FechaInicio: situacion.Periodo.FechaInicio,
+						FechaFin: situacion.Periodo.FechaFin,
+						ReemplazaA: situacion.ReemplazaA,
+						EnFunciones: catedra.SituacionEnFuncionesID.HasValue && catedra.SituacionEnFuncionesID.Value.Equals(situacion.Id),
+						Vigente: situacion.EsCargoVigente(),
+						EsOcupante: situacion.EsOcupante(),
+						// El salto de designación reemplazada a docente reemplazado. Se resuelve contra
+						// la misma colección ya cargada, así que no cuesta una consulta más.
+						ReemplazaADocenteID: situacion.ReemplazaA.HasValue ? catedra.DocenteDe(situacion.ReemplazaA.Value) : null,
+						TieneSuplenteVigente: catedra.TieneSuplenteVigente(situacion.Id)))
 				.ToList();
 		}
 		catch (Exception ex)

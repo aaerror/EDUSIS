@@ -134,27 +134,75 @@
 								  Grid.Row="1"
 								  ItemsSource="{ Binding Path=DocentesEnMateria, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
 								  SelectedItem="{ Binding Path=SituacionRevistaUPDATE, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+								  AutomationProperties.Name="Designaciones de la cátedra"
 								  IsReadOnly="True"
 								  IsSynchronizedWithCurrentItem="True"
-								  MaxHeight="260"
-								  MinHeight="120"
 								  Style="{ StaticResource ResourceKey=Grilla }"
 								  Tag="Esta cátedra todavía no tiene docentes designados. Empezá con &#x201C;Designar docente&#x201D;."
 								  d:ItemsSource="{ d:SampleData ItemCount=4 }">
 							<DataGrid.Columns>
 								<!-- El orden de estas columnas lo fija la guarda estática W6. -->
 								<DataGridTextColumn Binding="{ Binding Path=Cargo, FallbackValue='Sin datos', TargetNullValue='Sin datos', Converter={ StaticResource ResourceKey=cargoConverter } }"
+													ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 													Header="CARGO"
+													MinWidth="90"
 													Width="*"/>
-								<DataGridTextColumn Binding="{ Binding Path=Estado, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
-													Header="ESTADO"
-													Width="*"/>
+								<!--
+									EL ESTADO SE LEE DE UN VISTAZO. Era texto plano con el ToString()
+									del enum, así que una designación vigente y una finalizada se
+									distinguían sólo leyendo la palabra. En una grilla que ahora es
+									también el historial de la cátedra, encontrar las vigentes entre
+									las viejas era el trabajo. La insignia lo resuelve por forma y
+									color, y el texto sigue estando.
+								-->
+								<DataGridTemplateColumn Header="ESTADO" MinWidth="110" Width="*">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<Grid>
+												<Border Style="{ StaticResource ResourceKey=Insignia.Activa }"
+														Visibility="{ Binding Path=Vigente, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+															   Text="VIGENTE"/>
+												</Border>
+												<Border Style="{ StaticResource ResourceKey=Insignia }"
+														Visibility="{ Binding Path=Vigente, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+															   Text="{ Binding Path=Estado, Mode=OneWay }"/>
+												</Border>
+											</Grid>
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+								</DataGridTemplateColumn>
 								<DataGridTextColumn Binding="{ Binding Path=Docente, FallbackValue='Sin datos', TargetNullValue='Sin datos' }"
+													ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 													Header="DOCENTE"
+													MinWidth="160"
 													Width="2*"/>
-								<DataGridCheckBoxColumn Binding="{ Binding Path=EnFunciones }"
-														Header="EN AULA"
-														Width="Auto"/>
+								<!--
+									LA CADENA DE SUPLENCIAS, VISIBLE. ReemplazaA se escribía en el alta
+									y no se mostraba en ninguna parte: un suplente ya cargado era
+									indistinguible de un titular salvo por la palabra del cargo, y a
+									quién cubría no se podía averiguar desde la pantalla. El salto de
+									designación reemplazada a docente lo resuelve Core.
+								-->
+								<DataGridTextColumn Binding="{ Binding Path=ReemplazaADocente, Mode=OneWay }"
+													ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+													Header="SUPLE A"
+													MinWidth="140"
+													Width="2*"/>
+								<!--
+									Celda.Booleana y no DataGridCheckBoxColumn: la grilla es de sólo
+									lectura, así que la casilla dibujaba un control de entrada que no
+									acepta entrada.
+								-->
+								<DataGridTemplateColumn Header="EN AULA" Width="Auto">
+									<DataGridTemplateColumn.CellTemplate>
+										<DataTemplate>
+											<fa:IconBlock Style="{ StaticResource ResourceKey=Celda.Booleana }"
+														  Tag="{ Binding Path=EnFunciones, Mode=OneWay }"/>
+										</DataTemplate>
+									</DataGridTemplateColumn.CellTemplate>
+								</DataGridTemplateColumn>
 							</DataGrid.Columns>
 						</DataGrid>
 
@@ -180,6 +228,18 @@
 							el pie, que es donde el detalle de arriba muestra a quién se le van a
 							aplicar.
 						-->
+						<!--
+							CADA ESTADO MUESTRA SÓLO SUS ACCIONES. Los cuatro botones vivían
+							permanentemente en el pie y lo único que cambiaba era su IsEnabled, así
+							que en cualquier fila real había dos o tres apagados y ninguno decía por
+							qué. Peor: dos de los gates eran más laxos que el dominio —finalizar una
+							designación ya finalizada, poner en aula a quien ya estaba— y uno estaba
+							garantizado a fallar sobre suplentes e interinos.
+
+							La visibilidad cuelga del IsEnabled que el propio CanExecute decide, así
+							que la regla vive en un solo lugar: el ViewModel, medido contra el
+							dominio. Un botón que no aplica no se dibuja.
+						-->
 						<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
 							<HeaderedContentControl.Header>
 								<StackPanel Orientation="Horizontal">
@@ -188,12 +248,14 @@
 											Content="Finalizar designación"
 											Margin="0 0 8 0"
 											Style="{ StaticResource ResourceKey=Btn.Peligro }"
-											ToolTip="Dar de baja la designación elegida"/>
+											ToolTip="Cerrar hoy la designación elegida y liberar el cargo"
+											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 									<Button Command="{ Binding Path=EditarCommand }"
 											CommandParameter="Rescindir"
 											Content="Poner fin de designación"
 											Style="{ StaticResource ResourceKey=Btn.Peligro }"
-											ToolTip="Establecer la fecha de fin de la designación elegida"/>
+											ToolTip="Ponerle fecha de fin a una designación por tiempo indeterminado"
+											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 								</StackPanel>
 							</HeaderedContentControl.Header>
 
@@ -203,12 +265,14 @@
 										Content="Quitar del aula"
 										Margin="0 0 8 0"
 										Style="{ StaticResource ResourceKey=Btn.Secundario }"
-										ToolTip="Relevar de funciones al docente elegido"/>
+										ToolTip="Dejar la cátedra sin docente frente al curso"
+										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 								<Button Command="{ Binding Path=GuardarCommand }"
 										CommandParameter="Docente"
 										Content="Poner en aula"
 										Style="{ StaticResource ResourceKey=Btn.Primario }"
-										ToolTip="Establecer al docente elegido como docente de aula"/>
+										ToolTip="Poner al docente elegido frente al curso"
+										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 							</StackPanel>
 						</HeaderedContentControl>
 					</Grid>
@@ -315,5 +379,14 @@
 				<!--#endregion-->
 			</StackPanel>
 		</ScrollViewer>
+
+		<!--
+			Era la única de las tres pantallas hermanas sin velo de carga, y el comando ya exponía su
+			IsRunning: nadie lo leía.
+		-->
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="3"
+									  EstaCargando="{ Binding Path=CargarSituacionRevistasCommandAsync.IsRunning }"
+									  Leyenda="CARGANDO LOS DOCENTES"/>
 	</Grid>
 </UserControl>

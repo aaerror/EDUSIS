@@ -56,13 +56,30 @@ public sealed class Catedra : Entity
 	#region Designaciones
 	/// <summary>
 	/// Titular e interino son dos formas de ocupar el mismo puesto: hay a lo sumo uno vigente.
-	/// El suplente no ocupa el puesto, reemplaza a quien corresponda mientras dura la ausencia.
+	/// La regla de qué cargo ocupa el puesto vive en <see cref="SituacionRevista.EsCargoOcupante"/>.
 	/// </summary>
 	private static bool EsOcupante(Cargo unCargo) =>
-		unCargo.Equals(Cargo.Titular) || unCargo.Equals(Cargo.Interino);
+		SituacionRevista.EsCargoOcupante(unCargo);
 
 	private SituacionRevista? OcupanteVigente() =>
 		_situaciones.FirstOrDefault(situacion => EsOcupante(situacion.Cargo) && situacion.EsCargoVigente());
+
+	/// <summary>
+	/// La designación indicada ya tiene un suplente vigente cubriéndola.
+	/// </summary>
+	/// <remarks>
+	/// Es la condición que <see cref="Designar"/> usa para rechazar una segunda suplencia sobre el
+	/// mismo ausente con <c>DocenteYaReemplazadoException</c>. Es pública porque la pantalla de
+	/// designaciones necesita la MISMA regla para no ofrecer en el combo a quien ya está reemplazado:
+	/// ofrecer una opción que el dominio va a rechazar es hacerle descubrir la regla a fuerza de
+	/// cartel de error. Reusarla es lo que garantiza que la UI y el dominio no se separen.
+	/// </remarks>
+	public bool TieneSuplenteVigente(Guid unaSituacionRevista) =>
+		_situaciones.Any(situacion => unaSituacionRevista.Equals(situacion.ReemplazaA) && situacion.EsCargoVigente());
+
+	/// <summary>El docente de la designación indicada, o <c>null</c> si no pertenece a la cátedra.</summary>
+	public Guid? DocenteDe(Guid unaSituacionRevista) =>
+		_situaciones.FirstOrDefault(situacion => situacion.Id.Equals(unaSituacionRevista))?.DocenteID;
 
 	public Guid Designar(Guid unDocente, Cargo unCargo, DateTime fechaInicio, DateTime? fechaFin, Guid? reemplazaA = null)
 	{
@@ -96,7 +113,7 @@ public sealed class Catedra : Entity
 				throw new SituacionRevistaNoEncontradaException();
 			}
 
-			if (_situaciones.Any(situacion => reemplazaA.Value.Equals(situacion.ReemplazaA) && situacion.EsCargoVigente()))
+			if (TieneSuplenteVigente(reemplazaA.Value))
 			{
 				throw new DocenteYaReemplazadoException();
 			}
