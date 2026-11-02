@@ -42,6 +42,8 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	private readonly MateriaStore _materiaStore = null;
 
 	private readonly CatedraStore _catedraStore = null;
+
+	private readonly BuscarContextoStore _buscarContextoStore = null;
 	#endregion
 
 	#region ViewModels
@@ -131,6 +133,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 											CursoStore cursoStore,
 											MateriaStore materiaStore,
 											CatedraStore catedraStore,
+											BuscarContextoStore buscarContextoStore,
 											IMessenger messenger)
 	{
 		_gestionMateriasNavigationService = gestionMateriasNavigationService;
@@ -143,6 +146,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 		_cursoStore = cursoStore;
 		_materiaStore = materiaStore;
 		_catedraStore = catedraStore;
+		_buscarContextoStore = buscarContextoStore;
 
 		CargarSituacionRevistasCommandAsync = new AsyncRelayCommand(CargarSituacionRevistasAsync);
 		CancelarCommand = new AsyncRelayCommand<string>(ExecuteCancelarCommandAsync, CanExecuteCancelarCommand);
@@ -191,8 +195,21 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	/// —campo validado, lupa, un Expander con la grilla de resultados y un botón "Seleccionar"—,
 	/// idéntica a la de <c>GestionDivisionesView</c>. Las dos se reemplazaron por el modal.
 	/// </summary>
-	private void ExecuteBuscarDocenteCommand() =>
+	/// <remarks>
+	/// Declara su contexto antes de navegar, igual que Divisiones, pero el suyo dice "Elegir
+	/// docente" y no un verbo que cierre: acá el docente es el PRIMER dato de la designación y
+	/// después hay cargo, período y —si es suplente— a quién reemplaza. El modal es un paso del
+	/// formulario, no el formulario entero. Ver <see cref="BuscarContexto"/>.
+	/// </remarks>
+	private void ExecuteBuscarDocenteCommand()
+	{
+		_buscarContextoStore.Declarar(new BuscarContexto(
+			Titulo: $"Docente para { Materia?.Descripcion ?? "la cátedra" }",
+			Detalle: "Elegilo de la lista y después cargá su cargo y su período en la cátedra.",
+			Verbo: "Elegir docente"));
+
 		_buscarDocenteModalNavigationService.Navigate();
+	}
 	#endregion
 
 	public async Task CargarSituacionRevistasAsync()

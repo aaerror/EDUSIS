@@ -42,6 +42,7 @@ public class GestionSituacionRevistaViewModelTests
 		public CursoStore CursoStore { get; } = new();
 		public MateriaStore MateriaStore { get; } = new();
 		public CatedraStore CatedraStore { get; } = new();
+		public BuscarContextoStore BuscarContextoStore { get; } = new();
 
 		public Guid CatedraID { get; } = Guid.NewGuid();
 		public Guid SituacionCreadaID { get; } = Guid.NewGuid();
@@ -74,6 +75,7 @@ public class GestionSituacionRevistaViewModelTests
 															 CursoStore,
 															 MateriaStore,
 															 CatedraStore,
+															 BuscarContextoStore,
 															 Mensajero);
 		}
 
