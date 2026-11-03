@@ -192,10 +192,16 @@ static void Informar(ResumenDeSiembra resumen, TimeSpan duracion)
 	Console.WriteLine("  ─────────────────────");
 	Console.WriteLine($"  Duración: {duracion.TotalSeconds:F1} s");
 	Console.WriteLine();
+	// Este listado se escribe a mano y no sale de los datos sembrados: las descripciones son
+	// prosa, no se derivan de Rol.Permisos. Si cambia la atribución de Domain/Usuarios/Rol.cs o
+	// el array `cuentas` de Sembradora.SembrarUsuariosAsync, hay que tocar las seis líneas de
+	// acá abajo también. Ya quedó desactualizado una vez, al partir los permisos por actor.
 	Console.WriteLine($"  Usuarios (contraseña: {Sembradora.PASSWORD_DEMO})");
-	Console.WriteLine("    admin@edu.ar       — Administrador (todos los permisos)");
-	Console.WriteLine("    direccion@edu.ar   — Dirección (los ocho académicos)");
-	Console.WriteLine("    secretaria@edu.ar  — Secretaria (docentes, alumnos, inscripciones)");
-	Console.WriteLine("    docente@edu.ar     — Docente (calificaciones y asistencia)");
+	Console.WriteLine("    admin@edu.ar        — Administrador (los quince permisos)");
+	Console.WriteLine("    direccion@edu.ar    — Dirección (los nueve académicos)");
+	Console.WriteLine("    secretaria@edu.ar   — Secretaría (preceptores, documentos, reportes)");
+	Console.WriteLine("    academica@edu.ar    — Secretaría Académica (divisiones, cursantes, cátedras)");
+	Console.WriteLine("    preceptoria@edu.ar  — Preceptoría (asistencia y reportes de cursada)");
+	Console.WriteLine("    docente@edu.ar      — Docente (calificaciones)");
 	Console.WriteLine();
 }
