@@ -188,12 +188,16 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	}
 	#endregion
 
+	// Las tres operaciones de preceptor exigen GestionarPreceptores y no GestionarCursos: el
+	// diagrama de Secretaría (docs/uml/) le da CU-04/05/06 al Encargado de Secretaría, mientras
+	// que el alta y la baja de divisiones —acá arriba, con GestionarCursos— son de Secretaría
+	// Académica. Eran el mismo permiso y concedían los dos grupos juntos.
 	#region Preceptor
 	public async Task AsignarPreceptorAsync(RegistrarPreceptorRequest request)
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GestionarCursos);
+			_sesion.Exigir(Permiso.GestionarPreceptores);
 
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
@@ -225,7 +229,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GestionarCursos);
+			_sesion.Exigir(Permiso.GestionarPreceptores);
 
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
@@ -257,7 +261,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GestionarCursos);
+			_sesion.Exigir(Permiso.GestionarPreceptores);
 
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)

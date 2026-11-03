@@ -85,12 +85,30 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 
 	[Fact]
-	public async Task ModificarPreceptorAsync_sin_GestionarCursos_lanza_PermisoDenegado()
+	public async Task ModificarPreceptorAsync_sin_GestionarPreceptores_lanza_PermisoDenegado()
 	{
 		using var host = HostSinPermisos();
 
 		await Should.ThrowAsync<PermisoDenegadoException>(
 			() => host.Resolver<IServicioDivision>().ModificarPreceptorAsync(null!));
+	}
+
+	[Fact]
+	public async Task GenerarCertificadoAsistenciaAsync_sin_GenerarDocumentosAsistencia_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocumento>().GenerarCertificadoAsistenciaAsync(null!));
+	}
+
+	[Fact]
+	public async Task GenerarReporteAsistenciasAsync_sin_GenerarReportesDeCursada_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioReporte>().GenerarReporteAsistenciasAsync(null!));
 	}
 
 	[Fact]
@@ -217,6 +235,97 @@ public class AutorizacionDeCasosDeUsoTests
 
 		await Should.ThrowAsync<PermisoDenegadoException>(
 			() => host.Resolver<IServicioReporte>().GenerarReporteMatriculasAsync(null!));
+	}
+	#endregion
+
+	#region Los permisos partidos no se conceden entre sí
+	/// <remarks>
+	/// Tres permisos nacieron de partir uno existente, porque los diagramas de <c>docs/uml/</c>
+	/// reparten entre actores distintos lo que una sola atribución concedía junta. Estas pruebas
+	/// son las que impiden que la partición se deshaga sin ruido: si alguien volviera a poner
+	/// <c>GestionarCursos</c> en la guarda del preceptor, el resto de la suite seguiría en verde
+	/// —el host sin permisos sigue siendo rechazado— y sólo fallaría acá.
+	/// </remarks>
+	[Fact]
+	public async Task GestionarCursos_no_alcanza_para_designar_un_preceptor()
+	{
+		// CU-01/02/03 (divisiones) son de Secretaría Académica y CU-04/05/06 (preceptores) de
+		// Secretaría: tener el primero no habilita el segundo.
+		using var host = HostCon(Permiso.GestionarCursos);
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDivision>().AsignarPreceptorAsync(null!));
+	}
+
+	[Fact]
+	public async Task GestionarPreceptores_no_alcanza_para_dar_de_alta_una_division()
+	{
+		using var host = HostCon(Permiso.GestionarPreceptores);
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDivision>().AgregarDivisionAsync(null!));
+	}
+
+	[Fact]
+	public async Task GenerarDocumentos_no_alcanza_para_el_certificado_de_asistencia()
+	{
+		// CU-30 es el único documento de Preceptoría. Al revés también: ver la prueba siguiente.
+		using var host = HostCon(Permiso.GenerarDocumentos);
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocumento>().GenerarCertificadoAsistenciaAsync(null!));
+	}
+
+	[Fact]
+	public async Task GenerarDocumentosAsistencia_no_alcanza_para_el_boletin()
+	{
+		using var host = HostCon(Permiso.GenerarDocumentosAsistencia);
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocumento>().GenerarBoletinCalificacionesAsync(null!));
+	}
+
+	[Fact]
+	public async Task GenerarReportes_no_alcanza_para_los_reportes_de_cursada()
+	{
+		using var host = HostCon(Permiso.GenerarReportes);
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioReporte>().GenerarReporteCalificacionesAsync(null!));
+	}
+
+	[Fact]
+	public async Task GenerarReportesDeCursada_no_alcanza_para_el_reporte_de_matriculas()
+	{
+		using var host = HostCon(Permiso.GenerarReportesDeCursada);
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioReporte>().GenerarReporteMatriculasAsync(null!));
+	}
+
+	/// <remarks>
+	/// Los dos <c>ListarCiclosLectivosAsync</c> no son un caso de uso sino el combo de período de
+	/// su pantalla, y por eso usan <c>ExigirAlguno</c>. Sin esto, Preceptoría entraría a
+	/// Documentación —el menú la deja— y no podría elegir período para el único documento que sí
+	/// puede emitir.
+	/// </remarks>
+	[Fact]
+	public async Task El_combo_de_periodo_lo_abre_cualquiera_de_los_dos_permisos_de_emision()
+	{
+		using var documentos = HostCon(Permiso.GenerarDocumentosAsistencia);
+		using var reportes = HostCon(Permiso.GenerarReportesDeCursada);
+
+		(await documentos.Resolver<IServicioDocumento>().ListarCiclosLectivosAsync()).ShouldBeEmpty();
+		(await reportes.Resolver<IServicioReporte>().ListarCiclosLectivosAsync()).ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task El_combo_de_periodo_sigue_cerrado_sin_ninguno_de_los_dos()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocumento>().ListarCiclosLectivosAsync());
 	}
 	#endregion
 
