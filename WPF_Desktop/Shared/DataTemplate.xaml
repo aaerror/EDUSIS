@@ -26,6 +26,8 @@
 					xmlns:vSituacionRevista="clr-namespace:WPF_Desktop.Views.Cursos.Curriculas.Materias.SituacionRevista"
 					xmlns:vmDivisiones="clr-namespace:WPF_Desktop.ViewModels.Cursos.Divisiones"
 					xmlns:vDivisiones="clr-namespace:WPF_Desktop.Views.Cursos.Divisiones"
+					xmlns:vmAsistencias="clr-namespace:WPF_Desktop.ViewModels.Asistencias"
+					xmlns:vAsistencias="clr-namespace:WPF_Desktop.Views.Asistencias"
 					xmlns:vmDocumentacion="clr-namespace:WPF_Desktop.ViewModels.Documentacion"
 					xmlns:vDocumentacion="clr-namespace:WPF_Desktop.Views.Documentacion"
 					xmlns:vmReportes="clr-namespace:WPF_Desktop.ViewModels.Reportes"
@@ -168,6 +170,16 @@
 	-->
 	<DataTemplate DataType="{ x:Type vmDivisiones:GestionAsistenciasViewModel }">
 		<vDivisiones:GestionAsistenciasView/>
+	</DataTemplate>
+	<!--#endregion-->
+
+	<!--#region ASISTENCIAS
+		La raíz de menú de la sección, que sí tiene namespace propio: no es un drill-down de la
+		división sino el tramo que lo inicia. Elige curso y división y entra a la planilla de
+		arriba, que es la misma pantalla a la que se llega por Cursos → Divisiones.
+	-->
+	<DataTemplate DataType="{ x:Type vmAsistencias:AsistenciasViewModel }">
+		<vAsistencias:AsistenciasView/>
 	</DataTemplate>
 	<!--#endregion-->
 

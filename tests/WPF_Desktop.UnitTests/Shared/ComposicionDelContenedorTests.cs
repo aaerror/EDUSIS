@@ -6,6 +6,7 @@ using Shouldly;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.Store.NavigationStore;
+using WPF_Desktop.ViewModels.Asistencias;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using Xunit;
@@ -156,6 +157,23 @@ public class ComposicionDelContenedorTests
 		host.Services.GetRequiredService<DivisionStore>().Division = new DivisionSeleccionada(Guid.NewGuid());
 
 		var viewModel = host.Services.GetRequiredService<GestionAsistenciasViewModel>();
+
+		viewModel.ShouldNotBeNull();
+	}
+
+	/// <remarks>
+	/// A diferencia de <c>GestionAsistenciasViewModel</c>, esta <b>no</b> siembra los stores: es
+	/// la raíz de la sección y su trabajo es justamente escribirlos. Si algún día necesitara que
+	/// ya estuvieran puestos, dejaría de ser una raíz de menú y el rol <c>Preceptoria</c> volvería
+	/// a quedarse sin forma de entrar.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void AsistenciasViewModel_se_resuelve_del_contenedor_real_sin_sembrar_los_stores()
+	{
+		using var host = ConstruirHost();
+
+		var viewModel = host.Services.GetRequiredService<AsistenciasViewModel>();
 
 		viewModel.ShouldNotBeNull();
 	}

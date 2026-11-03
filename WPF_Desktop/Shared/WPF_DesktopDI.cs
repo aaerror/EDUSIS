@@ -17,6 +17,7 @@ using Core.Shared.Seguridad;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using WPF_Desktop.Security;
+using WPF_Desktop.Navigation.NavigationServices.Asistencias;
 using WPF_Desktop.Navigation.NavigationServices.Cursos;
 using WPF_Desktop.Navigation.NavigationServices.Docentes;
 using WPF_Desktop.Navigation.NavigationServices.Documentacion;
@@ -28,6 +29,7 @@ using WPF_Desktop.Navigation;
 using WPF_Desktop.Store.NavigationStore;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Alumnos;
+using WPF_Desktop.ViewModels.Asistencias;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 using WPF_Desktop.ViewModels.Cursos.Curriculas;
@@ -109,6 +111,7 @@ internal static class WPF_DesktopDI
 								  CreateGestionDocentesNavigationService(provider),
 								  CreateGestionAlumnosNavigationService(provider),
 								  CreateGestionCursosNavigationService(provider),
+								  CreateAsistenciasNavigationService(provider),
 								  CreateGestionDocumentacionNavigationService(provider),
 								  CreateGestionReportesNavigationService(provider),
 								  provider.GetRequiredService<ISesionUsuario>(),
@@ -230,6 +233,18 @@ internal static class WPF_DesktopDI
 										   provider.GetRequiredService<BuscarContextoStore>(),
 										   provider.GetRequiredService<IDialogService>(),
 										   provider.GetRequiredService<IMessenger>()));
+
+		// La raíz de la sección. Depende de GestionAsistenciasNavigationService y no al revés:
+		// escribe CursoStore y DivisionStore y recién después navega a la planilla, que los lee
+		// en su constructor.
+		services.AddTransient<AsistenciasViewModel>(provider =>
+			new AsistenciasViewModel(provider.GetRequiredService<IServicioCurso>(),
+									 provider.GetRequiredService<IServicioDivision>(),
+									 provider.GetRequiredService<IDialogService>(),
+									 CreateGestionAsistenciasNavigationService(provider),
+									 provider.GetRequiredService<CursoStore>(),
+									 provider.GetRequiredService<DivisionStore>(),
+									 provider.GetRequiredService<CicloLectivoStore>()));
 
 		services.AddTransient<GestionAsistenciasViewModel>(provider =>
 			new GestionAsistenciasViewModel(CreateGestionDivisionesNavigationService(provider),
@@ -408,6 +423,13 @@ internal static class WPF_DesktopDI
 	private static INavigationService CreateGestionAsistenciasNavigationService(IServiceProvider serviceProvider) =>
 		new GestionAsistenciasNavigationService<GestionAsistenciasViewModel>(() =>
 			serviceProvider.GetRequiredService<GestionAsistenciasViewModel>(),
+			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
+	#endregion
+
+	#region AsistenciasNavigationService
+	private static INavigationService CreateAsistenciasNavigationService(IServiceProvider serviceProvider) =>
+		new AsistenciasNavigationService<AsistenciasViewModel>(() =>
+			serviceProvider.GetRequiredService<AsistenciasViewModel>(),
 			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
 	#endregion
 

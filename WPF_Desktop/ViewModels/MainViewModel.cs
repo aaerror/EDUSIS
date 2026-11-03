@@ -57,6 +57,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	public IRelayCommand GestionDocentesCommand { get; }
 	public IRelayCommand GestionAlumnosCommand { get; }
 	public IRelayCommand GestionCursosCommand { get; }
+	public IRelayCommand AsistenciasCommand { get; }
 	public IRelayCommand GestionDocumentacionCommand { get; }
 	public IRelayCommand GestionReportesCommand { get; }
 	public IRelayCommand SalirCommand { get; }
@@ -73,6 +74,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 						 INavigationService docentesNavigationService,
 						 INavigationService alumnosNavigationService,
 						 INavigationService cursosNavigationService,
+						 INavigationService asistenciasNavigationService,
 						 INavigationService documentacionNavigationService,
 						 INavigationService reportesNavigationService,
 						 ISesionUsuario sesion,
@@ -97,10 +99,20 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 												 () => _sesion.TienePermiso(Permiso.GestionarAlumnos));
 		GestionCursosCommand = new RelayCommand(() => Navegar(cursosNavigationService, "Cursos"),
 												() => _sesion.TienePermiso(Permiso.GestionarCursos));
+		AsistenciasCommand = new RelayCommand(() => Navegar(asistenciasNavigationService, "Asistencias"),
+											  () => _sesion.TienePermiso(Permiso.TomarAsistencia));
+
+		// Las dos secciones de emisión aceptan el permiso general O el de Preceptoría: el
+		// certificado de asistencia (CU-30) y los reportes de cursada (CU-35/36) viven en estas
+		// pantallas, y exigir sólo el permiso general dejaría a Preceptoría sin poder abrirlas
+		// para emitir justamente lo que sí puede. Las operaciones de adentro siguen guardadas
+		// una por una en Core: llegar a la pantalla no autoriza nada.
 		GestionDocumentacionCommand = new RelayCommand(() => Navegar(documentacionNavigationService, "Documentación"),
-													   () => _sesion.TienePermiso(Permiso.GenerarDocumentos));
+													   () => _sesion.TienePermiso(Permiso.GenerarDocumentos)
+														  || _sesion.TienePermiso(Permiso.GenerarDocumentosAsistencia));
 		GestionReportesCommand = new RelayCommand(() => Navegar(reportesNavigationService, "Reportes"),
-												  () => _sesion.TienePermiso(Permiso.GenerarReportes));
+												  () => _sesion.TienePermiso(Permiso.GenerarReportes)
+													 || _sesion.TienePermiso(Permiso.GenerarReportesDeCursada));
 		CargarUsuarioAsyncCommand = new AsyncRelayCommand(CargarUsuarioAsync);
 		SalirCommand = new RelayCommand(Salir);
 
@@ -127,6 +139,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		GestionDocentesCommand.NotifyCanExecuteChanged();
 		GestionAlumnosCommand.NotifyCanExecuteChanged();
 		GestionCursosCommand.NotifyCanExecuteChanged();
+		AsistenciasCommand.NotifyCanExecuteChanged();
 		GestionDocumentacionCommand.NotifyCanExecuteChanged();
 		GestionReportesCommand.NotifyCanExecuteChanged();
 	}
