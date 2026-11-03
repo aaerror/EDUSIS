@@ -94,12 +94,15 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 	}
 	#endregion
 
+	// CU-30 es el único documento que el diagrama de Preceptoría le asigna a ese actor; los otros
+	// cinco son de Secretaría (CU-28/29) y de Secretaría Académica (CU-31/32/33). Por eso tiene
+	// permiso propio: con GenerarDocumentos, Preceptoría podría emitir un boletín.
 	#region Certificado de asistencia
 	public async Task<DocumentoGenerado> GenerarCertificadoAsistenciaAsync(EmitirCertificadoAsistenciaRequest request)
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GenerarDocumentos);
+			_sesion.Exigir(Permiso.GenerarDocumentosAsistencia);
 
 			if (request.Desde.Date > request.Hasta.Date)
 			{
@@ -243,7 +246,10 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GenerarDocumentos);
+			// No es un caso de uso: es el combo de período de la pantalla de documentación, que
+			// sirve por igual a los seis documentos. Con GenerarDocumentos a secas, Preceptoría
+			// no podría elegir período para el certificado de asistencia que sí puede emitir.
+			_sesion.ExigirAlguno(new[] { Permiso.GenerarDocumentos, Permiso.GenerarDocumentosAsistencia });
 
 			var ciclos = await _unitOfWork.Cursantes.ListarCiclosLectivosAsync();
 

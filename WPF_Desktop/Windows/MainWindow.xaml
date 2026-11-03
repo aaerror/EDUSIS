@@ -126,6 +126,17 @@
 							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Cursos }"
 							ToolTip="Cursos, divisiones, currículas y cátedras"/>
 
+					<!--
+						La asistencia también se alcanza bajando por Cursos → Divisiones, pero
+						ese camino exige GestionarCursos. Esta entrada existe para Preceptoría,
+						cuyos permisos no habilitaban ninguna sección.
+					-->
+					<Button Command="{ Binding Path=AsistenciasCommand }"
+							Content="Asistencias"
+							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Asistencias }"
+							ToolTip="Planillas de asistencia por división"/>
+
 					<TextBlock Foreground="{ StaticResource ResourceKey=SobrePizarraTenue }"
 							   Margin="20 18 20 10"
 							   Style="{ StaticResource ResourceKey=Txt.Seccion }"

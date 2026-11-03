@@ -540,9 +540,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasMaxLength(15)
+                        .HasMaxLength(25)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(15)")
+                        .HasColumnType("varchar(25)")
                         .HasColumnName("descripcion");
 
                     b.HasKey("Id")
@@ -570,6 +570,16 @@ namespace Infrastructure.Migrations
                         {
                             Id = 4,
                             Descripcion = "Secretaria"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Descripcion = "Preceptoría"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Descripcion = "Secretaría Académica"
                         });
                 });
 

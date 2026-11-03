@@ -30,4 +30,30 @@ internal static class SesionActualExtensions
 			throw new PermisoDenegadoException($"{operacion} requiere «{unPermiso.Descripcion}»");
 		}
 	}
+
+	/// <summary>
+	/// Guarda de autorización para una operación auxiliar que sirve a varios casos de uso: alcanza
+	/// con <strong>uno</strong> de <paramref name="losPermisos"/>.
+	/// </summary>
+	/// <remarks>
+	/// Existe por los dos <c>ListarCiclosLectivosAsync</c>, que no son un caso de uso sino el
+	/// combo que llena la pantalla antes de emitir. Exigir ahí el permiso del documento académico
+	/// dejaría a Preceptoría sin poder elegir período para el certificado de asistencia, que sí
+	/// puede emitir. No es un "o" general para los casos de uso: una operación con un actor
+	/// definido usa <see cref="Exigir"/> con su permiso y nada más.
+	/// </remarks>
+	internal static void ExigirAlguno(
+		this ISesionActual sesion,
+		Permiso[] losPermisos,
+		[CallerMemberName] string operacion = "")
+	{
+		if (losPermisos.Any(sesion.TienePermiso))
+		{
+			return;
+		}
+
+		var descripciones = string.Join(" o ", losPermisos.Select(x => $"«{x.Descripcion}»"));
+
+		throw new PermisoDenegadoException($"{operacion} requiere {descripciones}");
+	}
 }

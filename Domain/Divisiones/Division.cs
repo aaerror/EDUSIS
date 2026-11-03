@@ -151,8 +151,8 @@ public sealed class Division : Entity
 	/// que si la guarda de integridad corriera primero, <paramref name="cantidadCursantes"/>
 	/// llegaría siempre en cero y ni <c>DivisionNoEliminableException</c> ni
 	/// <c>DivisionConMatriculaSuficienteException</c> se dispararían nunca en producción. La
-	/// decisión está documentada en <c>docs/plan/casos-uso-pendientes.md</c>, "La decisión sobre la
-	/// clave ajena de división", y el motivo del orden, en el propio caso de uso.
+	/// decisión está documentada en <c>docs/plan/historico/casos-uso-pendientes.md</c>, "La decisión
+	/// sobre la clave ajena de división", y el motivo del orden, en el propio caso de uso.
 	/// </para>
 	/// </remarks>
 	public void ValidarSePuedeEliminar(NivelEducativo nivel, int cantidadCursantes)

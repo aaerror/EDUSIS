@@ -132,7 +132,7 @@ internal sealed class Sembradora
 
 	#region Capa de referencia
 	/// <summary>
-	/// Adjunta los cuatro roles al <c>ChangeTracker</c> como <c>Unchanged</c> antes de que
+	/// Adjunta los seis roles al <c>ChangeTracker</c> como <c>Unchanged</c> antes de que
 	/// cualquier <see cref="Usuario"/> los referencie.
 	/// </summary>
 	/// <remarks>
@@ -144,8 +144,13 @@ internal sealed class Sembradora
 	/// </remarks>
 	private void AdjuntarDatosDeReferencia()
 	{
-		_contexto.AttachRange(Rol.Admin, Rol.Direccion, Rol.Docente, Rol.Secretaria);
-		_logger.LogInformation("Roles de referencia adjuntos al contexto (los cuatro, como Unchanged).");
+		_contexto.AttachRange(Rol.Admin,
+							  Rol.Direccion,
+							  Rol.Docente,
+							  Rol.Secretaria,
+							  Rol.Preceptoria,
+							  Rol.SecretariaAcademica);
+		_logger.LogInformation("Roles de referencia adjuntos al contexto (los seis, como Unchanged).");
 	}
 	#endregion
 
@@ -723,11 +728,21 @@ internal sealed class Sembradora
 		// institucional real que entre en 18 caracteres. Son dos vocabularios en conflicto y acá
 		// se cede al de la interfaz, que es quien bloquea el botón, para no cambiar una validación
 		// que está fuera del alcance de esta fase. Registrado en docs/todos.md.
+		// Un usuario por rol, y cada uno colgado del puesto que le corresponde: la cuenta de
+		// Preceptoría sale de plantel.Preceptores y la de Secretaría Académica de la segunda
+		// secretaria. Los dos roles nuevos existían en el catálogo sin ninguna cuenta con la que
+		// probarlos, que es como se verifica el RBAC de punta a punta.
+		//
+		// "preceptoria@edu.ar" mide exactamente 18 caracteres, el tope de la columna; de ahí que
+		// la cuenta de Secretaría Académica sea "academica@edu.ar" y no "sec.academica@edu.ar",
+		// que se pasaba por dos.
 		var cuentas = new (string Username, Rol Rol, Docente Docente)[]
 		{
 			("admin@edu.ar", Rol.Admin, plantel.Directivos[0]),
 			("direccion@edu.ar", Rol.Direccion, plantel.Directivos[1]),
 			("secretaria@edu.ar", Rol.Secretaria, plantel.Secretarias[0]),
+			("academica@edu.ar", Rol.SecretariaAcademica, plantel.Secretarias[1]),
+			("preceptoria@edu.ar", Rol.Preceptoria, plantel.Preceptores[0]),
 			("docente@edu.ar", Rol.Docente, plantel.Profesores[0])
 		};
 

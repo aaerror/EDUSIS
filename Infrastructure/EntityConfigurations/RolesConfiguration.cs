@@ -17,9 +17,11 @@ internal class RolesConfiguration : IEntityTypeConfiguration<Rol>
 			   .HasColumnName("rol_id")
 			   .ValueGeneratedNever();
 
+		// 25 y no 15: "Secretaría Académica" son 20 caracteres y el límite anterior se definió
+		// cuando el catálogo tenía cuatro roles de una sola palabra.
 		builder.Property(x => x.Descripcion)
 			   .HasColumnName("descripcion")
-			   .HasMaxLength(15)
+			   .HasMaxLength(25)
 			   .IsUnicode(false);
 
 		// La atribución rol → permisos es código, no datos: Permiso no tiene tabla. Sin este
@@ -28,8 +30,13 @@ internal class RolesConfiguration : IEntityTypeConfiguration<Rol>
 		builder.Ignore(x => x.Permisos);
 
 		// Datos de referencia, no datos de demo: usuario_rol tiene FK contra rol, así que estas
-		// cuatro filas son parte del esquema. Mismo criterio que el catálogo de ciclo_lectivo
+		// seis filas son parte del esquema. Mismo criterio que el catálogo de ciclo_lectivo
 		// (ver CicloLectivoConfiguration).
-		builder.HasData(Rol.Admin, Rol.Direccion, Rol.Docente, Rol.Secretaria);
+		builder.HasData(Rol.Admin,
+						Rol.Direccion,
+						Rol.Docente,
+						Rol.Secretaria,
+						Rol.Preceptoria,
+						Rol.SecretariaAcademica);
 	}
 }

@@ -46,7 +46,7 @@ public class CursanteTests
 	public void El_constructor_asigna_la_division_indicada()
 	{
 		// Regresión: el ctor recibía la división, la validaba y nunca la asignaba
-		// (docs/plan/plan.md:98). Ya corregido en Domain; este test lo cubre para que no
+		// (docs/plan/historico/plan.md:98). Ya corregido en Domain; este test lo cubre para que no
 		// vuelva a pasar desapercibido.
 		var divisionID = Guid.NewGuid();
 

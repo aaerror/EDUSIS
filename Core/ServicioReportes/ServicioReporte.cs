@@ -82,12 +82,15 @@ internal class ServicioReporte : IServicio, IServicioReporte
 	}
 	#endregion
 
+	// Asistencias (CU-35) y calificaciones (CU-36) son los dos reportes que el diagrama le da al
+	// Encargado de Preceptoría; matrículas (CU-34), materias pendientes (CU-37) y trayectorias
+	// (CU-38) son institucionales y quedan con GenerarReportes.
 	#region Asistencias
 	public async Task<DocumentoGenerado> GenerarReporteAsistenciasAsync(ReporteAsistenciasRequest request)
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GenerarReportes);
+			_sesion.Exigir(Permiso.GenerarReportesDeCursada);
 
 			if (request.Desde.Date > request.Hasta.Date)
 			{
@@ -163,7 +166,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GenerarReportes);
+			_sesion.Exigir(Permiso.GenerarReportesDeCursada);
 
 			var inscripciones = await ListarInscripcionesAsync(request.Periodo, request.DivisionID);
 			var materiasPorCurso = await MateriasPorCursoAsync(inscripciones);
@@ -300,7 +303,10 @@ internal class ServicioReporte : IServicio, IServicioReporte
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GenerarReportes);
+			// El combo de período de la pantalla de reportes, común a los cinco. Mismo criterio
+			// que en ServicioDocumento: exigir sólo GenerarReportes dejaría a Preceptoría sin
+			// poder elegir período para los dos reportes de cursada que sí puede emitir.
+			_sesion.ExigirAlguno(new[] { Permiso.GenerarReportes, Permiso.GenerarReportesDeCursada });
 
 			var ciclos = await _unitOfWork.Cursantes.ListarCiclosLectivosAsync();
 
