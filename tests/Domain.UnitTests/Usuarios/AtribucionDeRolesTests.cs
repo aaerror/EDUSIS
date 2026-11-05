@@ -8,7 +8,9 @@ namespace Domain.UnitTests.Usuarios;
 
 /// <summary>
 /// Fija la atribución rol → permisos contra los tres diagramas de casos de uso de
-/// <c>docs/uml/</c>: cada actor puede lo suyo y nada más.
+/// <c>docs/uml/</c>: cada actor puede lo suyo y nada más. La excepción es
+/// <see cref="Permiso.CargarCalificaciones"/>, que ningún diagrama respalda y se fija como
+/// decisión de negocio.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -96,13 +98,35 @@ public class AtribucionDeRolesTests
 		Rol.Preceptoria.Tiene(Permiso.GenerarReportes).ShouldBeFalse();
 	}
 
+	/// <remarks>
+	/// Lo que esta prueba fijaba —que ninguno de los dos roles fuera subconjunto del otro— ya no es
+	/// cierto: con el CRUD total de Docente, <see cref="Rol.Preceptoria"/> quedó contenido en él.
+	/// Lo que sigue en pie, y es lo que la clase documenta, es que la figura de preceptor como
+	/// <c>Posicion</c> de legajo no concede permisos: los concede el rol con el que se entra.
+	/// </remarks>
 	[Fact]
-	public void Preceptoria_no_es_docente()
+	public void El_puesto_de_preceptor_no_concede_permisos()
 	{
-		// Son dos roles distintos y ninguno es subconjunto del otro: Preceptoría toma asistencia
-		// y no carga notas; Docente carga notas y no toma asistencia.
-		Rol.Preceptoria.Tiene(Permiso.CargarCalificaciones).ShouldBeFalse();
-		Rol.Docente.Tiene(Permiso.TomarAsistencia).ShouldBeFalse();
+		// Preceptoria y Docente coinciden en los cuatro permisos de Preceptoria, pero por la tabla
+		// de atribución, no porque un docente con Posicion.Preceptor gane algo por tenerla.
+		foreach (var permiso in Rol.Preceptoria.Permisos)
+		{
+			Rol.Docente.Tiene(permiso).ShouldBeTrue($"Docente debería tener «{permiso.Descripcion}»");
+		}
+	}
+
+	/// <remarks>
+	/// La única atribución de la tabla que NO se deriva de un diagrama: ningún caso de uso modela
+	/// registrar una nota —CU-33 y CU-36 sólo las leen—, así que no hay actor del que derivarla.
+	/// Es una decisión de negocio: la planilla la confecciona el docente y la transcribe
+	/// Preceptoría. Se fija acá para que revertirla sea deliberado y no un efecto colateral de
+	/// "realinear con los diagramas", que es justamente lo que diría de ella una lectura literal
+	/// de <c>docs/uml/</c>.
+	/// </remarks>
+	[Fact]
+	public void Preceptoria_carga_calificaciones_aunque_ningun_caso_de_uso_lo_modele()
+	{
+		Rol.Preceptoria.Tiene(Permiso.CargarCalificaciones).ShouldBeTrue();
 	}
 	#endregion
 
@@ -139,10 +163,45 @@ public class AtribucionDeRolesTests
 		Rol.Direccion.Tiene(Permiso.GenerarReportes).ShouldBeFalse();
 	}
 
+	/// <remarks>
+	/// CRUD total sobre lo académico, por decisión de negocio y no por los diagramas: Docente no es
+	/// actor de ninguno de los tres. Se fija el conjunto completo y no permiso por permiso porque lo
+	/// que importa es el total: son los quince menos exactamente dos.
+	/// </remarks>
 	[Fact]
-	public void Docente_conserva_unicamente_la_carga_de_calificaciones()
+	public void Docente_tiene_crud_total_sobre_lo_academico()
 	{
-		Rol.Docente.Permisos.ShouldHaveSingleItem().ShouldBe(Permiso.CargarCalificaciones);
+		var esperados = Enumeration.GetAll<Permiso>()
+								   .Except(new[] { Permiso.AdministrarUsuarios, Permiso.AsignarRoles });
+
+		Rol.Docente.Permisos.ShouldBe(esperados, ignoreOrder: true);
+	}
+
+	/// <remarks>
+	/// <strong>La prueba que sostiene la decisión.</strong> El CRUD total de Docente es aceptable
+	/// porque se detiene antes de la administración del propio RBAC: sin
+	/// <see cref="Permiso.AsignarRoles"/> un Docente no puede ampliarse los permisos, y sin
+	/// <see cref="Permiso.AdministrarUsuarios"/> no puede crearse una cuenta que sí los tenga.
+	/// Conceder cualquiera de las dos lo vuelve equivalente a <see cref="Rol.Admin"/> y deja la
+	/// tabla de atribución sin efecto práctico. Es el único límite que le queda al rol: si alguien
+	/// "completa" la lista, rompe acá y no en ningún otro lado.
+	/// </remarks>
+	[Fact]
+	public void Docente_no_administra_usuarios_ni_asigna_roles()
+	{
+		Rol.Docente.Tiene(Permiso.AdministrarUsuarios).ShouldBeFalse();
+		Rol.Docente.Tiene(Permiso.AsignarRoles).ShouldBeFalse();
+	}
+
+	/// <remarks>
+	/// Admin y Docente tienen que seguir siendo distinguibles. Es la contracara de la prueba
+	/// anterior, vista desde el otro rol: si Docente llegara a los quince, este rol dejaría de
+	/// tener razón de existir y nadie se enteraría.
+	/// </remarks>
+	[Fact]
+	public void Admin_concede_estrictamente_mas_que_Docente()
+	{
+		Rol.Admin.Permisos.Count.ShouldBeGreaterThan(Rol.Docente.Permisos.Count);
 	}
 	#endregion
 

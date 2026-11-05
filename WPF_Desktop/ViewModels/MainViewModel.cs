@@ -97,8 +97,22 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 												  () => _sesion.TienePermiso(Permiso.GestionarDocentes));
 		GestionAlumnosCommand = new RelayCommand(() => Navegar(alumnosNavigationService, "Alumnos"),
 												 () => _sesion.TienePermiso(Permiso.GestionarAlumnos));
+		// Cursos acepta también CargarCalificaciones: la pantalla de calificaciones es un
+		// drill-down de Cursos → Divisiones → Cursantes, así que exigir sólo GestionarCursos deja
+		// a Preceptoría autorizada por Core para cargar notas y sin camino para llegar a hacerlo.
+		// Es el mismo defecto de forma que la raíz Asistencias cerró para TomarAsistencia,
+		// resuelto acá con el OR de Documentación y Reportes en vez de con una raíz nueva.
+		// Contrapartida asumida: Preceptoría ve el árbol entero de Cursos —registrar curso,
+		// currículas, cátedras— y Core le va a rechazar esas operaciones una por una, porque los
+		// comandos de las pantallas no consultan permisos: sólo el menú.
+		//
+		// Preceptoría es hoy el único rol que necesita este OR. Docente también carga
+		// calificaciones, pero con el CRUD total sobre lo académico tiene GestionarCursos propio,
+		// así que para ese rol la segunda condición es redundante. No se quita: lo que gobierna la
+		// raíz es el permiso, no el rol, y mover una atribución no debería apagar una pantalla.
 		GestionCursosCommand = new RelayCommand(() => Navegar(cursosNavigationService, "Cursos"),
-												() => _sesion.TienePermiso(Permiso.GestionarCursos));
+												() => _sesion.TienePermiso(Permiso.GestionarCursos)
+												   || _sesion.TienePermiso(Permiso.CargarCalificaciones));
 		AsistenciasCommand = new RelayCommand(() => Navegar(asistenciasNavigationService, "Asistencias"),
 											  () => _sesion.TienePermiso(Permiso.TomarAsistencia));
 
