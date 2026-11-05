@@ -28,4 +28,18 @@ public sealed class PlanillaAsistenciaRepositorioFake : RepositorioEnMemoria<Pla
 			.Where(x => x.Fecha >= desde.Date && x.Fecha <= hasta.Date)
 			.OrderBy(x => x.Fecha)
 			.ToList());
+
+	public Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorCursantesAsync(IEnumerable<Guid> cursantesIDs)
+	{
+		var ids = cursantesIDs.Distinct().ToHashSet();
+		if (ids.Count is 0)
+		{
+			return Task.FromResult((IReadOnlyCollection<PlanillaAsistencia>)Array.Empty<PlanillaAsistencia>());
+		}
+
+		return Task.FromResult((IReadOnlyCollection<PlanillaAsistencia>)_entidades
+			.Where(x => x.Registros.Any(r => ids.Contains(r.CursanteID)))
+			.OrderBy(x => x.Fecha)
+			.ToList());
+	}
 }

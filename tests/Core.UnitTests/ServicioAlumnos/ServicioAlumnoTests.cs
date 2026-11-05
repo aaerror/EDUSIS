@@ -2,6 +2,7 @@ using Core.ServicioAlumnos;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.UnitTests.Infraestructura;
+using Domain.Cursantes.Calificaciones;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Fakes;
@@ -253,6 +254,11 @@ public class ServicioAlumnoTests
 	#endregion
 
 	#region Baja
+	/// <remarks>
+	/// Tres guardados y no uno: el borrado va por pasos obligados por el grafo de claves ajenas
+	/// —registros de asistencia, después cursantes, después el legajo—, cada uno con su
+	/// <c>GuardarCambiosAsync</c>, todo dentro de una transacción.
+	/// </remarks>
 	[Fact]
 	public async Task EliminarAlumnoAsync_quita_al_alumno_del_repositorio_y_guarda()
 	{
@@ -261,17 +267,149 @@ public class ServicioAlumnoTests
 		await _servicio.EliminarAlumnoAsync(new EliminarAlumnoRequest(alumno.Id));
 
 		_host.UnidadDeTrabajo.AlumnosFake.Elementos.ShouldBeEmpty();
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(3);
 	}
 
+	/// <remarks>
+	/// <strong>Cambio de comportamiento deliberado (2026-11-05).</strong> Antes era un no-op
+	/// silencioso, porque el servicio delegaba directo en <c>EliminarAsync(id)</c>, que no hace nada
+	/// si el Id no existe. Ahora el caso de uso necesita cargar el alumno para recorrer su
+	/// trayectoria, así que un Id inexistente se reporta en lugar de pasar desapercibido: pedir el
+	/// borrado de alguien que no está es un error del llamador, no un éxito.
+	///
+	/// Sigue lanzando <c>NullReferenceException</c> por <c>BuscarAlumnoPorIDAsync</c>, que es el
+	/// helper compartido de los otros siete métodos del servicio. Es CORE-20 y se arregla para los 31
+	/// sitios a la vez, no acá: ser consistente con el resto del archivo vale más que limpiar uno.
+	/// </remarks>
 	[Fact]
-	public async Task EliminarAlumnoAsync_con_un_Id_inexistente_no_falla_y_no_borra_nada()
+	public async Task EliminarAlumnoAsync_con_un_Id_inexistente_falla_y_no_borra_nada()
 	{
 		SembrarAlumno();
 
-		// Eliminar(params object[]) es un no-op cuando el Id no existe; documenta la semántica actual.
-		await Should.NotThrowAsync(() => _servicio.EliminarAlumnoAsync(new EliminarAlumnoRequest(Guid.NewGuid())));
+		await Should.ThrowAsync<NullReferenceException>(
+			() => _servicio.EliminarAlumnoAsync(new EliminarAlumnoRequest(Guid.NewGuid())));
+
 		_host.UnidadDeTrabajo.AlumnosFake.Elementos.ShouldHaveSingleItem();
+	}
+
+	[Fact]
+	public async Task EliminarAlumnoAsync_arrastra_inscripciones_calificaciones_y_registros()
+	{
+		var alumno = SembrarAlumno();
+		var cursante = new CursanteBuilder().ConAlumno(alumno.Id).Build();
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
+
+		// Dos cursantes en la planilla: al irse el del alumno, la planilla sobrevive con el otro.
+		var planilla = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id, Guid.NewGuid()).Build();
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(planilla);
+
+		await _servicio.EliminarAlumnoAsync(new EliminarAlumnoRequest(alumno.Id));
+
+		_host.UnidadDeTrabajo.AlumnosFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.CursantesFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Elementos.ShouldHaveSingleItem();
+		planilla.RegistroDe(cursante.Id).ShouldBeNull();
+	}
+
+	/// <remarks>
+	/// Una planilla cuyo único cursante era el alumno borrado no documenta ninguna jornada: se va con
+	/// él. La que conserva registros de otros alumnos se queda.
+	/// </remarks>
+	[Fact]
+	public async Task EliminarAlumnoAsync_elimina_la_planilla_que_queda_sin_registros()
+	{
+		var alumno = SembrarAlumno();
+		var cursante = new CursanteBuilder().ConAlumno(alumno.Id).Build();
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
+
+		var soloDelAlumno = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id)
+														  .ConFecha(DateTime.Today.AddDays(-1))
+														  .Build();
+		var compartida = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id, Guid.NewGuid())
+													   .ConFecha(DateTime.Today)
+													   .Build();
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(soloDelAlumno);
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(compartida);
+
+		await _servicio.EliminarAlumnoAsync(new EliminarAlumnoRequest(alumno.Id));
+
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Elementos
+			 .ShouldHaveSingleItem()
+			 .Id.ShouldBe(compartida.Id);
+	}
+
+	/// <remarks>
+	/// La planilla cerrada es registro histórico y no se puede eliminar por la vía normal
+	/// (<c>PlanillaCerradaNoEliminableException</c>), pero el registro del alumno borrado sí sale.
+	/// Es lo que evita que un día cerrado vuelva indestructible al alumno.
+	/// </remarks>
+	[Fact]
+	public async Task EliminarAlumnoAsync_tambien_saca_el_registro_de_una_planilla_cerrada()
+	{
+		var alumno = SembrarAlumno();
+		var cursante = new CursanteBuilder().ConAlumno(alumno.Id).Build();
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
+
+		var cerrada = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id, Guid.NewGuid())
+													 .Cerrada()
+													 .Build();
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(cerrada);
+
+		await Should.NotThrowAsync(() => _servicio.EliminarAlumnoAsync(new EliminarAlumnoRequest(alumno.Id)));
+
+		cerrada.RegistroDe(cursante.Id).ShouldBeNull();
+		cerrada.Cerrada.ShouldBeTrue();
+	}
+	#endregion
+
+	#region Impacto del borrado
+	[Fact]
+	public async Task ConsultarImpactoEliminacionAsync_cuenta_la_trayectoria_sin_borrar_nada()
+	{
+		var alumno = SembrarAlumno();
+		var cursante = new CursanteBuilder().ConAlumno(alumno.Id).Build();
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Recuperatorio, 6, null);
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
+
+		var soloDelAlumno = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id)
+														  .ConFecha(DateTime.Today.AddDays(-1))
+														  .Build();
+		var compartida = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id, Guid.NewGuid())
+													   .ConFecha(DateTime.Today)
+													   .Build();
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(soloDelAlumno);
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(compartida);
+
+		var impacto = await _servicio.ConsultarImpactoEliminacionAsync(new EliminarAlumnoRequest(alumno.Id));
+
+		impacto.Inscripciones.ShouldBe(1);
+		impacto.Calificaciones.ShouldBe(2);
+		impacto.RegistrosAsistencia.ShouldBe(2);
+		impacto.PlanillasQueQuedanVacias.ShouldBe(1);
+		impacto.CiclosLectivos.ShouldHaveSingleItem().ShouldBe(cursante.CicloLectivo.Periodo);
+		impacto.TieneHistorial.ShouldBeTrue();
+
+		// Lo que importa de una consulta de impacto: no toca nada.
+		_host.UnidadDeTrabajo.AlumnosFake.Elementos.ShouldHaveSingleItem();
+		_host.UnidadDeTrabajo.CursantesFake.Elementos.ShouldHaveSingleItem();
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Elementos.Count.ShouldBe(2);
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
+	}
+
+	[Fact]
+	public async Task ConsultarImpactoEliminacionAsync_sin_trayectoria_informa_que_no_hay_historial()
+	{
+		var alumno = SembrarAlumno();
+
+		var impacto = await _servicio.ConsultarImpactoEliminacionAsync(new EliminarAlumnoRequest(alumno.Id));
+
+		impacto.TieneHistorial.ShouldBeFalse();
+		impacto.Inscripciones.ShouldBe(0);
+		impacto.Calificaciones.ShouldBe(0);
+		impacto.RegistrosAsistencia.ShouldBe(0);
+		impacto.CiclosLectivos.ShouldBeEmpty();
 	}
 	#endregion
 }

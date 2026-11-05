@@ -1,4 +1,5 @@
 using Domain.Asistencias;
+using Domain.Cursantes;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Infraestructura;
 using Infrastructure.IntegrationTests.Infraestructura;
@@ -142,4 +143,88 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 		cargada.Registros.ShouldNotBeNull();
 		cargada.Registros.Count.ShouldBeGreaterThan(0);
 	}
+
+	#region BuscarPorCursantesAsync
+	/// <summary>
+	/// La consulta que alimenta el borrado de un alumno, contra SQL Server real.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>Es la pieza del borrado en cascada que no se puede verificar con fakes.</strong> El
+	/// <c>Where(x =&gt; x.Registros.Any(r =&gt; ids.Contains(r.CursanteID)))</c> es un <c>Any</c> sobre
+	/// una colección de navegación combinado con un <c>Contains</c> sobre una lista en memoria: en el
+	/// fake eso es LINQ to Objects y pasa siempre. Lo que se prueba acá es que EF lo <em>traduzca</em>
+	/// a un <c>EXISTS</c> con <c>IN (…)</c> en vez de romper o evaluar del lado del cliente.
+	/// </para>
+	/// <para>
+	/// Se siembran cursantes reales y no <c>Guid.NewGuid()</c> sueltos porque
+	/// <c>FK_REGISTRO_ASISTENCIA_CURSANTE</c> apunta a <c>cursante</c>, y porque el escenario que
+	/// importa es el real: el alumno que se va tiene inscripciones de verdad.
+	/// </para>
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task BuscarPorCursantesAsync_trae_solo_las_planillas_con_registro_de_esos_cursantes()
+	{
+		var cursoID = await SembrarCursoAsync();
+		var divisionID = await SembrarDivisionAsync(cursoID);
+		var preceptorID = await SembrarDocenteAsync();
+		var ciclo = CicloLectivo.Crear("2024");
+
+		var buscado = new CursanteBuilder()
+			.ConAlumno(await SembrarAlumnoAsync())
+			.ConDivision(divisionID)
+			.ConCicloLectivo(ciclo)
+			.Build();
+		var ajeno = new CursanteBuilder()
+			.ConAlumno(await SembrarAlumnoAsync())
+			.ConDivision(divisionID)
+			.ConCicloLectivo(ciclo)
+			.Build();
+
+		var conElBuscado = new PlanillaAsistenciaBuilder()
+			.ConDivision(divisionID)
+			.ConFecha(DateTime.Today.AddDays(-1))
+			.ConPreceptor(preceptorID)
+			.ConCursantes(buscado.Id, ajeno.Id)
+			.Build();
+		var sinElBuscado = new PlanillaAsistenciaBuilder()
+			.ConDivision(divisionID)
+			.ConFecha(DateTime.Today)
+			.ConPreceptor(preceptorID)
+			.ConCursantes(ajeno.Id)
+			.Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.AddRange(buscado, ajeno);
+			await contexto.SaveChangesAsync();
+
+			contexto.AddRange(conElBuscado, sinElBuscado);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var encontradas = await uow.PlanillasAsistencia.BuscarPorCursantesAsync(new[] { buscado.Id });
+
+		encontradas.ShouldHaveSingleItem().Id.ShouldBe(conElBuscado.Id);
+
+		// Los registros vienen cargados: el borrado los recorre para quitar los del alumno.
+		encontradas.Single().Registros.Count.ShouldBe(2);
+	}
+
+	/// <remarks>
+	/// Un alumno sin una sola inscripción es el caso corriente, y ahí la lista llega vacía. El
+	/// repositorio corta antes de ir a la base: un <c>IN ()</c> vacío no tiene traducción útil.
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task BuscarPorCursantesAsync_sin_cursantes_devuelve_vacio()
+	{
+		using var uow = CrearUnidadDeTrabajo();
+
+		var encontradas = await uow.PlanillasAsistencia.BuscarPorCursantesAsync(Array.Empty<Guid>());
+
+		encontradas.ShouldBeEmpty();
+	}
+	#endregion
 }

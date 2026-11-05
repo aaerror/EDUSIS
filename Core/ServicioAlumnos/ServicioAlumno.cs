@@ -1,4 +1,5 @@
 ﻿using Core.ServicioAlumnos.DTOs.Requests;
+using Core.ServicioAlumnos.DTOs.Responses;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Response;
 using Core.Shared;
@@ -278,18 +279,151 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 		await _unitOfWork.GuardarCambiosAsync();
 	}
 
+	/// <summary>
+	/// Qué se lleva puesto el borrado del alumno, sin borrar nada. La consume el diálogo de
+	/// confirmación para poder decir cifras en lugar de generalidades.
+	/// </summary>
+	/// <remarks>
+	/// Es una lectura y lleva guarda, a diferencia del resto de las consultas de <c>Core</c>, que
+	/// quedan abiertas a propósito (CORE-16). Dos razones: existe únicamente para servir a
+	/// <see cref="EliminarAlumnoAsync"/>, que exige <c>GestionarAlumnos</c>, y lo que devuelve es el
+	/// volumen de la trayectoria académica de una persona. Ninguna pantalla la usa para poblar un
+	/// combo, así que no corre el riesgo que motivó dejar las lecturas abiertas.
+	/// </remarks>
+	public async Task<ImpactoEliminacionAlumnoResponse> ConsultarImpactoEliminacionAsync(EliminarAlumnoRequest request)
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GestionarAlumnos);
+
+			var alumno = await BuscarAlumnoPorIDAsync(request.AlumnoID);
+
+			var cursantes = await _unitOfWork.Cursantes.BuscarInscripcionesDelAlumnoAsync(alumno.Id);
+			var cursantesIDs = cursantes.Select(x => x.Id).ToList();
+			var planillas = await _unitOfWork.PlanillasAsistencia.BuscarPorCursantesAsync(cursantesIDs);
+
+			var registros = planillas.SelectMany(p => p.Registros)
+									 .Count(r => cursantesIDs.Contains(r.CursanteID));
+
+			// Una planilla queda vacía si TODOS sus registros son de este alumno. Se informa porque
+			// borrarla es destruir la jornada completa de una división, no sólo la fila del alumno.
+			var planillasVacias = planillas.Count(p => p.Registros.All(r => cursantesIDs.Contains(r.CursanteID)));
+
+			return new ImpactoEliminacionAlumnoResponse(
+				Inscripciones: cursantes.Count,
+				Calificaciones: cursantes.Sum(x => x.Calificaciones.Count),
+				RegistrosAsistencia: registros,
+				PlanillasQueQuedanVacias: planillasVacias,
+				CiclosLectivos: cursantes.Select(x => x.CicloLectivo.Periodo)
+										 .Distinct()
+										 .OrderBy(x => x)
+										 .ToList());
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Borrado físico del alumno y de toda su trayectoria: inscripciones, calificaciones y registros
+	/// de asistencia.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>La cascada se hace acá y no con <c>DeleteBehavior.Cascade</c></strong>, y es una
+	/// decisión, no una omisión. <c>FK_CURSANTE_ALUMNO</c> y <c>FK_REGISTRO_ASISTENCIA_CURSANTE</c>
+	/// siguen en <c>Restrict</c> por tres motivos: (1) <c>registro_asistencia</c> ya recibe una
+	/// cascada desde <c>planilla_asistencia</c>, y sumarle una segunda desde <c>cursante</c> entra en
+	/// el terreno donde SQL Server rechaza por "multiple cascade paths" —un fallo que no aparece al
+	/// generar la migración sino al aplicarla—; (2) con <c>Restrict</c>, cualquier borrado que NO pase
+	/// por este caso de uso sigue protegido por la base; (3) las reglas quedan acá, legibles y
+	/// cubiertas por pruebas, en lugar de en metadatos de clave ajena.
+	/// </para>
+	/// <para>
+	/// El orden es obligatorio y lo impone el grafo de claves ajenas: registros de asistencia →
+	/// cursantes (que cascadea a sus calificaciones por <c>FK_CALIFICACION_CURSANTE</c>) → alumno.
+	/// Invertir dos pasos da una violación de integridad.
+	/// </para>
+	/// <para>
+	/// La transacción envuelve todo porque el borrado parcial es el peor resultado posible: un alumno
+	/// sin inscripciones pero con registros de asistencia apuntando a cursantes que ya no existen.
+	/// El <c>try</c> del rollback arranca <strong>después</strong> de <c>BeginTransactionAsync</c>, por
+	/// lo mismo que documenta <c>ServicioCurricula.RegistrarCurriculaAsync</c>: si la guarda de
+	/// permiso falla, no hay transacción que revertir y el rollback taparía el
+	/// <c>PermisoDenegadoException</c> con un error de transacción. Ver CORE-19.
+	/// </para>
+	/// </remarks>
 	public async Task EliminarAlumnoAsync(EliminarAlumnoRequest request)
 	{
 		try
 		{
 			_sesion.Exigir(Permiso.GestionarAlumnos);
 
-			await _unitOfWork.Alumnos.EliminarAsync(request.AlumnoID);
+			var alumno = await BuscarAlumnoPorIDAsync(request.AlumnoID);
 
-			await _unitOfWork.GuardarCambiosAsync();
+			await _unitOfWork.BeginTransactionAsync();
+
+			try
+			{
+				var cursantes = await _unitOfWork.Cursantes.BuscarInscripcionesDelAlumnoAsync(alumno.Id);
+				var cursantesIDs = cursantes.Select(x => x.Id).ToHashSet();
+
+				// 1. Los registros de asistencia, a través de su raíz. RegistroAsistencia es entidad
+				//    hija de PlanillaAsistencia: no se toca por fuera del agregado.
+				var planillas = await _unitOfWork.PlanillasAsistencia.BuscarPorCursantesAsync(cursantesIDs);
+
+				var planillasVaciadas = new List<Domain.Asistencias.PlanillaAsistencia>();
+				var planillasModificadas = new List<Domain.Asistencias.PlanillaAsistencia>();
+
+				foreach (var planilla in planillas)
+				{
+					foreach (var cursanteID in planilla.Registros
+													   .Where(r => cursantesIDs.Contains(r.CursanteID))
+													   .Select(r => r.CursanteID)
+													   .ToList())
+					{
+						planilla.EliminarRegistroDe(cursanteID);
+					}
+
+					// Una planilla sin registros no documenta ninguna jornada: se va con el alumno.
+					if (planilla.Registros.Count is 0)
+					{
+						planillasVaciadas.Add(planilla);
+					}
+					else
+					{
+						planillasModificadas.Add(planilla);
+					}
+				}
+
+				_unitOfWork.PlanillasAsistencia.ModificarRango(planillasModificadas);
+				_unitOfWork.PlanillasAsistencia.EliminarRango(planillasVaciadas);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				// 2. Las inscripciones. Sus calificaciones caen por FK_CALIFICACION_CURSANTE, que sí
+				//    es Cascade: son entidades hijas del cursante y no tienen vida propia.
+				_unitOfWork.Cursantes.EliminarRango(cursantes);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				// 3. El legajo.
+				await _unitOfWork.Alumnos.EliminarAsync(alumno.Id);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				await _unitOfWork.CommitTransactionAsync();
+
+				_logger.LogInformation($"Alumno { alumno.Id } eliminado con { cursantes.Count } inscripciones.");
+			}
+			catch
+			{
+				await _unitOfWork.RollbackTransactionAsync();
+				throw;
+			}
 		}
 		catch (Exception ex)
 		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
 			throw;
 		}
 	}

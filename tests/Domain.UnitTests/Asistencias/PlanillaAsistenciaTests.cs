@@ -266,6 +266,82 @@ public class PlanillaAsistenciaTests
 	}
 	#endregion
 
+	#region Eliminar registro (borrado físico del cursante)
+	[Fact]
+	public void EliminarRegistroDe_quita_el_registro_y_deja_el_resto()
+	{
+		var cursanteID1 = Guid.NewGuid();
+		var cursanteID2 = Guid.NewGuid();
+		var planilla = new PlanillaAsistenciaBuilder().ConCursantes(cursanteID1, cursanteID2).Build();
+
+		planilla.EliminarRegistroDe(cursanteID1);
+
+		planilla.Registros.Count.ShouldBe(1);
+		planilla.RegistroDe(cursanteID1).ShouldBeNull();
+		planilla.RegistroDe(cursanteID2).ShouldNotBeNull();
+	}
+
+	/// <remarks>
+	/// <strong>La prueba que sostiene la decisión de diseño.</strong> Es la única operación del
+	/// agregado que ignora <c>Cerrada</c>: lo que se borra es la persona, no se corrige el día. Si
+	/// alguien le agrega la guarda de <c>ValidarPlanillaAbierta</c> "por consistencia", un alumno con
+	/// un solo día de asistencia en una planilla cerrada se vuelve indestructible y el borrado falla
+	/// contra <c>FK_REGISTRO_ASISTENCIA_CURSANTE</c> en lugar de con una regla de negocio.
+	/// </remarks>
+	[Fact]
+	public void EliminarRegistroDe_funciona_con_la_planilla_cerrada()
+	{
+		var cursanteID1 = Guid.NewGuid();
+		var cursanteID2 = Guid.NewGuid();
+		var planilla = new PlanillaAsistenciaBuilder().ConCursantes(cursanteID1, cursanteID2)
+													 .Cerrada()
+													 .Build();
+
+		Should.NotThrow(() => planilla.EliminarRegistroDe(cursanteID1));
+
+		planilla.Cerrada.ShouldBeTrue();
+		planilla.Registros.Count.ShouldBe(1);
+	}
+
+	/// <remarks>
+	/// La invariante de <c>PlanillaSinCursantesException</c> gobierna el nacimiento de la planilla,
+	/// no su final: quitar el último registro deja la planilla vacía y no lanza. Quién la borra es el
+	/// caso de uso, no el agregado.
+	/// </remarks>
+	[Fact]
+	public void EliminarRegistroDe_el_ultimo_cursante_deja_la_planilla_vacia_sin_lanzar()
+	{
+		var cursanteID = Guid.NewGuid();
+		var planilla = new PlanillaAsistenciaBuilder().ConCursantes(cursanteID).Build();
+
+		Should.NotThrow(() => planilla.EliminarRegistroDe(cursanteID));
+
+		planilla.Registros.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public void EliminarRegistroDe_un_cursante_ajeno_lanza_CursanteNoIncluidoException()
+	{
+		var planilla = new PlanillaAsistenciaBuilder().ConCursantes(Guid.NewGuid()).Build();
+
+		var ex = Should.Throw<Exception>(() =>
+			planilla.EliminarRegistroDe(Guid.NewGuid()));
+
+		ex.GetType().Name.ShouldBe("CursanteNoIncluidoException");
+	}
+
+	[Fact]
+	public void EliminarRegistroDe_vacio_lanza_SinDatosCursanteException()
+	{
+		var planilla = new PlanillaAsistenciaBuilder().Build();
+
+		var ex = Should.Throw<Exception>(() =>
+			planilla.EliminarRegistroDe(Guid.Empty));
+
+		ex.GetType().Name.ShouldBe("SinDatosCursanteException");
+	}
+	#endregion
+
 	#region Ciclo
 	[Fact]
 	public void Cerrar_genera_el_evento_PlanillaAsistenciaCerradaEvent()

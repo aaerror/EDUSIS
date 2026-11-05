@@ -67,6 +67,32 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 
 	[Fact]
+	public async Task EliminarAlumnoAsync_sin_GestionarAlumnos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioAlumno>().EliminarAlumnoAsync(null!));
+	}
+
+	/// <remarks>
+	/// La <strong>única</strong> consulta de <c>Core</c> con guarda, contra la decisión de alcance que
+	/// deja las lecturas abiertas (CORE-16). Existe sólo para servir al borrado del alumno y lo que
+	/// devuelve es el volumen de la trayectoria académica de una persona; ninguna pantalla la usa para
+	/// poblar un combo, que es el riesgo que motivó la excepción general. Se fija acá para que la
+	/// asimetría sea deliberada y no parezca un descuido al lado de
+	/// <see cref="Los_casos_de_uso_de_lectura_quedan_abiertos_a_proposito"/>.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarImpactoEliminacionAsync_sin_GestionarAlumnos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioAlumno>().ConsultarImpactoEliminacionAsync(null!));
+	}
+
+	[Fact]
 	public async Task RegistrarCurso_sin_GestionarCursos_lanza_PermisoDenegado()
 	{
 		using var host = HostSinPermisos();
@@ -427,6 +453,25 @@ public class AutorizacionDeCasosDeUsoTests
 
 		await Should.ThrowAsync<PermisoDenegadoException>(
 			() => host.Resolver<IServicioCurricula>().RegistrarCurriculaAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// El segundo caso de uso con transacción explícita, desde que el borrado de alumno cascadea a
+	/// mano (registros de asistencia → cursantes → legajo). La prueba de arriba decía "es el ÚNICO de
+	/// Core": ya no lo es, y esta existe para que el mismo defecto no reaparezca acá. Afirma la
+	/// SECUENCIA y no el tipo de excepción, por el mismo motivo: <c>UnitOfWorkFake</c> tiene el
+	/// rollback como no-op y no lanza, así que esperar sólo <c>PermisoDenegadoException</c> pasaría en
+	/// verde con el bug puesto. Lo que delata el defecto es que se haya llamado al rollback.
+	/// </remarks>
+	[Fact]
+	public async Task EliminarAlumnoAsync_sin_permiso_no_toca_la_transaccion()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioAlumno>().EliminarAlumnoAsync(null!));
 
 		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
 	}
