@@ -18,14 +18,45 @@ public sealed class AlumnoRepositorioTests : BaseIntegracion
 	{
 	}
 
-	private async Task<Alumno> SembrarAlumnoAsync(string documento, string apellido, string nombre, string legajo = "")
+	/// <remarks>
+	/// <para>
+	/// Dos defectos de este helper salieron a la luz la primera vez que la suite se ejecutó contra
+	/// SQL Server (2026-11-06), y los dos lo hacían inservible:
+	/// </para>
+	/// <para>
+	/// (1) <c>legajo</c> venía con <c>""</c> por defecto y <c>ConLegajo</c> lo aplicaba igual,
+	/// <strong>pisando el <c>AL0001</c> válido del builder</strong>: el constructor de
+	/// <see cref="Alumno"/> exige <c>^[A-Z]{2}\d{4}$</c>, así que las cinco pruebas que no pasaban
+	/// legajo morían en un <see cref="FormatException"/> antes de llegar a la base. Ahora el valor
+	/// nulo significa "el del builder" y no "vacío".
+	/// </para>
+	/// <para>
+	/// (2) No tocaba el email, así que los dos alumnos de una misma prueba nacían con el
+	/// <c>maria.gonzalez@correo.com</c> del <c>PersonaBuilder</c> y el segundo chocaba contra
+	/// <c>IX_persona_email</c>, que es único. Se deriva del documento, que ya es distinto por prueba
+	/// y es el dato por el que estas pruebas buscan.
+	/// </para>
+	/// <para>
+	/// Es el mismo cuidado que ya tienen los helpers compartidos de <c>ColeccionSqlServer</c>, que
+	/// derivan legajo, CUIL, email y documento de un contador. Estos helpers locales existen porque
+	/// las pruebas de este repositorio necesitan fijar apellido y documento; lo que les faltaba era
+	/// la unicidad.
+	/// </para>
+	/// </remarks>
+	private async Task<Alumno> SembrarAlumnoAsync(string documento, string apellido, string nombre, string? legajo = null)
 	{
-		var alumno = new AlumnoBuilder()
+		var builder = new AlumnoBuilder()
 			.ConDatosPersonales(new DatosPersonalesBuilder()
 				.ConApellidoYNombre(apellido, nombre)
 				.ConDocumento(documento))
-			.ConLegajo(legajo)
-			.Build();
+			.ConEmail($"alumno.{documento}@correo.com");
+
+		if (legajo is not null)
+		{
+			builder.ConLegajo(legajo);
+		}
+
+		var alumno = builder.Build();
 
 		await using var contexto = Fixture.CrearContexto();
 		contexto.Add(alumno);
@@ -61,12 +92,15 @@ public sealed class AlumnoRepositorioTests : BaseIntegracion
 	[RequiereSqlServerFact]
 	public async Task EsLegajoInvalidoAsync_retorna_true_cuando_el_legajo_ya_existe()
 	{
-		await SembrarAlumnoAsync("29333444", "Rodríguez", "Carlos", "ALU001");
+		await SembrarAlumnoAsync("29333444", "Rodríguez", "Carlos", "AL9001");
+
+		// "ALU001" no es un legajo válido —el formato es dos letras y cuatro dígitos— así que esta
+		// prueba nunca había llegado a insertar nada.
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		(await uow.Alumnos.EsLegajoInvalidoAsync("ALU001")).ShouldBeTrue();
-		(await uow.Alumnos.EsLegajoInvalidoAsync("ALU999")).ShouldBeFalse();
+		(await uow.Alumnos.EsLegajoInvalidoAsync("AL9001")).ShouldBeTrue();
+		(await uow.Alumnos.EsLegajoInvalidoAsync("AL9999")).ShouldBeFalse();
 	}
 
 	/// <summary>

@@ -26,6 +26,10 @@ public sealed class DocenteRepositorioTests : BaseIntegracion
 				.ConEdad(40))
 			.ConLegajo(legajo)
 			.ConCuil(cuil)
+			// Email derivado del legajo: sin esto los dos docentes de una prueba nacen con el
+			// maria.gonzalez@correo.com del PersonaBuilder y el segundo choca contra IX_persona_email,
+			// que es único. Mismo defecto que tenía el helper de AlumnoRepositorioTests.
+			.ConEmail($"docente.{legajo}@correo.com")
 			.ConPuesto()
 			.Build();
 

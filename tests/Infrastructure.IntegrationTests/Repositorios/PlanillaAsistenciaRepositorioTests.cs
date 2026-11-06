@@ -15,6 +15,39 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 	{
 	}
 
+	/// <summary>
+	/// Persiste un cursante real en la división y devuelve su <c>Id</c>, listo para ponerlo en una
+	/// planilla.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>Existe porque seis de las ocho pruebas de esta clase inventaban los cursantes con
+	/// <c>Guid.NewGuid()</c>, y ninguna podía insertar.</strong> <c>FK_REGISTRO_ASISTENCIA_CURSANTE</c>
+	/// apunta a <c>cursante</c>, así que un identificador suelto hace fallar el <c>INSERT</c> de la
+	/// planilla con una violación de clave ajena. El defecto estuvo latente desde que se escribieron
+	/// porque la suite nunca se había ejecutado contra SQL Server: sin Docker ni
+	/// <c>EDUSIS_TEST_SQLSERVER</c> estas pruebas se <em>omiten</em>, y una prueba omitida no
+	/// distingue entre correcta y roja.
+	/// </para>
+	/// <para>
+	/// Es exactamente la ceguera que CORE-23 e INFRA-19 describen, pero del otro lado: no es que el
+	/// fake no detecte lo que falla en EF, es que la prueba que sí iría a EF no se corría.
+	/// </para>
+	/// </remarks>
+	private async Task<Guid> SembrarCursanteAsync(Guid divisionID, string periodo = "2024")
+	{
+		var cursante = new CursanteBuilder()
+			.ConAlumno(await SembrarAlumnoAsync())
+			.ConDivision(divisionID)
+			.ConCicloLectivo(CicloLectivo.Crear(periodo))
+			.Build();
+
+		await using var contexto = Fixture.CrearContexto();
+		contexto.Add(cursante);
+		await contexto.SaveChangesAsync();
+		return cursante.Id;
+	}
+
 	[RequiereSqlServerFact]
 	public async Task ExistePlanillaAsync_es_true_cuando_existe_planilla_de_esa_division_y_fecha()
 	{
@@ -22,7 +55,7 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 		var divisionID = await SembrarDivisionAsync(cursoID);
 		var preceptorID = await SembrarDocenteAsync();
 		var hoy = DateTime.Today;
-		var cursante1ID = Guid.NewGuid();
+		var cursante1ID = await SembrarCursanteAsync(divisionID);
 		var planilla = new PlanillaAsistenciaBuilder()
 			.ConDivision(divisionID)
 			.ConFecha(hoy)
@@ -49,7 +82,7 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 		var divisionID = await SembrarDivisionAsync(cursoID);
 		var preceptorID = await SembrarDocenteAsync();
 		var hoy = DateTime.Today;
-		var cursante1ID = Guid.NewGuid();
+		var cursante1ID = await SembrarCursanteAsync(divisionID);
 		var planilla = new PlanillaAsistenciaBuilder()
 			.ConDivision(divisionID)
 			.ConFecha(hoy)
@@ -79,8 +112,8 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 		var cursoID = await SembrarCursoAsync();
 		var divisionID = await SembrarDivisionAsync(cursoID);
 		var preceptorID = await SembrarDocenteAsync();
-		var cursante1ID = Guid.NewGuid();
-		var cursante2ID = Guid.NewGuid();
+		var cursante1ID = await SembrarCursanteAsync(divisionID);
+		var cursante2ID = await SembrarCursanteAsync(divisionID);
 		var hoy = DateTime.Today;
 
 		var planilla1 = new PlanillaAsistenciaBuilder()
@@ -121,7 +154,7 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 		var cursoID = await SembrarCursoAsync();
 		var divisionID = await SembrarDivisionAsync(cursoID);
 		var preceptorID = await SembrarDocenteAsync();
-		var cursante1ID = Guid.NewGuid();
+		var cursante1ID = await SembrarCursanteAsync(divisionID);
 		var hoy = DateTime.Today;
 		var planilla = new PlanillaAsistenciaBuilder()
 			.ConDivision(divisionID)
@@ -243,23 +276,27 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 		var otraDivisionID = await SembrarDivisionAsync(cursoID, "B");
 		var preceptorID = await SembrarDocenteAsync();
 
+		var unCursante = await SembrarCursanteAsync(divisionID);
+		var otroCursante = await SembrarCursanteAsync(divisionID);
+		var cursanteAjeno = await SembrarCursanteAsync(otraDivisionID);
+
 		var vieja = new PlanillaAsistenciaBuilder()
 			.ConDivision(divisionID)
 			.ConFecha(DateTime.Today.AddYears(-3))
 			.ConPreceptor(preceptorID)
-			.ConCursantes(Guid.NewGuid())
+			.ConCursantes(unCursante)
 			.Build();
 		var reciente = new PlanillaAsistenciaBuilder()
 			.ConDivision(divisionID)
 			.ConFecha(DateTime.Today)
 			.ConPreceptor(preceptorID)
-			.ConCursantes(Guid.NewGuid(), Guid.NewGuid())
+			.ConCursantes(unCursante, otroCursante)
 			.Build();
 		var ajena = new PlanillaAsistenciaBuilder()
 			.ConDivision(otraDivisionID)
 			.ConFecha(DateTime.Today)
 			.ConPreceptor(preceptorID)
-			.ConCursantes(Guid.NewGuid())
+			.ConCursantes(cursanteAjeno)
 			.Build();
 
 		await using (var contexto = Fixture.CrearContexto())
@@ -296,7 +333,7 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 			.ConDivision(divisionID)
 			.ConFecha(DateTime.Today)
 			.ConPreceptor(preceptorID)
-			.ConCursantes(Guid.NewGuid(), Guid.NewGuid())
+			.ConCursantes(await SembrarCursanteAsync(divisionID), await SembrarCursanteAsync(divisionID))
 			.Build();
 
 		await using (var contexto = Fixture.CrearContexto())
