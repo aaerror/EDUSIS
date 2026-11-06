@@ -438,16 +438,28 @@ public class GuardasEstaticasW6Tests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void D3_QuitarDocenteAsync_se_espera_con_await_y_el_metodo_contenedor_devuelve_Task()
+	public void D3_las_dos_bajas_del_docente_se_esperan_con_await_y_sus_metodos_devuelven_Task()
 	{
+		// `QuitarDocenteAsync` se partió en dos el 2026-11-06 (CORE-24): decía "quitar" y
+		// desafectaba, con el borrado real comentado al lado. Esta guarda cubría ese único método;
+		// ahora cubre los dos, y además fija que sigan siendo dos. Volver a juntarlos la rompe.
 		var fuente = RaizDelRepositorio.Leer(GestionDocentesCs);
 
-		fuente.ShouldContain("await _servicioDocentes.QuitarDocenteAsync(");
+		fuente.ShouldContain("await _servicioDocentes.DesafectarDocenteAsync(");
+		fuente.ShouldContain("await _servicioDocentes.EliminarDocenteAsync(");
+		fuente.ShouldContain("private async Task ExecuteDesafectarCommandAsync()");
 		fuente.ShouldContain("private async Task ExecuteEliminarCommandAsync()");
 		fuente.ShouldNotContain("private void ExecuteEliminarCommand");
-		fuente.ShouldNotMatch(@"(?<!await )_servicioDocentes\.QuitarDocenteAsync\(");
+		fuente.ShouldNotContain("private void ExecuteDesafectarCommand");
+		fuente.ShouldNotMatch(@"(?<!await )_servicioDocentes\.DesafectarDocenteAsync\(");
+		fuente.ShouldNotMatch(@"(?<!await )_servicioDocentes\.EliminarDocenteAsync\(");
+
+		// Y que el impacto se consulte antes de preguntar: sin await acá el diálogo se armaría con
+		// un Task en vez de con las cifras.
+		fuente.ShouldContain("await _servicioDocentes.ConsultarImpactoEliminacionDocenteAsync(");
 
 		typeof(GestionDocentesViewModel).GetProperty("EliminarCommand")!.PropertyType.Name.ShouldBe("IAsyncRelayCommand");
+		typeof(GestionDocentesViewModel).GetProperty("DesafectarCommand")!.PropertyType.Name.ShouldBe("IAsyncRelayCommand");
 	}
 
 	[Fact]

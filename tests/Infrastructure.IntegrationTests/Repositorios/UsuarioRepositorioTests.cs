@@ -81,4 +81,43 @@ public sealed class UsuarioRepositorioTests : BaseIntegracion
 		(await uow.Usuarios.EsUsernameInvalidoAsync("ANA.LOPEZ")).ShouldBeTrue();
 		(await uow.Usuarios.EsUsernameInvalidoAsync("nuevo.usuario")).ShouldBeFalse();
 	}
+
+	/// <remarks>
+	/// <para>
+	/// La consume la guarda del último administrador de <c>EliminarDocenteAsync</c>, y es una
+	/// consulta que <strong>sólo</strong> se puede verificar contra la base: cuenta sobre la
+	/// navegación <c>Usuario.Roles</c>, que vive en la tabla de unión <c>usuario_rol</c>. Sin el
+	/// <c>Include</c> de <c>Consulta()</c> la navegación llega vacía y el conteo daría cero para
+	/// todos los roles — que es el modo de fallar peor posible acá, porque la guarda dejaría borrar
+	/// al último administrador en silencio. El fake no puede detectarlo: en memoria la colección
+	/// siempre está poblada.
+	/// </para>
+	/// <para>
+	/// Por <c>Id</c> y no por descripción, siguiendo la decisión #6 de <c>plan/rbac-y-seed.md</c>.
+	/// </para>
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task ContarUsuariosConRolAsync_cuenta_por_Id_leyendo_los_roles_de_la_tabla_de_union()
+	{
+		var primerAdmin = new UsuarioBuilder()
+			.ConDocente(await SembrarDocenteAsync())
+			.ConUsername("admin.uno")
+			.ConRol(Rol.Admin.Descripcion)
+			.Build();
+		var segundoAdmin = new UsuarioBuilder()
+			.ConDocente(await SembrarDocenteAsync())
+			.ConUsername("admin.dos")
+			.ConRol(Rol.Admin.Descripcion)
+			.Build();
+
+		await SembrarUsuarioAsync(primerAdmin);
+		await SembrarUsuarioAsync(segundoAdmin);
+		await SembrarUsuarioDocenteAsync(await SembrarDocenteAsync(), "solo.docente");
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		(await uow.Usuarios.ContarUsuariosConRolAsync(Rol.Admin.Id)).ShouldBe(2);
+		(await uow.Usuarios.ContarUsuariosConRolAsync(Rol.Docente.Id)).ShouldBe(1);
+		(await uow.Usuarios.ContarUsuariosConRolAsync(Rol.Preceptoria.Id)).ShouldBe(0);
+	}
 }

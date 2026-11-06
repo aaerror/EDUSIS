@@ -126,8 +126,6 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("PK_PLANILLA_ASISTENCIA");
 
-                    b.HasIndex("PreceptorID");
-
                     b.HasIndex("DivisionID", "Fecha")
                         .IsUnique();
 
@@ -688,13 +686,6 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_PLANILLA_ASISTENCIA_DIVISION");
-
-                    b.HasOne("Domain.Docentes.Docente", null)
-                        .WithMany()
-                        .HasForeignKey("PreceptorID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_PLANILLA_ASISTENCIA_DOCENTE");
                 });
 
             modelBuilder.Entity("Domain.Asistencias.RegistroAsistencia", b =>

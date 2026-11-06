@@ -491,6 +491,31 @@ public class AutorizacionDeCasosDeUsoTests
 
 		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
 	}
+
+	/// <remarks>
+	/// El cuarto. Acá el riesgo es mayor que en los otros tres, porque este caso de uso tiene
+	/// <strong>dos guardas de negocio</strong> antes de la transacción —designaciones vigentes y
+	/// último administrador— y la de permiso tiene que seguir siendo la primera de las tres.
+	/// </remarks>
+	[Fact]
+	public async Task EliminarDocenteAsync_sin_permiso_no_toca_la_transaccion()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocente>().EliminarDocenteAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task DesafectarDocenteAsync_sin_GestionarDocentes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocente>().DesafectarDocenteAsync(null!));
+	}
 	#endregion
 
 	#region Las lecturas de impacto de borrado, que SÍ exigen permiso
@@ -523,6 +548,15 @@ public class AutorizacionDeCasosDeUsoTests
 
 		await Should.ThrowAsync<PermisoDenegadoException>(
 			() => host.Resolver<IServicioCurso>().ConsultarImpactoEliminacionCursoAsync(null!));
+	}
+
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDocenteAsync_sin_GestionarDocentes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocente>().ConsultarImpactoEliminacionDocenteAsync(null!));
 	}
 	#endregion
 }

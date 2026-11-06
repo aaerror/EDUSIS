@@ -2,8 +2,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioDocentes.DTOs.Requests;
+using Core.ServicioDocentes.DTOs.Responses;
 using Core.ServicioDocentes;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows.Data;
@@ -48,6 +51,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 	private bool _cargando;
 
 	[ObservableProperty]
+	[NotifyCanExecuteChangedFor(nameof(DesafectarCommand))]
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommand))]
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	private LegajoDocenteViewModel? _legajoDocenteSeleccionado;
@@ -87,6 +91,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 	#region Commands
 	public IRelayCommand RegistrarCommand { get; }
 	public IAsyncRelayCommand CargarCommandAsync { get; }
+	public IAsyncRelayCommand DesafectarCommand { get; }
 	public IAsyncRelayCommand EliminarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	#endregion
@@ -113,6 +118,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 
 		RegistrarCommand = new RelayCommand<string>(_ => _registrarDocenteNavigationService.Navigate());
 		CargarCommandAsync = new AsyncRelayCommand(ExecuteCargarCommandAsync);
+		DesafectarCommand = new AsyncRelayCommand(ExecuteDesafectarCommandAsync, CanExecuteDesafectarCommand);
 		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 	}
@@ -192,11 +198,16 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 	}
 	#endregion
 
-	#region EliminarCommand
-	private bool CanExecuteEliminarCommand() =>
+	#region DesafectarCommand
+	/// <remarks>
+	/// La baja blanda: cierra el período del legajo y lo marca inactivo, sin borrar nada. Hasta el
+	/// 2026-11-06 era lo único que había, y se llamaba "Quitar": un soft delete con nombre de
+	/// borrado, que es el defecto que CORE-24 relevó. Ahora son dos botones con dos verbos distintos.
+	/// </remarks>
+	private bool CanExecuteDesafectarCommand() =>
 		LegajoDocenteSeleccionado is not null;
 
-	private async Task ExecuteEliminarCommandAsync()
+	private async Task ExecuteDesafectarCommandAsync()
 	{
 		if (LegajoDocenteSeleccionado is null)
 		{
@@ -206,34 +217,177 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 		string nombre = LegajoDocenteSeleccionado.NombreCompleto;
 		string legajo = LegajoDocenteSeleccionado.Legajo;
 
-		// La confirmación dice QUÉ se lleva puesto. Antes preguntaba "¿Quitar a X del listado
-		// de docentes?", que suena a esconder una fila: lo que hace es dar de baja el legajo,
-		// y con él las designaciones en las cátedras donde ese docente estaba en funciones.
 		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
-				titulo: $"Quitar a { nombre } del personal docente",
-				consecuencia: $"El legajo { legajo } queda fuera del listado y de las búsquedas. "
-							+ "Las cátedras donde esté designado quedan sin docente en funciones. "
-							+ "Sus licencias y puestos ya registrados se conservan.",
-				verbo: "Quitar docente")))
+				titulo: $"Desafectar a { nombre } del personal docente",
+				consecuencia: $"El legajo { legajo } se cierra con la fecha de hoy y queda inactivo. "
+							+ "No se borra nada: sus licencias, sus puestos y sus designaciones se "
+							+ "conservan, y el legajo sigue consultable. Para borrarlo del sistema "
+							+ "está la acción Eliminar.",
+				verbo: "Desafectar")))
 		{
 			return;
 		}
 
 		try
 		{
-			await _servicioDocentes.QuitarDocenteAsync(new DocenteIDRequest(LegajoDocenteSeleccionado.DocenteID));
+			await _servicioDocentes.DesafectarDocenteAsync(new DocenteIDRequest(LegajoDocenteSeleccionado.DocenteID));
+			LegajoDocenteSeleccionado = null;
+
+			await ExecuteCargarCommandAsync();
+
+			_dialogService.MostrarInformacion($"{ nombre } quedó desafectado.", "Docente desafectado");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo desafectar el docente");
+		}
+	}
+	#endregion
+
+	#region EliminarCommand
+	private bool CanExecuteEliminarCommand() =>
+		LegajoDocenteSeleccionado is not null;
+
+	/// <remarks>
+	/// El borrado físico. El texto anterior de este diálogo afirmaba dos cosas falsas: que "las
+	/// cátedras donde esté designado quedan sin docente en funciones" —no pasaba nada, el caso de uso
+	/// sólo desafectaba— y que "sus licencias y puestos ya registrados se conservan", que era cierto
+	/// justamente porque no borraba. Ahora borra, y las cifras salen del caso de uso.
+	/// </remarks>
+	private async Task ExecuteEliminarCommandAsync()
+	{
+		if (LegajoDocenteSeleccionado is null)
+		{
+			return;
+		}
+
+		string nombre = LegajoDocenteSeleccionado.NombreCompleto;
+		string legajo = LegajoDocenteSeleccionado.Legajo;
+		var request = new DocenteIDRequest(LegajoDocenteSeleccionado.DocenteID);
+
+		ImpactoEliminacionDocenteResponse impacto;
+		try
+		{
+			impacto = await _servicioDocentes.ConsultarImpactoEliminacionDocenteAsync(request);
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo averiguar qué se perdería");
+			return;
+		}
+
+		// Si Core va a rechazar, no se pregunta: se dice qué hay que desarmar antes. Pedirle al
+		// usuario que confirme algo que no va a pasar es el defecto de forma que el curso también
+		// evita con su guarda de divisiones.
+		if (impacto.EstaBloqueado)
+		{
+			_dialogService.MostrarAdvertencia(DescribirBloqueo(impacto, nombre), "No se puede eliminar");
+			return;
+		}
+
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: $"Eliminar el legajo de { nombre }",
+				consecuencia: DescribirConsecuenciaDelDocente(impacto, legajo),
+				verbo: "Eliminar docente")))
+		{
+			return;
+		}
+
+		try
+		{
+			await _servicioDocentes.EliminarDocenteAsync(request);
 			LegajoDocenteSeleccionado = null;
 
 			// Recargar: dejar la fila borrada en pantalla es la forma más rápida de que
 			// alguien vuelva a operar sobre un registro que ya no existe.
 			await ExecuteCargarCommandAsync();
 
-			_dialogService.MostrarInformacion($"{ nombre } ya no figura en el listado.", "Docente quitado");
+			_dialogService.MostrarInformacion($"{ nombre } ya no figura en el sistema.", "Docente eliminado");
 		}
 		catch (Exception ex)
 		{
-			_dialogService.MostrarError(ex.Message, "No se pudo quitar el docente");
+			_dialogService.MostrarError(ex.Message, "No se pudo eliminar el docente");
 		}
+	}
+
+	/// <summary>Por qué <c>Core</c> va a rechazar el borrado, y qué hacer antes.</summary>
+	internal static string DescribirBloqueo(ImpactoEliminacionDocenteResponse impacto, string nombre)
+	{
+		if (impacto.EsElUltimoAdministrador)
+		{
+			return $"{ nombre } tiene la única cuenta con rol Administrador. Si se elimina, nadie "
+				 + "puede crear usuarios ni asignar roles, y el sistema queda sin forma de "
+				 + "recuperar su administración desde la aplicación. Hay que darle el rol "
+				 + "Administrador a otra cuenta antes.";
+		}
+
+		string designaciones = impacto.DesignacionesVigentes is 1
+			? "1 designación vigente"
+			: $"{ impacto.DesignacionesVigentes } designaciones vigentes";
+
+		return $"{ nombre } tiene { designaciones } en cátedras. Hay que finalizarlas o "
+			 + "reemplazarlas antes de eliminar el legajo: la cátedra pertenece a la materia y no "
+			 + "al docente, así que el borrado no puede dejarla sin ocupante por su cuenta. "
+			 + "Si lo que buscás es darlo de baja conservando el legajo, usá Desafectar.";
+	}
+
+	/// <summary>
+	/// El texto de la consecuencia, con las cifras exactas de lo que el borrado destruye.
+	/// </summary>
+	/// <remarks>
+	/// Dice que las planillas de asistencia conservan la firma <strong>sin un número</strong>: es un
+	/// hecho fijo de la operación y contarlo exigiría recorrer <c>planilla_asistencia</c> entera, que
+	/// se quedó sin índice por <c>preceptor_id</c> al quitarse la clave ajena. Vale decirlo igual,
+	/// porque es lo único del borrado que deja un identificador apuntando a alguien que ya no está.
+	/// </remarks>
+	internal static string DescribirConsecuenciaDelDocente(ImpactoEliminacionDocenteResponse impacto, string legajo)
+	{
+		string planillas = "Las planillas de asistencia que haya firmado se conservan, con su firma.";
+
+		if (!impacto.TieneVinculos)
+		{
+			return $"El legajo { legajo } se borra del sistema, junto con sus puestos. "
+				 + $"{ planillas } Esta acción no se puede deshacer.";
+		}
+
+		var partes = new List<string>();
+
+		if (impacto.Licencias > 0)
+		{
+			partes.Add(impacto.Licencias is 1 ? "1 licencia" : $"{ impacto.Licencias } licencias");
+		}
+
+		if (impacto.DesignacionesCerradas > 0)
+		{
+			partes.Add(impacto.DesignacionesCerradas is 1
+				? "1 designación ya finalizada"
+				: $"{ impacto.DesignacionesCerradas } designaciones ya finalizadas");
+		}
+
+		if (impacto.TieneUsuario)
+		{
+			partes.Add("su usuario del sistema, con los roles que tenga");
+		}
+
+		string lista = partes.Count switch
+		{
+			0 => string.Empty,
+			1 => partes[0],
+			_ => $"{ string.Join(", ", partes.Take(partes.Count - 1)) } y { partes.Last() }"
+		};
+
+		string borrado = partes.Count > 0
+			? $"Se borran { lista }, además del legajo { legajo } y sus puestos."
+			: $"Se borra el legajo { legajo } y sus puestos.";
+
+		string preceptor = impacto.DivisionesQueQuedanSinPreceptor > 0
+			? " " + (impacto.DivisionesQueQuedanSinPreceptor is 1
+					? "1 división queda sin preceptor"
+					: $"{ impacto.DivisionesQueQuedanSinPreceptor } divisiones quedan sin preceptor")
+				  + " y hay que asignarle otro para poder abrir su planilla del día."
+			: string.Empty;
+
+		return $"{ borrado }{ preceptor } { planillas } Esta acción no se puede deshacer.";
 	}
 	#endregion
 

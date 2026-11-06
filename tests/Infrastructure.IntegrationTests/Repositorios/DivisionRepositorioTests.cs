@@ -149,4 +149,48 @@ public sealed class DivisionRepositorioTests : BaseIntegracion
 		var noEncontrada = await uow.Divisiones.BuscarPorCursoYDescripcionAsync(cursoB, "A");
 		noEncontrada.ShouldBeNull();
 	}
+
+	/// <remarks>
+	/// La consume el borrado del docente, que necesita las instancias para vaciarles el cargo con
+	/// <c>Division.QuitarPreceptor()</c>. Afirma además que coincide con
+	/// <c>ExistePreceptorAsignadoAsync</c>, que es la invariante que las mantiene alineadas: si una
+	/// filtrara distinto de la otra, el borrado dejaría una división con un <c>preceptor_id</c>
+	/// apuntando a un legajo inexistente — y ahí no hay clave ajena que lo frene, porque
+	/// <c>FK_DIVISION_DOCENTE</c> sigue en <c>Restrict</c> y el borrado pasaría igual por haber
+	/// vaciado sólo algunas.
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task BuscarPorPreceptorAsync_trae_las_divisiones_del_docente_y_no_las_de_otro()
+	{
+		var cursoID = await SembrarCursoAsync();
+		var preceptorID = await SembrarDocenteAsync();
+		var otroDocenteID = await SembrarDocenteAsync();
+
+		var divisionID = await SembrarDivisionAsync(cursoID, "A");
+		var otraDivisionID = await SembrarDivisionAsync(cursoID, "B");
+		var sinPreceptorID = await SembrarDivisionAsync(cursoID, "C");
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			var division = await contexto.Divisiones.FindAsync(divisionID);
+			division!.AsignarPreceptor(preceptorID);
+
+			var otra = await contexto.Divisiones.FindAsync(otraDivisionID);
+			otra!.AsignarPreceptor(otroDocenteID);
+
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var suyas = await uow.Divisiones.BuscarPorPreceptorAsync(preceptorID);
+
+		suyas.ShouldHaveSingleItem().Id.ShouldBe(divisionID);
+		(await uow.Divisiones.ExistePreceptorAsignadoAsync(preceptorID)).ShouldBe(suyas.Count > 0);
+
+		// La división sin preceptor no aparece para nadie: el filtro es por igualdad contra una
+		// columna anulable, y un NULL no iguala a ningún Guid.
+		(await uow.Divisiones.BuscarPorPreceptorAsync(Guid.NewGuid())).ShouldBeEmpty();
+		sinPreceptorID.ShouldNotBe(Guid.Empty);
+	}
 }

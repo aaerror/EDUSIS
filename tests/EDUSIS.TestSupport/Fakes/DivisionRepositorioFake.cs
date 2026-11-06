@@ -21,6 +21,11 @@ public sealed class DivisionRepositorioFake : RepositorioEnMemoria<Division>, ID
 	public Task<bool> ExistePreceptorAsignadoAsync(Guid docenteID) =>
 		Task.FromResult(_entidades.Any(x => x.Preceptor.Equals(docenteID)));
 
+	public Task<IReadOnlyCollection<Division>> BuscarPorPreceptorAsync(Guid docenteID) =>
+		Task.FromResult((IReadOnlyCollection<Division>)_entidades
+			.Where(x => x.Preceptor.Equals(docenteID))
+			.ToList());
+
 	public Task<IReadOnlyCollection<string>> DescripcionesDelCursoAsync(Guid cursoID) =>
 		Task.FromResult((IReadOnlyCollection<string>)_entidades
 			.Where(x => x.CursoID.Equals(cursoID))

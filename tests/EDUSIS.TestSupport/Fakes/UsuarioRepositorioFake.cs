@@ -19,4 +19,7 @@ public sealed class UsuarioRepositorioFake : RepositorioEnMemoria<Usuario>, IUsu
 
 	public Task<bool> EsUsernameInvalidoAsync(string username) =>
 		Task.FromResult(UsernamesInvalidos.Contains(username) || _entidades.Any(x => x.Username.ToLower() == username.Trim().ToLower()));
+
+	public Task<int> ContarUsuariosConRolAsync(int rolID) =>
+		Task.FromResult(_entidades.Count(x => x.Roles.Any(r => r.Id == rolID)));
 }
