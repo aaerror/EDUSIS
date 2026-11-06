@@ -9,6 +9,7 @@ using WPF_Desktop.Store.NavigationStore;
 using WPF_Desktop.ViewModels.Asistencias;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
+using WPF_Desktop.ViewModels.Usuarios;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.Shared;
@@ -174,6 +175,28 @@ public class ComposicionDelContenedorTests
 		using var host = ConstruirHost();
 
 		var viewModel = host.Services.GetRequiredService<AsistenciasViewModel>();
+
+		viewModel.ShouldNotBeNull();
+	}
+
+	/// <remarks>
+	/// <para>
+	/// La séptima raíz del menú, que cierra UI-46. Tampoco siembra stores: no usa ninguno, porque no
+	/// es destino de ningún drill-down.
+	/// </para>
+	/// <para>
+	/// Esta prueba es la que convierte "falta un registro de DI" en una prueba roja en lugar de una
+	/// pantalla en blanco. <c>CLAUDE.md</c> exige cuatro piezas por vista nueva —<c>DataTemplate</c>,
+	/// ViewModel, <c>INavigationService</c> y sus registros—; si falta el del ViewModel, acá revienta.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void GestionUsuariosViewModel_se_resuelve_del_contenedor_real()
+	{
+		using var host = ConstruirHost();
+
+		var viewModel = host.Services.GetRequiredService<GestionUsuariosViewModel>();
 
 		viewModel.ShouldNotBeNull();
 	}

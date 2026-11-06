@@ -61,25 +61,51 @@ public class Usuario : Entity
 		: this(Guid.NewGuid(), docenteID, username, passwordSalt, passwordHash, roles) { }
 	#endregion
 
-	public void AgregarRol(string unRol)
+	/// <summary>
+	/// Asigna el rol por su <see cref="Enumeration.Id"/>. <strong>Es la sobrecarga que deben usar los
+	/// casos de uso y la interfaz.</strong>
+	/// </summary>
+	/// <remarks>
+	/// Por <c>Id</c> y no por descripción, que es la decisión #6 de
+	/// <c>docs/plan/rbac-y-seed.md</c>: el Id es canónico y la descripción es presentación, vive en
+	/// una columna <c>varchar</c> no unicode y tres de los seis roles llevan acento
+	/// ("Dirección", "Preceptoría", "Secretaría Académica"). Un literal mal escrito por la sobrecarga
+	/// de <c>string</c> falla en ejecución; acá no hay literal que escribir mal.
+	/// </remarks>
+	public void AgregarRol(int rolID) =>
+		AgregarRol(Enumeration.FromValue<Rol>(rolID));
+
+	/// <summary>Quita el rol por su <see cref="Enumeration.Id"/>. Ver <see cref="AgregarRol(int)"/>.</summary>
+	public void QuitarRol(int rolID) =>
+		QuitarRol(Enumeration.FromValue<Rol>(rolID));
+
+	/// <remarks>
+	/// Resuelve el rol por <strong>descripción</strong>. Se conserva porque la usan
+	/// <c>Tools/EDUSIS.Seed</c> y los builders de prueba, donde el literal está a la vista del que lo
+	/// escribe; para los casos de uso está <see cref="AgregarRol(int)"/>, que no depende del texto.
+	/// </remarks>
+	public void AgregarRol(string unRol) =>
+		AgregarRol(Enumeration.FromDescripcion<Rol>(unRol));
+
+	/// <remarks>Ver <see cref="AgregarRol(string)"/>: resuelve por descripción.</remarks>
+	public void QuitarRol(string unRol) =>
+		QuitarRol(Enumeration.FromDescripcion<Rol>(unRol));
+
+	private void AgregarRol(Rol rol)
 	{
-		var rol = Enumeration.FromDescripcion<Rol>(unRol);
-		bool existe = _roles.Contains(rol);
-		if (existe)
+		if (_roles.Contains(rol))
 		{
-			throw new ArgumentException("El rol ya se encuentra asignado al usuario.", nameof(unRol));
+			throw new ArgumentException("El rol ya se encuentra asignado al usuario.", nameof(rol));
 		}
 
 		_roles.Add(rol);
 	}
 
-	public void QuitarRol(string unRol)
+	private void QuitarRol(Rol rol)
 	{
-		var rol = Enumeration.FromDescripcion<Rol>(unRol);
-		var existeRol = _roles.Contains(rol);
-		if (!existeRol)
+		if (!_roles.Contains(rol))
 		{
-			throw new ArgumentException("El rol no se encuentra asignado al usuario.", nameof(unRol));
+			throw new ArgumentException("El rol no se encuentra asignado al usuario.", nameof(rol));
 		}
 
 		_roles.Remove(rol);

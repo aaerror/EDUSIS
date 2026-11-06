@@ -25,6 +25,52 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 		_servicioSeguridad = servicioSeguridad;
 	}
 
+	/// <summary>
+	/// Todas las cuentas del sistema con su docente y sus roles, ordenadas por nombre.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Lectura sin guarda de permiso, siguiendo la decisión de alcance de CORE-16, aunque la única
+	/// pantalla que la consume exige <c>AdministrarUsuarios</c> para abrirse. La asimetría con las
+	/// consultas de impacto de borrado es deliberada: aquéllas existen sólo para servir a su borrado,
+	/// ésta es el listado de una pantalla y cae del lado de las ~30 lecturas abiertas.
+	/// </para>
+	/// <para>
+	/// Resuelve el docente de cada cuenta de a uno. Es N+1 y está asumido: el padrón de usuarios del
+	/// sistema tiene el tamaño del plantel docente con cuenta, no el de la matrícula. Si alguna vez
+	/// crece, lo que corresponde es un método de repositorio que haga el join, no un bucle más rápido
+	/// acá — las consultas con tipos de EF van en <c>Infrastructure/Repository/</c>.
+	/// </para>
+	/// </remarks>
+	public async Task<IReadOnlyCollection<UsuarioResponse>> ListarUsuariosAsync()
+	{
+		try
+		{
+			var usuarios = await _unitOfWork.Usuarios.BuscarTodosAsync();
+			var respuestas = new List<UsuarioResponse>();
+
+			foreach (var usuario in usuarios)
+			{
+				var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(usuario.DocenteID);
+
+				respuestas.Add(new UsuarioResponse(
+					usuario.Id,
+					usuario.DocenteID,
+					usuario.Username,
+					docente is not null ? docente.DatosPersonales.NombreCompleto() : "(legajo inexistente)",
+					docente?.Puesto is not null ? docente.Puesto.Posicion.ToString() : "Sin puesto docente asignado",
+					usuario.Roles.Select(x => x.Id).ToList()));
+			}
+
+			return respuestas.OrderBy(x => x.NombreCompleto).ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
+
 	public async Task<UsuarioResponse> BuscarUsuarioPorIDAsync(UsuarioIDRequest request)
 	{
 		try
@@ -94,12 +140,21 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			/*char[] delimiter = { ':' };
 			string[] split = saltAndHash.Split(delimiter);*/
 
-			var usuario = new Usuario(request.DocenteID, email, salt, hash);
+			// El rol que el request trae SE USA. Hasta el 2026-11-06 esta línea era
+			// `new Usuario(request.DocenteID, email, salt, hash)` —el constructor sin roles— y
+			// request.Rol se descartaba en silencio: todo usuario nacía sin un solo permiso y entraba
+			// al sistema con el menú entero apagado. Ver RegistrarUsuarioRequest.
+			//
+			// Se usa el constructor con roles y no AgregarRol() después, por el mismo motivo que el
+			// seeder: AgregarRol resolvía por descripción, y además así el usuario nunca existe en un
+			// estado intermedio sin rol.
+			var rol = Enumeration.FromValue<Rol>(request.RolID);
+			var usuario = new Usuario(request.DocenteID, email, salt, hash, new List<Rol> { rol });
 
 			await _unitOfWork.Usuarios.AgregarAsync(usuario);
 			await _unitOfWork.GuardarCambiosAsync();
 
-			_logger.LogInformation("Usuario creado correctamente...");
+			_logger.LogInformation($"Usuario creado correctamente con rol { rol.Descripcion }.");
 		}
 		catch (Exception ex)
 		{
@@ -210,7 +265,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 				throw new NullReferenceException("No se encontró el usuario.");
 			}
 
-			usuario.AgregarRol(request.Rol);
+			usuario.AgregarRol(request.RolID);
 
 			_unitOfWork.Usuarios.Modificar(usuario);
 			await _unitOfWork.GuardarCambiosAsync();
@@ -234,7 +289,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 				throw new NullReferenceException("No se encontró el usuario.");
 			}
 
-			usuario.QuitarRol(request.Rol);
+			usuario.QuitarRol(request.RolID);
 
 			_unitOfWork.Usuarios.Modificar(usuario);
 			await _unitOfWork.GuardarCambiosAsync();

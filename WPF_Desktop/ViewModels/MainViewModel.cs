@@ -58,6 +58,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	public IRelayCommand GestionAlumnosCommand { get; }
 	public IRelayCommand GestionCursosCommand { get; }
 	public IRelayCommand AsistenciasCommand { get; }
+	public IRelayCommand GestionUsuariosCommand { get; }
 	public IRelayCommand GestionDocumentacionCommand { get; }
 	public IRelayCommand GestionReportesCommand { get; }
 	public IRelayCommand SalirCommand { get; }
@@ -75,6 +76,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 						 INavigationService alumnosNavigationService,
 						 INavigationService cursosNavigationService,
 						 INavigationService asistenciasNavigationService,
+						 INavigationService usuariosNavigationService,
 						 INavigationService documentacionNavigationService,
 						 INavigationService reportesNavigationService,
 						 ISesionUsuario sesion,
@@ -116,6 +118,17 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		AsistenciasCommand = new RelayCommand(() => Navegar(asistenciasNavigationService, "Asistencias"),
 											  () => _sesion.TienePermiso(Permiso.TomarAsistencia));
 
+		// La séptima raíz, y la que cierra UI-46. AdministrarUsuarios y AsignarRoles eran dos de los
+		// siete permisos que no habilitaban ninguna entrada de menú: los dos casos de uso de roles
+		// existían, guardados por permiso, y ningún ViewModel los llamaba.
+		//
+		// Gobierna por AdministrarUsuarios y NO por el OR con AsignarRoles, a diferencia de Cursos,
+		// Documentación y Asistencias. El motivo: la pantalla hace dos cosas y el alta de cuentas es
+		// la que no se puede hacer en otro lado, mientras que AsignarRoles sin AdministrarUsuarios no
+		// es una combinación que ningún rol tenga. Si alguna vez la hubiera, el OR es la respuesta.
+		GestionUsuariosCommand = new RelayCommand(() => Navegar(usuariosNavigationService, "Usuarios"),
+												  () => _sesion.TienePermiso(Permiso.AdministrarUsuarios));
+
 		// Las dos secciones de emisión aceptan el permiso general O el de Preceptoría: el
 		// certificado de asistencia (CU-30) y los reportes de cursada (CU-35/36) viven en estas
 		// pantallas, y exigir sólo el permiso general dejaría a Preceptoría sin poder abrirlas
@@ -154,6 +167,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		GestionAlumnosCommand.NotifyCanExecuteChanged();
 		GestionCursosCommand.NotifyCanExecuteChanged();
 		AsistenciasCommand.NotifyCanExecuteChanged();
+		GestionUsuariosCommand.NotifyCanExecuteChanged();
 		GestionDocumentacionCommand.NotifyCanExecuteChanged();
 		GestionReportesCommand.NotifyCanExecuteChanged();
 	}

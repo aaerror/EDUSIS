@@ -236,6 +236,11 @@
 	<!--#endregion-->
 
 	<!--#region USUARIOS-->
+	<!-- La raíz de la sección, gobernada por AdministrarUsuarios. Cierra UI-46. -->
+	<DataTemplate DataType="{ x:Type vmUsuarios:GestionUsuariosViewModel }">
+		<vUsuarios:GestionUsuariosView/>
+	</DataTemplate>
+
 	<DataTemplate DataType="{ x:Type vmUsuarios:RegistrarUsuarioViewModel }">
 		<vUsuarios:RegistrarUsuarioView/>
 	</DataTemplate>

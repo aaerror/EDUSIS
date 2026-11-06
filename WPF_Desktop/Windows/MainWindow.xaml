@@ -153,6 +153,21 @@
 							Style="{ StaticResource ResourceKey=Btn.Menu }"
 							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Reportes }"
 							ToolTip="Matrículas, asistencias, calificaciones, materias pendientes y trayectorias"/>
+
+					<TextBlock Foreground="{ StaticResource ResourceKey=SobrePizarraTenue }"
+							   Margin="20 18 20 10"
+							   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+							   Text="ADMINISTRACIÓN"/>
+
+					<!--
+						Sección propia y al final: es la única que no administra datos académicos
+						sino el acceso al sistema. AdministrarUsuarios lo tiene un solo rol.
+					-->
+					<Button Command="{ Binding Path=GestionUsuariosCommand }"
+							Content="Usuarios"
+							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Usuarios }"
+							ToolTip="Cuentas del sistema y sus roles"/>
 				</StackPanel>
 				<!--#endregion-->
 

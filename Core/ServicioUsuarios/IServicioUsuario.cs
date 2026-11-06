@@ -5,6 +5,7 @@ namespace Core.ServicioUsuarios;
 
 public interface IServicioUsuario
 {
+	Task<IReadOnlyCollection<UsuarioResponse>> ListarUsuariosAsync();
 	Task<UsuarioResponse> BuscarUsuarioPorIDAsync(UsuarioIDRequest request);
 	Task AsignarRolAsync(ActualizarRolRequest request);
 	Task QuitarRolAsync(ActualizarRolRequest request);

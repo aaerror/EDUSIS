@@ -3,6 +3,7 @@ using Core.ServicioAutenticaciones;
 using Core.ServicioAutenticaciones.DTOs.Requests;
 using Core.ServicioUsuarios;
 using Core.ServicioUsuarios.DTOs.Requests;
+using Domain.Usuarios;
 using EDUSIS.EndToEndTests.Infraestructura;
 using EDUSIS.TestSupport.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +35,7 @@ public sealed class RegistroYAutenticacionDeUsuarioTests : BaseE2E
 		var clave = docente.DatosPersonales.Documento;
 
 		await EnUnScope(sp => sp.GetRequiredService<IServicioUsuario>().RegistrarUsuarioAsync(
-			new RegistrarUsuarioRequest(docente.Id, "Docente")));
+			new RegistrarUsuarioRequest(docente.Id, Rol.Docente.Id)));
 
 		var perfil = await EnUnScope(sp => sp.GetRequiredService<IServicioAutenticacion>().Login(
 			new LoginRequest(new NetworkCredential(usuario, clave))));
@@ -50,7 +51,7 @@ public sealed class RegistroYAutenticacionDeUsuarioTests : BaseE2E
 		var docente = await SembrarDocenteAsync();
 
 		await EnUnScope(sp => sp.GetRequiredService<IServicioUsuario>().RegistrarUsuarioAsync(
-			new RegistrarUsuarioRequest(docente.Id, "Docente")));
+			new RegistrarUsuarioRequest(docente.Id, Rol.Docente.Id)));
 
 		await Should.ThrowAsync<ArgumentException>(() => EnUnScope(sp =>
 			sp.GetRequiredService<IServicioAutenticacion>().Login(

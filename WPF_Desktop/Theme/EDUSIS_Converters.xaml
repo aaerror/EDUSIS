@@ -21,4 +21,11 @@
 		arriba para que ninguna vuelva a armar ese texto a mano.
 	-->
 	<conv:GradoConverter x:Key="grado"/>
+
+	<!--
+		Los roles de una cuenta viajan como lista de Id (decisión #6 de plan/rbac-y-seed.md: el Id es
+		canónico, la descripción es presentación y vive en una columna no unicode). Acá vuelven a ser
+		texto, que es lo que la grilla de usuarios muestra.
+	-->
+	<conv:RolesConverter x:Key="roles"/>
 </ResourceDictionary>

@@ -112,6 +112,7 @@ internal static class WPF_DesktopDI
 								  CreateGestionAlumnosNavigationService(provider),
 								  CreateGestionCursosNavigationService(provider),
 								  CreateAsistenciasNavigationService(provider),
+								  CreateGestionUsuariosNavigationService(provider),
 								  CreateGestionDocumentacionNavigationService(provider),
 								  CreateGestionReportesNavigationService(provider),
 								  provider.GetRequiredService<ISesionUsuario>(),
@@ -119,7 +120,12 @@ internal static class WPF_DesktopDI
 								  provider.GetRequiredService<AvisoStore>(),
 								  provider.GetRequiredService<IMessenger>()));
 
-		services.AddTransient<BuscarViewModel>(provider =>
+		services.AddTransient<GestionUsuariosViewModel>(provider =>
+			new GestionUsuariosViewModel(provider.GetRequiredService<IServicioUsuario>(),
+										 provider.GetRequiredService<IServicioDocente>(),
+										 provider.GetRequiredService<IDialogService>()));
+
+	services.AddTransient<BuscarViewModel>(provider =>
 			new BuscarViewModel(provider.GetRequiredService<IServicioDocente>(),
 								provider.GetRequiredService<IDialogService>(),
 								provider.GetRequiredService<ModalWindowNavigationStore>(),
@@ -430,6 +436,11 @@ internal static class WPF_DesktopDI
 	private static INavigationService CreateAsistenciasNavigationService(IServiceProvider serviceProvider) =>
 		new AsistenciasNavigationService<AsistenciasViewModel>(() =>
 			serviceProvider.GetRequiredService<AsistenciasViewModel>(),
+			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
+
+	private static INavigationService CreateGestionUsuariosNavigationService(IServiceProvider serviceProvider) =>
+		new GestionUsuariosNavigationService<GestionUsuariosViewModel>(() =>
+			serviceProvider.GetRequiredService<GestionUsuariosViewModel>(),
 			serviceProvider.GetRequiredService<MainWindowNavigationStore>());
 	#endregion
 

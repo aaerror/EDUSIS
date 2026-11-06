@@ -109,4 +109,73 @@ public class UsuarioTests
 		usuario.PasswordHash.ShouldBe("nuevo-hash");
 	}
 	#endregion
+
+	#region Roles por Id
+	// Las sobrecargas por Id son las que deben usar los casos de uso y la interfaz (decisión #6 de
+	// plan/rbac-y-seed.md). Las de string se conservan para el seeder y los builders, donde el
+	// literal está a la vista de quien lo escribe.
+	[Fact]
+	public void AgregarRol_por_Id_asigna_el_mismo_rol_que_por_descripcion()
+	{
+		var porId = new UsuarioBuilder().Build();
+		var porDescripcion = new UsuarioBuilder().Build();
+
+		porId.AgregarRol(Rol.SecretariaAcademica.Id);
+		porDescripcion.AgregarRol(Rol.SecretariaAcademica.Descripcion);
+
+		porId.Roles.ShouldBe(porDescripcion.Roles);
+	}
+
+	[Fact]
+	public void AgregarRol_por_Id_dos_veces_lanza_ArgumentException()
+	{
+		var usuario = new UsuarioBuilder().Build();
+		usuario.AgregarRol(Rol.Admin.Id);
+
+		Should.Throw<ArgumentException>(() => usuario.AgregarRol(Rol.Admin.Id));
+	}
+
+	[Fact]
+	public void AgregarRol_por_Id_rechaza_un_Id_que_no_esta_en_el_catalogo()
+	{
+		// Sin esto, un Id suelto crearía un rol fantasma: la atribución rol → permisos se resuelve
+		// por Id, así que un Id desconocido daría un usuario con cero permisos en silencio.
+		var usuario = new UsuarioBuilder().Build();
+
+		Should.Throw<InvalidOperationException>(() => usuario.AgregarRol(99));
+	}
+
+	[Fact]
+	public void QuitarRol_por_Id_lo_saca()
+	{
+		var usuario = new UsuarioBuilder().Build();
+		usuario.AgregarRol(Rol.Preceptoria.Id);
+
+		usuario.QuitarRol(Rol.Preceptoria.Id);
+
+		usuario.Roles.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public void QuitarRol_por_Id_de_un_rol_que_no_tiene_lanza_ArgumentException()
+	{
+		var usuario = new UsuarioBuilder().Build();
+
+		Should.Throw<ArgumentException>(() => usuario.QuitarRol(Rol.Direccion.Id));
+	}
+
+	[Fact]
+	public void Las_dos_sobrecargas_operan_sobre_la_misma_coleccion()
+	{
+		// Asignado por descripción, quitado por Id: si cada sobrecarga mirara su propia lista, o si
+		// la igualdad de Rol no fuera por Id, esto fallaría. Importa porque el seeder usa una y la
+		// pantalla la otra, sobre las mismas cuentas.
+		var usuario = new UsuarioBuilder().Build();
+		usuario.AgregarRol(Rol.Docente.Descripcion);
+
+		usuario.QuitarRol(Rol.Docente.Id);
+
+		usuario.Roles.ShouldBeEmpty();
+	}
+	#endregion
 }
