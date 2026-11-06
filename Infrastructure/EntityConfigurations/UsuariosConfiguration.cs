@@ -42,9 +42,20 @@ internal class UsuariosConfiguration : IEntityTypeConfiguration<Usuario>
 			   .HasForeignKey<Docente>(x => x.Id)
 			   .HasConstraintName("FK_DOCENTE_USUARIO");*/
 
+		// 50 y no 18: el nombre de usuario ES el correo institucional del docente.
+		// RegistrarUsuarioAsync lo toma de Docente.Email —columna persona.email, varchar(50)— y
+		// LoginUsuarioViewModel lo valida con una expresión de correo, así que los tres coincidían en
+		// que era un correo y sólo la columna decía lo contrario. Con 18 caracteres no entra ningún
+		// correo institucional real: "docente.500003@correo.com" son 25.
+		//
+		// Es la mitad de UI-40, el conflicto de vocabulario entre Username y correo electrónico. Se
+		// resuelve del lado del correo y no del nombre de usuario porque es lo que ya hacen las otras
+		// dos capas; el seeder tuvo que inventar direcciones de dominio corto (admin@edu.ar) para
+		// entrar en 18, y eso era la pista. El defecto sólo aparecía contra la base: lo destapó
+		// RegistroYAutenticacionDeUsuarioTests la primera vez que la suite end-to-end se ejecutó.
 		builder.Property(x => x.Username)
 			   .HasColumnName("usuario")
-			   .HasMaxLength(18)
+			   .HasMaxLength(50)
 			   .IsUnicode(false)
 			   .IsRequired();
 

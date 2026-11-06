@@ -607,9 +607,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasMaxLength(18)
+                        .HasMaxLength(50)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(18)")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("usuario");
 
                     b.HasKey("Id")

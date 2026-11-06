@@ -30,7 +30,7 @@ public sealed class MapeoDeAlumnoTests : BaseIntegracion
 			.ConDomicilio(new DomicilioBuilder()
 				.ConCalle("Pasaje Ñuñorco")
 				.ConLocalidad("Yerba Buena"))
-			.ConLegajo("A-000123")
+			.ConLegajo("AL0123")
 			.Build();
 
 		await using (var contexto = Fixture.CrearContexto())
@@ -44,7 +44,7 @@ public sealed class MapeoDeAlumnoTests : BaseIntegracion
 			var releido = await contexto.Set<Alumno>()
 				.SingleAsync(x => x.Id == alumno.Id);
 
-			releido.Legajo.ShouldBe("A-000123");
+			releido.Legajo.ShouldBe("AL0123");
 			releido.DatosPersonales.Apellido.ShouldBe("Ñáñez Piñón");
 			releido.DatosPersonales.Nombre.ShouldBe("José María");
 			releido.DatosPersonales.Documento.ShouldBe("30111222");

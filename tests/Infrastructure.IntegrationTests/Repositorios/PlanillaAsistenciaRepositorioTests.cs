@@ -124,9 +124,13 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 			.Build();
 		planilla1.MarcarAusencia(cursante1ID);
 
+		// Ayer y no mañana: PlanillaAsistencia rechaza una fecha futura con
+		// FechaPlanillaFuturaException —no se toma lista de un día que no pasó— y esta prueba
+		// construía la segunda planilla con hoy.AddDays(1). Lo que necesita son dos jornadas
+		// distintas, no una posterior.
 		var planilla2 = new PlanillaAsistenciaBuilder()
 			.ConDivision(divisionID)
-			.ConFecha(hoy.AddDays(1))
+			.ConFecha(hoy.AddDays(-1))
 			.ConPreceptor(preceptorID)
 			.ConCursantes(cursante1ID, cursante2ID)
 			.Build();

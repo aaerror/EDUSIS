@@ -57,7 +57,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 			var cadenaExterna = Environment.GetEnvironmentVariable("EDUSIS_TEST_SQLSERVER");
 			if (!string.IsNullOrWhiteSpace(cadenaExterna))
 			{
-				CadenaDeConexion = cadenaExterna;
+				CadenaDeConexion = ConBasePropiaDeEstaSuite(cadenaExterna);
 			}
 			else
 			{
@@ -186,6 +186,64 @@ public sealed class SqlServerFixture : IAsyncLifetime
 			DbAdapter = DbAdapter.SqlServer,
 			TablesToIgnore = TablasDeReferencia,
 		});
+	}
+
+	/// <summary>
+	/// Le da a cada suite su propia base, derivada de la configurada en
+	/// <c>EDUSIS_TEST_SQLSERVER</c>: <c>EdusisDB_Test</c> → <c>EdusisDB_Test_Infrastructure_IntegrationTests</c>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>Sin esto, <c>dotnet test EDUSIS.sln</c> con un SQL Server externo da fallas
+	/// fantasma.</strong> <c>Infrastructure.IntegrationTests</c> y <c>EDUSIS.EndToEndTests</c> son
+	/// dos assemblies, y el runner los ejecuta <em>en paralelo</em>: las <c>Collection</c> de xUnit
+	/// serializan las clases dentro de un assembly, no entre assemblies. Las dos suites resetean la
+	/// base con Respawn al empezar cada clase, así que una truncaba las tablas mientras la otra
+	/// estaba a mitad de una prueba. El resultado es un conjunto de fallas que cambia en cada
+	/// corrida y que desaparece al ejecutar cada proyecto por separado — el peor modo de fallar que
+	/// tiene una suite.
+	/// </para>
+	/// <para>
+	/// Con Testcontainers el problema no existe porque cada <c>Collection</c> levanta su propio
+	/// contenedor, y por eso nunca se vio: el camino documentado era Docker. El camino de SQL Server
+	/// externo quedaba con una sola base para las dos suites.
+	/// </para>
+	/// <para>
+	/// El sufijo sale del nombre del proyecto, que se deduce de <c>AppContext.BaseDirectory</c>
+	/// —cada assembly de prueba corre desde su propio <c>bin/</c>—. No hace falta crear las bases a
+	/// mano: <c>Database.MigrateAsync()</c> crea la que no exista. La base que el usuario configura
+	/// queda como prefijo y no se toca.
+	/// </para>
+	/// </remarks>
+	private static string ConBasePropiaDeEstaSuite(string cadena)
+	{
+		var constructor = new SqlConnectionStringBuilder(cadena);
+		var sufijo = NombreDelProyectoDePrueba();
+
+		if (!string.IsNullOrEmpty(sufijo) && !constructor.InitialCatalog.EndsWith(sufijo, StringComparison.OrdinalIgnoreCase))
+		{
+			constructor.InitialCatalog = $"{constructor.InitialCatalog}_{sufijo}";
+		}
+
+		return constructor.ConnectionString;
+	}
+
+	/// <summary>
+	/// El nombre del proyecto de prueba en ejecución, saneado para usarse como nombre de base:
+	/// <c>…/tests/EDUSIS.EndToEndTests/bin/Debug/net7.0/</c> → <c>EDUSIS_EndToEndTests</c>.
+	/// </summary>
+	private static string NombreDelProyectoDePrueba()
+	{
+		var partes = AppContext.BaseDirectory
+			.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+
+		var indiceBin = Array.FindLastIndex(partes, x => x.Equals("bin", StringComparison.OrdinalIgnoreCase));
+		if (indiceBin <= 0)
+		{
+			return string.Empty;
+		}
+
+		return partes[indiceBin - 1].Replace('.', '_');
 	}
 
 	/// <summary>

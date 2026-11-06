@@ -54,12 +54,42 @@ public sealed class MapeoSnakeCaseYLongitudesTests : BaseIntegracion
 		direccion.FindProperty("Calle")!.GetColumnName().ShouldBe("calle");
 	}
 
+	/// <summary>
+	/// Los largos del modelo son los que el mapeo declara, y donde hay <c>HasMaxLength</c> explícito
+	/// gana el explícito por encima de la convención global.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Esta prueba afirmaba <c>Alumno.Legajo → 50</c> como ejemplo de "string sin tipo explícito", y
+	/// era <strong>falso en los dos sentidos</strong>: <c>AlumnosConfiguration:30</c> le pone
+	/// <c>HasMaxLength(6)</c> —exactamente los seis caracteres de su formato <c>^[A-Z]{2}\d{4}$</c>—
+	/// así que el legajo ni mide 50 ni es un caso de convención. Nunca se detectó porque la suite se
+	/// omitía sin SQL Server.
+	/// </para>
+	/// <para>
+	/// Al corregirla apareció algo que vale la pena saber: <strong>hoy ninguna propiedad
+	/// <c>string</c> del modelo depende de la convención global</strong>. Las ocho columnas que miden
+	/// 50 —<c>calle</c>, <c>localidad</c>, <c>provincia</c>, <c>pais</c>, <c>descripcion</c>,
+	/// <c>apellido</c>, <c>nombre</c>, <c>email</c>— lo declaran con <c>HasMaxLength(50)</c> una por
+	/// una. El <c>HaveMaxLength(50)</c> de <c>EdusisDBContext:78</c> es una red de seguridad que nada
+	/// ejercita, así que no hay propiedad sobre la que observarla sin inventar una. Queda registrado
+	/// en INFRA-20; lo que esta prueba fija es lo que sí es verificable.
+	/// </para>
+	/// </remarks>
 	[RequiereSqlServerFact]
-	public void La_convencion_global_limita_los_string_sin_tipo_explicito_a_50_caracteres()
+	public void Los_largos_explicitos_del_mapeo_ganan_sobre_la_convencion_global()
 	{
 		using var contexto = Fixture.CrearContexto();
-		var alumno = contexto.Model.FindEntityType(typeof(Alumno))!;
+		var modelo = contexto.Model;
 
-		alumno.FindProperty(nameof(Alumno.Legajo))!.GetMaxLength().ShouldBe(50);
+		// El legajo mide lo que mide su formato, no lo que dice la convención.
+		modelo.FindEntityType(typeof(Alumno))!
+			  .FindProperty(nameof(Alumno.Legajo))!
+			  .GetMaxLength().ShouldBe(6);
+
+		// Y una que coincide con la convención, pero porque su mapeo lo declara.
+		modelo.FindEntityType(typeof(Persona))!
+			  .FindProperty(nameof(Persona.Email))!
+			  .GetMaxLength().ShouldBe(50);
 	}
 }
