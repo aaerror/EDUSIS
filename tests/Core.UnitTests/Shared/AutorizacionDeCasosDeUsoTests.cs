@@ -475,5 +475,54 @@ public class AutorizacionDeCasosDeUsoTests
 
 		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
 	}
+
+	/// <remarks>
+	/// El tercero, desde que el borrado de división cascadea a mano (cátedras → planillas →
+	/// cursantes → división). Mismo motivo y misma forma que los dos de arriba: afirma la secuencia
+	/// y no el tipo de excepción, porque el rollback del fake es un no-op que no lanza.
+	/// </remarks>
+	[Fact]
+	public async Task EliminarDivisionAsync_sin_permiso_no_toca_la_transaccion()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDivision>().EliminarDivisionAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+	#endregion
+
+	#region Las lecturas de impacto de borrado, que SÍ exigen permiso
+	/// <remarks>
+	/// <para>
+	/// Las tres consultas de impacto son la excepción declarada a
+	/// <see cref="Los_casos_de_uso_de_lectura_quedan_abiertos_a_proposito"/>: existen sólo para
+	/// servir a su borrado, lo que devuelven es el volumen de una trayectoria académica, y no las
+	/// consume ninguna pantalla ajena ni ningún combo — así que no corren el riesgo que motivó dejar
+	/// las ~30 lecturas de <c>Core</c> abiertas (CORE-16).
+	/// </para>
+	/// <para>
+	/// Están afirmadas acá para que la asimetría sea deliberada y no un descuido heredado: si alguien
+	/// "unificara" el criterio quitándoles la guarda, estas pruebas fallan.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDivisionAsync_sin_GestionarCursos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDivision>().ConsultarImpactoEliminacionDivisionAsync(null!));
+	}
+
+	[Fact]
+	public async Task ConsultarImpactoEliminacionCursoAsync_sin_GestionarCursos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioCurso>().ConsultarImpactoEliminacionCursoAsync(null!));
+	}
 	#endregion
 }

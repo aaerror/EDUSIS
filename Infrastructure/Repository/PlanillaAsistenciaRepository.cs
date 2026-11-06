@@ -33,6 +33,12 @@ internal class PlanillaAsistenciaRepository : Repository<PlanillaAsistencia>, IP
 			.OrderBy(x => x.Fecha)
 			.ToListAsync();
 
+	public async Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorDivisionAsync(Guid divisionID) =>
+		await Consulta()
+			.Where(x => x.DivisionID == divisionID)
+			.OrderBy(x => x.Fecha)
+			.ToListAsync();
+
 	public async Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorRangoAsync(DateTime desde, DateTime hasta) =>
 		await Consulta()
 			.Where(x => x.Fecha >= desde.Date && x.Fecha <= hasta.Date)

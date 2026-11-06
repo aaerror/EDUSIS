@@ -28,6 +28,16 @@ internal class CursanteRepository : Repository<Cursante>, ICursanteRepository
 	public async Task<int> ContarInscripcionesDeDivisionAsync(Guid divisionID) =>
 		await _context.Cursantes.CountAsync(x => x.DivisionID == divisionID);
 
+	// Misma condición que ContarInscripcionesDeDivisionAsync, pero por Consulta(), que incluye las
+	// calificaciones: el borrado las necesita cargadas para informar cuántas destruye, y el
+	// Include es lo que hace que EF las traiga en la misma ida a la base en lugar de una por
+	// cursante.
+	public async Task<IReadOnlyCollection<Cursante>> BuscarInscripcionesDeDivisionAsync(Guid divisionID) =>
+		await Consulta()
+			.Where(x => x.DivisionID == divisionID)
+			.OrderBy(x => x.FechaInicio)
+			.ToListAsync();
+
 	public async Task<Cursante?> BuscarInscripcionActivaAsync(Guid alumnoID, CicloLectivo cicloLectivo) =>
 		await Consulta()
 			.FirstOrDefaultAsync(x => x.AlumnoID == alumnoID && x.CicloLectivo.Periodo == cicloLectivo.Periodo && x.FechaFin == null);

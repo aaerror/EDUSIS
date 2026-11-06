@@ -3,7 +3,9 @@ using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos.DTOs.Responses;
 using Core.ServicioCursos;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System;
@@ -195,11 +197,40 @@ internal partial class GestionCursosViewModel : ObservableObject
 			case "Curso":
 				string curso = $"{ Grados.Decir(Curso.Grado) } ({ Curso.NivelEducativo })";
 
+				// El texto que había acá era falso en dos frentes desde el 2026-11-06: afirmaba que
+				// "se eliminan también sus divisiones" —ahora el caso de uso las exige ya eliminadas—
+				// y que "Core rechaza la operación si todavía tiene cursantes inscriptos", cuando lo
+				// que rechaza son las divisiones. Las cifras salen del caso de uso.
+				var requestCurso = new EliminarCursoRequest(Curso.CursoID);
+
+				ImpactoEliminacionCursoResponse impacto;
+				try
+				{
+					impacto = await _servicioCursos.ConsultarImpactoEliminacionCursoAsync(requestCurso);
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo averiguar qué se perdería");
+					return;
+				}
+
+				// Con divisiones el borrado está condenado a fallar, así que no se pregunta: se dice
+				// qué hay que hacer antes. Preguntar "¿seguro?" para después mostrar un error es
+				// pedirle al usuario que confirme algo que no va a pasar.
+				if (impacto.TieneDivisiones)
+				{
+					_dialogService.MostrarAdvertencia(
+						$"El curso de { curso } tiene { impacto.Divisiones } "
+						+ (impacto.Divisiones is 1 ? "división" : "divisiones")
+						+ ". Hay que eliminarlas primero, una por una: cada división se lleva las "
+						+ "inscripciones y las calificaciones de su matrícula.",
+						"No se puede eliminar todavía");
+					return;
+				}
+
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
 						titulo: $"Eliminar el curso de { curso }",
-						consecuencia: "Se eliminan también sus divisiones y su diseño curricular: las materias, "
-									+ "las cátedras y los horarios cargados en este curso. "
-									+ "Core rechaza la operación si todavía tiene cursantes inscriptos.",
+						consecuencia: DescribirConsecuenciaDelCurso(impacto),
 						verbo: "Eliminar curso")))
 				{
 					return;
@@ -207,7 +238,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 
 				try
 				{
-					await _servicioCursos.EliminarCurso(new EliminarCursoRequest(Curso.CursoID));
+					await _servicioCursos.EliminarCurso(requestCurso);
 
 					await ExecuteCargarCursosCommandAsync();
 					_dialogService.MostrarInformacion($"{ curso } ya no figura en el listado.", "Curso eliminado");
@@ -219,6 +250,49 @@ internal partial class GestionCursosViewModel : ObservableObject
 
 				break;
 		}
+	}
+
+	/// <summary>
+	/// El texto de la consecuencia cuando el curso <strong>sí</strong> se puede eliminar, o sea
+	/// cuando ya no le quedan divisiones. Sólo habla de currícula: sin divisiones no hay cursantes ni
+	/// calificaciones que informar.
+	/// </summary>
+	/// <remarks>
+	/// Nombra las cátedras porque cuelgan de la materia y no de la división: una materia puede
+	/// conservar cátedras de divisiones ya eliminadas, y las limpia
+	/// <c>MateriaEliminadaEventHandler</c> cuando el borrado despacha el evento.
+	/// </remarks>
+	internal static string DescribirConsecuenciaDelCurso(ImpactoEliminacionCursoResponse impacto)
+	{
+		if (!impacto.TieneCurricula)
+		{
+			return "El curso no tiene divisiones ni diseño curricular cargado. "
+				 + "Esta acción no se puede deshacer.";
+		}
+
+		var partes = new List<string>();
+
+		if (impacto.Curriculas > 0)
+		{
+			partes.Add(impacto.Curriculas is 1 ? "1 diseño curricular" : $"{ impacto.Curriculas } diseños curriculares");
+		}
+
+		if (impacto.Materias > 0)
+		{
+			partes.Add(impacto.Materias is 1 ? "1 materia" : $"{ impacto.Materias } materias");
+		}
+
+		if (impacto.Catedras > 0)
+		{
+			partes.Add(impacto.Catedras is 1 ? "1 cátedra" : $"{ impacto.Catedras } cátedras");
+		}
+
+		string lista = partes.Count is 1
+			? partes[0]
+			: $"{ string.Join(", ", partes.Take(partes.Count - 1)) } y { partes.Last() }";
+
+		return $"Se eliminan { lista }, con los horarios cargados en ellas. "
+			 + "Esta acción no se puede deshacer.";
 	}
 	#endregion
 

@@ -223,49 +223,16 @@ public class DivisionTests
 	}
 	#endregion
 
-	#region Baja
-	// Las dos reglas conviven (decisión de B2/DIV-2): una división vacía se elimina siempre, de
-	// cualquier nivel, y el nivel sólo decide cuando quedan cursantes. Antes de DIV-2 estos casos
-	// afirmaban que Secundaria rechazaba el borrado incluso con la división vacía.
-	[Theory]
-	[InlineData(NivelEducativo.Secundaria)]
-	[InlineData(NivelEducativo.Primaria)]
-	public void ValidarSePuedeEliminar_sin_cursantes_no_lanza_en_ningun_nivel(NivelEducativo nivel)
-	{
-		var division = new DivisionBuilder().Build();
-
-		Should.NotThrow(() => division.ValidarSePuedeEliminar(nivel, 0));
-	}
-
-	[Fact]
-	public void ValidarSePuedeEliminar_de_secundaria_con_cursantes_lanza_DivisionNoEliminableException()
-	{
-		// Rama inalcanzable desde la aplicación —ServicioDivision.EliminarDivisionAsync exige la
-		// división vacía de inscripciones antes de llegar acá— y afirmada a propósito: es la regla
-		// de negocio del dominio y lo único que la mantiene viva (ver el <remarks> del método).
-		var division = new DivisionBuilder().Build();
-
-		var ex = Should.Throw<Exception>(() => division.ValidarSePuedeEliminar(NivelEducativo.Secundaria, 1));
-
-		ex.GetType().Name.ShouldBe("DivisionNoEliminableException");
-	}
-
-	[Fact]
-	public void ValidarSePuedeEliminar_de_primaria_con_matricula_suficiente_lanza_DivisionConMatriculaSuficienteException()
-	{
-		var division = new DivisionBuilder().Build();
-
-		var ex = Should.Throw<Exception>(() => division.ValidarSePuedeEliminar(NivelEducativo.Primaria, 15));
-
-		ex.GetType().Name.ShouldBe("DivisionConMatriculaSuficienteException");
-	}
-
-	[Fact]
-	public void ValidarSePuedeEliminar_de_primaria_con_poca_matricula_no_lanza()
-	{
-		var division = new DivisionBuilder().Build();
-
-		Should.NotThrow(() => division.ValidarSePuedeEliminar(NivelEducativo.Primaria, 14));
-	}
-	#endregion
+	// Acá vivía la #region Baja, con cuatro pruebas de Division.ValidarSePuedeEliminar(nivel, int):
+	// que una división vacía se eliminaba en cualquier nivel, que Secundaria con un solo cursante
+	// lanzaba DivisionNoEliminableException y que Primaria lanzaba DivisionConMatriculaSuficiente
+	// recién a partir de 15. Las cuatro se borraron el 2026-11-06 con la regla que afirmaban: la
+	// división pasó a eliminarse SIEMPRE, cascadeando su matrícula.
+	//
+	// No se reescribieron porque no quedó nada que afirmar en el dominio: la política vive hoy
+	// entera en ServicioDivision.EliminarDivisionAsync y lo que hay que fijar es el ORDEN de la
+	// cascada, que es una prueba de Core (ServicioDivisionTests) y no de Division. Las dos
+	// excepciones se borraron en el mismo commit.
+	//
+	// El requerimiento que sostenía la regla —RF-02 y CU-S11 de docs/uml/— se reescribió a la vez.
 }

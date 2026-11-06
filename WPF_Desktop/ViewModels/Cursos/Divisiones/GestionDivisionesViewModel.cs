@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioDivisiones.DTOs.Requests;
+using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioDivisiones;
 using Core.Shared.DTOs.Personas.Requests;
 using System.Collections.Generic;
@@ -309,11 +310,30 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		switch (obj)
 		{
 			case "Division":
+				// El texto que había acá afirmaba que "Core rechaza la operación si todavía tiene
+				// cursantes inscriptos: primero hay que darlos de baja o cambiarlos de división", y
+				// desde el 2026-11-06 es FALSO: el borrado cascadea la matrícula entera. Es el mismo
+				// defecto que tenía el diálogo de alumno antes de ee75a3c —un texto que describía un
+				// comportamiento inexistente— así que ahora las cifras salen del caso de uso.
+				var requestDivision = new EliminarDivisionRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
+
+				ImpactoEliminacionDivisionResponse impacto;
+				try
+				{
+					// Antes del diálogo y en su propio try: si no se puede averiguar qué se pierde, no
+					// hay nada que preguntar, y el usuario tiene que enterarse de eso y no de un
+					// cartel genérico después de haber confirmado.
+					impacto = await _servicioDivision.ConsultarImpactoEliminacionDivisionAsync(requestDivision);
+				}
+				catch (Exception ex)
+				{
+					_dialogService.MostrarError(ex.Message, "No se pudo averiguar qué se perdería");
+					return;
+				}
+
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
 						titulo: $"Eliminar la división { Division.Descripcion } de { Grados.Decir(Curso) }",
-						consecuencia: $"Se eliminan también sus planillas de asistencia del ciclo { _cicloLectivoStore.CicloLectivo } "
-									+ "y las cátedras asignadas a esta división. Core rechaza la operación si todavía tiene "
-									+ "cursantes inscriptos: primero hay que darlos de baja o cambiarlos de división.",
+						consecuencia: DescribirConsecuenciaDeLaDivision(impacto),
 						verbo: "Eliminar división")))
 				{
 					return;
@@ -321,8 +341,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 				try
 				{
-					var request = new EliminarDivisionRequest(_cursoStore.Curso.CursoID, Division.DivisionID, _cicloLectivoStore.CicloLectivo);
-					await _servicioDivision.EliminarDivisionAsync(request);
+					await _servicioDivision.EliminarDivisionAsync(requestDivision);
 
 					await CargarDivisionesAsync();
 					_dialogService.MostrarInformacion($"División { Division.Descripcion } de { Grados.Decir(Curso) }.", "División eliminada");
@@ -359,6 +378,92 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 				break;
 		}
 	}
+
+	/// <summary>
+	/// El texto de la consecuencia, con las cifras exactas de lo que el borrado destruye.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Es <c>static</c> y no toca estado del ViewModel a propósito, por el mismo motivo que su gemelo
+	/// <c>GestionAlumnosViewModel.DescribirConsecuencia</c>: la redacción y la pluralización cambian
+	/// según los números, y así se prueban sin construir el ViewModel con sus dependencias.
+	/// </para>
+	/// <para>
+	/// Nombra <strong>calificaciones</strong> y no "boletines". El boletín es un PDF que se emite al
+	/// vuelo (<c>IServicioDocumento.GenerarBoletinCalificacionesAsync</c>), no una entidad
+	/// persistida: lo que el borrado destruye son filas de <c>calificacion</c>, y después de eso el
+	/// boletín simplemente no se puede volver a emitir.
+	/// </para>
+	/// <para>
+	/// Las designaciones se nombran aunque el caso de uso no las borre una por una —caen por
+	/// <c>FK_SITUACION_REVISTA_CATEDRA</c>, que es <c>Cascade</c>—: que el borrado sea implícito no
+	/// las hace menos destruidas.
+	/// </para>
+	/// </remarks>
+	internal static string DescribirConsecuenciaDeLaDivision(ImpactoEliminacionDivisionResponse impacto)
+	{
+		if (!impacto.TieneHistorial)
+		{
+			return "La división no tiene inscripciones, planillas de asistencia ni cátedras registradas. "
+				 + "Esta acción no se puede deshacer.";
+		}
+
+		var partes = new List<string>();
+
+		if (impacto.Inscripciones > 0)
+		{
+			partes.Add(Contar(impacto.Inscripciones, "inscripción", "inscripciones"));
+		}
+
+		if (impacto.Calificaciones > 0)
+		{
+			partes.Add(Contar(impacto.Calificaciones, "calificación", "calificaciones"));
+		}
+
+		if (impacto.RegistrosAsistencia > 0)
+		{
+			partes.Add(Contar(impacto.RegistrosAsistencia, "registro de asistencia", "registros de asistencia"));
+		}
+
+		string ciclos = impacto.CiclosLectivos.Count switch
+		{
+			0 => string.Empty,
+			1 => $" del ciclo { impacto.CiclosLectivos.First() }",
+			_ => $" de los ciclos { Enumerar(impacto.CiclosLectivos) }"
+		};
+
+		string planillas = impacto.Planillas > 0
+			? " Se eliminan " + Contar(impacto.Planillas, "planilla de asistencia", "planillas de asistencia") + "."
+			: string.Empty;
+
+		string catedras = impacto.Catedras > 0
+			? " Se eliminan " + Contar(impacto.Catedras, "cátedra", "cátedras")
+				+ (impacto.Designaciones > 0
+					? " con " + Contar(impacto.Designaciones, "designación de docente", "designaciones de docentes")
+					: string.Empty)
+				+ "."
+			: string.Empty;
+
+		string borrado = partes.Count > 0
+			? $"Se borran { Enumerar(partes) }{ ciclos }."
+			: string.Empty;
+
+		return $"{ borrado }{ planillas }{ catedras } Esta acción no se puede deshacer.".TrimStart();
+	}
+
+	// Gemelos de los de GestionAlumnosViewModel. Dos copias es tolerable y las deja probables por
+	// separado; una tercera pide extraerlos a WPF_Desktop/Shared/.
+	private static string Contar(int cantidad, string singular, string plural) =>
+		cantidad is 1 ? $"1 { singular }" : $"{ cantidad } { plural }";
+
+	/// <summary>Une con comas y una "y" antes del último, como se escribe en castellano.</summary>
+	private static string Enumerar(IReadOnlyCollection<string> partes) =>
+		partes.Count switch
+		{
+			0 => string.Empty,
+			1 => partes.First(),
+			_ => $"{ string.Join(", ", partes.Take(partes.Count - 1)) } y { partes.Last() }"
+		};
 	#endregion
 
 

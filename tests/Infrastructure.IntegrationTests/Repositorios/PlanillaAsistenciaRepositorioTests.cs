@@ -227,4 +227,93 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 		encontradas.ShouldBeEmpty();
 	}
 	#endregion
+
+	#region BuscarPorDivisionAsync
+	/// <remarks>
+	/// La consume el borrado de la división, y por eso <strong>no filtra por fecha</strong>:
+	/// <c>FK_PLANILLA_ASISTENCIA_DIVISION</c> es <c>Restrict</c>, así que una planilla olvidada de
+	/// cualquier año alcanza para que el DELETE falle en SQL Server. Esta prueba siembra una planilla
+	/// vieja a propósito: con un filtro de fecha o de ciclo, no aparecería.
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task BuscarPorDivisionAsync_trae_las_planillas_de_cualquier_fecha_y_no_las_de_otra_division()
+	{
+		var cursoID = await SembrarCursoAsync();
+		var divisionID = await SembrarDivisionAsync(cursoID);
+		var otraDivisionID = await SembrarDivisionAsync(cursoID, "B");
+		var preceptorID = await SembrarDocenteAsync();
+
+		var vieja = new PlanillaAsistenciaBuilder()
+			.ConDivision(divisionID)
+			.ConFecha(DateTime.Today.AddYears(-3))
+			.ConPreceptor(preceptorID)
+			.ConCursantes(Guid.NewGuid())
+			.Build();
+		var reciente = new PlanillaAsistenciaBuilder()
+			.ConDivision(divisionID)
+			.ConFecha(DateTime.Today)
+			.ConPreceptor(preceptorID)
+			.ConCursantes(Guid.NewGuid(), Guid.NewGuid())
+			.Build();
+		var ajena = new PlanillaAsistenciaBuilder()
+			.ConDivision(otraDivisionID)
+			.ConFecha(DateTime.Today)
+			.ConPreceptor(preceptorID)
+			.ConCursantes(Guid.NewGuid())
+			.Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.AddRange(vieja, reciente, ajena);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var encontradas = await uow.PlanillasAsistencia.BuscarPorDivisionAsync(divisionID);
+
+		encontradas.Count.ShouldBe(2);
+		encontradas.Select(x => x.Id).ShouldBe(new[] { vieja.Id, reciente.Id }, ignoreOrder: true);
+
+		// Los registros vienen cargados por el Include de Consulta(): el impacto los cuenta.
+		encontradas.Sum(x => x.Registros.Count).ShouldBe(3);
+	}
+
+	/// <remarks>
+	/// Que el borrado emita los DELETE de verdad es lo que el fake no puede acreditar: en memoria
+	/// quitar de una lista siempre "funciona". Acá se ejercita contra la base, con los
+	/// <c>registro_asistencia</c> cayendo por <c>FK_REGISTRO_ASISTENCIA_PLANILLA_ASISTENCIA</c>, que
+	/// es <c>Cascade</c>.
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task EliminarRango_de_planillas_se_lleva_sus_registros_por_cascada()
+	{
+		var cursoID = await SembrarCursoAsync();
+		var divisionID = await SembrarDivisionAsync(cursoID);
+		var preceptorID = await SembrarDocenteAsync();
+
+		var planilla = new PlanillaAsistenciaBuilder()
+			.ConDivision(divisionID)
+			.ConFecha(DateTime.Today)
+			.ConPreceptor(preceptorID)
+			.ConCursantes(Guid.NewGuid(), Guid.NewGuid())
+			.Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.Add(planilla);
+			await contexto.SaveChangesAsync();
+		}
+
+		using (var uow = CrearUnidadDeTrabajo())
+		{
+			var planillas = await uow.PlanillasAsistencia.BuscarPorDivisionAsync(divisionID);
+			uow.PlanillasAsistencia.EliminarRango(planillas);
+			await uow.GuardarCambiosAsync();
+		}
+
+		using var verificacion = CrearUnidadDeTrabajo();
+		(await verificacion.PlanillasAsistencia.BuscarPorDivisionAsync(divisionID)).ShouldBeEmpty();
+	}
+	#endregion
 }

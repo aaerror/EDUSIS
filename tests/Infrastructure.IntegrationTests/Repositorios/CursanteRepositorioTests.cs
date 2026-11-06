@@ -329,4 +329,67 @@ public sealed class CursanteRepositorioTests : BaseIntegracion
 		var periodos = ciclos.Select(x => int.Parse(x.Periodo)).ToList();
 		periodos.ShouldBe(periodos.OrderByDescending(x => x).ToList());
 	}
+
+	/// <remarks>
+	/// <para>
+	/// La consume el borrado de la división. Es la hermana en objetos de
+	/// <c>ContarInscripcionesDeDivisionAsync</c> y tiene que ver lo mismo que ella:
+	/// <strong>todas</strong> las inscripciones, activas y cerradas, de cualquier ciclo. Esta prueba
+	/// siembra una cerrada de un ciclo anterior a propósito — es el caso que el filtro por
+	/// <c>FechaFin</c> de <c>BuscarPorDivisionAsync</c> dejaría afuera y que haría fallar el DELETE
+	/// contra <c>FK_CURSANTE_DIVISION</c>, que es <c>Restrict</c>.
+	/// </para>
+	/// <para>
+	/// Afirma además que las calificaciones vienen cargadas: el <c>Include</c> de <c>Consulta()</c> es
+	/// lo que permite contarlas para el diálogo de impacto sin una consulta por cursante.
+	/// </para>
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task BuscarInscripcionesDeDivisionAsync_trae_activas_y_cerradas_de_cualquier_ciclo_con_sus_calificaciones()
+	{
+		var cursoID = await SembrarCursoAsync();
+		var divisionID = await SembrarDivisionAsync(cursoID);
+		var otraDivisionID = await SembrarDivisionAsync(cursoID, "B");
+		var curriculaID = await SembrarCurriculaAsync(cursoID);
+		var materiaID = await SembrarMateriaAsync(curriculaID);
+
+		var cerrada = new CursanteBuilder()
+			.ConAlumno(await SembrarAlumnoAsync())
+			.ConDivision(divisionID)
+			.ConCicloLectivo(CicloLectivo.Crear("2024"))
+			.ConFechaInicio(new DateTime(2024, 3, 1))
+			.DadoDeBajaEl(new DateTime(2024, 12, 1))
+			.Build();
+		cerrada.RegistrarCalificacion(materiaID, new DateTime(2024, 6, 1), Instancia.Parcial, 7, null);
+
+		var vigente = new CursanteBuilder()
+			.ConAlumno(await SembrarAlumnoAsync())
+			.ConDivision(divisionID)
+			.ConCicloLectivo(CicloLectivo.Crear("2025"))
+			.ConFechaInicio(new DateTime(2025, 3, 1))
+			.Build();
+
+		var ajena = new CursanteBuilder()
+			.ConAlumno(await SembrarAlumnoAsync())
+			.ConDivision(otraDivisionID)
+			.ConCicloLectivo(CicloLectivo.Crear("2025"))
+			.Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.AddRange(cerrada, vigente, ajena);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var inscripciones = await uow.Cursantes.BuscarInscripcionesDeDivisionAsync(divisionID);
+
+		inscripciones.Select(x => x.Id).ShouldBe(new[] { cerrada.Id, vigente.Id });
+		inscripciones.Sum(x => x.Calificaciones.Count).ShouldBe(1);
+
+		// Coincide con el contador, que es la invariante que las mantiene alineadas: si una filtrara y
+		// la otra no, el diálogo informaría una cifra y el borrado fallaría contra la clave ajena.
+		(await uow.Cursantes.ContarInscripcionesDeDivisionAsync(divisionID)).ShouldBe(inscripciones.Count);
+	}
 }

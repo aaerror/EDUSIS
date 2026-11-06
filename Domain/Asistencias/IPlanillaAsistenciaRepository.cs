@@ -38,4 +38,14 @@ public interface IPlanillaAsistenciaRepository : IRepository<PlanillaAsistencia>
 	/// DELETE del cursante falle en la base.
 	/// </remarks>
 	Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorCursantesAsync(IEnumerable<Guid> cursantesIDs);
+
+	/// <summary>
+	/// Todas las planillas de una división, de cualquier fecha y ciclo lectivo, abiertas y cerradas.
+	/// </summary>
+	/// <remarks>
+	/// Sin filtro de fecha, a diferencia de <see cref="BuscarPorDivisionYRangoAsync"/>: la consume el
+	/// borrado de la división, y <c>FK_PLANILLA_ASISTENCIA_DIVISION</c> es <c>Restrict</c>, así que
+	/// una sola planilla olvidada de cualquier año alcanza para que el DELETE falle en la base.
+	/// </remarks>
+	Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorDivisionAsync(Guid divisionID);
 }

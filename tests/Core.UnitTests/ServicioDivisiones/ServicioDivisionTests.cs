@@ -2,6 +2,7 @@ using Core.ServicioDivisiones;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones.Exceptions;
 using Core.UnitTests.Infraestructura;
+using Domain.Cursantes.Calificaciones;
 using Domain.Cursos;
 using Domain.Divisiones;
 using EDUSIS.TestSupport;
@@ -12,14 +13,18 @@ using Xunit;
 namespace Core.UnitTests.ServicioDivisiones;
 
 /// <summary>
-/// <see cref="IServicioDivision"/>: listar, proponer la letra, agregar y eliminar división, y
-/// asignar/modificar/quitar preceptor, con camino feliz y de error para cada caso de uso, más una
-/// prueba por cada excepción de <c>Core</c> creada para esta raíz
-/// (<see cref="DivisionDuplicadaException"/>, <see cref="PreceptorAsignadoException"/>,
-/// <see cref="DivisionConInscripcionesException"/>). Repone la intención de las pruebas de
-/// <c>ServicioCursoTests</c> que el Bloque A retiró al mudar divisiones y preceptores a este
-/// servicio.
+/// <see cref="IServicioDivision"/>: listar, proponer la letra, agregar y eliminar división, consultar
+/// el impacto del borrado, y asignar/modificar/quitar preceptor, con camino feliz y de error para
+/// cada caso de uso, más una prueba por cada excepción de <c>Core</c> creada para esta raíz
+/// (<see cref="DivisionDuplicadaException"/>, <see cref="PreceptorAsignadoException"/>). Repone la
+/// intención de las pruebas de <c>ServicioCursoTests</c> que el Bloque A retiró al mudar divisiones
+/// y preceptores a este servicio.
 /// </summary>
+/// <remarks>
+/// <c>DivisionConInscripcionesException</c> estaba en esa lista y se borró el 2026-11-06 con la
+/// guarda que la lanzaba: eliminar una división pasó de rechazar ante una inscripción histórica a
+/// cascadear la matrícula entera.
+/// </remarks>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioDivisionTests
 {
@@ -190,87 +195,34 @@ public class ServicioDivisionTests
 	#endregion
 
 	#region EliminarDivisionAsync
+	// Las cinco pruebas que había acá afirmaban las DOS guardas que este caso de uso tenía antes del
+	// 2026-11-06: la regla de negocio por nivel educativo (DivisionNoEliminableException,
+	// DivisionConMatriculaSuficienteException) y la guarda de integridad por inscripciones
+	// (DivisionConInscripcionesException). Las tres excepciones se borraron junto con las guardas: la
+	// división pasa a eliminarse SIEMPRE, cascadeando lo que cuelga de ella.
 	[Theory]
 	[InlineData("Primaria")]
 	[InlineData("Secundaria")]
-	public async Task EliminarDivisionAsync_elimina_la_division_vacia_de_cualquier_nivel_y_guarda(string nivel)
+	public async Task EliminarDivisionAsync_elimina_la_division_vacia_de_cualquier_nivel(string nivel)
 	{
-		// DIV-2: con la división vacía se elimina siempre. Secundaria entra acá porque antes el
-		// dominio la rechazaba incluso sin cursantes.
 		var curso = SembrarCurso(nivel);
 		var division = SembrarDivision(curso.Id);
-		var cicloLectivo = new CicloLectivoBuilder().Build();
 
-		await _servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id, cicloLectivo.Periodo));
+		await _servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id));
 
 		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldBeEmpty();
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
+		_host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldContain("CommitTransactionAsync");
 	}
 
-	[Fact]
-	public async Task EliminarDivisionAsync_con_una_inscripcion_activa_lanza_DivisionConInscripcionesException()
+	[Theory]
+	[InlineData("Primaria")]
+	[InlineData("Secundaria")]
+	public async Task EliminarDivisionAsync_con_matricula_vigente_ya_no_rechaza_y_la_arrastra(string nivel)
 	{
-		var curso = SembrarCurso(nivel: "Primaria");
-		var division = SembrarDivision(curso.Id);
-		var cicloLectivo = new CicloLectivoBuilder().Build();
-		_host.UnidadDeTrabajo.CursantesFake.Sembrar(
-			new CursanteBuilder().ConDivision(division.Id).ConCicloLectivo(cicloLectivo).Build());
-
-		var ex = await Should.ThrowAsync<DivisionConInscripcionesException>(() =>
-			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id, cicloLectivo.Periodo)));
-
-		ex.Message.ShouldContain("dar de baja o trasladar");
-		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldHaveSingleItem();
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
-	}
-
-	[Fact]
-	public async Task EliminarDivisionAsync_con_una_inscripcion_cerrada_tambien_lanza_DivisionConInscripcionesException()
-	{
-		// El caso que motiva la guarda: la matrícula vigente de la división es cero —la inscripción
-		// está cerrada y de un ciclo anterior—, así que el dominio la dejaría eliminar, pero
-		// FK_CURSANTE_DIVISION es Restrict y el DELETE fallaría en SQL Server.
-		var curso = SembrarCurso(nivel: "Primaria");
-		var division = SembrarDivision(curso.Id);
-		var cicloLectivo = new CicloLectivoBuilder().Build();
-		var cicloAnterior = new CicloLectivoBuilder().ConAño(DateTime.Today.Year - 1).Build();
-		_host.UnidadDeTrabajo.CursantesFake.Sembrar(new CursanteBuilder()
-			.ConDivision(division.Id)
-			.ConCicloLectivo(cicloAnterior)
-			.ConFechaInicio(DateTime.Today.AddYears(-1))
-			.DadoDeBajaEl(DateTime.Today.AddMonths(-6))
-			.Build());
-
-		await Should.ThrowAsync<DivisionConInscripcionesException>(() =>
-			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id, cicloLectivo.Periodo)));
-
-		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldHaveSingleItem();
-	}
-
-	[Fact]
-	public async Task EliminarDivisionAsync_de_secundaria_con_matricula_vigente_lanza_DivisionNoEliminableException()
-	{
-		// La regla de dominio corre ANTES de la guarda de inscripciones, así que con alumnos
-		// cursando el usuario lee el mensaje del nivel educativo y no "dar de baja o trasladar".
-		// Si acá apareciera DivisionConInscripcionesException, las dos guardas están invertidas.
-		var curso = SembrarCurso(nivel: "Secundaria");
-		var division = SembrarDivision(curso.Id);
-		var cicloLectivo = new CicloLectivoBuilder().Build();
-		_host.UnidadDeTrabajo.CursantesFake.Sembrar(
-			new CursanteBuilder().ConDivision(division.Id).ConCicloLectivo(cicloLectivo).Build());
-
-		var ex = await Should.ThrowAsync<Exception>(() =>
-			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id, cicloLectivo.Periodo)));
-
-		ex.GetType().Name.ShouldBe("DivisionNoEliminableException");
-		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldHaveSingleItem();
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
-	}
-
-	[Fact]
-	public async Task EliminarDivisionAsync_de_primaria_con_matricula_suficiente_lanza_DivisionConMatriculaSuficienteException()
-	{
-		var curso = SembrarCurso(nivel: "Primaria");
+		// El vuelco de política: con alumnos cursando, los dos niveles rechazaban el borrado. Ahora
+		// los dos lo hacen y se llevan la matrícula. Es la prueba que falla si alguien repone la
+		// regla de nivel educativo.
+		var curso = SembrarCurso(nivel);
 		var division = SembrarDivision(curso.Id);
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		var cursantes = Enumerable.Range(0, 15)
@@ -278,32 +230,123 @@ public class ServicioDivisionTests
 			.ToArray();
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursantes);
 
-		var ex = await Should.ThrowAsync<Exception>(() =>
-			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id, cicloLectivo.Periodo)));
+		await _servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id));
 
-		ex.GetType().Name.ShouldBe("DivisionConMatriculaSuficienteException");
-		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldHaveSingleItem();
-		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
+		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.CursantesFake.Elementos.ShouldBeEmpty();
 	}
 
 	[Fact]
+	public async Task EliminarDivisionAsync_arrastra_catedras_planillas_cursantes_y_calificaciones()
+	{
+		var curso = SembrarCurso();
+		var division = SembrarDivision(curso.Id);
+
+		var cursante = new CursanteBuilder().ConDivision(division.Id).Build();
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
+
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(
+			new PlanillaAsistenciaBuilder().ConDivision(division.Id).ConCursantes(cursante.Id).Build());
+
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(
+			new CatedraBuilder().ConDivision(division.Id).Build());
+
+		await _servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id));
+
+		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.CursantesFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.CatedrasFake.Elementos.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task EliminarDivisionAsync_no_toca_lo_que_es_de_otra_division()
+	{
+		// El fake es LINQ to Objects y filtra por DivisionID igual que el repositorio real: si alguna
+		// de las tres consultas del caso de uso dejara de filtrar, esta prueba lo ve.
+		var curso = SembrarCurso();
+		var division = SembrarDivision(curso.Id);
+		var otraDivision = SembrarDivision(curso.Id, "B");
+
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(
+			new CursanteBuilder().ConDivision(otraDivision.Id).Build());
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(
+			new PlanillaAsistenciaBuilder().ConDivision(otraDivision.Id).Build());
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(
+			new CatedraBuilder().ConDivision(otraDivision.Id).Build());
+
+		await _servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, division.Id));
+
+		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldHaveSingleItem();
+		_host.UnidadDeTrabajo.CursantesFake.Elementos.ShouldHaveSingleItem();
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Elementos.ShouldHaveSingleItem();
+		_host.UnidadDeTrabajo.CatedrasFake.Elementos.ShouldHaveSingleItem();
+	}
+
+	// La guarda de permiso y la secuencia de transacción de este caso de uso están en
+	// AutorizacionDeCasosDeUsoTests, que es donde viven las 72 guardas: EliminarDivisionAsync_sin_
+	// permiso_no_toca_la_transaccion.
+	[Fact]
 	public async Task EliminarDivisionAsync_con_un_curso_inexistente_lanza_InvalidOperationException()
 	{
-		var cicloLectivo = new CicloLectivoBuilder().Build();
-
 		await Should.ThrowAsync<InvalidOperationException>(() =>
-			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(Guid.NewGuid(), Guid.NewGuid(), cicloLectivo.Periodo)));
+			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(Guid.NewGuid(), Guid.NewGuid())));
 	}
 
 	[Fact]
 	public async Task EliminarDivisionAsync_con_una_division_inexistente_lanza_NullReferenceException()
 	{
 		var curso = SembrarCurso();
-		var cicloLectivo = new CicloLectivoBuilder().Build();
 
 		await Should.ThrowAsync<NullReferenceException>(() =>
-			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, Guid.NewGuid(), cicloLectivo.Periodo)));
+			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, Guid.NewGuid())));
 	}
+	#endregion
+
+	#region ConsultarImpactoEliminacionDivisionAsync
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDivisionAsync_informa_exactamente_lo_que_el_borrado_destruye()
+	{
+		var curso = SembrarCurso();
+		var division = SembrarDivision(curso.Id);
+
+		var cursante = new CursanteBuilder().ConDivision(division.Id).Build();
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 9, null);
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
+
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(
+			new PlanillaAsistenciaBuilder().ConDivision(division.Id).ConCursantes(cursante.Id).Build());
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(
+			new CatedraBuilder().ConDivision(division.Id).Build());
+
+		var impacto = await _servicio.ConsultarImpactoEliminacionDivisionAsync(
+			new EliminarDivisionRequest(curso.Id, division.Id));
+
+		impacto.Inscripciones.ShouldBe(1);
+		impacto.Calificaciones.ShouldBe(2);
+		impacto.Planillas.ShouldBe(1);
+		impacto.RegistrosAsistencia.ShouldBe(1);
+		impacto.Catedras.ShouldBe(1);
+		impacto.TieneHistorial.ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDivisionAsync_de_una_division_vacia_no_tiene_historial()
+	{
+		var curso = SembrarCurso();
+		var division = SembrarDivision(curso.Id);
+
+		var impacto = await _servicio.ConsultarImpactoEliminacionDivisionAsync(
+			new EliminarDivisionRequest(curso.Id, division.Id));
+
+		impacto.TieneHistorial.ShouldBeFalse();
+		impacto.CiclosLectivos.ShouldBeEmpty();
+	}
+
+	// Que esta lectura exija permiso —la asimetría deliberada frente a CORE-16— está afirmado en
+	// AutorizacionDeCasosDeUsoTests, junto a la de curso y la de alumno.
 	#endregion
 
 	#region AsignarPreceptorAsync

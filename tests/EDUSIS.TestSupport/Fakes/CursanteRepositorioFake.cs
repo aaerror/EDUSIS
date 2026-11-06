@@ -16,6 +16,12 @@ public sealed class CursanteRepositorioFake : RepositorioEnMemoria<Cursante>, IC
 	public Task<int> ContarInscripcionesDeDivisionAsync(Guid divisionID) =>
 		Task.FromResult(_entidades.Count(x => x.DivisionID.Equals(divisionID)));
 
+	public Task<IReadOnlyCollection<Cursante>> BuscarInscripcionesDeDivisionAsync(Guid divisionID) =>
+		Task.FromResult((IReadOnlyCollection<Cursante>)_entidades
+			.Where(x => x.DivisionID.Equals(divisionID))
+			.OrderBy(x => x.FechaInicio)
+			.ToList());
+
 	public Task<Cursante?> BuscarInscripcionActivaAsync(Guid alumnoID, CicloLectivo cicloLectivo) =>
 		Task.FromResult(_entidades.FirstOrDefault(x => x.AlumnoID.Equals(alumnoID) && x.CicloLectivo.Periodo == cicloLectivo.Periodo && x.FechaFin == null));
 
