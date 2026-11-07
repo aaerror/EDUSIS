@@ -61,8 +61,26 @@
 	</Style>
 	<!--#endregion-->
 
+	<!--
+		EL TOOLTIP SE VE TAMBIÉN CUANDO EL BOTÓN ESTÁ APAGADO.
+
+		ToolTipService.ShowOnDisabled vale False por omisión en WPF, así que un control
+		deshabilitado se traga su propio ToolTip. La aplicación tiene unos ciento sesenta ToolTip
+		repartidos en veintisiete vistas, casi todos en botones que se apagan por CanExecute: o
+		sea que el texto que explica una acción desaparecía exactamente cuando hacía falta, que es
+		cuando el botón está gris y no se sabe por qué.
+
+		El caso más visible era el rail: MainWindow documenta que una sección sin permiso "queda
+		visible pero apagada, con el motivo en el ToolTip", y docs/ui.md lo declara decisión
+		deliberada. No funcionaba en ninguna de las siete entradas.
+
+		Va en los estilos base; Btn.Peligro y Btn.Terciario.Claro lo heredan por BasedOn. Los dos
+		de ventana quedan afuera a propósito: minimizar, maximizar y cerrar nunca se apagan.
+	-->
+
 	<!--#region PRIMARIO — la acción de la pantalla-->
 	<Style x:Key="Btn.Primario" TargetType="{ x:Type Button }">
+		<Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
 		<Setter Property="Cursor" Value="Hand"/>
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
 		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
@@ -102,6 +120,7 @@
 
 	<!--#region SECUNDARIO — acciones de igual peso entre sí-->
 	<Style x:Key="Btn.Secundario" TargetType="{ x:Type Button }">
+		<Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
 		<Setter Property="Cursor" Value="Hand"/>
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
 		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Cuerpo }"/>
@@ -145,6 +164,7 @@
 
 	<!--#region TERCIARIO — acción liviana, sin caja hasta que se la toca-->
 	<Style x:Key="Btn.Terciario" TargetType="{ x:Type Button }">
+		<Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Cursor" Value="Hand"/>
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
@@ -267,6 +287,7 @@
 		activa con un DataTrigger contra el estado del ViewModel sin redefinir la plantilla.
 	-->
 	<Style x:Key="Btn.Pestana" TargetType="{ x:Type Button }">
+		<Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="Cursor" Value="Hand"/>
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
@@ -337,6 +358,7 @@
 		como una etiqueta de ubicación y no compite con el título que tiene debajo.
 	-->
 	<Style x:Key="Btn.Miga" TargetType="{ x:Type Button }">
+		<Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Cursor" Value="Hand"/>
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
@@ -386,6 +408,7 @@
 
 	<!--#region ICONO — cuadrado, sin texto. Siempre con ToolTip.-->
 	<Style x:Key="Btn.Icono" TargetType="{ x:Type Button }">
+		<Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Cursor" Value="Hand"/>
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
@@ -432,6 +455,7 @@
 		todo: una entrada invisible no enseña que la sección existe.
 	-->
 	<Style x:Key="Btn.Menu" TargetType="{ x:Type Button }">
+		<Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Cursor" Value="Hand"/>
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual.Claro }"/>
@@ -449,6 +473,7 @@
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="3"/>
 							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="Auto"/>
 						</Grid.ColumnDefinitions>
 						<Rectangle x:Name="Marca"
 								   Grid.Column="0"
@@ -458,6 +483,29 @@
 										  HorizontalAlignment="Left"
 										  Margin="17 0 12 0"
 										  VerticalAlignment="Center"/>
+						<!--
+							CANDADO. Una entrada apagada no se distingue de una rota ni de una
+							que todavía está cargando: las tres se ven grises. El candado dice
+							cuál de las tres es.
+
+							Va en la plantilla y no como un ToolTip con el motivo porque es el
+							único lugar donde puede ir: en la precedencia de WPF, un Setter de
+							estilo —aunque esté adentro de un Trigger— pierde contra el valor
+							local, y las siete entradas del rail escriben su propio ToolTip. Lo
+							que el estilo sí puede hacer es dibujar.
+
+							Segoe MDL2 Assets es la fuente que ya usan los botones de ventana de
+							esta misma aplicación: no entra una dependencia nueva.
+						-->
+						<TextBlock x:Name="Candado"
+								   Grid.Column="2"
+								   FontFamily="Segoe MDL2 Assets"
+								   FontSize="10"
+								   Foreground="{ StaticResource ResourceKey=SobrePizarraTenue }"
+								   Margin="0 0 18 0"
+								   Opacity="0"
+								   Text="&#xE72E;"
+								   VerticalAlignment="Center"/>
 					</Grid>
 					<ControlTemplate.Triggers>
 						<!--
@@ -488,6 +536,7 @@
 						<Trigger Property="IsEnabled" Value="False">
 							<Setter Property="Cursor" Value="No"/>
 							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarraTenue }"/>
+							<Setter TargetName="Candado" Property="Opacity" Value="1"/>
 						</Trigger>
 					</ControlTemplate.Triggers>
 				</ControlTemplate>
