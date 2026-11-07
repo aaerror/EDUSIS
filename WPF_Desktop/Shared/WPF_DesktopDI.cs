@@ -92,6 +92,41 @@ internal static class WPF_DesktopDI
 		services.AddSingleton<ISesionUsuario>(provider => provider.GetRequiredService<SesionUsuario>());
 		services.AddSingleton<ISesionActual>(provider => provider.GetRequiredService<SesionUsuario>());
 
+		AddEstadoDeSesion(services);
+
+		return services;
+	}
+
+	/// <summary>
+	/// Segundo registro de cada store que guarda estado del USUARIO, para que el ciclo de sesión de
+	/// <c>App</c> pueda barrerlos todos sin nombrar a ninguno al cambiar de usuario.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Mismo patrón —y misma trampa— que las tres líneas de la sesión de arriba: se resuelve HACIA la
+	/// instancia ya registrada con <c>GetRequiredService</c>, nunca
+	/// <c>AddSingleton&lt;IEstadoDeSesion, CursoStore&gt;()</c>. Esa forma crearía un
+	/// <c>CursoStore</c> aparte: las pantallas escribirían en uno y el barrido limpiaría el otro, y
+	/// el usuario siguiente heredaría el curso del anterior sin un solo error.
+	/// </para>
+	/// <para>
+	/// Un store nuevo que guarde estado del usuario agrega su línea acá. Si se olvida, lo que
+	/// guardó sobrevive al cambio de usuario en silencio: por eso existe la guarda estática de
+	/// <c>tests/WPF_Desktop.UnitTests</c> que exige que todo tipo <c>*Store</c> de la capa
+	/// implemente <c>IEstadoDeSesion</c> y esté en este método.
+	/// </para>
+	/// </remarks>
+	private static IServiceCollection AddEstadoDeSesion(this IServiceCollection services)
+	{
+		services.AddSingleton<IEstadoDeSesion>(provider => provider.GetRequiredService<LegajoStore>());
+		services.AddSingleton<IEstadoDeSesion>(provider => provider.GetRequiredService<CursoStore>());
+		services.AddSingleton<IEstadoDeSesion>(provider => provider.GetRequiredService<DivisionStore>());
+		services.AddSingleton<IEstadoDeSesion>(provider => provider.GetRequiredService<MateriaStore>());
+		services.AddSingleton<IEstadoDeSesion>(provider => provider.GetRequiredService<CicloLectivoStore>());
+		services.AddSingleton<IEstadoDeSesion>(provider => provider.GetRequiredService<CatedraStore>());
+		services.AddSingleton<IEstadoDeSesion>(provider => provider.GetRequiredService<BuscarContextoStore>());
+		services.AddSingleton<IEstadoDeSesion>(provider => provider.GetRequiredService<AvisoStore>());
+
 		return services;
 	}
 	#endregion

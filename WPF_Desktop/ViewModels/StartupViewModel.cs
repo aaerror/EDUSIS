@@ -92,4 +92,20 @@ internal class StartupViewModel : ObservableObject
 
 	private void OnViewModelChanged() =>
 		OnPropertyChanged(nameof(ViewModel));
+
+	/// <summary>
+	/// Suelta la suscripción al store de navegación. Lo llama <c>App</c> cuando la ventana de acceso
+	/// ya se cerró.
+	/// </summary>
+	/// <remarks>
+	/// Mismo motivo que el <c>Desconectar()</c> de <c>MainViewModel</c>: con el cambio de usuario
+	/// hay una ventana de acceso —y un <c>StartupViewModel</c> nuevo— por sesión, y
+	/// <c>StartupWindowNavigationStore</c> es <c>Singleton</c> con un <c>event Action</c> de
+	/// referencia fuerte. Sin esto, cada sesión deja un ViewModel colgado del store, y la navegación
+	/// del acceso siguiente dispara <see cref="OnViewModelChanged"/> también sobre todos los
+	/// anteriores. Es el agujero que UI-49 de <c>docs/todos.md</c> describe, acotado a las dos
+	/// ventanas que sobreviven a una navegación.
+	/// </remarks>
+	public void Desconectar() =>
+		_navigationStore.ViewModelChanged -= OnViewModelChanged;
 }

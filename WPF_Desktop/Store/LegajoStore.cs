@@ -13,9 +13,19 @@ namespace WPF_Desktop.Store;
 /// request salía igual hacia <c>Core</c>. Es UI-34 de <c>docs/todos.md</c>; la guarda que lo
 /// acompaña vive en cada ViewModel que lee el store.
 /// </remarks>
-internal class LegajoStore
+internal class LegajoStore : IEstadoDeSesion
 {
 	public Guid? PersonaID { get; set; }
 
 	public string Documento { get; set; }
+
+	/// <summary>
+	/// El más importante de los barridos de <see cref="IEstadoDeSesion"/>: acá queda el alumno o el
+	/// docente que el usuario anterior estaba mirando, y es un dato personal de un tercero.
+	/// </summary>
+	public void Limpiar()
+	{
+		PersonaID = null;
+		Documento = string.Empty;
+	}
 }

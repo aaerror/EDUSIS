@@ -5,7 +5,6 @@ using Core.ServicioUsuarios;
 using Domain.Usuarios;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Windows;
 using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Security;
@@ -61,6 +60,7 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	public IRelayCommand GestionUsuariosCommand { get; }
 	public IRelayCommand GestionDocumentacionCommand { get; }
 	public IRelayCommand GestionReportesCommand { get; }
+	public IRelayCommand CerrarSesionCommand { get; }
 	public IRelayCommand SalirCommand { get; }
 	#endregion
 
@@ -141,6 +141,11 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 												  () => _sesion.TienePermiso(Permiso.GenerarReportes)
 													 || _sesion.TienePermiso(Permiso.GenerarReportesDeCursada));
 		CargarUsuarioAsyncCommand = new AsyncRelayCommand(CargarUsuarioAsync);
+
+		// Las dos salidas no se guardan por permiso: cerrar la sesión propia y apagar la aplicación
+		// no son casos de uso del RBAC, y un usuario al que no se le permitiera salir quedaría
+		// encerrado en la ventana.
+		CerrarSesionCommand = new RelayCommand(CerrarSesion);
 		SalirCommand = new RelayCommand(Salir);
 
 		_navigationStore.ViewModelChanged += OnViewModelChanged;
@@ -173,13 +178,48 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	}
 
 	/// <summary>
+	/// Cierra la sesión y vuelve a la pantalla de acceso, con la aplicación abierta, para que entre
+	/// otro usuario.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Es el caso del cambio de turno en la misma máquina, y hasta acá no existía: la única salida
+	/// del menú era <see cref="Salir"/>, que apaga el proceso, así que cambiar de usuario obligaba a
+	/// volver a arrancar la aplicación.
+	/// </para>
+	/// <para>
+	/// Confirma con <c>Revisar</c> y no con <c>Destructiva</c>: el botón rojo de
+	/// <c>SolicitudDeDialogo.Destructiva</c> es para lo que no se puede deshacer, y acá lo único que
+	/// se pierde es un formulario a medio llenar. Lo que sí se dice es que la aplicación NO se
+	/// cierra, porque es la diferencia con el botón de al lado.
+	/// </para>
+	/// </remarks>
+	private void CerrarSesion()
+	{
+		if (!_dialogos.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+				titulo: "Cerrar la sesión",
+				mensaje: "Se vuelve a la pantalla de acceso para que entre otro usuario y la aplicación sigue "
+					   + "abierta. Lo que esté a medio cargar en la pantalla abierta se pierde: sólo queda "
+					   + "guardado lo que ya confirmaste.",
+				verbo: "Cerrar la sesión")))
+		{
+			return;
+		}
+
+		Desconectar();
+		Messenger.Send(FinDeSesionMessage.CambioDeUsuario);
+	}
+
+	/// <summary>
 	/// Cierra la sesión y la aplicación.
 	/// </summary>
 	/// <remarks>
-	/// Cierra las dos cosas, no sólo la sesión: volver a la pantalla de acceso sin salir
-	/// exigiría poder reabrir <c>StartupWindow</c> y reconstruir <c>MainWindow</c>, y las dos
-	/// están registradas una sola vez por proceso —una ventana cerrada no se puede volver a
-	/// mostrar—. Queda anotado como pendiente de aprobación.
+	/// Ya no apaga por su cuenta. Llamaba a <c>_sesion.Cerrar()</c> y a
+	/// <c>Application.Current.Shutdown(0)</c> acá mismo, y con el relogin eso pasó a ser un segundo
+	/// camino de salida en competencia con el de <c>App</c>: el <c>Shutdown</c> cierra las ventanas,
+	/// el <c>Closed</c> de <c>MainWindow</c> despierta al ciclo de sesión, y entonces hay dos
+	/// decisiones de apagado tomándose sobre el mismo cierre. Ahora las dos salidas declaran su
+	/// intención por el mensajero y <c>App</c> es el único que apaga.
 	/// </remarks>
 	private void Salir()
 	{
@@ -192,8 +232,45 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 			return;
 		}
 
-		_sesion.Cerrar();
-		Application.Current.Shutdown(0);
+		Desconectar();
+		Messenger.Send(FinDeSesionMessage.SalidaDeLaAplicacion);
+	}
+
+	/// <summary>
+	/// Suelta las suscripciones de este ViewModel antes de que su ventana desaparezca.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Sin esto el cambio de usuario filtra un <c>MainViewModel</c> por sesión, y no de forma
+	/// inocua. <c>ISesionUsuario.Cambio</c> es un <c>event Action</c> normal —referencia
+	/// <b>fuerte</b>—, y la sesión es <c>Singleton</c>: el ViewModel de la ventana ya cerrada queda
+	/// colgado del singleton para siempre, y el <c>Iniciar(...)</c> del usuario siguiente corre
+	/// <see cref="OnSesionCambio"/> sobre todos los ViewModels muertos acumulados. Lo mismo con los
+	/// dos <c>*NavigationStore</c>, que también son <c>Singleton</c> con eventos fuertes.
+	/// </para>
+	/// <para>
+	/// Es el agujero que UI-49 de <c>docs/todos.md</c> describe —los stores reemplazan el ViewModel
+	/// saliente sin disposal ni desuscripción—, que hasta acá era latente porque nada sobrevivía a la
+	/// navegación: <c>WeakReferenceMessenger</c> usa referencias débiles y ningún ViewModel de
+	/// pantalla tiene timers. El cambio de usuario lo vuelve real para el shell, que es el único
+	/// ViewModel suscripto a eventos fuertes. Esto lo cierra para el shell y sólo para el shell; el
+	/// contrato general que UI-49 pide —o los ViewModels son <c>IDisposable</c> y el store los
+	/// libera, o se documenta que no pueden tener estado liberable— sigue sin escribirse.
+	/// </para>
+	/// <para>
+	/// El orden importa: se desuscribe ANTES de mandar el mensaje, así el <c>Cerrar()</c> de la
+	/// sesión que hace <c>App</c> a continuación ya no llega hasta acá. Un
+	/// <c>NotifyCanExecuteChanged</c> sobre los comandos de una ventana que se está cerrando no
+	/// rompe nada, pero tampoco tiene a quién avisarle.
+	/// </para>
+	/// </remarks>
+	private void Desconectar()
+	{
+		_navigationStore.ViewModelChanged -= OnViewModelChanged;
+		_modalNavigationStore.ViewModelChanged -= OnModalViewModelChanged;
+		_sesion.Cambio -= OnSesionCambio;
+
+		Messenger.UnregisterAll(this);
 	}
 
 	/// <summary>

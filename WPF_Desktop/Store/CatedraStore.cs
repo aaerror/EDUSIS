@@ -10,7 +10,10 @@ namespace WPF_Desktop.Store;
 /// que UI-34 de <c>docs/todos.md</c> enumera, y no se migró a <c>Guid?</c> en este paso. El store
 /// no notifica cambios a propósito: ver el hallazgo de los eventos muertos en <c>docs/todos.md</c>.
 /// </remarks>
-internal class CatedraStore
+internal class CatedraStore : IEstadoDeSesion
 {
 	public Guid Catedra { get; set; } = Guid.Empty;
+
+	public void Limpiar() =>
+		Catedra = Guid.Empty;
 }

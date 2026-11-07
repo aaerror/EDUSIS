@@ -15,7 +15,10 @@ namespace WPF_Desktop.Store;
 /// </remarks>
 internal sealed record MateriaSeleccionada(Guid CursoID, Guid MateriaID, string Descripcion);
 
-internal class MateriaStore
+internal class MateriaStore : IEstadoDeSesion
 {
 	public MateriaSeleccionada Materia { get; set; }
+
+	public void Limpiar() =>
+		Materia = null!;
 }

@@ -14,7 +14,10 @@ namespace WPF_Desktop.Store;
 /// </remarks>
 internal sealed record DivisionSeleccionada(Guid DivisionID);
 
-internal class DivisionStore
+internal class DivisionStore : IEstadoDeSesion
 {
 	public DivisionSeleccionada Division { get; set; }
+
+	public void Limpiar() =>
+		Division = null!;
 }

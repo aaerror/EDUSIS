@@ -30,7 +30,7 @@ internal sealed record BuscarContexto(string Titulo, string Detalle, string Verb
 			Verbo: "Elegir docente");
 }
 
-internal class BuscarContextoStore
+internal class BuscarContextoStore : IEstadoDeSesion
 {
 	private BuscarContexto _contexto = BuscarContexto.Generico;
 
@@ -53,4 +53,16 @@ internal class BuscarContextoStore
 
 		return contexto;
 	}
+
+	/// <summary>
+	/// Defensa en profundidad, no corrección: <see cref="Tomar"/> ya repone el genérico.
+	/// </summary>
+	/// <remarks>
+	/// Lo que queda sin limpiar acá es un contexto DECLARADO y nunca tomado —alguien llamó a
+	/// <see cref="Declarar"/> y la apertura del modal no llegó a ocurrir—, y ese contexto nombra una
+	/// división o una cátedra concreta. Es la única manera de que el encabezado del buscador le
+	/// mienta al usuario que entra después.
+	/// </remarks>
+	public void Limpiar() =>
+		_contexto = BuscarContexto.Generico;
 }

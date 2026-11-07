@@ -19,7 +19,10 @@ namespace WPF_Desktop.Store;
 /// </remarks>
 internal sealed record CursoSeleccionado(Guid CursoID, string Grado, string NivelEducativo);
 
-internal class CursoStore
+internal class CursoStore : IEstadoDeSesion
 {
 	public CursoSeleccionado Curso { get; set; }
+
+	public void Limpiar() =>
+		Curso = null!;
 }

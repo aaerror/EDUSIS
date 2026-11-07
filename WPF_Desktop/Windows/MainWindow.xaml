@@ -75,12 +75,26 @@
 				<!--#region MARCA-->
 				<StackPanel Grid.Row="0"
 							Margin="20 26 20 30">
+					<!--
+						El timbre ocupa el lugar que tenía la regla verde. La regla no desaparece
+						del sistema: sigue encabezando cada ficha, donde significa "acá empieza un
+						registro"; lo que deja de hacer es también de marca, que es un trabajo para
+						el que un acento genérico no alcanzaba. El verde ahora viene del timbre.
+					-->
+					<!--
+						En blanco y no en Primario, que es lo primero que se probó. El rail tiene su
+						propia regla, escrita en UsuarioView: sobre el campo Pizarra todo va en
+						blanco a distintos niveles de énfasis. Medido, además: Primario sobre
+						Pizarra da 3,48:1 y a 28px el anillo, el badajo y el brazo se funden en una
+						mancha verde; en blanco da 12,78:1 y el dibujo se lee. El verde de la marca
+						se ve donde tiene fondo claro —la ventana de acceso—, y acá queda reservado
+						para una sola cosa: la sección abierta.
+					-->
 					<StackPanel Orientation="Horizontal">
-						<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
-								   Height="26"
-								   Margin="0 0 11 0"
-								   VerticalAlignment="Center"
-								   Width="4"/>
+						<components:TimbreComponent Foreground="{ StaticResource ResourceKey=SobrePizarra }"
+													Height="28"
+													Margin="0 0 12 0"
+													VerticalAlignment="Center"/>
 						<TextBlock FontFamily="{ StaticResource ResourceKey=Fuente.Display }"
 								   FontSize="25"
 								   FontStretch="SemiCondensed"
@@ -89,8 +103,9 @@
 								   Text="EDUSIS"
 								   VerticalAlignment="Center"/>
 					</StackPanel>
+					<!-- El margen izquierdo alinea la bajada con el wordmark: 28 del timbre + 12 de separación. -->
 					<TextBlock Foreground="{ StaticResource ResourceKey=SobrePizarraMedia }"
-							   Margin="15 3 0 0"
+							   Margin="40 3 0 0"
 							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
 							   Text="Gestión escolar"/>
 				</StackPanel>
@@ -178,14 +193,28 @@
 						Padding="20 16">
 				<StackPanel>
 					<usuarioView:UsuarioView DataContext="{ Binding Path=UsuarioViewModel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"/>
-					<Button Command="{ Binding Path=SalirCommand }"
-							Content="Salir"
-							FontSize="12"
-							Height="30"
-							HorizontalAlignment="Left"
-							Margin="-12 10 0 0"
-							Style="{ StaticResource ResourceKey=Btn.Terciario.Claro }"
-							ToolTip="Cerrar la sesión y salir de EDUSIS"/>
+
+					<!--
+						Las dos salidas, en este orden: cerrar la sesión es la frecuente —el cambio
+						de turno en la misma máquina— y salir es la del fin de la jornada. Van en
+						una fila porque son la misma clase de acción sobre la misma cosa, la sesión,
+						y leerlas juntas es lo que deja clara la diferencia entre las dos.
+					-->
+					<StackPanel Margin="-12 10 0 0"
+								Orientation="Horizontal">
+						<Button Command="{ Binding Path=CerrarSesionCommand }"
+								Content="Cerrar sesión"
+								FontSize="12"
+								Height="30"
+								Style="{ StaticResource ResourceKey=Btn.Terciario.Claro }"
+								ToolTip="Volver a la pantalla de acceso para que entre otro usuario, sin cerrar EDUSIS"/>
+						<Button Command="{ Binding Path=SalirCommand }"
+								Content="Salir"
+								FontSize="12"
+								Height="30"
+								Style="{ StaticResource ResourceKey=Btn.Terciario.Claro }"
+								ToolTip="Cerrar la sesión y salir de EDUSIS"/>
+					</StackPanel>
 				</StackPanel>
 				</Border>
 				<!--#endregion-->
@@ -257,7 +286,7 @@
 							   Margin="0 6 0 0"
 							   MaxWidth="340"
 							   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-							   Text="Gestión de Docentes, Alumnos y Cursos, o emisión de Documentación y Reportes, en el menú de la izquierda. Las secciones que tu rol no habilita aparecen apagadas."
+							   Text="Las secciones de gestión, emisión y administración están en el menú de la izquierda. Las que tu rol no habilita aparecen apagadas y con un candado."
 							   TextAlignment="Center"
 							   TextWrapping="Wrap"/>
 				</StackPanel>
