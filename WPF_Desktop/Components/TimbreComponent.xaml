@@ -1,0 +1,58 @@
+<UserControl x:Class="WPF_Desktop.Components.TimbreComponent"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Components"
+			 x:Name="raiz"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<!--
+		EL TIMBRE — la marca de EDUSIS.
+
+		Derivado de bell-ring-icon.png, que es el icono de la ventana: el timbre de pared de una
+		escuela, visto de frente, con su badajo al centro, el brazo de montaje a la derecha y la
+		base abajo. Es el objeto que esta aplicación modela —lo que divide el día en módulos, lo
+		que cierra la toma de asistencia— y no un símbolo genérico de educación.
+
+		Va en vectores y no en el PNG por dos razones concretas: el archivo es arte negro sólido y
+		sobre el campo Pizarra del rail hace falta en blanco o en verde, y un Image no se tiñe —
+		habría que mantener una copia por color y por densidad de pantalla. Acá el relleno sale del
+		Foreground del control, así que cada ventana lo pide del pincel del tema que le corresponde.
+		El PNG se queda donde sí sirve: como Icon de la ventana, que es lo único que Windows no
+		puede dibujar desde XAML.
+
+		El dibujo SIMPLIFICA al original a propósito. A 28px el buje de montaje y el filo del domo
+		se vuelven una mancha; lo que sobrevive —y lo que hace reconocible un timbre escolar— es el
+		anillo con el punto al centro, el brazo y la base.
+
+		Dos Path y no uno porque la regla de relleno no es la misma: el anillo necesita EvenOdd para
+		que el círculo interior perfore al exterior, y las piezas del brazo se superponen entre sí,
+		así que con EvenOdd se agujerearían justo donde se tocan.
+	-->
+	<Viewbox Stretch="Uniform">
+		<Canvas Height="50" Width="50">
+			<!-- EL DOMO: anillo. El interior se perfora con EvenOdd. -->
+			<Path Fill="{ Binding Path=Foreground, ElementName=raiz }">
+				<Path.Data>
+					<GeometryGroup FillRule="EvenOdd">
+						<EllipseGeometry Center="19,19" RadiusX="17.5" RadiusY="17.5"/>
+						<EllipseGeometry Center="19,19" RadiusX="12" RadiusY="12"/>
+					</GeometryGroup>
+				</Path.Data>
+			</Path>
+
+			<!-- EL BADAJO, EL BRAZO Y LA BASE: piezas sólidas que se superponen. -->
+			<Path Fill="{ Binding Path=Foreground, ElementName=raiz }">
+				<Path.Data>
+					<GeometryGroup FillRule="Nonzero">
+						<EllipseGeometry Center="19,19" RadiusX="3.6" RadiusY="3.6"/>
+						<EllipseGeometry Center="43.5,12.6" RadiusX="5.4" RadiusY="5.4"/>
+						<RectangleGeometry Rect="41.5,12.6,4,18.4"/>
+						<RectangleGeometry Rect="33,27,12.5,4"/>
+						<RectangleGeometry Rect="10.4,43,17.2,5.2" RadiusX="0.8" RadiusY="0.8"/>
+					</GeometryGroup>
+				</Path.Data>
+			</Path>
+		</Canvas>
+	</Viewbox>
+</UserControl>

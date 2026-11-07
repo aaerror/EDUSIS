@@ -2,12 +2,14 @@
 		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:local="clr-namespace:WPF_Desktop.Windows"
+		xmlns:components="clr-namespace:WPF_Desktop.Components"
 		xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		mc:Ignorable="d"
 		Background="{ StaticResource ResourceKey=Papel }"
 		Height="600"
+		Icon="../bell-ring-icon.png"
 		ResizeMode="NoResize"
 		Title="Acceso a EDUSIS"
 		Width="430"
@@ -57,17 +59,17 @@
 			<!--#endregion-->
 
 			<!--#region MARCA
-				La regla verde al lado del nombre es el mismo gesto que encabeza cada ficha
-				del sistema: acá es donde se presenta.
+				El timbre al lado del nombre: acá es donde la marca se presenta, y a 38px es el
+				único lugar de la aplicación donde se lo ve con detalle. En el rail va a 28px y en
+				la barra de tareas, como icono de ventana, al tamaño que Windows decida.
 			-->
 			<StackPanel Grid.Row="1"
 						Margin="40 14 40 0">
 				<StackPanel Orientation="Horizontal">
-					<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
-							   Height="34"
-							   Margin="0 0 13 0"
-							   VerticalAlignment="Center"
-							   Width="5"/>
+					<components:TimbreComponent Foreground="{ StaticResource ResourceKey=Primario }"
+												Height="38"
+												Margin="0 0 14 0"
+												VerticalAlignment="Center"/>
 					<TextBlock FontFamily="{ StaticResource ResourceKey=Fuente.Display }"
 							   FontSize="34"
 							   FontStretch="SemiCondensed"
@@ -76,7 +78,8 @@
 							   Text="EDUSIS"
 							   VerticalAlignment="Center"/>
 				</StackPanel>
-				<TextBlock Margin="18 4 0 0"
+				<!-- 38 del timbre + 14 de separación: la bajada arranca donde arranca el wordmark. -->
+				<TextBlock Margin="52 4 0 0"
 						   Style="{ StaticResource ResourceKey=Txt.Detalle }"
 						   Text="Sistema de gestión escolar"/>
 			</StackPanel>
