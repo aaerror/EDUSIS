@@ -43,7 +43,12 @@ internal class RolesConverter : IValueConverter
 			: string.Join(", ", descripciones);
 	}
 
-	private static string Describir(int rolID)
+	/// <remarks>
+	/// <c>internal</c> y no privada porque <see cref="RolConverter"/> traduce de a un Id y la
+	/// tolerancia al rol desconocido —el <c>"#&lt;id&gt;"</c> en vez de la excepción— tiene que ser la
+	/// misma en los dos lugares.
+	/// </remarks>
+	internal static string Describir(int rolID)
 	{
 		try
 		{

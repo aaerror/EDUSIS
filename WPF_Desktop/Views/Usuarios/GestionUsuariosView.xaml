@@ -9,12 +9,25 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 mc:Ignorable="d">
 	<!--
-		Administración de cuentas. Cierra UI-46.
+		ÍNDICE + FICHA. Administración de cuentas; cierra UI-46.
 
-		Un solo selector de rol para las tres acciones, arriba y a la vista: las tres operan
-		sobre un rol y tenerlo tres veces sería pedirle al usuario que entienda cuál manda.
-		Los botones se habilitan solos según qué haya elegido — un usuario de la grilla habilita
-		los de rol, un docente de la lista habilita el alta.
+		La disposición anterior ponía el selector de rol y los botones "Asignar" y "Quitar" ARRIBA,
+		en su propia tarjeta, y la cuenta sobre la que actuaban se elegía en una grilla de abajo: la
+		acción estaba separada de su objeto, y el mismo combo gobernaba además un "Crear cuenta" que
+		vivía en la otra punta de la pantalla, sin que nada lo dijera. El rol se elegía en un lugar y
+		surtía efecto en tres.
+
+		Acá hay un solo selector igual que antes —las tres acciones operan sobre un rol y tenerlo
+		tres veces sería pedirle al usuario que entienda cuál manda—, pero vive DENTRO de la ficha
+		de lo que está elegido, que es lo único que se ve a la vez. Las dos listas se reparten en
+		dos pestañas del índice con su conteo, así que la de pendientes sigue estando a la vista sin
+		pelearle el ancho a la de cuentas.
+
+		Lo que la pantalla agrega: los roles de la cuenta son insignias y no una cadena con comas;
+		el rol elegido declara qué permisos concede (Rol.Permisos, del dominio); una línea dice por
+		qué uno de los dos botones de rol está gris; y el velo de carga se liga a Cargando, que el
+		ViewModel ya mantenía sin que nadie lo consumiera — con IsRunning la recarga posterior a un
+		alta no mostraría nada, porque las tres operaciones llaman al método de carga directo.
 	-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
@@ -25,176 +38,552 @@
 	<Grid Margin="28 24 28 24">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!--#region ENCABEZADO-->
+		<!--#region ENCABEZADO DE PANTALLA
+			Sin acción en el encabezado: el alta no es una acción de pantalla sino de la pestaña
+			"Sin cuenta", porque necesita un docente elegido y un rol. Un botón "Crear cuenta"
+			arriba estaría gris la mayor parte del tiempo y sin decir qué le falta.
+
+			Sin ruta: es una pantalla de primer nivel.
+		-->
 		<components:PaginaComponent Grid.Row="0"
 									Margin="0 0 0 20"
 									Titulo="Usuarios"
 									Subtitulo="Cuentas del sistema y los roles con los que cada una ingresa"/>
 		<!--#endregion-->
 
-		<!--#region ROL EN USO-->
-		<Border Grid.Row="1"
-				Margin="0 0 0 18"
-				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
-			<Grid Margin="24 18 24 18">
+		<!--#region CUERPO-->
+		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
+			<Grid>
 				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="380"/>
 					<ColumnDefinition Width="Auto"/>
 					<ColumnDefinition Width="*"/>
 				</Grid.ColumnDefinitions>
 
-				<HeaderedContentControl Grid.Column="0"
-										Header="Rol"
-										MinWidth="260"
-										Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-					<!--
-						Los seis roles salen de Enumeration.GetAll<Rol>() en el ViewModel, no de un
-						x:Array acá: un catálogo literal en el XAML es el defecto que UI-27 registró
-						para las horas cátedra. El combo muestra Descripcion y manda el Id.
+				<!--#region ÍNDICE-->
+				<Grid Grid.Column="0">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+
+					<!--#region CONMUTADOR DE LISTAS
+						Cada pestaña enlaza su Tag contra PanelAbierto con esIgualA y Btn.Pestana lee
+						ese booleano para pintarse el subrayado — el mismo mecanismo que el rail del
+						menú y que las cuatro vistas del alumno en GestionCursantes.
+
+						El conteo va adentro de la pestaña y no en un rótulo aparte: "cuántos docentes
+						esperan cuenta" es la única razón para abrir la segunda lista, así que es lo
+						que tiene que verse sin abrirla.
 					-->
-					<ComboBox DisplayMemberPath="Descripcion"
-							  ItemsSource="{ Binding Path=Roles, Mode=OneTime }"
-							  SelectedItem="{ Binding Path=RolSeleccionado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-							  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-				</HeaderedContentControl>
-
-				<StackPanel Grid.Column="1"
-							HorizontalAlignment="Right"
-							Orientation="Horizontal"
-							VerticalAlignment="Bottom">
-					<Button Command="{ Binding Path=AsignarRolCommand }"
-							Margin="0 0 8 0"
-							Style="{ StaticResource ResourceKey=Btn.Primario }"
-							ToolTip="Asignarle el rol elegido al usuario seleccionado">
+					<Border Grid.Row="0"
+							BorderBrush="{ StaticResource ResourceKey=Linea }"
+							BorderThickness="0 0 0 1"
+							Margin="16 12 16 0"
+							SnapsToDevicePixels="True">
 						<StackPanel Orientation="Horizontal">
-							<fa:IconBlock FontSize="11"
-										  Icon="Plus"
-										  Margin="0 0 8 0"
-										  VerticalAlignment="Center"/>
-							<TextBlock Text="Asignar rol" VerticalAlignment="Center"/>
-						</StackPanel>
-					</Button>
+							<Button Command="{ Binding Path=VerCommand }"
+									CommandParameter="Cuentas"
+									Style="{ StaticResource ResourceKey=Btn.Pestana }"
+									Tag="{ Binding Path=PanelAbierto, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Cuentas }"
+									ToolTip="Las cuentas que ya existen y los roles de cada una">
+								<StackPanel Orientation="Horizontal">
+									<TextBlock Text="Cuentas" VerticalAlignment="Center"/>
+									<Border Margin="8 0 0 0" Style="{ StaticResource ResourceKey=Insignia }">
+										<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+												   Text="{ Binding Path=Usuarios.Count, Mode=OneWay }"/>
+									</Border>
+								</StackPanel>
+							</Button>
 
-					<Button Command="{ Binding Path=QuitarRolCommand }"
-							Style="{ StaticResource ResourceKey=Btn.Peligro }"
-							ToolTip="Quitarle el rol elegido al usuario seleccionado">
-						<StackPanel Orientation="Horizontal">
-							<fa:IconBlock FontSize="11"
-										  Icon="Minus"
-										  Margin="0 0 8 0"
-										  VerticalAlignment="Center"/>
-							<TextBlock Text="Quitar rol" VerticalAlignment="Center"/>
+							<Button Command="{ Binding Path=VerCommand }"
+									CommandParameter="SinCuenta"
+									Style="{ StaticResource ResourceKey=Btn.Pestana }"
+									Tag="{ Binding Path=PanelAbierto, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=SinCuenta }"
+									ToolTip="Docentes activos a los que todavía se les puede crear la cuenta">
+								<StackPanel Orientation="Horizontal">
+									<TextBlock Text="Sin cuenta" VerticalAlignment="Center"/>
+									<Border Margin="8 0 0 0" Style="{ StaticResource ResourceKey=Insignia }">
+										<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+												   Text="{ Binding Path=DocentesSinCuenta.Count, Mode=OneWay }"/>
+									</Border>
+								</StackPanel>
+							</Button>
 						</StackPanel>
-					</Button>
-				</StackPanel>
+					</Border>
+					<!--#endregion-->
+
+					<!--#region FILTRO
+						Filtra en memoria lo ya cargado mientras se escribe, igual que el índice de
+						Docentes: no es un buscador contra la base y no hay botón que disparar. Es uno
+						solo para las dos listas porque sólo una se ve a la vez.
+					-->
+					<StackPanel Grid.Row="1" Margin="16 14 16 12">
+						<Grid>
+							<TextBox Padding="34 0 11 0"
+									 Style="{ StaticResource ResourceKey=Txb.Campo }"
+									 Tag="Filtrar por nombre, usuario o legajo"
+									 Text="{ Binding Path=Filtro, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
+							<fa:IconBlock Foreground="{ StaticResource ResourceKey=TintaTenue }"
+										  FontSize="12"
+										  HorizontalAlignment="Left"
+										  Icon="MagnifyingGlass"
+										  IsHitTestVisible="False"
+										  Margin="12 0 0 0"
+										  VerticalAlignment="Center"/>
+						</Grid>
+						<TextBlock Margin="2 10 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="{ Binding Path=Resumen, Mode=OneWay }"/>
+					</StackPanel>
+					<!--#endregion-->
+
+					<!--#region LISTA: CUENTAS
+						El nombre de usuario primero y en fuente de dato: en una cuenta, el
+						identificador ES el usuario, igual que en un legajo es el número.
+					-->
+					<ListView x:Name="Lista_Cuentas"
+							  Grid.Row="2"
+							  AutomationProperties.Name="Cuentas del sistema"
+							  ItemsSource="{ Binding Path=UsuariosFiltrados, Mode=OneTime }"
+							  SelectedItem="{ Binding Path=UsuarioSeleccionado, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Lista.Indice }"
+							  Tag="Ninguna cuenta para mostrar. La pestaña «Sin cuenta» tiene los docentes a los que se les puede crear una."
+							  Visibility="{ Binding Path=PanelAbierto, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Cuentas }">
+						<ListView.View>
+							<GridView AllowsColumnReorder="False">
+								<GridView.Columns>
+									<GridViewColumn Header="USUARIO" Width="190">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+														   Text="{ Binding Path=Usuario, TargetNullValue='—' }"
+														   TextTrimming="CharacterEllipsis"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+									</GridViewColumn>
+									<GridViewColumn Header="DOCENTE" Width="156">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+														   Text="{ Binding Path=NombreCompleto, TargetNullValue='Sin datos' }"
+														   TextTrimming="CharacterEllipsis"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+									</GridViewColumn>
+								</GridView.Columns>
+							</GridView>
+						</ListView.View>
+					</ListView>
+					<!--#endregion-->
+
+					<!--#region LISTA: DOCENTES SIN CUENTA-->
+					<ListView x:Name="Lista_DocentesSinCuenta"
+							  Grid.Row="2"
+							  AutomationProperties.Name="Docentes sin cuenta"
+							  ItemsSource="{ Binding Path=DocentesFiltrados, Mode=OneTime }"
+							  SelectedItem="{ Binding Path=DocenteSeleccionado, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Lista.Indice }"
+							  Tag="Todos los docentes activos ya tienen cuenta."
+							  Visibility="{ Binding Path=PanelAbierto, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=SinCuenta }">
+						<ListView.View>
+							<GridView AllowsColumnReorder="False">
+								<GridView.Columns>
+									<GridViewColumn Header="LEGAJO" Width="96">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+														   Text="{ Binding Path=Legajo, TargetNullValue='—' }"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+									</GridViewColumn>
+									<GridViewColumn Header="DOCENTE" Width="250">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+														   Text="{ Binding Path=NombreCompleto, TargetNullValue='Sin datos' }"
+														   TextTrimming="CharacterEllipsis"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+									</GridViewColumn>
+								</GridView.Columns>
+							</GridView>
+						</ListView.View>
+					</ListView>
+					<!--#endregion-->
+				</Grid>
+				<!--#endregion-->
+
+				<Rectangle Grid.Column="1" Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
+
+				<!--#region FICHA
+					Dos fichas, una por pestaña, y cada una con su cara vacía: la visibilidad se
+					resuelve en dos niveles —el externo por pestaña, el interno por selección— porque
+					un enlace no compara dos cosas a la vez y acá no hace falta un converter nuevo
+					para eso.
+				-->
+				<Grid Grid.Column="2">
+					<!--#region FICHA: LA CUENTA ELEGIDA-->
+					<Grid Visibility="{ Binding Path=PanelAbierto, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Cuentas }">
+						<!-- Sin elección: la mitad derecha dice qué hacer, no queda en blanco. -->
+						<StackPanel HorizontalAlignment="Center"
+									VerticalAlignment="Center"
+									Visibility="{ Binding Path=UsuarioSeleccionado, Converter={ StaticResource ResourceKey=visibleSiHay }, ConverterParameter=inverso }">
+							<TextBlock Foreground="{ StaticResource ResourceKey=TintaSuave }"
+									   HorizontalAlignment="Center"
+									   Style="{ StaticResource ResourceKey=Txt.Subtitulo }"
+									   Text="Elegí una cuenta"/>
+							<TextBlock HorizontalAlignment="Center"
+									   Margin="0 6 0 0"
+									   MaxWidth="300"
+									   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+									   Text="Sus roles, y los permisos que esos roles conceden, se abren desde el índice de la izquierda."
+									   TextAlignment="Center"
+									   TextWrapping="Wrap"/>
+						</StackPanel>
+
+						<Grid Margin="28 22"
+							  Visibility="{ Binding Path=UsuarioSeleccionado, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+
+							<!--
+								LA FICHA: regla verde, identificador y nombre. El mismo gesto encabeza
+								cada registro del sistema; en una cuenta el identificador es el nombre
+								de usuario, que es con lo que esa persona entra.
+							-->
+							<StackPanel Grid.Row="0" Orientation="Horizontal">
+								<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
+										   Margin="0 2 14 2"
+										   VerticalAlignment="Stretch"
+										   Width="3"/>
+								<StackPanel>
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Identificador }"
+											   Text="{ Binding Path=UsuarioSeleccionado.Usuario, TargetNullValue='SIN USUARIO' }"
+											   TextTrimming="CharacterEllipsis"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+											   Text="{ Binding Path=UsuarioSeleccionado.NombreCompleto }"
+											   TextTrimming="CharacterEllipsis"/>
+								</StackPanel>
+							</StackPanel>
+
+							<!--#region ROLES DE LA CUENTA
+								Una insignia por rol y no una cadena con comas: un rol es una
+								condición de la cuenta, igual que "EN ACTIVIDAD" en el legajo del
+								docente, y es el dato que esta pantalla existe para administrar.
+							-->
+							<Border Grid.Row="1"
+									Margin="0 20 0 0"
+									Style="{ StaticResource ResourceKey=Superficie.Seccion }">
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="*"/>
+									</Grid.ColumnDefinitions>
+									<Grid.RowDefinitions>
+										<RowDefinition Height="Auto"/>
+										<RowDefinition Height="Auto"/>
+										<RowDefinition Height="Auto"/>
+									</Grid.RowDefinitions>
+
+									<TextBlock Grid.Column="0" Grid.Row="0"
+											   Margin="0 0 24 10"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="PUESTO"/>
+									<TextBlock Grid.Column="1" Grid.Row="0"
+											   Margin="0 0 0 10"
+											   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+											   Text="{ Binding Path=UsuarioSeleccionado.Puesto, TargetNullValue='—' }"
+											   TextTrimming="CharacterEllipsis"/>
+
+									<TextBlock Grid.Column="0" Grid.Row="1"
+											   Margin="0 0 24 0"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="ROLES"/>
+									<ItemsControl Grid.Column="1" Grid.Row="1"
+												  ItemsSource="{ Binding Path=UsuarioSeleccionado.RolesIDs, Mode=OneWay }">
+										<ItemsControl.ItemsPanel>
+											<ItemsPanelTemplate>
+												<WrapPanel/>
+											</ItemsPanelTemplate>
+										</ItemsControl.ItemsPanel>
+										<ItemsControl.ItemTemplate>
+											<DataTemplate>
+												<Border Margin="0 0 6 4" Style="{ StaticResource ResourceKey=Insignia.Activa }">
+													<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+															   Text="{ Binding Path=., Converter={ StaticResource ResourceKey=rol } }"/>
+												</Border>
+											</DataTemplate>
+										</ItemsControl.ItemTemplate>
+									</ItemsControl>
+
+									<!--
+										Una cuenta sin un solo rol entra al sistema con el menú entero
+										apagado: es el estado del que esta pantalla vino a rescatar al
+										sistema, y la sección vacía sola no lo diría.
+									-->
+									<TextBlock Grid.Column="1" Grid.Row="2"
+											   Margin="0 8 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="Sin ningún rol: puede iniciar sesión, pero se encuentra el menú entero deshabilitado."
+											   TextWrapping="Wrap"
+											   Visibility="{ Binding Path=CuentaSinRoles, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+								</Grid>
+							</Border>
+							<!--#endregion-->
+
+							<!--#region CAMBIAR LOS ROLES
+								El selector vive acá, al lado de las insignias que modifica, y no en
+								una barra de arriba que gobernaba tres acciones a distancia.
+
+								Los seis roles salen de Enumeration.GetAll<Rol>() en el ViewModel, no
+								de un x:Array acá: un catálogo literal en el XAML es el defecto que
+								UI-27 registró para las horas cátedra. El combo muestra Descripcion y
+								manda el Id.
+							-->
+							<StackPanel Grid.Row="2" Margin="0 24 0 0" VerticalAlignment="Top">
+								<TextBlock Margin="0 0 0 12"
+										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="CAMBIAR LOS ROLES"/>
+
+								<HeaderedContentControl Header="Rol"
+														HorizontalAlignment="Left"
+														Style="{ StaticResource ResourceKey=Campo }"
+														Width="300">
+									<ComboBox DisplayMemberPath="Descripcion"
+											  ItemsSource="{ Binding Path=Roles, Mode=OneTime }"
+											  SelectedItem="{ Binding Path=RolSeleccionado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+											  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+								</HeaderedContentControl>
+
+								<!--
+									QUÉ CONCEDE EL ROL. La atribución rol → permisos sólo estaba escrita
+									en Domain/Usuarios/Rol.cs y en los diagramas de docs/uml/: el
+									administrador elegía un rol por su nombre y averiguaba qué había
+									concedido entrando con esa cuenta.
+								-->
+								<TextBlock HorizontalAlignment="Left"
+										   Margin="0 0 0 16"
+										   MaxWidth="520"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="{ Binding Path=PermisosDelRol, Mode=OneWay }"
+										   TextWrapping="Wrap"/>
+
+								<StackPanel Orientation="Horizontal">
+									<Button Command="{ Binding Path=AsignarRolCommand }"
+											Margin="0 0 8 0"
+											Style="{ StaticResource ResourceKey=Btn.Primario }"
+											ToolTip="Asignarle el rol elegido a esta cuenta">
+										<StackPanel Orientation="Horizontal">
+											<fa:IconBlock FontSize="11"
+														  Icon="Plus"
+														  Margin="0 0 8 0"
+														  VerticalAlignment="Center"/>
+											<TextBlock Text="Asignar rol" VerticalAlignment="Center"/>
+										</StackPanel>
+									</Button>
+
+									<!--
+										Secundario y no Btn.Peligro: quitar un rol es reversible en el
+										acto —se vuelve a asignar con el botón de al lado— y el estilo
+										de peligro de esta aplicación es el de Eliminar, que borra. El
+										único caso con consecuencia real, el último rol, lo pregunta el
+										diálogo del ViewModel.
+									-->
+									<Button Command="{ Binding Path=QuitarRolCommand }"
+											Style="{ StaticResource ResourceKey=Btn.Secundario }"
+											ToolTip="Quitarle el rol elegido a esta cuenta">
+										<StackPanel Orientation="Horizontal">
+											<fa:IconBlock FontSize="11"
+														  Icon="Minus"
+														  Margin="0 0 8 0"
+														  VerticalAlignment="Center"/>
+											<TextBlock Text="Quitar rol" VerticalAlignment="Center"/>
+										</StackPanel>
+									</Button>
+								</StackPanel>
+
+								<!--
+									POR QUÉ UNO DE LOS DOS ESTÁ GRIS. CanExecute apaga el que el dominio
+									rechazaría —AgregarRol lanza si ya lo tiene, QuitarRol si no—, pero
+									un botón gris por eso no se distingue de uno gris por falta de rol
+									elegido.
+								-->
+								<TextBlock HorizontalAlignment="Left"
+										   Margin="0 10 0 0"
+										   MaxWidth="520"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="{ Binding Path=EstadoDeLosRoles, Mode=OneWay }"
+										   TextWrapping="Wrap"/>
+							</StackPanel>
+							<!--#endregion-->
+						</Grid>
+					</Grid>
+					<!--#endregion-->
+
+					<!--#region FICHA: EL DOCENTE SIN CUENTA-->
+					<Grid Visibility="{ Binding Path=PanelAbierto, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=SinCuenta }">
+						<StackPanel HorizontalAlignment="Center"
+									VerticalAlignment="Center"
+									Visibility="{ Binding Path=DocenteSeleccionado, Converter={ StaticResource ResourceKey=visibleSiHay }, ConverterParameter=inverso }">
+							<TextBlock Foreground="{ StaticResource ResourceKey=TintaSuave }"
+									   HorizontalAlignment="Center"
+									   Style="{ StaticResource ResourceKey=Txt.Subtitulo }"
+									   Text="Elegí un docente"/>
+							<TextBlock HorizontalAlignment="Center"
+									   Margin="0 6 0 0"
+									   MaxWidth="300"
+									   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+									   Text="Acá se le crea la cuenta: se elige el rol con el que nace y el sistema la arma con los datos de su legajo."
+									   TextAlignment="Center"
+									   TextWrapping="Wrap"/>
+						</StackPanel>
+
+						<Grid Margin="28 22"
+							  Visibility="{ Binding Path=DocenteSeleccionado, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+
+							<StackPanel Grid.Row="0" Orientation="Horizontal">
+								<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
+										   Margin="0 2 14 2"
+										   VerticalAlignment="Stretch"
+										   Width="3"/>
+								<StackPanel>
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Identificador }"
+											   Text="{ Binding Path=DocenteSeleccionado.Legajo, StringFormat='LEGAJO {0}', TargetNullValue='SIN LEGAJO' }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+											   Text="{ Binding Path=DocenteSeleccionado.NombreCompleto }"
+											   TextTrimming="CharacterEllipsis"/>
+								</StackPanel>
+							</StackPanel>
+
+							<!--#region CON QUÉ NACE LA CUENTA
+								Lo que el diálogo de confirmación decía DESPUÉS de apretar: el usuario
+								es el correo del legajo y la clave inicial, el documento. Dicho antes,
+								es un dato de la pantalla; dicho sólo en el diálogo, es una sorpresa.
+							-->
+							<Border Grid.Row="1"
+									Margin="0 20 0 0"
+									Style="{ StaticResource ResourceKey=Superficie.Seccion }">
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="*"/>
+									</Grid.ColumnDefinitions>
+									<Grid.RowDefinitions>
+										<RowDefinition Height="Auto"/>
+										<RowDefinition Height="Auto"/>
+										<RowDefinition Height="Auto"/>
+									</Grid.RowDefinitions>
+
+									<TextBlock Grid.Column="0" Grid.Row="0"
+											   Margin="0 0 24 10"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="DNI"/>
+									<TextBlock Grid.Column="1" Grid.Row="0"
+											   Margin="0 0 0 10"
+											   Style="{ StaticResource ResourceKey=Txt.Dato }"
+											   Text="{ Binding Path=DocenteSeleccionado.DNI, TargetNullValue='—' }"/>
+
+									<TextBlock Grid.Column="0" Grid.Row="1"
+											   Margin="0 0 24 10"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="USUARIO"/>
+									<TextBlock Grid.Column="1" Grid.Row="1"
+											   Margin="0 0 0 10"
+											   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+											   Text="El correo que figura en su legajo"/>
+
+									<TextBlock Grid.Column="0" Grid.Row="2"
+											   Margin="0 0 24 0"
+											   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="CLAVE"/>
+									<TextBlock Grid.Column="1" Grid.Row="2"
+											   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+											   Text="Su número de documento, hasta que la cambie"/>
+								</Grid>
+							</Border>
+							<!--#endregion-->
+
+							<!--#region ALTA DE LA CUENTA-->
+							<StackPanel Grid.Row="2" Margin="0 24 0 0" VerticalAlignment="Top">
+								<!-- Sin rótulo de sección: lo diría con las mismas palabras que la etiqueta del campo. -->
+								<HeaderedContentControl Header="Rol inicial"
+														HorizontalAlignment="Left"
+														Style="{ StaticResource ResourceKey=Campo }"
+														Width="300">
+									<ComboBox DisplayMemberPath="Descripcion"
+											  ItemsSource="{ Binding Path=Roles, Mode=OneTime }"
+											  SelectedItem="{ Binding Path=RolSeleccionado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+											  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+								</HeaderedContentControl>
+
+								<TextBlock HorizontalAlignment="Left"
+										   Margin="0 0 0 16"
+										   MaxWidth="520"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="{ Binding Path=PermisosDelRol, Mode=OneWay }"
+										   TextWrapping="Wrap"/>
+
+								<Button Command="{ Binding Path=CrearUsuarioCommand }"
+										HorizontalAlignment="Left"
+										Style="{ StaticResource ResourceKey=Btn.Primario }"
+										ToolTip="Crear la cuenta de este docente con el rol elegido">
+									<StackPanel Orientation="Horizontal">
+										<fa:IconBlock FontSize="11"
+													  Icon="UserPlus"
+													  Margin="0 0 8 0"
+													  VerticalAlignment="Center"/>
+										<TextBlock Text="Crear cuenta" VerticalAlignment="Center"/>
+									</StackPanel>
+								</Button>
+
+								<!--
+									El rol es obligatorio y entra en el CanExecute: hasta el 2026-11-06
+									el alta ignoraba el rol y creaba cuentas sin un solo permiso. Un
+									botón gris sin explicación dejaría al administrador buscando qué le
+									falta.
+								-->
+								<TextBlock HorizontalAlignment="Left"
+										   Margin="0 10 0 0"
+										   MaxWidth="520"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="{ Binding Path=EstadoDelAlta, Mode=OneWay }"
+										   TextWrapping="Wrap"/>
+							</StackPanel>
+							<!--#endregion-->
+						</Grid>
+					</Grid>
+					<!--#endregion-->
+				</Grid>
+				<!--#endregion-->
+
+				<!--
+					El velo de carga cubre las tres columnas: mientras las dos listas viajan, ni el
+					índice ni la ficha tienen nada que decir. Se liga a Cargando y no a
+					CargarCommand.IsRunning porque las tres operaciones llaman al método de carga
+					directo, sin pasar por el comando: con IsRunning, la recarga que sigue a un alta o
+					a un cambio de rol no mostraría nada.
+				-->
+				<components:CargandoComponent Grid.Column="0"
+											  Grid.ColumnSpan="3"
+											  EstaCargando="{ Binding Path=Cargando }"
+											  Leyenda="CARGANDO LAS CUENTAS"/>
 			</Grid>
 		</Border>
-		<!--#endregion-->
-
-		<!--#region CUERPO-->
-		<Grid Grid.Row="2">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="2*"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="*"/>
-			</Grid.ColumnDefinitions>
-
-			<!--#region CUENTAS-->
-			<Grid Grid.Column="0">
-				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="*"/>
-				</Grid.RowDefinitions>
-
-				<TextBlock Grid.Row="0"
-						   Margin="12 0 12 10"
-						   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-						   Text="CUENTAS DEL SISTEMA"/>
-
-				<DataGrid x:Name="DataGrid_Usuarios"
-						  Grid.Row="1"
-						  AutomationProperties.Name="Cuentas del sistema"
-						  ItemsSource="{ Binding Path=Usuarios, Mode=OneWay }"
-						  SelectedItem="{ Binding Path=UsuarioSeleccionado, Mode=TwoWay }"
-						  Style="{ StaticResource ResourceKey=Grilla }"
-						  Tag="Todavía no hay ninguna cuenta. Elegí un docente de la derecha y un rol para crear la primera.">
-					<DataGrid.Columns>
-						<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime }"
-											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-											Header="DOCENTE"
-											Width="*"/>
-						<DataGridTextColumn Binding="{ Binding Path=Usuario, Mode=OneTime }"
-											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-											Header="USUARIO"
-											Width="Auto"/>
-						<!--
-							Los roles viajan como Id y el conversor los traduce a descripciones.
-							La traducción es presentación y vive acá, no en el Response: ver el
-							XML-doc de UsuarioResponse y la decisión #6 de plan/rbac-y-seed.md.
-						-->
-						<DataGridTextColumn Binding="{ Binding Path=RolesIDs, Converter={ StaticResource ResourceKey=roles }, Mode=OneTime }"
-											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-											Header="ROLES"
-											Width="Auto"/>
-					</DataGrid.Columns>
-				</DataGrid>
-			</Grid>
-			<!--#endregion-->
-
-			<Rectangle Grid.Column="1" Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
-
-			<!--#region ALTA DE CUENTA-->
-			<Grid Grid.Column="2">
-				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="*"/>
-					<RowDefinition Height="Auto"/>
-				</Grid.RowDefinitions>
-
-				<TextBlock Grid.Row="0"
-						   Margin="12 0 12 10"
-						   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-						   Text="DOCENTES SIN CUENTA"/>
-
-				<DataGrid x:Name="DataGrid_DocentesSinCuenta"
-						  Grid.Row="1"
-						  AutomationProperties.Name="Docentes sin cuenta"
-						  ItemsSource="{ Binding Path=DocentesSinCuenta, Mode=OneWay }"
-						  SelectedItem="{ Binding Path=DocenteSeleccionado, Mode=TwoWay }"
-						  Style="{ StaticResource ResourceKey=Grilla }"
-						  Tag="Todos los docentes activos ya tienen cuenta.">
-					<DataGrid.Columns>
-						<DataGridTextColumn Binding="{ Binding Path=NombreCompleto, Mode=OneTime }"
-											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-											Header="DOCENTE"
-											Width="*"/>
-						<DataGridTextColumn Binding="{ Binding Path=Legajo, Mode=OneTime }"
-											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
-											Header="LEGAJO"
-											Width="Auto"/>
-					</DataGrid.Columns>
-				</DataGrid>
-
-				<Button Grid.Row="2"
-						Command="{ Binding Path=CrearUsuarioCommand }"
-						HorizontalAlignment="Left"
-						Margin="12 16 0 0"
-						Style="{ StaticResource ResourceKey=Btn.Primario }"
-						ToolTip="Crear la cuenta del docente elegido con el rol elegido">
-					<StackPanel Orientation="Horizontal">
-						<fa:IconBlock FontSize="11"
-									  Icon="UserPlus"
-									  Margin="0 0 8 0"
-									  VerticalAlignment="Center"/>
-						<TextBlock Text="Crear cuenta" VerticalAlignment="Center"/>
-					</StackPanel>
-				</Button>
-			</Grid>
-			<!--#endregion-->
-		</Grid>
 		<!--#endregion-->
 	</Grid>
 </UserControl>

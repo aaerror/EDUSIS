@@ -57,6 +57,27 @@
 					   Text="{ Binding Path=Username, FallbackValue='—', TargetNullValue='—' }"
 					   TextTrimming="CharacterEllipsis"
 					   ToolTip="{ Binding Path=Username }"/>
+
+			<!--
+				TERCERA LÍNEA: el rol. No repite el defecto que esta vista vino a cerrar —tres
+				filas para dos datos, con una repetida—: el rol es información nueva, y es la que
+				explica por qué el menú se ve como se ve. Sin él, el usuario lee "las secciones que
+				tu rol no habilita aparecen apagadas" sin tener dónde averiguar cuál es su rol.
+
+				El converter es el mismo de la pantalla de Usuarios, así que una cuenta sin roles
+				dice acá lo mismo que allá: "Sin roles".
+
+				Lleva el mismo tono que el usuario —SobrePizarraMedia, el que trae el estilo— y no
+				el tenue que separaría mejor las tres líneas: SobrePizarraTenue es blanco al 34%,
+				que compuesto sobre Pizarra da 2,9:1 y queda debajo del 4,5:1 de WCAG AA. Ese tono
+				es para un rótulo de sección como "GESTIÓN", no para un dato que hay que leer. La
+				jerarquía acá la dan el orden y la forma del texto, no el contraste.
+			-->
+			<TextBlock Margin="0 3 0 0"
+					   Style="{ StaticResource ResourceKey=Txt.SobrePizarra.Dato }"
+					   Text="{ Binding Path=RolesIDs, Converter={ StaticResource ResourceKey=roles }, FallbackValue='—', Mode=OneWay }"
+					   TextTrimming="CharacterEllipsis"
+					   ToolTip="{ Binding Path=RolesIDs, Converter={ StaticResource ResourceKey=roles }, Mode=OneWay }"/>
 		</StackPanel>
 	</Grid>
 </UserControl>

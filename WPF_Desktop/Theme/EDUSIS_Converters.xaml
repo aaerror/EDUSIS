@@ -28,4 +28,10 @@
 		texto, que es lo que la grilla de usuarios muestra.
 	-->
 	<conv:RolesConverter x:Key="roles"/>
+
+	<!--
+		El mismo dato de a uno: la ficha de la cuenta dibuja una insignia por rol, y la plantilla de
+		ese ItemsControl recibe un int suelto, no la lista.
+	-->
+	<conv:RolConverter x:Key="rol"/>
 </ResourceDictionary>
