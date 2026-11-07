@@ -446,6 +446,138 @@
 	</Style>
 	<!--#endregion-->
 
+	<!--#region MARCA — un casillero de la planilla de asistencia
+		CUATRO CASILLEROS POR FILA, UNO ENCENDIDO, Y EL ENCENDIDO ES EL ESTADO DEL ALUMNO. Antes
+		eran cuatro Btn.Icono de 12px —Check, Xmark, Ban, Clock— sobre fondo transparente: los
+		cuatro pesaban igual estuviera el alumno presente o ausente, así que nada en la fila decía
+		cómo venía marcado, y Xmark contra Ban a ese tamaño son el mismo garabato. Cuatro botones
+		idénticos no son cuatro opciones: son un acertijo, y hay que resolverlo treinta veces por
+		día. La columna ESTADO repetía el dato al lado en una insignia, y esa repetición era la
+		señal de que el control no lo estaba diciendo.
+
+		Lleva la PALABRA y no la inicial. Una fila de P · A · I · T es más corta, pero hay que
+		aprenderla primero, y quien toma lista lee la palabra que va a decir en voz alta. Se
+		abrevia INASIST. igual que la encabezan las grillas del historial y del resumen.
+
+		Habla con la voz de Txt.Insignia —Display condensada, 11.5, negrita— porque el casillero
+		encendido ocupa el lugar de la insignia que había: es la misma afirmación, hecha por el
+		control que la cambia en lugar de por una etiqueta al lado.
+
+		CÓMO SE REPARTE EL DIBUJO ENTRE LOS TRES RECURSOS, que no es gratuito:
+
+		· Marca.Plantilla trae la forma y los estados del MOUSE —apuntado, apretado, apagado—.
+		· Marca.Base trae los setters y nada más: NINGÚN trigger.
+		· Btn.Marca y Btn.Marca.Falta agregan UN trigger de estilo cada uno, el del encendido.
+
+		Así, el encendido nunca compite con otro trigger de su mismo rango: los dos estilos hoja
+		son hermanos y ninguno hereda el trigger del otro, de modo que no hay que razonar sobre
+		en qué orden se mezclan los triggers de un estilo con los de su BasedOn. Y le gana a los
+		tres estados del mouse por precedencia y no por orden —StyleTrigger (7) contra
+		TemplateTrigger (6) en la precedencia de valores de WPF—, que es lo que hace que el
+		casillero marcado conserve su color apuntándolo con el mouse y con la planilla cerrada.
+		Es el reparto con el que el propio framework pinta la selección de DataGridCell.
+
+		EL ENCENDIDO NO PUEDE VIVIR EN LA PLANTILLA: ahí el DataTrigger necesita leer el Tag del
+		botón con RelativeSource TemplatedParent, y en ControlTemplate.Triggers ese enlace no se
+		evalúa —el trigger no es parte del árbol visual—, así que el casillero quedaba apagado con
+		Tag en True. Medido: la primera versión tenía el trigger adentro de la plantilla y los
+		cuatro casilleros salían en TintaTenue. En Style.Triggers, RelativeSource Self sí resuelve.
+
+		La vista enlaza Tag contra el estado de la fila con el converter esIgualA: el mismo
+		mecanismo con el que Btn.Pestana marca la vista abierta y Btn.Menu la sección del rail.
+		Tres conmutadores de la aplicación contestando "cuál es el actual" con el mismo recurso.
+	-->
+	<ControlTemplate x:Key="Marca.Plantilla" TargetType="{ x:Type Button }">
+		<Grid Background="Transparent">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="2"/>
+			</Grid.RowDefinitions>
+			<Border Grid.Row="0"
+					Background="{ TemplateBinding Background }"
+					SnapsToDevicePixels="True">
+				<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+			</Border>
+			<!--
+				La regla de abajo, como en la pestaña: el encendido se lee también sin color. Acá la
+				llevan los CUATRO casilleros —la apagada en Linea, la encendida en Primario o en
+				Alerta— así que los cuatro se apoyan en una sola raya continua y la fila se lee como
+				las cuatro casillas regladas de la planilla de papel, con una marcada.
+			-->
+			<Rectangle Grid.Row="1"
+					   Fill="{ TemplateBinding BorderBrush }"
+					   SnapsToDevicePixels="True"/>
+		</Grid>
+		<ControlTemplate.Triggers>
+			<!--
+				LOS TRES ESTADOS DEL MOUSE, y sólo ellos: el encendido vive en los estilos hoja y
+				le gana a estos tres por precedencia. Entre estos tres, que comparten rango, gana
+				el último activo.
+			-->
+			<Trigger Property="IsMouseOver" Value="True">
+				<Setter Property="Background" Value="{ StaticResource ResourceKey=TizaBaja }"/>
+				<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+			</Trigger>
+			<Trigger Property="IsPressed" Value="True">
+				<Setter Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+				<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioPress }"/>
+			</Trigger>
+			<Trigger Property="IsEnabled" Value="False">
+				<Setter Property="Background" Value="Transparent"/>
+				<Setter Property="Cursor" Value="Arrow"/>
+				<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+			</Trigger>
+		</ControlTemplate.Triggers>
+	</ControlTemplate>
+
+	<!--
+		Los setters comunes y NINGÚN trigger. No se aplica a ningún botón: existe para que los dos
+		estilos hoja de abajo sean hermanos en lugar de uno derivado del otro, y así el trigger del
+		encendido de cada uno no tenga que convivir con el del otro.
+	-->
+	<Style x:Key="Marca.Base" TargetType="{ x:Type Button }">
+		<Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Linea }"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual }"/>
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Display }"/>
+		<Setter Property="FontStretch" Value="Condensed"/>
+		<Setter Property="FontSize" Value="11.5"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=TintaTenue }"/>
+		<Setter Property="Height" Value="26"/>
+		<Setter Property="Template" Value="{ StaticResource ResourceKey=Marca.Plantilla }"/>
+		<Setter Property="Width" Value="62"/>
+	</Style>
+
+	<!-- Presente y tardanza: el alumno estuvo en clase, así que encienden en el color primario. -->
+	<Style x:Key="Btn.Marca" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Marca.Base }">
+		<Style.Triggers>
+			<DataTrigger Binding="{ Binding Path=Tag, RelativeSource={ RelativeSource Self } }" Value="True">
+				<Setter Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+				<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
+				<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+			</DataTrigger>
+		</Style.Triggers>
+	</Style>
+
+	<!--
+		Ausencia e inasistencia: son las dos faltas, y encienden en alerta. Es el mismo reparto que
+		hacían Insignia e Insignia.Alerta en la columna ESTADO que este control reemplaza, así que
+		lo que el preceptor busca de un vistazo —quién faltó— sigue saltando por color.
+	-->
+	<Style x:Key="Btn.Marca.Falta" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Marca.Base }">
+		<Style.Triggers>
+			<DataTrigger Binding="{ Binding Path=Tag, RelativeSource={ RelativeSource Self } }" Value="True">
+				<Setter Property="Background" Value="{ StaticResource ResourceKey=AlertaSuave }"/>
+				<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Alerta }"/>
+				<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Alerta }"/>
+			</DataTrigger>
+		</Style.Triggers>
+	</Style>
+	<!--#endregion-->
+
 	<!--#region MENÚ DEL RAIL
 		Sobre el campo Pizarra. La entrada activa o apuntada se marca con una REGLA VERDE a la
 		izquierda, no con un fondo: el rail queda tranquilo y la marca se lee de un vistazo.
