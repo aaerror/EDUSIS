@@ -30,6 +30,7 @@ namespace WPF_Desktop.UnitTests;
 /// instancia por dominio y sus objetos tienen afinidad de hilo.
 /// </para>
 /// </remarks>
+[Collection(ColeccionDeWPF.NOMBRE)]
 public class TemaTests
 {
 	/// <summary>
