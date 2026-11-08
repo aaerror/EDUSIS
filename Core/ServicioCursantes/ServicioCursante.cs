@@ -298,7 +298,8 @@ internal class ServicioCursante : IServicio, IServicioCursante
 					MateriaID: calificacion.MateriaID,
 					Materia: materia?.Descripcion ?? string.Empty,
 					Fecha: calificacion.Fecha,
-					Instancia: calificacion.Instancia.ToString(),
+					Periodo: calificacion.Periodo.ToString(),
+					EsRecuperatorio: calificacion.EsRecuperatorio,
 					Rindio: calificacion.Rindio,
 					Nota: calificacion.Nota,
 					Aprobado: calificacion.EstaAprobado(),
@@ -322,20 +323,20 @@ internal class ServicioCursante : IServicio, IServicioCursante
 		{
 			_sesion.Exigir(Permiso.CargarCalificaciones);
 
-			var cicloLectivo = CicloLectivo.Crear(request.Periodo);
+			var cicloLectivo = CicloLectivo.Crear(request.CicloLectivo);
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
 			{
 				throw new NullReferenceException("No se encontró la inscripción del alumno en el ciclo lectivo indicado.");
 			}
 
-			var resultInstancia = Enum.TryParse<Instancia>(request.Instancia, true, out var instancia);
-			if (!resultInstancia)
+			var resultPeriodo = Enum.TryParse<Periodo>(request.Periodo, true, out var periodo);
+			if (!resultPeriodo)
 			{
-				throw new ArgumentException("La instancia especificada no existe.", nameof(request.Instancia));
+				throw new ArgumentException("El período especificado no existe.", nameof(request.Periodo));
 			}
 
-			var calificacionID = cursante.RegistrarCalificacion(request.MateriaID, request.Fecha, instancia, request.Nota, request.Observacion);
+			var calificacionID = cursante.RegistrarCalificacion(request.MateriaID, request.Fecha, periodo, request.EsRecuperatorio, request.Nota, request.Observacion);
 
 			_unitOfWork.Cursantes.Modificar(cursante);
 			var result = await _unitOfWork.GuardarCambiosAsync();
@@ -357,20 +358,20 @@ internal class ServicioCursante : IServicio, IServicioCursante
 		{
 			_sesion.Exigir(Permiso.CargarCalificaciones);
 
-			var cicloLectivo = CicloLectivo.Crear(request.Periodo);
+			var cicloLectivo = CicloLectivo.Crear(request.CicloLectivo);
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
 			{
 				throw new NullReferenceException("No se encontró la inscripción del alumno en el ciclo lectivo indicado.");
 			}
 
-			var resultInstancia = Enum.TryParse<Instancia>(request.Instancia, true, out var instancia);
-			if (!resultInstancia)
+			var resultPeriodo = Enum.TryParse<Periodo>(request.Periodo, true, out var periodo);
+			if (!resultPeriodo)
 			{
-				throw new ArgumentException("La instancia especificada no existe.", nameof(request.Instancia));
+				throw new ArgumentException("El período especificado no existe.", nameof(request.Periodo));
 			}
 
-			var calificacionID = cursante.RegistrarInasistenciaAExamen(request.MateriaID, request.Fecha, instancia, request.Observacion);
+			var calificacionID = cursante.RegistrarInasistenciaAExamen(request.MateriaID, request.Fecha, periodo, request.EsRecuperatorio, request.Observacion);
 
 			_unitOfWork.Cursantes.Modificar(cursante);
 			var result = await _unitOfWork.GuardarCambiosAsync();

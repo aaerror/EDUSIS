@@ -315,7 +315,7 @@ public class ServicioReporteTests
 		var inscripcion = SembrarInscripcion("AL0001");
 		SembrarInscripcion("AL0002");
 
-		inscripcion.Cursante.RegistrarCalificacion(_materias[1].Id, DateTime.Today, Instancia.Parcial, 8, null);
+		inscripcion.Cursante.RegistrarCalificacion(_materias[1].Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		await _servicio.GenerarReporteCalificacionesAsync(TodaLaInstitucion());
 
@@ -335,7 +335,7 @@ public class ServicioReporteTests
 		SembrarEstructura("Historia", "Matemática");
 		var inscripcion = SembrarInscripcion("AL0001");
 
-		inscripcion.Cursante.RegistrarCalificacion(_materias[1].Id, DateTime.Today, Instancia.Parcial, 8, null);
+		inscripcion.Cursante.RegistrarCalificacion(_materias[1].Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		await _servicio.GenerarReporteMateriasPendientesAsync(TodaLaInstitucion());
 
@@ -352,8 +352,8 @@ public class ServicioReporteTests
 		SembrarEstructura("Historia", "Lengua", "Matemática", "Química");
 		var inscripcion = SembrarInscripcion("AL0001", recursante: true);
 
-		inscripcion.Cursante.RegistrarCalificacion(_materias[0].Id, DateTime.Today, Instancia.Parcial, 7, null);
-		inscripcion.Cursante.RegistrarCalificacion(_materias[1].Id, DateTime.Today, Instancia.Parcial, 10, null);
+		inscripcion.Cursante.RegistrarCalificacion(_materias[0].Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 7, null);
+		inscripcion.Cursante.RegistrarCalificacion(_materias[1].Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 10, null);
 
 		await _servicio.GenerarReporteTrayectoriasAsync(TodaLaInstitucion());
 

@@ -15,6 +15,7 @@ using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioMaterias;
 using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Responses;
+using Domain.Cursantes.Calificaciones;
 using Domain.Asistencias;
 using Domain.Cursos;
 using Domain.Shared;
@@ -408,7 +409,7 @@ public class GestionCursantesViewModelTests
 	public async Task Seleccionar_un_cursante_carga_sus_calificaciones_con_el_periodo_del_listado()
 	{
 		var contexto = new Contexto();
-		var calificacion = new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", new DateTime(2024, 5, 2), "Parcial", true, 7, true, "ok");
+		var calificacion = new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", new DateTime(2024, 5, 2), nameof(Periodo.PrimerCuatrimestre), false, true, 7, true, "ok");
 		contexto.DevolverCalificaciones(calificacion);
 
 		var cursante = await contexto.BuscarYSeleccionarAsync();
@@ -420,7 +421,7 @@ public class GestionCursantesViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Cargar_Nota_abre_el_formulario_con_Parcial_por_defecto()
+	public async Task Cargar_Nota_abre_el_formulario_con_el_primer_cuatrimestre_por_defecto()
 	{
 		var contexto = new Contexto();
 		await contexto.BuscarYSeleccionarAsync();
@@ -429,7 +430,10 @@ public class GestionCursantesViewModelTests
 
 		contexto.ViewModel.MostrarCalificacionView.ShouldBeTrue();
 		contexto.ViewModel.Calificacion.ShouldNotBeNull();
-		contexto.ViewModel.Calificacion!.Instancia.ShouldBe("Parcial");
+		contexto.ViewModel.Calificacion!.Periodo.ShouldBe(nameof(Periodo.PrimerCuatrimestre));
+		contexto.ViewModel.Calificacion!.EsRecuperatorio.ShouldBeFalse();
+		// El rótulo que ve el usuario sale del [Description] del enum, no del nombre del miembro.
+		contexto.ViewModel.Calificacion!.Instancia.ShouldBe("1° cuatrimestre");
 	}
 
 	[Fact]
@@ -445,7 +449,7 @@ public class GestionCursantesViewModelTests
 
 		await contexto.ViewModel.GuardarCalificacionCommandAsync.ExecuteAsync(null);
 
-		_ = contexto.ServicioCursante.Received(1).RegistrarCalificacionAsync(new CrearCalificationRequest(cursante.AlumnoID, CicloDelStore, materia.MateriaID, fecha, "Parcial", 8, "bien"));
+		_ = contexto.ServicioCursante.Received(1).RegistrarCalificacionAsync(new CrearCalificationRequest(cursante.AlumnoID, CicloDelStore, materia.MateriaID, fecha, nameof(Periodo.PrimerCuatrimestre), false, 8, "bien"));
 		contexto.Dialogos.Informaciones.Count.ShouldBe(1);
 		contexto.ViewModel.MostrarCalificacionView.ShouldBeFalse();
 	}
@@ -471,7 +475,7 @@ public class GestionCursantesViewModelTests
 		var contexto = new Contexto();
 		await contexto.PrepararAltaAsync();
 		contexto.ViewModel.Calificacion!.Nota = 6;
-		contexto.ViewModel.Calificacion.Instancia = string.Empty;
+		contexto.ViewModel.Calificacion.Periodo = string.Empty;
 
 		await contexto.ViewModel.GuardarCalificacionCommandAsync.ExecuteAsync(null);
 
@@ -507,7 +511,7 @@ public class GestionCursantesViewModelTests
 
 		await contexto.ViewModel.RegistrarInasistenciaCommandAsync.ExecuteAsync(null);
 
-		_ = contexto.ServicioCursante.Received(1).RegistrarInasistenciaAExamenAsync(new RegistrarInasistenciaRequest(cursante.AlumnoID, CicloDelStore, materia.MateriaID, fecha, "Parcial", "no vino"));
+		_ = contexto.ServicioCursante.Received(1).RegistrarInasistenciaAExamenAsync(new RegistrarInasistenciaRequest(cursante.AlumnoID, CicloDelStore, materia.MateriaID, fecha, nameof(Periodo.PrimerCuatrimestre), false, "no vino"));
 		_ = contexto.ServicioCursante.DidNotReceiveWithAnyArgs().RegistrarCalificacionAsync(default!);
 	}
 
@@ -516,7 +520,7 @@ public class GestionCursantesViewModelTests
 	public async Task Quitar_calificacion_confirmada_llama_a_QuitarCalificacionAsync()
 	{
 		var contexto = new Contexto();
-		var calificacion = new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, "Parcial", true, 4, false, null);
+		var calificacion = new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, true, 4, false, null);
 		contexto.DevolverCalificaciones(calificacion);
 		var cursante = await contexto.BuscarYSeleccionarAsync();
 		contexto.ViewModel.CalificacionSeleccionada = contexto.ViewModel.Calificaciones[0];
@@ -531,7 +535,7 @@ public class GestionCursantesViewModelTests
 	public async Task Quitar_calificacion_no_confirmada_no_llega_al_servicio()
 	{
 		var contexto = new Contexto();
-		contexto.DevolverCalificaciones(new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, "Parcial", true, 4, false, null));
+		contexto.DevolverCalificaciones(new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, true, 4, false, null));
 		await contexto.BuscarYSeleccionarAsync();
 		contexto.ViewModel.CalificacionSeleccionada = contexto.ViewModel.Calificaciones[0];
 		contexto.Dialogos.RespuestaDeConfirmacion = false;
@@ -546,7 +550,7 @@ public class GestionCursantesViewModelTests
 	public async Task Seleccionar_una_calificacion_copia_su_observacion_al_campo_editable()
 	{
 		var contexto = new Contexto();
-		contexto.DevolverCalificaciones(new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, "Parcial", true, 4, false, "original"));
+		contexto.DevolverCalificaciones(new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, true, 4, false, "original"));
 		await contexto.BuscarYSeleccionarAsync();
 
 		contexto.ViewModel.CalificacionSeleccionada = contexto.ViewModel.Calificaciones[0];
@@ -559,7 +563,7 @@ public class GestionCursantesViewModelTests
 	public async Task Editar_observacion_envia_la_observacion_nueva_de_la_calificacion_seleccionada()
 	{
 		var contexto = new Contexto();
-		var calificacion = new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, "Parcial", true, 4, false, "original");
+		var calificacion = new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, true, 4, false, "original");
 		contexto.DevolverCalificaciones(calificacion);
 		var cursante = await contexto.BuscarYSeleccionarAsync();
 		contexto.ViewModel.CalificacionSeleccionada = contexto.ViewModel.Calificaciones[0];
@@ -575,7 +579,7 @@ public class GestionCursantesViewModelTests
 	public async Task Los_requests_usan_el_periodo_del_listado_y_no_el_texto_que_el_usuario_edito_despues()
 	{
 		var contexto = new Contexto();
-		var calificacion = new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, "Parcial", true, 4, false, null);
+		var calificacion = new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, true, 4, false, null);
 		contexto.DevolverCalificaciones(calificacion);
 		await contexto.BuscarYSeleccionarAsync();
 		contexto.ViewModel.CalificacionSeleccionada = contexto.ViewModel.Calificaciones[0];
@@ -724,7 +728,7 @@ public class GestionCursantesViewModelTests
 	public async Task CalificacionSeleccionada_notifica_a_Quitar_y_Modificar_observacion()
 	{
 		var contexto = new Contexto();
-		contexto.DevolverCalificaciones(new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, "Parcial", true, 4, false, null));
+		contexto.DevolverCalificaciones(new CalificacionResponse(Guid.NewGuid(), Guid.NewGuid(), "Matematica", DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, true, 4, false, null));
 		await contexto.BuscarYSeleccionarAsync();
 		var vm = contexto.ViewModel;
 		var calificacion = vm.Calificaciones[0];

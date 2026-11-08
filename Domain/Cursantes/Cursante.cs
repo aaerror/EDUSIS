@@ -110,17 +110,17 @@ public sealed class Cursante : Entity
 	#endregion
 
 	#region Calificaciones
-	public Guid RegistrarCalificacion(Guid materiaID, DateTime fecha, Instancia instancia, double? nota, string? observacion)
+	public Guid RegistrarCalificacion(Guid materiaID, DateTime fecha, Periodo periodo, bool esRecuperatorio, double? nota, string? observacion)
 	{
-		var calificacion = Calificacion.Crear(materiaID, fecha, instancia, nota, observacion);
+		var calificacion = Calificacion.Crear(materiaID, fecha, periodo, esRecuperatorio, nota, observacion);
 		_calificaciones.Add(calificacion);
 
 		return calificacion.Id;
 	}
 
-	public Guid RegistrarInasistenciaAExamen(Guid materiaID, DateTime fecha, Instancia instancia, string? observacion)
+	public Guid RegistrarInasistenciaAExamen(Guid materiaID, DateTime fecha, Periodo periodo, bool esRecuperatorio, string? observacion)
 	{
-		var calificacion = Calificacion.Inasistencia(materiaID, fecha, instancia, observacion);
+		var calificacion = Calificacion.Inasistencia(materiaID, fecha, periodo, esRecuperatorio, observacion);
 		_calificaciones.Add(calificacion);
 
 		return calificacion.Id;

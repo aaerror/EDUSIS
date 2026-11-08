@@ -156,6 +156,10 @@ internal partial class ResumenAcademicoViewModel : ObservableObject
 	/// Sobre qué se calculó el promedio: "6 materias · 5 aprobadas · 1 desaprobada".
 	/// </summary>
 	/// <remarks>
+	/// Cuenta MATERIAS y no calificaciones porque el promedio es la media de las notas de cierre,
+	/// una por materia: decir "14 calificaciones" sugeriría que el número se calculó sobre catorce
+	/// valores cuando se calculó sobre las materias que esas catorce instancias cerraron.
+	///
 	/// Las ausencias a examen se nombran aparte y sólo si hubo, porque NO entran al promedio: el
 	/// dominio las guarda sin nota (<c>Calificacion.Inasistencia</c>), así que un promedio de 7,42
 	/// con tres ausencias encima describe algo distinto que el mismo 7,42 sin ninguna, y el número

@@ -216,8 +216,10 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 				.OrderBy(materia => materia.Descripcion)
 				.Select(materia => new FilaBoletin(
 					Materia: materia.Descripcion,
-					Parcial: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Instancia.Parcial),
-					Recuperatorio: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Instancia.Recuperatorio),
+					PrimerCuatrimestre: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Periodo.PrimerCuatrimestre),
+					SegundoCuatrimestre: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Periodo.SegundoCuatrimestre),
+					Final: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Periodo.Final),
+					Recuperacion: ContextoAcademico.DescribirRecuperacion(cursante.CalificacionesDelCiclo, materia.Id),
 					Condicion: ContextoAcademico.DescribirCondicion(cursante.CalificacionesDelCiclo, materia.Id, conNota: true)))
 				.ToList();
 

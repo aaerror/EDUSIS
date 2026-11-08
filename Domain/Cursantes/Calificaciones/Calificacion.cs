@@ -19,7 +19,21 @@ public sealed class Calificacion : Entity
 
 	public Guid MateriaID { get; private set; }
 	public DateTime Fecha { get; private set; }
-	public Instancia Instancia { get; private set; }
+
+	/// <summary>El tramo del ciclo lectivo en el que se tomó.</summary>
+	public Periodo Periodo { get; private set; }
+
+	/// <summary>
+	/// Es el segundo intento dentro de <see cref="Periodo"/>, no un período aparte.
+	/// </summary>
+	/// <remarks>
+	/// Está separado del período porque un ciclo tiene hasta cuatro recuperatorios —uno por
+	/// cuatrimestre y uno por período de recuperación— y guardarlos todos como un mismo valor de
+	/// <see cref="Calificaciones.Periodo"/> haría imposible saber a cuál de los cuatro pertenece
+	/// cada nota. Quién le gana a quién lo decide <see cref="RendimientoAcademico"/>.
+	/// </remarks>
+	public bool EsRecuperatorio { get; private set; }
+
 	public bool Rindio { get; private set; }
 	public double? Nota { get; private set; }
 	public string? Observacion { get; private set; } = string.Empty;
@@ -28,7 +42,7 @@ public sealed class Calificacion : Entity
 	#region CONSTRUCTOR
 	private Calificacion() { }
 
-	private Calificacion(Guid materiaID, DateTime fecha, Instancia instancia, bool rindio, double? nota, string? observacion)
+	private Calificacion(Guid materiaID, DateTime fecha, Periodo periodo, bool esRecuperatorio, bool rindio, double? nota, string? observacion)
 		: base(Guid.NewGuid())
 	{
 		if (Guid.Empty.Equals(materiaID))
@@ -39,6 +53,11 @@ public sealed class Calificacion : Entity
 		if (fecha.Date > DateTime.Today.Date)
 		{
 			throw new ArgumentException("La fecha del exámen no puede ser posterior a la fecha de registro en sistema.", nameof(fecha.Date));
+		}
+
+		if (esRecuperatorio && periodo is Periodo.Final)
+		{
+			throw new RecuperatorioDeNotaFinalException();
 		}
 
 		if (rindio)
@@ -61,15 +80,16 @@ public sealed class Calificacion : Entity
 		MateriaID = materiaID;
 		Fecha = fecha.Date;
 		Rindio = rindio;
-		Instancia = instancia;
+		Periodo = periodo;
+		EsRecuperatorio = esRecuperatorio;
 		Observacion = observacion;
 	}
 
-	internal static Calificacion Crear(Guid materiaID, DateTime fecha, Instancia instancia, double? nota, string? observacion) =>
-		new(materiaID, fecha, instancia, true, nota, observacion);
+	internal static Calificacion Crear(Guid materiaID, DateTime fecha, Periodo periodo, bool esRecuperatorio, double? nota, string? observacion) =>
+		new(materiaID, fecha, periodo, esRecuperatorio, true, nota, observacion);
 
-	internal static Calificacion Inasistencia(Guid materiaID, DateTime fecha, Instancia instancia, string? observacion) =>
-		new(materiaID, fecha, instancia, false, null, observacion);
+	internal static Calificacion Inasistencia(Guid materiaID, DateTime fecha, Periodo periodo, bool esRecuperatorio, string? observacion) =>
+		new(materiaID, fecha, periodo, esRecuperatorio, false, null, observacion);
 	#endregion
 
 	#region Observación
@@ -89,6 +109,14 @@ public sealed class Calificacion : Entity
 	}
 	#endregion
 
+	/// <summary>
+	/// Esta calificación, por sí sola, alcanza el umbral de aprobación.
+	/// </summary>
+	/// <remarks>
+	/// Habla de UNA instancia y no de la materia: un recuperatorio aprobado no aprueba la materia
+	/// por sí mismo, ni un aplazo en el primer cuatrimestre la desaprueba. Eso lo decide
+	/// <see cref="RendimientoAcademico.EstaAprobada"/> mirando todas las instancias juntas.
+	/// </remarks>
 	public bool EstaAprobado() =>
 		Rindio && Nota >= NOTA_APROBACION;
 }

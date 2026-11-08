@@ -219,7 +219,7 @@ public sealed class GeneradorDocumentosTests
 	}
 
 	[Fact]
-	public void El_boletin_imprime_una_fila_por_materia_con_sus_instancias()
+	public void El_boletin_imprime_una_fila_por_materia_con_la_nota_de_cada_periodo()
 	{
 		var generado = _generador
 			.GenerarBoletinCalificacionesAsync(new BoletinCalificacionesDocumento(
@@ -227,8 +227,8 @@ public sealed class GeneradorDocumentosTests
 				CICLO,
 				new[]
 					{
-						new FilaBoletin("Matemática", "3", "7", "Aprobada (7)"),
-						new FilaBoletin("Historia", "—", "—", "Sin calificar")
+						new FilaBoletin("Matemática", "7", "8", "8", "—", "Aprobada (8)"),
+						new FilaBoletin("Historia", "—", "—", "—", "—", "Sin calificar")
 					},
 				Emision()))
 			.Result;

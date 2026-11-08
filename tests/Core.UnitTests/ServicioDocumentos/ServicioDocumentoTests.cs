@@ -299,7 +299,7 @@ public class ServicioDocumentoTests
 	{
 		var sembrado = Sembrar("Matemática");
 		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 3);
-		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 7, instancia: Instancia.Recuperatorio);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 7, esRecuperatorio: true);
 
 		await _servicio.GenerarConstanciaMateriasAprobadasAsync(Pedido(sembrado.Alumno.Id));
 
@@ -323,12 +323,19 @@ public class ServicioDocumentoTests
 	#endregion
 
 	#region Boletín
+	/// <remarks>
+	/// LA COLUMNA DE UN CUATRIMESTRE INFORMA SU NOTA VIGENTE, NO SUS INTENTOS. El recuperatorio
+	/// reemplaza a la nota del período, así que con un 3 recuperado con 7 la celda dice 7 y el 3 no
+	/// aparece en el boletín. Antes había dos columnas, "Parcial" y "Recuperatorio", y mostraban
+	/// las dos notas; con cuatro recuperatorios posibles en un ciclo esas dos columnas no alcanzan,
+	/// y el detalle intento por intento vive en la pantalla de calificaciones.
+	/// </remarks>
 	[Fact]
-	public async Task GenerarBoletin_informa_una_fila_por_materia_con_la_nota_de_cada_instancia()
+	public async Task GenerarBoletin_informa_una_fila_por_materia_con_la_nota_vigente_de_cada_periodo()
 	{
 		var sembrado = Sembrar("Matemática", "Lengua");
 		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 3);
-		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 7, instancia: Instancia.Recuperatorio);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 7, esRecuperatorio: true);
 
 		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
 
@@ -336,18 +343,62 @@ public class ServicioDocumentoTests
 		documento.Filas.Count.ShouldBe(2);
 
 		var matematica = documento.Filas.Single(x => x.Materia == "Matemática");
-		matematica.Parcial.ShouldBe("3");
-		matematica.Recuperatorio.ShouldBe("7");
+		matematica.PrimerCuatrimestre.ShouldBe("7");
+		matematica.SegundoCuatrimestre.ShouldBe("—");
+		matematica.Final.ShouldBe("—");
+		matematica.Recuperacion.ShouldBe("—");
 		matematica.Condicion.ShouldBe("Aprobada (7)");
 
 		var lengua = documento.Filas.Single(x => x.Materia == "Lengua");
-		lengua.Parcial.ShouldBe("—");
-		lengua.Recuperatorio.ShouldBe("—");
+		lengua.PrimerCuatrimestre.ShouldBe("—");
+		lengua.SegundoCuatrimestre.ShouldBe("—");
 		lengua.Condicion.ShouldBe("Sin calificar");
 	}
 
+	/// <remarks>
+	/// La nota final la carga el docente y PISA al promedio de los cuatrimestres, incluso cuando es
+	/// distinta: es su decisión, no una cuenta del sistema. Con 4 y 8 el promedio sería 6, y acá el
+	/// docente cerró en 7.
+	/// </remarks>
 	[Fact]
-	public async Task GenerarBoletin_informa_la_ultima_calificacion_por_fecha_de_cada_instancia()
+	public async Task GenerarBoletin_informa_la_nota_final_y_cierra_con_ella()
+	{
+		var sembrado = Sembrar("Matemática");
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 4, periodo: Periodo.PrimerCuatrimestre);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 8, periodo: Periodo.SegundoCuatrimestre);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 7, periodo: Periodo.Final);
+
+		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
+
+		var fila = _host.Generador.Boletin.ShouldNotBeNull().Filas.Single();
+		fila.PrimerCuatrimestre.ShouldBe("4");
+		fila.SegundoCuatrimestre.ShouldBe("8");
+		fila.Final.ShouldBe("7");
+		fila.Condicion.ShouldBe("Aprobada (7)");
+	}
+
+	/// <remarks>
+	/// Las dos recuperaciones comparten columna y vale la segunda: a ella se llega sólo después de
+	/// no aprobar la primera, así que es la última palabra sobre la materia.
+	/// </remarks>
+	[Fact]
+	public async Task GenerarBoletin_cierra_con_la_recuperacion_mas_avanzada()
+	{
+		var sembrado = Sembrar("Matemática");
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 3, periodo: Periodo.PrimerCuatrimestre);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 4, periodo: Periodo.Final);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 5, periodo: Periodo.PrimeraRecuperacion);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 6, periodo: Periodo.SegundaRecuperacion);
+
+		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
+
+		var fila = _host.Generador.Boletin.ShouldNotBeNull().Filas.Single();
+		fila.Recuperacion.ShouldBe("6");
+		fila.Condicion.ShouldBe("Aprobada (6)");
+	}
+
+	[Fact]
+	public async Task GenerarBoletin_informa_la_ultima_calificacion_por_fecha_del_periodo()
 	{
 		var sembrado = Sembrar("Matemática");
 		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 2, fecha: DateTime.Today.AddDays(-20));
@@ -355,25 +406,25 @@ public class ServicioDocumentoTests
 
 		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
 
-		_host.Generador.Boletin.ShouldNotBeNull().Filas.Single().Parcial.ShouldBe("9");
+		_host.Generador.Boletin.ShouldNotBeNull().Filas.Single().PrimerCuatrimestre.ShouldBe("9");
 	}
 
 	[Fact]
 	public async Task GenerarBoletin_distingue_no_haber_rendido_de_no_tener_nota()
 	{
 		var sembrado = Sembrar("Matemática");
-		sembrado.Cursante.RegistrarInasistenciaAExamen(sembrado.Materias[0].Id, DateTime.Today, Instancia.Parcial, null);
+		sembrado.Cursante.RegistrarInasistenciaAExamen(sembrado.Materias[0].Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, null);
 
 		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
 
 		var fila = _host.Generador.Boletin.ShouldNotBeNull().Filas.Single();
-		fila.Parcial.ShouldBe("No rindió");
-		fila.Recuperatorio.ShouldBe("—");
+		fila.PrimerCuatrimestre.ShouldBe("No rindió");
+		fila.SegundoCuatrimestre.ShouldBe("—");
 		fila.Condicion.ShouldBe("No rindió");
 	}
 
-	private static void Calificar(Cursante cursante, Materia materia, double nota, Instancia instancia = Instancia.Parcial, DateTime? fecha = null) =>
-		cursante.RegistrarCalificacion(materia.Id, fecha ?? DateTime.Today, instancia, nota, null);
+	private static void Calificar(Cursante cursante, Materia materia, double nota, Periodo periodo = Periodo.PrimerCuatrimestre, bool esRecuperatorio = false, DateTime? fecha = null) =>
+		cursante.RegistrarCalificacion(materia.Id, fecha ?? DateTime.Today, periodo, esRecuperatorio, nota, null);
 	#endregion
 
 	#region Boletín de un alumno trasladado (DOC-1)
@@ -390,7 +441,7 @@ public class ServicioDocumentoTests
 		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
 
 		var fila = _host.Generador.Boletin.ShouldNotBeNull().Filas.ShouldHaveSingleItem();
-		fila.Parcial.ShouldBe("8");
+		fila.PrimerCuatrimestre.ShouldBe("8");
 		fila.Condicion.ShouldBe("Aprobada (8)");
 	}
 
@@ -420,8 +471,8 @@ public class ServicioDocumentoTests
 		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
 
 		var documento = _host.Generador.Boletin.ShouldNotBeNull();
-		documento.Filas.Single(x => x.Materia == "Matemática").Parcial.ShouldBe("7");
-		documento.Filas.Single(x => x.Materia == "Lengua").Parcial.ShouldBe("9");
+		documento.Filas.Single(x => x.Materia == "Matemática").PrimerCuatrimestre.ShouldBe("7");
+		documento.Filas.Single(x => x.Materia == "Lengua").PrimerCuatrimestre.ShouldBe("9");
 	}
 
 	[Fact]
@@ -431,7 +482,7 @@ public class ServicioDocumentoTests
 		// inscripciones da exactamente el mismo boletín que leer las del cursante activo.
 		var sembrado = Sembrar("Matemática", "Lengua");
 		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 3);
-		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 7, instancia: Instancia.Recuperatorio);
+		Calificar(sembrado.Cursante, sembrado.Materias[0], nota: 7, esRecuperatorio: true);
 
 		await _servicio.GenerarBoletinCalificacionesAsync(Pedido(sembrado.Alumno.Id));
 
@@ -439,12 +490,12 @@ public class ServicioDocumentoTests
 		documento.Alumno.Division.ShouldBe("B");
 
 		var matematica = documento.Filas.Single(x => x.Materia == "Matemática");
-		matematica.Parcial.ShouldBe("3");
-		matematica.Recuperatorio.ShouldBe("7");
+		matematica.PrimerCuatrimestre.ShouldBe("7");
+		matematica.SegundoCuatrimestre.ShouldBe("—");
 		matematica.Condicion.ShouldBe("Aprobada (7)");
 
 		var lengua = documento.Filas.Single(x => x.Materia == "Lengua");
-		lengua.Parcial.ShouldBe("—");
+		lengua.PrimerCuatrimestre.ShouldBe("—");
 		lengua.Condicion.ShouldBe("Sin calificar");
 	}
 

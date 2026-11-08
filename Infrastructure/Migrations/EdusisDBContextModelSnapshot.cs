@@ -278,14 +278,13 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("cursante_id");
 
+                    b.Property<bool>("EsRecuperatorio")
+                        .HasColumnType("bit")
+                        .HasColumnName("es_recuperatorio");
+
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("date")
                         .HasColumnName("fecha");
-
-                    b.Property<string>("Instancia")
-                        .IsRequired()
-                        .HasColumnType("varchar(20)")
-                        .HasColumnName("instancia");
 
                     b.Property<Guid>("MateriaID")
                         .HasColumnType("uniqueidentifier")
@@ -300,6 +299,11 @@ namespace Infrastructure.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(140)")
                         .HasColumnName("observacion");
+
+                    b.Property<string>("Periodo")
+                        .IsRequired()
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("periodo");
 
                     b.Property<bool>("Rindio")
                         .HasColumnType("bit")

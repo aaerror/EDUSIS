@@ -288,7 +288,7 @@ public sealed class CursanteRepositorioTests : BaseIntegracion
 			.Build();
 
 		// Registrar una calificación real
-		cursante.RegistrarCalificacion(materiaID, DateTime.Today, Instancia.Parcial, 8.5, null);
+		cursante.RegistrarCalificacion(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8.5, null);
 
 		await using (var contexto = Fixture.CrearContexto())
 		{
@@ -360,7 +360,7 @@ public sealed class CursanteRepositorioTests : BaseIntegracion
 			.ConFechaInicio(new DateTime(2024, 3, 1))
 			.DadoDeBajaEl(new DateTime(2024, 12, 1))
 			.Build();
-		cerrada.RegistrarCalificacion(materiaID, new DateTime(2024, 6, 1), Instancia.Parcial, 7, null);
+		cerrada.RegistrarCalificacion(materiaID, new DateTime(2024, 6, 1), Periodo.PrimerCuatrimestre, false, 7, null);
 
 		var vigente = new CursanteBuilder()
 			.ConAlumno(await SembrarAlumnoAsync())

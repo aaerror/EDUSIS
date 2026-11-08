@@ -119,64 +119,110 @@ internal sealed class ContextoAcademico
 
 	#region Lectura de calificaciones
 	/// <summary>
-	/// Una materia está aprobada si alguna de sus calificaciones lo está, sin importar la
-	/// instancia: aprobar en el recuperatorio es aprobar.
+	/// Las calificaciones de una materia, que es lo que esperan las reglas del dominio.
 	/// </summary>
-	public static bool EstaAprobada(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID) =>
-		calificacionesDelCursante.Any(x => x.MateriaID.Equals(materiaID) && x.EstaAprobado());
+	/// <remarks>
+	/// Filtrar por materia es trabajo de esta capa: <see cref="RendimientoAcademico"/> recibe el
+	/// conjunto ya acotado porque agrupar requiere saber de dónde salieron las calificaciones, y
+	/// eso lo sabe quien fue al repositorio.
+	/// </remarks>
+	private static List<Calificacion> DeLaMateria(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID) =>
+		calificacionesDelCursante.Where(x => x.MateriaID.Equals(materiaID)).ToList();
 
 	/// <summary>
-	/// Condición de la materia. Con <paramref name="conNota"/> informa además la mejor nota
-	/// obtenida, que es la que explica la condición.
+	/// Una materia está aprobada cuando su nota de cierre alcanza el umbral.
+	/// </summary>
+	/// <remarks>
+	/// <strong>Acá no se decide nada.</strong> La regla es de <see cref="RendimientoAcademico"/>,
+	/// en el dominio. Hasta que el modelo de instancias distinguió los períodos, este método
+	/// decidía por su cuenta —"alguna calificación aprobada aprueba la materia"— y contradecía al
+	/// perfil del alumno, que promediaba: con un 4 y un 7 el boletín imprimía "Aprobada" y el
+	/// perfil "Desaprobada" sobre los mismos datos. Eran dos reglas, no dos vistas.
+	/// </remarks>
+	public static bool EstaAprobada(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID) =>
+		RendimientoAcademico.EstaAprobada(DeLaMateria(calificacionesDelCursante, materiaID));
+
+	/// <summary>
+	/// Condición de la materia. Con <paramref name="conNota"/> informa además la nota de cierre,
+	/// que es la que explica la condición.
 	/// </summary>
 	/// <remarks>
 	/// El parámetro existe porque las constancias y el boletín tienen lugar para la nota entre
 	/// paréntesis y los reportes no: con diez columnas en una hoja, "Aprobada (8)" parte la
 	/// celda en dos líneas. Lo que NO cambia entre los dos es cómo se decide la condición, y por
-	/// eso se decide acá una sola vez.
+	/// eso se decide en el dominio una sola vez.
 	/// </remarks>
 	public static string DescribirCondicion(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID, bool conNota)
 	{
-		var calificaciones = calificacionesDelCursante.Where(x => x.MateriaID.Equals(materiaID)).ToList();
+		var calificaciones = DeLaMateria(calificacionesDelCursante, materiaID);
 
 		if (!calificaciones.Any())
 		{
 			return SIN_CALIFICAR;
 		}
 
-		var mejor = calificaciones.Where(x => x.Rindio && x.Nota.HasValue).MaxBy(x => x.Nota);
-		if (mejor is null)
+		var cierre = RendimientoAcademico.NotaDeCierre(calificaciones);
+		if (cierre is null)
 		{
 			// Hay registros, pero son todos inasistencias al examen.
 			return NO_RINDIO;
 		}
 
-		var condicion = mejor.EstaAprobado() ? "Aprobada" : "Desaprobada";
+		var condicion = RendimientoAcademico.EstaAprobada(calificaciones) ? "Aprobada" : "Desaprobada";
 
-		return conNota ? $"{ condicion } ({ Formatear(mejor.Nota) })" : condicion;
+		return conNota ? $"{ condicion } ({ Formatear(cierre) })" : condicion;
 	}
 
 	/// <summary>
-	/// Nota de la materia en una instancia. Si hay más de una, vale la última por fecha: es la
-	/// que refleja el estado actual de la cursada.
+	/// La nota que quedó de un período, para imprimirla en una celda.
 	/// </summary>
-	public static string DescribirNota(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID, Instancia instancia)
+	/// <remarks>
+	/// Devuelve la nota VIGENTE del período y no cada intento por separado: si hubo recuperatorio,
+	/// la nota del período es la del recuperatorio, y el boletín informa el resultado del período
+	/// —no su historia—. El detalle intento por intento está en la pantalla de calificaciones.
+	///
+	/// Distingue las dos formas de no tener nota, porque no significan lo mismo para quien lee el
+	/// boletín: <see cref="SIN_DATO"/> es que el período no se tomó todavía, y
+	/// <see cref="NO_RINDIO"/> es que se tomó y el alumno no se presentó.
+	/// </remarks>
+	public static string DescribirNota(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID, Periodo periodo)
 	{
-		var ultima = calificacionesDelCursante
-			.Where(x => x.MateriaID.Equals(materiaID) && x.Instancia.Equals(instancia))
-			.OrderBy(x => x.Fecha)
-			.LastOrDefault();
+		var calificaciones = DeLaMateria(calificacionesDelCursante, materiaID);
+		var nota = RendimientoAcademico.NotaDelPeriodo(calificaciones, periodo);
 
-		if (ultima is null)
+		if (nota is not null)
 		{
-			return SIN_DATO;
+			return Formatear(nota);
 		}
 
-		return ultima.Rindio ? Formatear(ultima.Nota) : NO_RINDIO;
+		return calificaciones.Any(x => x.Periodo.Equals(periodo)) ? NO_RINDIO : SIN_DATO;
+	}
+
+	/// <summary>
+	/// La nota de recuperación, de los dos períodos en una sola celda.
+	/// </summary>
+	/// <remarks>
+	/// Van juntas porque a la segunda recuperación se llega sólo después de no aprobar la primera,
+	/// así que las dos nunca interesan a la vez: la que vale es la última que se rindió. Dos
+	/// columnas que en casi todos los boletines estarían vacías no pagan el ancho de hoja.
+	/// </remarks>
+	public static string DescribirRecuperacion(IEnumerable<Calificacion> calificacionesDelCursante, Guid materiaID)
+	{
+		var calificaciones = DeLaMateria(calificacionesDelCursante, materiaID);
+		var nota = RendimientoAcademico.NotaDeRecuperacion(calificaciones);
+
+		if (nota is not null)
+		{
+			return Formatear(nota);
+		}
+
+		return calificaciones.Any(x => x.Periodo is Periodo.PrimeraRecuperacion or Periodo.SegundaRecuperacion)
+			? NO_RINDIO
+			: SIN_DATO;
 	}
 
 	/// <summary>Nota sin decimales cuando es entera: "8" en lugar de "8,00".</summary>
-	private static string Formatear(double? nota) =>
+	private static string Formatear(decimal? nota) =>
 		nota.HasValue ? nota.Value.ToString("0.##") : SIN_DATO;
 	#endregion
 

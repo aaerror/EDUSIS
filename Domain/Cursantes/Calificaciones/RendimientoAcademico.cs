@@ -1,8 +1,8 @@
 namespace Domain.Cursantes.Calificaciones;
 
 /// <summary>
-/// Dueño de las reglas que deciden cómo le fue a un alumno: qué instancia cuenta como rendida, cómo
-/// se promedian y cuándo una materia está aprobada.
+/// Dueño de las reglas que deciden cómo le fue a un alumno: qué instancia cuenta como rendida, qué
+/// nota queda de cada período, con qué nota cierra una materia y cuándo está aprobada.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -20,19 +20,43 @@ namespace Domain.Cursantes.Calificaciones;
 /// donde pertenece.
 /// </para>
 /// <para>
-/// Estaban como métodos privados de <c>ServicioAlumno</c>, en la capa de aplicación, cuando se
-/// escribió el resumen académico del alumno.
+/// Lo que recibe cada método es el conjunto de calificaciones <strong>de una materia en un ciclo
+/// lectivo</strong>: agrupar por materia y por ciclo es trabajo de la capa de aplicación, porque
+/// requiere ir al repositorio. Pasarle calificaciones de dos materias juntas no falla, da un
+/// número sin sentido.
 /// </para>
 /// </remarks>
 public static class RendimientoAcademico
 {
+	/// <summary>
+	/// Los períodos que pueden cerrar una materia, del más decisivo al menos.
+	/// </summary>
+	/// <remarks>
+	/// Explícito y no derivado del orden de <see cref="Periodo"/>: atar la precedencia al orden en
+	/// que están escritos los miembros de un enum la rompe en silencio el día que alguien agrega
+	/// un valor en el medio. Los cuatrimestres no están porque no cierran por sí mismos —cierran
+	/// promediados, y sólo si no hubo nota final ni recuperación—.
+	/// </remarks>
+	private static readonly Periodo[] PERIODOS_DE_CIERRE =
+	{
+		Periodo.SegundaRecuperacion,
+		Periodo.PrimeraRecuperacion,
+		Periodo.Final,
+	};
+
+	private static readonly Periodo[] CUATRIMESTRES =
+	{
+		Periodo.PrimerCuatrimestre,
+		Periodo.SegundoCuatrimestre,
+	};
+
 	/// <summary>
 	/// Las instancias que el alumno efectivamente rindió, que son las únicas que tienen nota.
 	/// </summary>
 	/// <remarks>
 	/// <c>Rindio</c> por sí solo alcanzaría —el constructor de <see cref="Calificacion"/> exige la
 	/// nota cuando rindió—, pero el segundo término deja la consulta correcta si esa invariante
-	/// cambia, y es el que justifica el acceso a <c>Nota</c> en <see cref="Promediar"/>.
+	/// cambia, y es el que justifica el acceso a <c>Nota</c> más abajo.
 	///
 	/// Qué cuenta como "rendida" es un hecho del dominio y no un filtro de presentación: la
 	/// inasistencia a examen se guarda con <c>Nota</c> en nulo a propósito
@@ -43,52 +67,113 @@ public static class RendimientoAcademico
 		calificaciones.Where(x => x.Rindio && x.Nota is not null);
 
 	/// <summary>
-	/// Las instancias a las que el alumno no se presentó. No promedian.
+	/// Las instancias a las que el alumno no se presentó. No aportan nota a ningún período.
 	/// </summary>
 	public static IEnumerable<Calificacion> AusenciasAExamen(IEnumerable<Calificacion> calificaciones) =>
 		calificaciones.Where(x => !x.Rindio);
 
 	/// <summary>
-	/// El promedio de las notas rendidas, a dos decimales, o <c>null</c> si no rindió ninguna.
+	/// La nota que quedó de un período, o <c>null</c> si no rindió nada en él.
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Nulo y no cero: un alumno sin notas no tiene cero de promedio, y quien lo informe tiene que
-	/// poder decir "sin calificaciones" en lugar del peor promedio posible.
+	/// <strong>EL RECUPERATORIO REEMPLAZA A LA NOTA DEL PERÍODO.</strong> No promedian ni gana la
+	/// más alta: si el alumno rindió el recuperatorio, la nota del período es la del recuperatorio
+	/// incluso cuando es peor que la original. Es lo que significa recuperar.
 	/// </para>
 	/// <para>
-	/// Promedia sólo lo rendido. Contar la inasistencia a examen obligaría a inventarle un número
-	/// que nadie le puso, y el dominio la guarda sin nota justamente para no tener que hacerlo.
+	/// Faltar al recuperatorio no borra la nota original: una inasistencia no es una nota, así que
+	/// <see cref="Rendidas"/> la descarta y queda vigente lo que se había rendido.
+	/// </para>
+	/// <para>
+	/// Si hubiera más de una instancia del mismo tipo en el mismo período —que el dominio no
+	/// prohíbe— vale la más reciente por fecha.
 	/// </para>
 	/// </remarks>
-	public static decimal? Promediar(IEnumerable<Calificacion> calificaciones)
+	public static decimal? NotaDelPeriodo(IEnumerable<Calificacion> calificaciones, Periodo periodo)
 	{
-		var notas = Rendidas(calificaciones).Select(x => x.Nota!.Value).ToList();
+		var delPeriodo = Rendidas(calificaciones).Where(x => x.Periodo.Equals(periodo)).ToList();
 
-		if (notas.Count is 0)
-		{
-			return null;
-		}
+		var vigente = delPeriodo.Where(x => x.EsRecuperatorio).MaxBy(x => x.Fecha)
+					?? delPeriodo.Where(x => !x.EsRecuperatorio).MaxBy(x => x.Fecha);
 
-		return Math.Round((decimal)notas.Average(), 2, MidpointRounding.AwayFromZero);
+		return vigente is null ? null : (decimal)vigente.Nota!.Value;
 	}
 
 	/// <summary>
-	/// La materia está aprobada: el promedio de sus instancias rendidas alcanza
+	/// El promedio de los cuatrimestres cursados, o <c>null</c> si no rindió ninguno.
+	/// </summary>
+	/// <remarks>
+	/// Promedia los cuatrimestres que tienen nota, no los dos siempre: a mitad de año el segundo
+	/// todavía no existe y la nota del primero es toda la información que hay. Es el número que el
+	/// docente suele volcar como nota final, pero no es la nota final: eso lo carga él
+	/// (<see cref="Periodo.Final"/>) y puede no coincidir.
+	/// </remarks>
+	public static decimal? PromedioDeCuatrimestres(IEnumerable<Calificacion> calificaciones) =>
+		Promediar(CUATRIMESTRES.Select(x => NotaDelPeriodo(calificaciones, x)));
+
+	/// <summary>
+	/// La nota de recuperación vigente, o <c>null</c> si no rindió ninguna.
+	/// </summary>
+	/// <remarks>
+	/// Los dos períodos de recuperación dan un solo número porque a la segunda se llega sólo
+	/// después de no aprobar la primera: la que vale es la última rendida. Está acá y no en quien
+	/// arma la tabla para que el boletín, el reporte y el perfil no puedan elegir distinto.
+	/// </remarks>
+	public static decimal? NotaDeRecuperacion(IEnumerable<Calificacion> calificaciones)
+	{
+		var instancias = calificaciones.ToList();
+
+		return NotaDelPeriodo(instancias, Periodo.SegundaRecuperacion)
+			?? NotaDelPeriodo(instancias, Periodo.PrimeraRecuperacion);
+	}
+
+	/// <summary>
+	/// La nota con la que cierra la materia, o <c>null</c> si no hay con qué cerrarla.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Es la del período más avanzado que tenga nota, y recién si no hay ninguno el promedio de
+	/// los cuatrimestres: segunda recuperación, primera recuperación, nota final, cuatrimestres.
+	/// El orden sigue al calendario —a una recuperación se llega después de no alcanzar la nota
+	/// final— y por eso lo último que se rindió es lo que vale.
+	/// </para>
+	/// <para>
+	/// La nota final la carga el docente y no la calcula el sistema: cuando existe reemplaza al
+	/// promedio de los cuatrimestres, aunque sea distinta. Es una decisión suya, no una cuenta.
+	/// </para>
+	/// </remarks>
+	public static decimal? NotaDeCierre(IEnumerable<Calificacion> calificaciones)
+	{
+		var instancias = calificaciones.ToList();
+
+		foreach (var periodo in PERIODOS_DE_CIERRE)
+		{
+			var nota = NotaDelPeriodo(instancias, periodo);
+
+			if (nota is not null)
+			{
+				return nota;
+			}
+		}
+
+		return PromedioDeCuatrimestres(instancias);
+	}
+
+	/// <summary>
+	/// La materia está aprobada: su nota de cierre alcanza
 	/// <see cref="Calificacion.NOTA_APROBACION"/>.
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// <strong>El criterio lo fija la institución</strong>, y acá está tomado uno: el que no
-	/// privilegia ninguna instancia sobre otra. Los otros dos razonables dan resultados distintos
-	/// sobre los mismos datos, así que conviene que esté escrito cuál se eligió. Con un 4 y después
-	/// un 7: por promedio da 5,5 y <strong>no</strong> aprueba; por <em>última nota</em> —el
-	/// recuperatorio pisa al aplazo— aprueba; por <em>cualquier instancia aprobada</em> también.
+	/// Toda la decisión está en <see cref="NotaDeCierre"/>, así que acá no hay más criterio que el
+	/// umbral. Sin nota de cierre no está aprobada, y el motivo importa: la nota es nula, no cero.
+	/// Un alumno que faltó a todos los exámenes no aprobó, pero tampoco le fue mal.
 	/// </para>
 	/// <para>
-	/// Recibe las calificaciones y no un promedio ya calculado para que cambiar de criterio sea
-	/// cambiar este método y nada más: con un <c>decimal?</c> por parámetro, los otros dos criterios
-	/// obligarían a tocar también la firma y a todos los llamadores.
+	/// Recibe las calificaciones y no una nota ya calculada para que cambiar el criterio sea
+	/// cambiar este archivo y nada más: con un <c>decimal?</c> por parámetro, mover la regla
+	/// obligaría a tocar también la firma y a todos los llamadores.
 	/// </para>
 	/// <para>
 	/// El umbral sale de <see cref="Calificacion.NOTA_APROBACION"/>, que es público precisamente
@@ -97,8 +182,40 @@ public static class RendimientoAcademico
 	/// </remarks>
 	public static bool EstaAprobada(IEnumerable<Calificacion> calificaciones)
 	{
-		var promedio = Promediar(calificaciones);
+		var cierre = NotaDeCierre(calificaciones);
 
-		return promedio is not null && promedio >= (decimal)Calificacion.NOTA_APROBACION;
+		return cierre is not null && cierre >= (decimal)Calificacion.NOTA_APROBACION;
+	}
+
+	/// <summary>
+	/// El promedio general del alumno: la media de las notas de cierre de sus materias.
+	/// </summary>
+	/// <remarks>
+	/// Recibe las calificaciones <strong>ya agrupadas por materia</strong>, una colección por
+	/// materia, porque promediar todas las instancias juntas daría otro número y peor: mezclaría
+	/// la nota de un cuatrimestre con la de su propio recuperatorio, que la reemplazó, y con las
+	/// de los períodos de recuperación. Una materia pesa una vez, con la nota que la cerró.
+	/// </remarks>
+	public static decimal? PromediarNotasDeCierre(IEnumerable<IEnumerable<Calificacion>> materias) =>
+		Promediar(materias.Select(NotaDeCierre));
+
+	/// <summary>
+	/// La media de las notas que existen, a dos decimales, o <c>null</c> si no hay ninguna.
+	/// </summary>
+	/// <remarks>
+	/// Redondeo <c>AwayFromZero</c> y no el bancario, que es el predeterminado de
+	/// <c>Math.Round</c>: con el bancario 7,125 daría 7,12 y no 7,13, y un promedio que redondea
+	/// "para el lado par" no es el que nadie espera leer en un boletín.
+	/// </remarks>
+	private static decimal? Promediar(IEnumerable<decimal?> notas)
+	{
+		var presentes = notas.Where(x => x is not null).Select(x => x!.Value).ToList();
+
+		if (presentes.Count is 0)
+		{
+			return null;
+		}
+
+		return Math.Round(presentes.Average(), 2, MidpointRounding.AwayFromZero);
 	}
 }

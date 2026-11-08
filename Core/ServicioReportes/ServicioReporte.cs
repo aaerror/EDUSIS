@@ -182,8 +182,10 @@ internal class ServicioReporte : IServicio, IServicioReporte
 							inscripcion.Division.Descripcion,
 							inscripcion.Alumno.DatosPersonales.NombreCompleto(),
 							materia.Descripcion,
-							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Instancia.Parcial),
-							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Instancia.Recuperatorio),
+							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Periodo.PrimerCuatrimestre),
+							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Periodo.SegundoCuatrimestre),
+							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Periodo.Final),
+							ContextoAcademico.DescribirRecuperacion(inscripcion.Cursante.Calificaciones, materia.Id),
 							ContextoAcademico.DescribirCondicion(inscripcion.Cursante.Calificaciones, materia.Id, conNota: false)
 						});
 				}
@@ -192,7 +194,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 			return await GenerarAsync(
 				titulo: "Reporte de calificaciones",
 				request: request,
-				columnas: new[] { "Curso", "Div.", "Alumno", "Materia", "Parcial", "Recuperatorio", "Condición" },
+				columnas: new[] { "Curso", "Div.", "Alumno", "Materia", "1° Cuat.", "2° Cuat.", "Final", "Recup.", "Condición" },
 				filas: filas,
 				inscripciones: inscripciones);
 		}

@@ -40,9 +40,15 @@
 		en docs/ui-ux.md.
 	-->
 	<UserControl.Resources>
-		<ObjectDataProvider x:Key="instancias" MethodName="GetNames" ObjectType="{ x:Type sys:Enum }">
+		<!--
+			Los tramos del ciclo lectivo. Son los NOMBRES de los miembros porque es lo que viaja en
+			el request; el texto que se lee lo pone el converter "periodo" en la plantilla de la
+			lista. El recuperatorio no está acá: es una casilla aparte, porque es el segundo intento
+			DENTRO de un período y hay cuatro posibles en un mismo ciclo.
+		-->
+		<ObjectDataProvider x:Key="periodos" MethodName="GetNames" ObjectType="{ x:Type sys:Enum }">
 			<ObjectDataProvider.MethodParameters>
-				<x:Type TypeName="domainCalificaciones:Instancia"/>
+				<x:Type TypeName="domainCalificaciones:Periodo"/>
 			</ObjectDataProvider.MethodParameters>
 		</ObjectDataProvider>
 
@@ -649,6 +655,7 @@
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="2*"/>
 						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="Auto"/>
 						<ColumnDefinition Width="*"/>
 						<ColumnDefinition Width="*"/>
 					</Grid.ColumnDefinitions>
@@ -663,14 +670,29 @@
 					</HeaderedContentControl>
 
 					<HeaderedContentControl Grid.Column="1"
-											Header="Instancia"
+											Header="Período"
 											Style="{ StaticResource ResourceKey=Campo.Centro }">
-						<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=instancias } }"
-								  SelectedItem="{ Binding Path=Calificacion.Instancia, Mode=TwoWay }"
-								  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+						<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=periodos } }"
+								  SelectedItem="{ Binding Path=Calificacion.Periodo, Mode=TwoWay }"
+								  Style="{ StaticResource ResourceKey=Cmb.Campo }">
+							<ComboBox.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{ Binding Converter={ StaticResource ResourceKey=periodo } }"/>
+								</DataTemplate>
+							</ComboBox.ItemTemplate>
+						</ComboBox>
 					</HeaderedContentControl>
 
 					<HeaderedContentControl Grid.Column="2"
+											Header="Intento"
+											Style="{ StaticResource ResourceKey=Campo.Centro }">
+						<CheckBox Content="Recuperatorio"
+								  IsChecked="{ Binding Path=Calificacion.EsRecuperatorio, Mode=TwoWay }"
+								  Style="{ StaticResource ResourceKey=Chk.Campo.Alineada }"
+								  ToolTip="Es el segundo intento del período elegido y reemplaza a su nota"/>
+					</HeaderedContentControl>
+
+					<HeaderedContentControl Grid.Column="3"
 											Header="Fecha"
 											Style="{ StaticResource ResourceKey=Campo.Centro }">
 						<DatePicker DisplayDateEnd="{ x:Static sys:DateTime.Today }"
@@ -679,7 +701,7 @@
 									Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 					</HeaderedContentControl>
 
-					<HeaderedContentControl Grid.Column="3"
+					<HeaderedContentControl Grid.Column="4"
 											Header="Nota"
 											Style="{ StaticResource ResourceKey=Campo.Derecha }">
 						<TextBox MaxLength="2"

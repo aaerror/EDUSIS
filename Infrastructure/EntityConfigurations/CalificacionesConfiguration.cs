@@ -39,11 +39,17 @@ internal class CalificacionesConfiguration : IEntityTypeConfiguration<Calificaci
 			   .HasColumnType("date")
 			   .IsRequired();
 
-		builder.Property(x => x.Instancia)
-			   .HasColumnName("instancia")
-			   .HasColumnType("varchar(20)")
+		builder.Property(x => x.Periodo)
+			   .HasColumnName("periodo")
+			   .HasColumnType("varchar(30)")
 			   .HasConversion(toProvider => toProvider.ToString(),
-							  fromProvider => (Instancia) Enum.Parse(typeof(Instancia), fromProvider))
+							  fromProvider => (Periodo) Enum.Parse(typeof(Periodo), fromProvider))
+			   .IsRequired();
+
+		// Segundo intento DENTRO del período, no un período aparte: el ciclo admite hasta cuatro.
+		builder.Property(x => x.EsRecuperatorio)
+			   .HasColumnName("es_recuperatorio")
+			   .HasColumnType("bit")
 			   .IsRequired();
 
 		builder.Property(x => x.Rindio)

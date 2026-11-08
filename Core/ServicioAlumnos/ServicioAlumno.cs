@@ -204,13 +204,17 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 			var delCiclo = inscripciones.Where(x => x.CicloLectivo.Periodo.Equals(ciclo)).ToList();
 			var calificaciones = delCiclo.SelectMany(x => x.Calificaciones).ToList();
 
-			var materias = await DescribirMateriasAsync(calificaciones);
+			// Agrupado una sola vez: la tabla de materias y el promedio general tienen que mirar
+			// exactamente los mismos grupos, porque el promedio general es la media de lo que esa
+			// tabla informa como nota de cierre, no una segunda cuenta sobre las mismas notas.
+			var porMateria = calificaciones.GroupBy(x => x.MateriaID).ToList();
+			var materias = await DescribirMateriasAsync(porMateria);
 
 			return new ResumenAcademicoResponse(
 				AlumnoID: alumno.Id,
 				CicloLectivo: ciclo,
 				Cursada: cursada,
-				Promedio: RendimientoAcademico.Promediar(calificaciones),
+				Promedio: RendimientoAcademico.PromediarNotasDeCierre(porMateria),
 				Rendidas: RendimientoAcademico.Rendidas(calificaciones).Count(),
 				AusenciasAExamen: RendimientoAcademico.AusenciasAExamen(calificaciones).Count(),
 				MateriasAprobadas: materias.Count(x => x.Aprobada),
@@ -266,23 +270,27 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	/// <remarks>
 	/// Lo único que decide este método es el ORDEN y el NOMBRE: el orden porque es el de la tabla
 	/// que lo consume, y el nombre porque resolverlo exige el repositorio de materias, que es
-	/// trabajo de aplicación. Cuánto rindió, cuánto promedia y si aprobó lo decide
-	/// <see cref="RendimientoAcademico"/>, en el dominio.
+	/// trabajo de aplicación. Qué nota quedó de cada período, con cuál cierra la materia y si está
+	/// aprobada lo decide <see cref="RendimientoAcademico"/>, en el dominio.
 	/// </remarks>
-	private async Task<IReadOnlyCollection<MateriaCursadaResponse>> DescribirMateriasAsync(IReadOnlyCollection<Calificacion> calificaciones)
+	private async Task<IReadOnlyCollection<MateriaCursadaResponse>> DescribirMateriasAsync(IReadOnlyCollection<IGrouping<Guid, Calificacion>> porMateria)
 	{
 		var materias = new List<MateriaCursadaResponse>();
 
-		foreach (var grupo in calificaciones.GroupBy(x => x.MateriaID))
+		foreach (var grupo in porMateria)
 		{
 			var materia = await _unitOfWork.Materias.BuscarPorIDAsync(grupo.Key);
 
 			materias.Add(new MateriaCursadaResponse(
 				MateriaID: grupo.Key,
 				Materia: materia?.Descripcion ?? string.Empty,
+				PrimerCuatrimestre: RendimientoAcademico.NotaDelPeriodo(grupo, Periodo.PrimerCuatrimestre),
+				SegundoCuatrimestre: RendimientoAcademico.NotaDelPeriodo(grupo, Periodo.SegundoCuatrimestre),
+				Final: RendimientoAcademico.NotaDelPeriodo(grupo, Periodo.Final),
+				Recuperacion: RendimientoAcademico.NotaDeRecuperacion(grupo),
+				NotaDeCierre: RendimientoAcademico.NotaDeCierre(grupo),
 				Rendidas: RendimientoAcademico.Rendidas(grupo).Count(),
 				AusenciasAExamen: RendimientoAcademico.AusenciasAExamen(grupo).Count(),
-				Promedio: RendimientoAcademico.Promediar(grupo),
 				Aprobada: RendimientoAcademico.EstaAprobada(grupo)));
 		}
 

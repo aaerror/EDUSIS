@@ -57,8 +57,8 @@ public class ResumenAcademicoViewModelTests
 		decimal porcentaje = 0m) =>
 			new(jornadas, presentes, ausencias, inasistencias, tardanzas, ausencias + inasistencias, porcentaje);
 
-	private static MateriaCursadaResponse Materia(string nombre, decimal? promedio, bool aprobada, int rendidas = 1, int ausencias = 0) =>
-		new(Guid.NewGuid(), nombre, rendidas, ausencias, promedio, aprobada);
+	private static MateriaCursadaResponse Materia(string nombre, decimal? cierre, bool aprobada, int rendidas = 1, int ausencias = 0) =>
+		new(Guid.NewGuid(), nombre, PrimerCuatrimestre: cierre, SegundoCuatrimestre: null, Final: null, Recuperacion: null, NotaDeCierre: cierre, rendidas, ausencias, aprobada);
 
 	private static ResumenAcademicoResponse Resumen(
 		string? ciclo = "2026",

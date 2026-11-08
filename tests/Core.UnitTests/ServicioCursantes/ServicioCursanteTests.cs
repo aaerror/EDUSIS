@@ -3,6 +3,7 @@ using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes.Exceptions;
 using Core.UnitTests.Infraestructura;
 using Domain.Alumnos;
+using Domain.Cursantes.Calificaciones;
 using Domain.Cursantes;
 using Domain.Cursantes.Exceptions;
 using Domain.Cursos;
@@ -352,7 +353,7 @@ public class ServicioCursanteTests
 			.ConCicloLectivo(cicloLectivo)
 			.ConFechaInicio(DateTime.Today.AddDays(-30))
 			.Build();
-		original.RegistrarCalificacion(materia.Id, DateTime.Today.AddDays(-20), Domain.Cursantes.Calificaciones.Instancia.Parcial, 8, null);
+		original.RegistrarCalificacion(materia.Id, DateTime.Today.AddDays(-20), Periodo.PrimerCuatrimestre, false, 8, null);
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(original);
 
 		await _servicio.CambiarDeDivisionAsync(
@@ -509,7 +510,7 @@ public class ServicioCursanteTests
 		SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
 
 		var calificacionID = await _servicio.RegistrarCalificacionAsync(new CrearCalificationRequest(
-			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, "Parcial", 8, "Buen desempeño"));
+			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, "Buen desempeño"));
 
 		calificacionID.ShouldNotBe(Guid.Empty);
 	}
@@ -520,7 +521,7 @@ public class ServicioCursanteTests
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
 		await Should.ThrowAsync<NullReferenceException>(() => _servicio.RegistrarCalificacionAsync(
-			new CrearCalificationRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, "Parcial", 8, null)));
+			new CrearCalificationRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, null)));
 	}
 
 	[Fact]
@@ -532,7 +533,7 @@ public class ServicioCursanteTests
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
 
 		await _servicio.RegistrarCalificacionAsync(new CrearCalificationRequest(
-			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, "Parcial", 8, "Buen desempeño"));
+			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, "Buen desempeño"));
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();
 		calificacion.MateriaID.ShouldBe(materia.Id);
@@ -552,7 +553,7 @@ public class ServicioCursanteTests
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
 
 		await _servicio.RegistrarInasistenciaAExamenAsync(new RegistrarInasistenciaRequest(
-			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, "Parcial", "Ausente sin aviso"));
+			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, "Ausente sin aviso"));
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();
 		calificacion.Rindio.ShouldBeFalse();
@@ -565,7 +566,7 @@ public class ServicioCursanteTests
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
 		await Should.ThrowAsync<NullReferenceException>(() => _servicio.RegistrarInasistenciaAExamenAsync(
-			new RegistrarInasistenciaRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, "Parcial", null)));
+			new RegistrarInasistenciaRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, null)));
 	}
 	#endregion
 
@@ -577,7 +578,7 @@ public class ServicioCursanteTests
 		var materia = SembrarMateria();
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
-		var calificacionID = cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Domain.Cursantes.Calificaciones.Instancia.Parcial, 8, null);
+		var calificacionID = cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		await _servicio.QuitarCalificacionAsync(new EliminarCalificacionRequest(alumno.Id, cicloLectivo.Periodo, calificacionID));
 
@@ -603,7 +604,7 @@ public class ServicioCursanteTests
 		var materia = SembrarMateria();
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
-		var calificacionID = cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Domain.Cursantes.Calificaciones.Instancia.Parcial, 8, "Observación original");
+		var calificacionID = cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "Observación original");
 
 		await _servicio.ModificarObservacionCalificacionAsync(new ModificarObservacionCalificacionRequest(
 			alumno.Id, cicloLectivo.Periodo, calificacionID, "Observación corregida"));
@@ -631,7 +632,7 @@ public class ServicioCursanteTests
 		var materia = SembrarMateria("Historia");
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
-		cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Domain.Cursantes.Calificaciones.Instancia.Parcial, 9, null);
+		cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 9, null);
 
 		var calificaciones = await _servicio.ListarCalificacionesAsync(new ListarCalificacionesRequest(alumno.Id, cicloLectivo.Periodo));
 

@@ -243,7 +243,7 @@ public class ServicioDivisionTests
 		var division = SembrarDivision(curso.Id);
 
 		var cursante = new CursanteBuilder().ConDivision(division.Id).Build();
-		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
 
 		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(
@@ -312,8 +312,8 @@ public class ServicioDivisionTests
 		var division = SembrarDivision(curso.Id);
 
 		var cursante = new CursanteBuilder().ConDivision(division.Id).Build();
-		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
-		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 9, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 9, null);
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
 
 		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(

@@ -151,28 +151,69 @@
 								<ListView.View>
 									<GridView AllowsColumnReorder="False">
 										<GridView.Columns>
-											<GridViewColumn Header="MATERIA" Width="260">
+											<!--
+												El recuento de instancias rendidas y ausencias está
+												en el ToolTip de la materia y no en su propia
+												columna: las cinco columnas de nota ya ocupan el
+												ancho que esa tenía, y es un dato de apoyo, no el
+												que trae a nadie a esta tabla.
+											-->
+											<GridViewColumn Header="MATERIA" Width="190">
 												<GridViewColumn.CellTemplate>
 													<DataTemplate>
 														<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 																   Text="{ Binding Path=Materia, TargetNullValue='Sin datos' }"
-																   TextTrimming="CharacterEllipsis"/>
+																   TextTrimming="CharacterEllipsis"
+																   ToolTip="{ Binding Path=Instancias }"/>
 													</DataTemplate>
 												</GridViewColumn.CellTemplate>
 											</GridViewColumn>
-											<GridViewColumn Header="PROMEDIO" Width="96">
+											<!--
+												Una columna por período, con la nota VIGENTE de cada
+												uno: si hubo recuperatorio es la del recuperatorio,
+												porque reemplaza a la original. Las dos
+												recuperaciones comparten columna —a la segunda se
+												llega sólo después de no aprobar la primera—.
+											-->
+											<GridViewColumn Header="1° CUAT." Width="64">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+																   Text="{ Binding Path=PrimerCuatrimestre }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="2° CUAT." Width="64">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+																   Text="{ Binding Path=SegundoCuatrimestre }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="FINAL" Width="64">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+																   Text="{ Binding Path=Final }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="RECUP." Width="72">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+																   Text="{ Binding Path=Recuperacion }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<!-- La que decide la condición, y por eso la única destacada. -->
+											<GridViewColumn Header="CIERRE" Width="72">
 												<GridViewColumn.CellTemplate>
 													<DataTemplate>
 														<TextBlock Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
-																   Text="{ Binding Path=Promedio }"/>
-													</DataTemplate>
-												</GridViewColumn.CellTemplate>
-											</GridViewColumn>
-											<GridViewColumn Header="INSTANCIAS" Width="230">
-												<GridViewColumn.CellTemplate>
-													<DataTemplate>
-														<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
-																   Text="{ Binding Path=Instancias }"/>
+																   Text="{ Binding Path=NotaDeCierre }"
+																   ToolTip="La nota con la que cierra la materia"/>
 													</DataTemplate>
 												</GridViewColumn.CellTemplate>
 											</GridViewColumn>

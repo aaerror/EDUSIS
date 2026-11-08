@@ -378,7 +378,7 @@ public class ServicioAlumnoTests
 	{
 		var alumno = SembrarAlumno();
 		var cursante = new CursanteBuilder().ConAlumno(alumno.Id).Build();
-		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
 
 		// Dos cursantes en la planilla: al irse el del alumno, la planilla sobrevive con el otro.
@@ -450,8 +450,8 @@ public class ServicioAlumnoTests
 	{
 		var alumno = SembrarAlumno();
 		var cursante = new CursanteBuilder().ConAlumno(alumno.Id).Build();
-		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
-		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Recuperatorio, 6, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, true, 6, null);
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
 
 		var soloDelAlumno = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id)
@@ -590,14 +590,14 @@ public class ServicioAlumnoTests
 	/// promedio es 7, y lo seguiría siendo con diez ausencias encima.
 	/// </remarks>
 	[Fact]
-	public async Task ConsultarResumenAcademicoAsync_promedia_las_notas_y_excluye_las_ausencias_a_examen()
+	public async Task ConsultarResumenAcademicoAsync_promedia_los_cuatrimestres_y_excluye_las_ausencias_a_examen()
 	{
 		var (alumno, cursante) = SembrarCursada();
 		var matematica = SembrarMateria("Matemática");
 
-		cursante.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Parcial, 8, null);
-		cursante.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Recuperatorio, 6, null);
-		cursante.RegistrarInasistenciaAExamen(matematica, DateTime.Today, Instancia.Parcial, null);
+		cursante.RegistrarCalificacion(matematica, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
+		cursante.RegistrarCalificacion(matematica, DateTime.Today, Periodo.SegundoCuatrimestre, false, 6, null);
+		cursante.RegistrarInasistenciaAExamen(matematica, DateTime.Today, Periodo.SegundoCuatrimestre, true, null);
 
 		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
 
@@ -613,13 +613,13 @@ public class ServicioAlumnoTests
 		var (alumno, cursante) = SembrarCursada();
 		var matematica = SembrarMateria("Matemática");
 
-		cursante.RegistrarInasistenciaAExamen(matematica, DateTime.Today, Instancia.Parcial, null);
+		cursante.RegistrarInasistenciaAExamen(matematica, DateTime.Today, Periodo.PrimerCuatrimestre, false, null);
 
 		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
 
 		resumen.Promedio.ShouldBeNull();
 		resumen.AusenciasAExamen.ShouldBe(1);
-		resumen.Materias.ShouldHaveSingleItem().Promedio.ShouldBeNull();
+		resumen.Materias.ShouldHaveSingleItem().NotaDeCierre.ShouldBeNull();
 		resumen.Materias.First().Aprobada.ShouldBeFalse();
 	}
 
@@ -627,9 +627,11 @@ public class ServicioAlumnoTests
 	/// <para>
 	/// EL CRITERIO NO SE PRUEBA ACÁ: vive en <c>RendimientoAcademico</c>, en el dominio, y lo fija
 	/// <c>Domain.UnitTests/Cursantes/RendimientoAcademicoTests</c>. Lo que esta prueba afirma es que
-	/// el caso de uso <strong>delega</strong> en esa regla en lugar de aplicar la suya: un 4 y un 7
-	/// dan 5,5 y no aprueban, y si alguien volviera a escribir el criterio en <c>Core</c> con otro
-	/// umbral o con "última nota", el número que llega al <c>Response</c> dejaría de coincidir.
+	/// el caso de uso <strong>delega</strong> en esa regla en lugar de aplicar la suya: el 4 del
+	/// primer cuatrimestre desaparece de la cuenta porque su recuperatorio lo reemplazó, y si
+	/// alguien volviera a escribir el criterio en <c>Core</c> —promediando los dos intentos, que es
+	/// lo que este caso de uso hacía antes de que el modelo distinguiera los períodos— el número
+	/// que llega al <c>Response</c> sería 5,5 y la materia saldría desaprobada.
 	/// </para>
 	/// <para>
 	/// Las dos pruebas son necesarias y no se solapan: la de dominio fija la regla, esta fija el
@@ -638,20 +640,86 @@ public class ServicioAlumnoTests
 	/// </para>
 	/// </remarks>
 	[Fact]
-	public async Task ConsultarResumenAcademicoAsync_aprueba_la_materia_por_promedio_y_no_por_la_ultima_nota()
+	public async Task ConsultarResumenAcademicoAsync_el_recuperatorio_reemplaza_la_nota_del_cuatrimestre()
 	{
 		var (alumno, cursante) = SembrarCursada();
 		var lengua = SembrarMateria("Lengua");
 
-		cursante.RegistrarCalificacion(lengua, DateTime.Today.AddMonths(-2), Instancia.Parcial, 4, null);
-		cursante.RegistrarCalificacion(lengua, DateTime.Today, Instancia.Recuperatorio, 7, null);
+		cursante.RegistrarCalificacion(lengua, DateTime.Today.AddMonths(-2), Periodo.PrimerCuatrimestre, false, 4, null);
+		cursante.RegistrarCalificacion(lengua, DateTime.Today, Periodo.PrimerCuatrimestre, true, 7, null);
 
 		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
 
-		resumen.Materias.ShouldHaveSingleItem().Promedio.ShouldBe(5.5m);
-		resumen.Materias.First().Aprobada.ShouldBeFalse();
-		resumen.MateriasAprobadas.ShouldBe(0);
-		resumen.MateriasDesaprobadas.ShouldBe(1);
+		var materia = resumen.Materias.ShouldHaveSingleItem();
+		materia.PrimerCuatrimestre.ShouldBe(7m);
+		materia.NotaDeCierre.ShouldBe(7m);
+		materia.Aprobada.ShouldBeTrue();
+		materia.Rendidas.ShouldBe(2);
+		resumen.MateriasAprobadas.ShouldBe(1);
+		resumen.MateriasDesaprobadas.ShouldBe(0);
+	}
+
+	/// <remarks>
+	/// La contracara de la regla, y la que explica por qué no es "vale la mejor": el recuperatorio
+	/// reemplaza incluso cuando es PEOR. Con un 8 recuperado con 6 el cuatrimestre vale 6.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_el_recuperatorio_reemplaza_aunque_sea_peor()
+	{
+		var (alumno, cursante) = SembrarCursada();
+		var lengua = SembrarMateria("Lengua");
+
+		cursante.RegistrarCalificacion(lengua, DateTime.Today.AddMonths(-2), Periodo.PrimerCuatrimestre, false, 8, null);
+		cursante.RegistrarCalificacion(lengua, DateTime.Today, Periodo.PrimerCuatrimestre, true, 6, null);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.Materias.ShouldHaveSingleItem().PrimerCuatrimestre.ShouldBe(6m);
+		resumen.Promedio.ShouldBe(6m);
+	}
+
+	/// <remarks>
+	/// La nota final la carga el docente y PISA al promedio de los cuatrimestres: con 4 y 8 el
+	/// promedio sería 6, y si el docente cerró en 9 la materia cierra en 9. No es una cuenta del
+	/// sistema sino su decisión, y por eso el modelo la guarda como una calificación más.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_la_nota_final_reemplaza_al_promedio_de_cuatrimestres()
+	{
+		var (alumno, cursante) = SembrarCursada();
+		var lengua = SembrarMateria("Lengua");
+
+		cursante.RegistrarCalificacion(lengua, DateTime.Today.AddMonths(-4), Periodo.PrimerCuatrimestre, false, 4, null);
+		cursante.RegistrarCalificacion(lengua, DateTime.Today.AddMonths(-1), Periodo.SegundoCuatrimestre, false, 8, null);
+		cursante.RegistrarCalificacion(lengua, DateTime.Today, Periodo.Final, false, 9, null);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		var materia = resumen.Materias.ShouldHaveSingleItem();
+		materia.Final.ShouldBe(9m);
+		materia.NotaDeCierre.ShouldBe(9m);
+		resumen.Promedio.ShouldBe(9m);
+	}
+
+	/// <remarks>
+	/// Y la recuperación pisa a la nota final, porque a un período de recuperación se llega después
+	/// de no haberla alcanzado: es lo último que se rindió y lo que cierra la materia.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_la_recuperacion_reemplaza_a_la_nota_final()
+	{
+		var (alumno, cursante) = SembrarCursada();
+		var lengua = SembrarMateria("Lengua");
+
+		cursante.RegistrarCalificacion(lengua, DateTime.Today.AddMonths(-2), Periodo.Final, false, 4, null);
+		cursante.RegistrarCalificacion(lengua, DateTime.Today, Periodo.PrimeraRecuperacion, false, 6, null);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		var materia = resumen.Materias.ShouldHaveSingleItem();
+		materia.Recuperacion.ShouldBe(6m);
+		materia.NotaDeCierre.ShouldBe(6m);
+		materia.Aprobada.ShouldBeTrue();
 	}
 
 	[Fact]
@@ -661,17 +729,20 @@ public class ServicioAlumnoTests
 		var matematica = SembrarMateria("Matemática");
 		var historia = SembrarMateria("Historia");
 
-		cursante.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Parcial, 9, null);
-		cursante.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Recuperatorio, 7, null);
-		cursante.RegistrarCalificacion(historia, DateTime.Today, Instancia.Parcial, 5, null);
+		cursante.RegistrarCalificacion(matematica, DateTime.Today, Periodo.PrimerCuatrimestre, false, 9, null);
+		cursante.RegistrarCalificacion(matematica, DateTime.Today, Periodo.PrimerCuatrimestre, true, 7, null);
+		cursante.RegistrarCalificacion(historia, DateTime.Today, Periodo.PrimerCuatrimestre, false, 5, null);
 
 		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
 
 		resumen.Materias.Select(x => x.Materia).ShouldBe(new[] { "Historia", "Matemática" });
 		resumen.Materias.First(x => x.Materia == "Matemática").Rendidas.ShouldBe(2);
-		resumen.Materias.First(x => x.Materia == "Matemática").Promedio.ShouldBe(8m);
+		resumen.Materias.First(x => x.Materia == "Matemática").NotaDeCierre.ShouldBe(7m);
 		resumen.MateriasAprobadas.ShouldBe(1);
 		resumen.MateriasDesaprobadas.ShouldBe(1);
+		// Una materia pesa UNA vez en el promedio general, con la nota que la cerró: 7 y 5 dan 6,
+		// no el promedio de las tres instancias cargadas, que daría 7.
+		resumen.Promedio.ShouldBe(6m);
 	}
 
 	/// <remarks>
@@ -753,13 +824,16 @@ public class ServicioAlumnoTests
 											  fechaBaja: DateTime.Today.AddMonths(-3));
 		var matematica = SembrarMateria("Matemática");
 
-		origen.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-4), Instancia.Parcial, 5, null);
+		origen.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-4), Periodo.PrimerCuatrimestre, false, 5, null);
 
 		var destino = new CursanteBuilder().ConAlumno(alumno.Id)
 										   .ConCicloLectivo(CicloLectivo.Crear("2026"))
 										   .ConFechaInicio(DateTime.Today.AddMonths(-3))
 										   .Build();
-		destino.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Recuperatorio, 9, null);
+		// Un cuatrimestre a cada lado del traslado, y no dos intentos del mismo: si fueran del
+		// mismo período el recuperatorio taparía al 5 y el promedio daría 9 con o sin el arreglo,
+		// así que la prueba no detectaría nada.
+		destino.RegistrarCalificacion(matematica, DateTime.Today, Periodo.SegundoCuatrimestre, false, 9, null);
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(destino);
 
 		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
@@ -781,14 +855,14 @@ public class ServicioAlumnoTests
 		var (alumno, vigente) = SembrarCursada(periodo: "2026");
 		var matematica = SembrarMateria("Matemática");
 
-		vigente.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Parcial, 8, null);
+		vigente.RegistrarCalificacion(matematica, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		var anterior = new CursanteBuilder().ConAlumno(alumno.Id)
 											.ConCicloLectivo(CicloLectivo.Crear("2025"))
 											.ConFechaInicio(DateTime.Today.AddYears(-1))
 											.DadoDeBajaEl(DateTime.Today.AddMonths(-9))
 											.Build();
-		anterior.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-10), Instancia.Parcial, 2, null);
+		anterior.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-10), Periodo.PrimerCuatrimestre, false, 2, null);
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(anterior);
 
 		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
@@ -813,7 +887,7 @@ public class ServicioAlumnoTests
 											   fechaBaja: DateTime.Today.AddMonths(-6));
 		var matematica = SembrarMateria("Matemática");
 
-		cerrada.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-7), Instancia.Parcial, 6, null);
+		cerrada.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-7), Periodo.PrimerCuatrimestre, false, 6, null);
 
 		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
 

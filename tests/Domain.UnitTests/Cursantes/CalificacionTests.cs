@@ -22,7 +22,7 @@ public class CalificacionTests
 	private static Calificacion Registrar(double? nota, string? observacion = null, DateTime? fecha = null, Guid? materia = null)
 	{
 		var cursante = new CursanteBuilder().Build();
-		var id = cursante.RegistrarCalificacion(materia ?? Materia, fecha ?? DateTime.Today, Instancia.Parcial, nota, observacion);
+		var id = cursante.RegistrarCalificacion(materia ?? Materia, fecha ?? DateTime.Today, Periodo.PrimerCuatrimestre, false, nota, observacion);
 
 		return cursante.Calificaciones.Single(x => x.Id.Equals(id));
 	}
@@ -35,7 +35,8 @@ public class CalificacionTests
 
 		calificacion.Rindio.ShouldBeTrue();
 		calificacion.Nota!.Value.ShouldBe(7.13, 0.0001);
-		calificacion.Instancia.ShouldBe(Instancia.Parcial);
+		calificacion.Periodo.ShouldBe(Periodo.PrimerCuatrimestre);
+		calificacion.EsRecuperatorio.ShouldBeFalse();
 		calificacion.MateriaID.ShouldBe(Materia);
 	}
 
@@ -44,20 +45,24 @@ public class CalificacionTests
 	{
 		var cursante = new CursanteBuilder().Build();
 
-		var id = cursante.RegistrarInasistenciaAExamen(Materia, DateTime.Today, Instancia.Recuperatorio, "Ausente con aviso");
+		var id = cursante.RegistrarInasistenciaAExamen(Materia, DateTime.Today, Periodo.PrimerCuatrimestre, true, "Ausente con aviso");
 
 		var calificacion = cursante.Calificaciones.Single(x => x.Id.Equals(id));
 		calificacion.Rindio.ShouldBeFalse();
 		calificacion.Nota.ShouldBeNull();
 	}
 
+	/// <remarks>
+	/// El umbral no se nombra en el título a propósito, aunque el valor esté fijado en el cuerpo:
+	/// un nombre con el número adentro queda mintiendo si el umbral se mueve, sin que falle nada.
+	/// </remarks>
 	[Theory]
 	[InlineData(6, true)]
 	[InlineData(10, true)]
 	[InlineData(5.99, false)]
 	[InlineData(5.5, false)]
 	[InlineData(1, false)]
-	public void EstaAprobado_requiere_nota_minima_de_6(double nota, bool aprobado)
+	public void EstaAprobado_requiere_la_nota_minima_de_aprobacion(double nota, bool aprobado)
 	{
 		Registrar(nota).EstaAprobado().ShouldBe(aprobado);
 	}
@@ -67,7 +72,7 @@ public class CalificacionTests
 	{
 		var cursante = new CursanteBuilder().Build();
 
-		var id = cursante.RegistrarInasistenciaAExamen(Materia, DateTime.Today, Instancia.Parcial, null);
+		var id = cursante.RegistrarInasistenciaAExamen(Materia, DateTime.Today, Periodo.PrimerCuatrimestre, false, null);
 
 		cursante.Calificaciones.Single(x => x.Id.Equals(id)).EstaAprobado().ShouldBeFalse();
 	}
@@ -110,6 +115,44 @@ public class CalificacionTests
 	{
 		Should.Throw<ArgumentException>(() => Registrar(8, new string('á', 141)));
 	}
+
+	/// <remarks>
+	/// La nota final no tiene recuperatorio: lo que se recupera son los cuatrimestres y los
+	/// períodos de recuperación, y la final es el cierre que el docente decide sobre eso. Sin esta
+	/// invariante, un "recuperatorio de la nota final" sería una instancia que ninguna regla de
+	/// <c>RendimientoAcademico</c> sabe interpretar, guardada sin que nada avise.
+	/// </remarks>
+	[Fact]
+	public void Un_recuperatorio_de_la_nota_final_lanza_RecuperatorioDeNotaFinalException()
+	{
+		var cursante = new CursanteBuilder().Build();
+
+		var ex = Should.Throw<Exception>(() =>
+			cursante.RegistrarCalificacion(Materia, DateTime.Today, Periodo.Final, esRecuperatorio: true, 8, null));
+
+		ex.GetType().Name.ShouldBe("RecuperatorioDeNotaFinalException");
+		cursante.Calificaciones.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// Los demás períodos SÍ lo admiten, incluidos los de recuperación: "normalmente es una nota,
+	/// pero puede existir nota y recuperatorio". La invariante de arriba es sólo sobre la final.
+	/// </remarks>
+	[Theory]
+	[InlineData(Periodo.PrimerCuatrimestre)]
+	[InlineData(Periodo.SegundoCuatrimestre)]
+	[InlineData(Periodo.PrimeraRecuperacion)]
+	[InlineData(Periodo.SegundaRecuperacion)]
+	public void Los_demas_periodos_admiten_recuperatorio(Periodo periodo)
+	{
+		var cursante = new CursanteBuilder().Build();
+
+		var id = cursante.RegistrarCalificacion(Materia, DateTime.Today, periodo, esRecuperatorio: true, 8, null);
+
+		var calificacion = cursante.Calificaciones.Single(x => x.Id.Equals(id));
+		calificacion.Periodo.ShouldBe(periodo);
+		calificacion.EsRecuperatorio.ShouldBeTrue();
+	}
 	#endregion
 
 	#region Identidad
@@ -118,8 +161,8 @@ public class CalificacionTests
 	{
 		var cursante = new CursanteBuilder().Build();
 
-		var una = cursante.RegistrarCalificacion(Materia, DateTime.Today, Instancia.Parcial, 8, "obs");
-		var otra = cursante.RegistrarCalificacion(Materia, DateTime.Today, Instancia.Parcial, 8, "obs");
+		var una = cursante.RegistrarCalificacion(Materia, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "obs");
+		var otra = cursante.RegistrarCalificacion(Materia, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "obs");
 
 		una.ShouldNotBe(otra);
 		cursante.Calificaciones.Count.ShouldBe(2);

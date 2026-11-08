@@ -194,7 +194,7 @@ public class CursanteTests
 		// Es la razón de DOC-1: las notas no se mudan con el alumno, así que el boletín tiene que
 		// unir las calificaciones de todas las inscripciones del ciclo.
 		var cursante = new CursanteBuilder().ConFechaInicio(DateTime.Today.AddDays(-30)).Build();
-		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today.AddDays(-20), Instancia.Parcial, 8, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today.AddDays(-20), Periodo.PrimerCuatrimestre, false, 8, null);
 
 		cursante.DarDeBaja(DateTime.Today);
 
@@ -209,7 +209,7 @@ public class CursanteTests
 		var cursante = new CursanteBuilder().Build();
 		var materiaID = Guid.NewGuid();
 
-		var id = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Instancia.Parcial, 8, "Muy bien");
+		var id = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "Muy bien");
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();
 		calificacion.Id.ShouldBe(id);
@@ -223,7 +223,7 @@ public class CursanteTests
 		var cursante = new CursanteBuilder().Build();
 		var materiaID = Guid.NewGuid();
 
-		var id = cursante.RegistrarInasistenciaAExamen(materiaID, DateTime.Today, Instancia.Parcial, "Enfermo");
+		var id = cursante.RegistrarInasistenciaAExamen(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, "Enfermo");
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();
 		calificacion.Id.ShouldBe(id);
@@ -235,7 +235,7 @@ public class CursanteTests
 	public void QuitarCalificacion_elimina_una_calificacion_existente()
 	{
 		var cursante = new CursanteBuilder().Build();
-		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
+		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		cursante.QuitarCalificacion(id);
 
@@ -247,8 +247,8 @@ public class CursanteTests
 	{
 		var cursante = new CursanteBuilder().Build();
 		var materiaID = Guid.NewGuid();
-		var primera = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Instancia.Parcial, 8, null);
-		var segunda = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Instancia.Parcial, 8, null);
+		var primera = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
+		var segunda = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		cursante.QuitarCalificacion(segunda);
 
@@ -270,7 +270,7 @@ public class CursanteTests
 	{
 		var cursante = new CursanteBuilder().Build();
 		var materiaID = Guid.NewGuid();
-		var id = cursante.RegistrarCalificacion(materiaID, new DateTime(2026, 3, 10), Instancia.Recuperatorio, 8, "Original");
+		var id = cursante.RegistrarCalificacion(materiaID, new DateTime(2026, 3, 10), Periodo.PrimerCuatrimestre, true, 8, "Original");
 
 		cursante.ModificarObservacionCalificacion(id, "Modificada");
 
@@ -280,14 +280,15 @@ public class CursanteTests
 		calificacion.Nota.ShouldBe(8);
 		calificacion.MateriaID.ShouldBe(materiaID);
 		calificacion.Fecha.ShouldBe(new DateTime(2026, 3, 10));
-		calificacion.Instancia.ShouldBe(Instancia.Recuperatorio);
+		calificacion.Periodo.ShouldBe(Periodo.PrimerCuatrimestre);
+		calificacion.EsRecuperatorio.ShouldBeTrue();
 	}
 
 	[Fact]
 	public void ModificarObservacionCalificacion_con_mas_de_140_caracteres_lanza_ArgumentException()
 	{
 		var cursante = new CursanteBuilder().Build();
-		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, "Original");
+		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "Original");
 
 		Should.Throw<ArgumentException>(() => cursante.ModificarObservacionCalificacion(id, new string('a', 141)));
 

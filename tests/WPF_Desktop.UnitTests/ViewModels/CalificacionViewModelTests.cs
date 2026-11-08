@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Domain.Cursantes.Calificaciones;
 using Core.ServicioCursantes.DTOs.Responses;
 using Shouldly;
 using System.Collections.ObjectModel;
@@ -17,7 +18,8 @@ public class CalificacionViewModelTests
 			MateriaID: Guid.NewGuid(),
 			Materia: "Matematica",
 			Fecha: new DateTime(2025, 6, 12),
-			Instancia: "Recuperatorio",
+			Periodo: nameof(Periodo.SegundoCuatrimestre),
+			EsRecuperatorio: true,
 			Rindio: rindio,
 			Nota: nota,
 			Aprobado: aprobado,
@@ -42,7 +44,11 @@ public class CalificacionViewModelTests
 		viewModel.CalificacionID.ShouldNotBe(viewModel.MateriaID);
 		viewModel.Materia.ShouldBe("Matematica");
 		viewModel.Fecha.ShouldBe(new DateTime(2025, 6, 12));
-		viewModel.Instancia.ShouldBe("Recuperatorio");
+		viewModel.Periodo.ShouldBe(nameof(Periodo.SegundoCuatrimestre));
+		viewModel.EsRecuperatorio.ShouldBeTrue();
+		// La instancia es la LECTURA de los dos campos: el período y si es su recuperatorio. Antes
+		// decía "Recuperatorio" a secas, que no distinguía los cuatro posibles de un ciclo.
+		viewModel.Instancia.ShouldBe("2° cuatrimestre (rec.)");
 		viewModel.Rindio.ShouldBeTrue();
 		viewModel.Nota.ShouldBe(4.5);
 		viewModel.Aprobado.ShouldBeFalse();

@@ -22,6 +22,12 @@ namespace Core.ServicioAlumnos.DTOs.Responses;
 /// ninguna inscripción, <see cref="CicloLectivo"/> es nulo y no hay nada que informar.
 /// </para>
 /// <para>
+/// <see cref="Promedio"/> es la media de las NOTAS DE CIERRE de las materias, una por materia, no
+/// la media de todas las calificaciones cargadas. Promediar las instancias sueltas mezclaría la
+/// nota de un cuatrimestre con la de su propio recuperatorio —que la reemplazó— y con las de los
+/// períodos de recuperación, y le daría más peso a las materias con más exámenes tomados.
+/// </para>
+/// <para>
 /// <see cref="Trayectoria"/> reutiliza <see cref="InscripcionHistoricaResponse"/>, el DTO de
 /// <c>ServicioCursantes</c>, en lugar de declarar un registro propio idéntico: la cursada de un
 /// alumno es la misma cosa vista desde el perfil o desde la división, y dos registros iguales con
