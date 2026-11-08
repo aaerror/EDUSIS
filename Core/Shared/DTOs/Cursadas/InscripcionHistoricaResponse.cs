@@ -1,4 +1,4 @@
-namespace Core.ServicioCursantes.DTOs.Responses;
+namespace Core.Shared.DTOs.Cursadas;
 
 /// <summary>
 /// Una inscripción del historial del alumno. <c>FechaFin</c> nula y <c>EstaActiva</c> en

@@ -1,5 +1,5 @@
 using Core.ServicioAlumnos.DTOs.Responses;
-using Core.ServicioCursantes.DTOs.Responses;
+using Core.Shared.DTOs.Cursadas;
 using Shouldly;
 using System.Collections.Generic;
 using System.Linq;

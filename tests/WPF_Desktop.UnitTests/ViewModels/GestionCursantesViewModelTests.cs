@@ -7,6 +7,7 @@ using Core.ServicioCurriculas.DTOs.Responses;
 using Core.ServicioCursantes;
 using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes.DTOs.Responses;
+using Core.Shared.DTOs.Cursadas;
 using Core.ServicioCursos.DTOs.Responses;
 using Core.ServicioDivisiones;
 using Core.ServicioDivisiones.DTOs.Requests;

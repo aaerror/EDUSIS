@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioAlumnos.DTOs.Responses;
-using Core.ServicioCursantes.DTOs.Responses;
+using Core.Shared.DTOs.Cursadas;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;

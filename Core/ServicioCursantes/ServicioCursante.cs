@@ -1,5 +1,6 @@
 using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes.DTOs.Responses;
+using Core.Shared.DTOs.Cursadas;
 using Core.ServicioCursantes.Exceptions;
 using Core.Shared;
 using Core.Shared.Seguridad;

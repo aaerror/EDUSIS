@@ -1,6 +1,6 @@
 ﻿using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos.DTOs.Responses;
-using Core.ServicioCursantes.DTOs.Responses;
+using Core.Shared.DTOs.Cursadas;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Response;
 using Core.Shared;

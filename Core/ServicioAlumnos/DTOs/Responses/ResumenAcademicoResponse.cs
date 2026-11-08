@@ -1,4 +1,4 @@
-using Core.ServicioCursantes.DTOs.Responses;
+using Core.Shared.DTOs.Cursadas;
 
 namespace Core.ServicioAlumnos.DTOs.Responses;
 
