@@ -409,23 +409,13 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	}
 
 	/// <summary>
-	/// El porcentaje de asistencia, redondeado a un decimal. Sin marcas devuelve cero: no hay período
-	/// del que opinar, y un 100% sobre cero días diría que la división no faltó nunca.
+	/// El porcentaje de asistencia. La fórmula se mudó a <see cref="PorcentajeDeAsistencia"/> al
+	/// necesitarla también el resumen académico del alumno: dos copias significarían que el
+	/// preceptor y el perfil pueden informar números distintos sobre los mismos registros, que es
+	/// el defecto que <c>Calificacion.NOTA_APROBACION</c> evita por el mismo motivo.
 	/// </summary>
-	/// <remarks>
-	/// La tardanza cuenta como asistida. El alumno llegó tarde pero estuvo en clase, y un porcentaje que
-	/// la descontara diría que faltó un día entero por cinco minutos. Los minutos de la tardanza quedan
-	/// en el registro del día, que es donde significan algo.
-	/// </remarks>
-	private static decimal Porcentaje(int asistidas, int sobre)
-	{
-		if (sobre <= 0)
-		{
-			return decimal.Zero;
-		}
-
-		return Math.Round(asistidas * 100m / sobre, 1, MidpointRounding.AwayFromZero);
-	}
+	private static decimal Porcentaje(int asistidas, int sobre) =>
+		PorcentajeDeAsistencia.Calcular(asistidas, sobre);
 
 	private async Task<PlanillaAsistencia> BuscarPlanillaAsync(Guid divisionID, DateTime fecha)
 	{

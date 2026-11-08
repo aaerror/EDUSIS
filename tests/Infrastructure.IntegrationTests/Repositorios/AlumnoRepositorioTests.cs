@@ -105,30 +105,86 @@ public sealed class AlumnoRepositorioTests : BaseIntegracion
 
 	/// <summary>
 	/// H-020 (corregido): la búsqueda se traduce a SQL sobre las columnas <c>apellido</c> y
-	/// <c>nombre</c> con el mismo formato que <c>DatosPersonales.NombreCompleto()</c>.
+	/// <c>nombre</c>, con <c>LIKE '%…%'</c> en las dos.
 	/// </summary>
+	/// <remarks>
+	/// Reemplaza a las dos pruebas de <c>BuscarPorNombreCompletoAsync</c>, una de las cuales
+	/// afirmaba que la coincidencia parcial NO encuentra nada. Era cierto y era el defecto: ese
+	/// contrato exigía "Pérez, Juan" con su coma y sus tildes, y es el que dejaba a la pantalla de
+	/// Alumnos sin índice.
+	/// </remarks>
 	[RequiereSqlServerFact]
-	public async Task BuscarPorNombreCompletoAsync_devuelve_el_alumno_por_apellido_y_nombre()
+	public async Task BuscarSegunNombreCompletoAsync_encuentra_por_coincidencia_parcial_del_apellido()
 	{
-		var alumno = await SembrarAlumnoAsync("27555444", "Pérez", "Juan");
+		var juan = await SembrarAlumnoAsync("27555444", "Ramirez", "Juan", "AL9110");
+		var juana = await SembrarAlumnoAsync("27555445", "Ramirez", "Juana", "AL9111");
+		await SembrarAlumnoAsync("30111222", "Gomez", "Lucia", "AL9112");
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		var encontrado = await uow.Alumnos.BuscarPorNombreCompletoAsync("Pérez, Juan");
+		var encontrados = await uow.Alumnos.BuscarSegunNombreCompletoAsync("amir");
 
-		encontrado.ShouldNotBeNull();
-		encontrado.Id.ShouldBe(alumno.Id);
+		encontrados.Select(x => x.Id).ShouldBe(new[] { juan.Id, juana.Id }, ignoreOrder: true);
+	}
+
+	/// <summary>
+	/// Busca en el nombre y no sólo en el apellido.
+	/// </summary>
+	/// <remarks>
+	/// Es lo que el contrato anterior no podía hacer: concatenaba "Apellido, Nombre", así que un
+	/// término que coincidía sólo con el nombre quedaba detrás del apellido y no encontraba nada.
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task BuscarSegunNombreCompletoAsync_tambien_coincide_en_el_nombre()
+	{
+		var lucia = await SembrarAlumnoAsync("30111222", "Gomez", "Lucia", "AL9120");
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var encontrados = await uow.Alumnos.BuscarSegunNombreCompletoAsync("Luc");
+
+		encontrados.ShouldHaveSingleItem().Id.ShouldBe(lucia.Id);
+	}
+
+	/// <summary>
+	/// Ordena por apellido y después por nombre, en la base y no en memoria.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// El orden importa porque es el del índice de la pantalla, y ordenarlo del lado del cliente
+	/// obligaría a traer todas las filas antes de poder paginar nada.
+	/// </para>
+	/// <para>
+	/// Los tres apellidos son ASCII a propósito: lo que se afirma es que el <c>ORDER BY</c> está en
+	/// la consulta, no cómo ordena la colación de la base las tildes y la eñe. Una prueba que
+	/// mezclara las dos cosas fallaría por la colación del servidor y se leería como un defecto de
+	/// la consulta.
+	/// </para>
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task BuscarSegunNombreCompletoAsync_ordena_por_apellido_y_nombre()
+	{
+		await SembrarAlumnoAsync("27555445", "Ramirez", "Juana", "AL9130");
+		await SembrarAlumnoAsync("27555444", "Ramirez", "Ana", "AL9131");
+		await SembrarAlumnoAsync("29333445", "Ramos", "Zoe", "AL9132");
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var encontrados = await uow.Alumnos.BuscarSegunNombreCompletoAsync("Ram");
+
+		encontrados.Select(x => $"{ x.DatosPersonales.Apellido } { x.DatosPersonales.Nombre }")
+				   .ShouldBe(new[] { "Ramirez Ana", "Ramirez Juana", "Ramos Zoe" });
 	}
 
 	[RequiereSqlServerFact]
-	public async Task BuscarPorNombreCompletoAsync_no_encuentra_por_coincidencia_parcial()
+	public async Task BuscarSegunNombreCompletoAsync_sin_coincidencias_devuelve_vacio()
 	{
-		await SembrarAlumnoAsync("27555445", "Pérez", "Juana");
+		await SembrarAlumnoAsync("27555444", "Ramirez", "Juan", "AL9140");
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		var encontrado = await uow.Alumnos.BuscarPorNombreCompletoAsync("Pérez, Juan");
+		var encontrados = await uow.Alumnos.BuscarSegunNombreCompletoAsync("Nadie");
 
-		encontrado.ShouldBeNull();
+		encontrados.ShouldBeEmpty();
 	}
 }

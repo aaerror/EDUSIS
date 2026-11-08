@@ -9,7 +9,23 @@ public interface IServicioAlumno
 {
 	Task<PersonaConDetallesResponse> BuscarPorIDAsync(PersonaRequest request);
 	Task<PersonaResponse?> BuscarPorDNIAsync(DocumentoRequest request);
-	Task<PersonaResponse?> BuscarPorNombreCompletoAsync(NombreCompletoRequest request);
+
+	/// <summary>
+	/// Los alumnos que coinciden con el término: documento exacto si son sólo dígitos, coincidencia
+	/// parcial en nombre o apellido si no. Una colección vacía significa que no hubo coincidencias.
+	/// </summary>
+	/// <remarks>
+	/// Reemplaza a <c>BuscarPorNombreCompletoAsync</c>, que pedía el nombre completo exacto con su
+	/// coma y sus tildes y devolvía un solo alumno. Esa forma es la que dejaba a la pantalla de
+	/// alumnos sin listado y con el documento como único camino —limitación que su propio XAML
+	/// documentaba— mientras Docentes y Cursos sí tenían índice.
+	/// </remarks>
+	Task<IReadOnlyCollection<PersonaResponse>> BuscarAlumnosAsync(BuscarAlumnoRequest request);
+
+	/// <summary>
+	/// Qué cursa el alumno, cómo le va y cuánto asiste, todo referido a un solo ciclo lectivo.
+	/// </summary>
+	Task<ResumenAcademicoResponse> ConsultarResumenAcademicoAsync(PersonaRequest request);
 
 	Task<Guid> RegistrarAlumnoAsync(RegistrarAlumnoRequest request);
 

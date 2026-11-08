@@ -1,9 +1,13 @@
 ﻿using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos.DTOs.Responses;
+using Core.ServicioCursantes.DTOs.Responses;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Response;
 using Core.Shared;
 using Domain.Alumnos;
+using Domain.Asistencias;
+using Domain.Cursantes.Calificaciones;
+using Domain.Cursantes;
 using Domain.Personas.Domicilios;
 using Domain.Personas;
 using Domain.Shared;
@@ -67,44 +71,263 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 			Pais: response.Domicilio.Ubicacion.Pais);
 	}
 
-	public async Task<PersonaResponse?> BuscarPorNombreCompletoAsync(NombreCompletoRequest request)
+	/// <summary>
+	/// Un término, dos búsquedas distintas.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// La decisión de qué hacer con el término vive acá y no en el ViewModel: es política de
+	/// aplicación —qué significa el dato que alguien tipeó— y no presentación, así que se prueba en
+	/// <c>Core.UnitTests</c> sin armar una pantalla.
+	/// </para>
+	/// <para>
+	/// El documento se busca <strong>exacto</strong> y el nombre <strong>parcial</strong>, y la
+	/// asimetría es a propósito: el documento identifica a una sola persona, así que un
+	/// <c>LIKE '%40%'</c> devolvería a toda la institución por tipear dos dígitos. El apellido, en
+	/// cambio, lo comparten hermanos y homónimos, y quien busca "perez" no sabe de antemano cuántos
+	/// hay.
+	/// </para>
+	/// </remarks>
+	public async Task<IReadOnlyCollection<PersonaResponse>> BuscarAlumnosAsync(BuscarAlumnoRequest request)
 	{
-		var alumno = await _unitOfWork.Alumnos.BuscarPorNombreCompletoAsync(request.NombreCompleto);
-
-		if (alumno is not null)
+		try
 		{
-			return new PersonaResponse(
-				PersonaID: alumno.Id,
-				Apellido: alumno.DatosPersonales.Apellido,
-				Nombre: alumno.DatosPersonales.Nombre,
-				Documento: alumno.DatosPersonales.Documento,
-				Sexo: alumno.DatosPersonales.Sexo.ToString(),
-				FechaNacimiento: alumno.DatosPersonales.FechaNacimiento.ToString("D"),
-				Nacionalidad: alumno.DatosPersonales.Nacionalidad);
-		}
+			string termino = request?.Termino?.Trim() ?? string.Empty;
 
-		return null;
+			// Un término vacío devuelve vacío y no la matrícula entera: acá la búsqueda es contra la
+			// base, y "ver a todos" sería una consulta sin filtro que nadie pidió.
+			if (string.IsNullOrEmpty(termino))
+			{
+				return Array.Empty<PersonaResponse>();
+			}
+
+			if (termino.All(char.IsDigit))
+			{
+				var porDocumento = await _unitOfWork.Alumnos.BuscarPorDocumentoAsync(termino);
+
+				return porDocumento is null
+					? Array.Empty<PersonaResponse>()
+					: new[] { Describir(porDocumento) };
+			}
+
+			var encontrados = await _unitOfWork.Alumnos.BuscarSegunNombreCompletoAsync(termino);
+
+			_logger.LogInformation($"Se encontraron { encontrados.Count } alumnos con coincidencias en el nombre o el apellido.");
+
+			return encontrados.Select(Describir).ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
 	}
 
 	public async Task<PersonaResponse?> BuscarPorDNIAsync(DocumentoRequest request)
 	{
 		var alumno = await _unitOfWork.Alumnos.BuscarPorDocumentoAsync(request.Documento);
 
-		if (alumno is not null)
+		// throw new NullReferenceException($"No se encontró el alumno con el D.N.I. { request.Documento }");
+		return alumno is null ? null : Describir(alumno);
+	}
+
+	/// <summary>
+	/// La ficha mínima de un alumno. Estaba escrita dos veces, idéntica, en las dos búsquedas.
+	/// </summary>
+	private static PersonaResponse Describir(Alumno alumno) =>
+		new(PersonaID: alumno.Id,
+			Apellido: alumno.DatosPersonales.Apellido,
+			Nombre: alumno.DatosPersonales.Nombre,
+			Documento: alumno.DatosPersonales.Documento,
+			Sexo: alumno.DatosPersonales.Sexo.ToString(),
+			FechaNacimiento: alumno.DatosPersonales.FechaNacimiento.ToString("D"),
+			Nacionalidad: alumno.DatosPersonales.Nacionalidad);
+
+	#region Resumen académico
+	/// <summary>
+	/// Qué cursa el alumno, cómo le va y cuánto asiste.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Es una lectura y no exige permiso, igual que las otras ~30 consultas de <c>Core</c>
+	/// (CORE-16). Las cuatro excepciones declaradas son las consultas de impacto de borrado, que
+	/// existen sólo para servir a su borrado; esta sirve a una pantalla.
+	/// </para>
+	/// <para>
+	/// Cruza cuatro módulos —<c>Cursantes</c> por las inscripciones y las notas, <c>Divisiones</c> y
+	/// <c>Cursos</c> por el nombre de lo que cursa, <c>Materias</c> por el nombre de cada materia y
+	/// <c>Asistencias</c> por las planillas— y vive igual en <c>ServicioAlumno</c>: el sujeto de la
+	/// consulta es el alumno, y la alternativa era que el ViewModel del perfil recibiera cinco
+	/// servicios por constructor y armara la proyección a mano, que es exactamente lo que
+	/// <c>ResumenAsistenciaResponse</c> documenta como el defecto que vino a cerrar.
+	/// </para>
+	/// <para>
+	/// NO delega en <c>IServicioCursante.ConsultarHistorialDeDivisionesAsync</c>, que devuelve lo
+	/// mismo que <see cref="DescribirTrayectoriaAsync"/>: ese método vuelve a consultar las
+	/// inscripciones, y acá ya están cargadas con sus calificaciones —que es el dato que el
+	/// historial no trae y el promedio necesita—. Delegar costaría la misma consulta dos veces para
+	/// ahorrar diez líneas de mapeo.
+	/// </para>
+	/// <para>
+	/// <strong>Acá no se decide nada sobre el rendimiento.</strong> Qué cuenta como instancia
+	/// rendida, cómo se promedia y cuándo una materia está aprobada son reglas de
+	/// <c>RendimientoAcademico</c>, en <c>Domain</c>. Este método elige el ciclo del que informar,
+	/// reúne las calificaciones que la regla necesita y mapea el resultado; lo que decide es de
+	/// qué período se habla, que es política de aplicación.
+	/// </para>
+	/// </remarks>
+	public async Task<ResumenAcademicoResponse> ConsultarResumenAcademicoAsync(PersonaRequest request)
+	{
+		try
 		{
-			return new PersonaResponse(
-				PersonaID: alumno.Id,
-				Apellido: alumno.DatosPersonales.Apellido,
-				Nombre: alumno.DatosPersonales.Nombre,
-				Documento: alumno.DatosPersonales.Documento,
-				Sexo: alumno.DatosPersonales.Sexo.ToString(),
-				FechaNacimiento: alumno.DatosPersonales.FechaNacimiento.ToString("D"),
-				Nacionalidad: alumno.DatosPersonales.Nacionalidad);
+			// Valida que el alumno exista antes de informar sobre él: un resumen vacío de un Id
+			// inexistente se lee igual que el de un alumno recién registrado.
+			var alumno = await BuscarAlumnoPorIDAsync(request.PersonaID);
+
+			var inscripciones = await _unitOfWork.Cursantes.BuscarInscripcionesDelAlumnoAsync(alumno.Id);
+			if (inscripciones.Count is 0)
+			{
+				return ResumenAcademicoResponse.SinTrayectoria(alumno.Id);
+			}
+
+			var trayectoria = await DescribirTrayectoriaAsync(inscripciones);
+
+			// El ciclo del que se informa: el de la inscripción vigente, o el de la más reciente si
+			// el alumno no está cursando. Nunca la mezcla de todos.
+			var cursada = trayectoria.FirstOrDefault(x => x.EstaActiva);
+			string ciclo = cursada?.CicloLectivo
+						?? trayectoria.OrderByDescending(x => x.FechaInicio).First().CicloLectivo;
+
+			// Todas las inscripciones del ciclo, activas Y CERRADAS: Calificacion es entidad hija de
+			// Cursante, así que las notas anteriores a un traslado de división viven en la
+			// inscripción cerrada, y promediar sólo la vigente las perdería sin avisar.
+			var delCiclo = inscripciones.Where(x => x.CicloLectivo.Periodo.Equals(ciclo)).ToList();
+			var calificaciones = delCiclo.SelectMany(x => x.Calificaciones).ToList();
+
+			var materias = await DescribirMateriasAsync(calificaciones);
+
+			return new ResumenAcademicoResponse(
+				AlumnoID: alumno.Id,
+				CicloLectivo: ciclo,
+				Cursada: cursada,
+				Promedio: RendimientoAcademico.Promediar(calificaciones),
+				Rendidas: RendimientoAcademico.Rendidas(calificaciones).Count(),
+				AusenciasAExamen: RendimientoAcademico.AusenciasAExamen(calificaciones).Count(),
+				MateriasAprobadas: materias.Count(x => x.Aprobada),
+				MateriasDesaprobadas: materias.Count(x => !x.Aprobada),
+				Asistencia: await ResumirAsistenciaAsync(delCiclo.Select(x => x.Id).ToList()),
+				Materias: materias,
+				Trayectoria: trayectoria);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Cada inscripción con el nombre de lo que cursaba, en el orden en que las devuelve el
+	/// repositorio: de la más vieja a la más nueva.
+	/// </summary>
+	/// <remarks>
+	/// Una división o un curso borrados dejan el nombre vacío en lugar de hacer fallar la consulta:
+	/// la inscripción pasó igual, y un perfil que no se puede abrir porque una división de 2021 ya
+	/// no está es peor que uno que la nombra en blanco.
+	/// </remarks>
+	private async Task<IReadOnlyCollection<InscripcionHistoricaResponse>> DescribirTrayectoriaAsync(IReadOnlyCollection<Cursante> inscripciones)
+	{
+		var trayectoria = new List<InscripcionHistoricaResponse>();
+
+		foreach (var inscripcion in inscripciones)
+		{
+			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(inscripcion.DivisionID);
+			var curso = division is null ? null : await _unitOfWork.Cursos.BuscarPorIDAsync(division.CursoID);
+
+			trayectoria.Add(new InscripcionHistoricaResponse(
+				CursanteID: inscripcion.Id,
+				DivisionID: inscripcion.DivisionID,
+				Division: division?.Descripcion ?? string.Empty,
+				Grado: curso?.Grado.ToString() ?? string.Empty,
+				NivelEducativo: curso?.NivelEducativo.ToString() ?? string.Empty,
+				CicloLectivo: inscripcion.CicloLectivo.Periodo,
+				FechaInicio: inscripcion.FechaInicio,
+				FechaFin: inscripcion.FechaFin,
+				EsRecursante: inscripcion.EsRecursante,
+				EstaActiva: inscripcion.EstaActiva()));
 		}
 
-		// throw new NullReferenceException($"No se encontró el alumno con el D.N.I. { request.Documento }");
-		return null;
+		return trayectoria;
 	}
+
+	/// <summary>
+	/// Una fila por materia, alfabética, agrupando todas las instancias que el alumno tiene en ella.
+	/// </summary>
+	/// <remarks>
+	/// Lo único que decide este método es el ORDEN y el NOMBRE: el orden porque es el de la tabla
+	/// que lo consume, y el nombre porque resolverlo exige el repositorio de materias, que es
+	/// trabajo de aplicación. Cuánto rindió, cuánto promedia y si aprobó lo decide
+	/// <see cref="RendimientoAcademico"/>, en el dominio.
+	/// </remarks>
+	private async Task<IReadOnlyCollection<MateriaCursadaResponse>> DescribirMateriasAsync(IReadOnlyCollection<Calificacion> calificaciones)
+	{
+		var materias = new List<MateriaCursadaResponse>();
+
+		foreach (var grupo in calificaciones.GroupBy(x => x.MateriaID))
+		{
+			var materia = await _unitOfWork.Materias.BuscarPorIDAsync(grupo.Key);
+
+			materias.Add(new MateriaCursadaResponse(
+				MateriaID: grupo.Key,
+				Materia: materia?.Descripcion ?? string.Empty,
+				Rendidas: RendimientoAcademico.Rendidas(grupo).Count(),
+				AusenciasAExamen: RendimientoAcademico.AusenciasAExamen(grupo).Count(),
+				Promedio: RendimientoAcademico.Promediar(grupo),
+				Aprobada: RendimientoAcademico.EstaAprobada(grupo)));
+		}
+
+		return materias.OrderBy(x => x.Materia).ToList();
+	}
+
+	/// <summary>
+	/// El acumulado de asistencia de esas inscripciones.
+	/// </summary>
+	/// <remarks>
+	/// Recibe los cursantes del ciclo y no el alumno porque la asistencia se registra contra la
+	/// inscripción, no contra la persona: un alumno trasladado tiene dos cursantes en el mismo
+	/// ciclo, y su asistencia del año es la suma de los dos.
+	/// </remarks>
+	private async Task<AsistenciaAcumuladaResponse> ResumirAsistenciaAsync(IReadOnlyCollection<Guid> cursantesIDs)
+	{
+		var planillas = await _unitOfWork.PlanillasAsistencia.BuscarPorCursantesAsync(cursantesIDs);
+
+		// El filtro por CursanteID NO es redundante: la consulta trae la planilla completa porque
+		// alguno de estos cursantes tiene registro en ella, y adentro vienen también las marcas de
+		// todos sus compañeros de división.
+		var registros = planillas
+			.SelectMany(x => x.Registros)
+			.Where(x => cursantesIDs.Contains(x.CursanteID))
+			.ToList();
+
+		if (registros.Count is 0)
+		{
+			return AsistenciaAcumuladaResponse.SinRegistro();
+		}
+
+		int ausencias = registros.Count(x => x.Tipo.Equals(TipoAsistencia.Ausencia));
+		int inasistencias = registros.Count(x => x.Tipo.Equals(TipoAsistencia.Inasistencia));
+
+		return new AsistenciaAcumuladaResponse(
+			Jornadas: registros.Count,
+			Presentes: registros.Count(x => x.Tipo.Equals(TipoAsistencia.Presente)),
+			Ausencias: ausencias,
+			Inasistencias: inasistencias,
+			Tardanzas: registros.Count(x => x.Tipo.Equals(TipoAsistencia.Tardanza)),
+			Faltas: ausencias + inasistencias,
+			Porcentaje: PorcentajeDeAsistencia.Calcular(asistidas: registros.Count - ausencias - inasistencias,
+													   sobre: registros.Count));
+	}
+	#endregion
 
 
 	public async Task<Guid> RegistrarAlumnoAsync(RegistrarAlumnoRequest request)

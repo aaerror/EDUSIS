@@ -3,8 +3,9 @@ using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos.DTOs.Responses;
 using Core.ServicioAlumnos;
-using Core.Shared.DTOs.Personas.Response;
+using Core.Shared.DTOs.Personas.Requests;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,6 +16,29 @@ using WPF_Desktop.Store;
 
 namespace WPF_Desktop.ViewModels.Alumnos;
 
+/// <summary>
+/// Índice + ficha de alumnos.
+/// </summary>
+/// <remarks>
+/// <para>
+/// ALUMNOS NO TENÍA ÍNDICE, y era una limitación de la capa de aplicación: <c>IServicioAlumno</c>
+/// sólo sabía buscar por documento exacto —<c>BuscarPorDNIAsync</c>— y por nombre completo exacto
+/// con su coma y sus tildes, y las dos devolvían UNA persona. La pantalla lo decía en un comentario
+/// de su propio XAML: "mientras eso sea así, la búsqueda por documento exacto es el único camino".
+/// </para>
+/// <para>
+/// Ahora hay un solo campo que acepta las dos cosas. Cuál de las dos búsquedas se hace lo decide
+/// <c>ServicioAlumno.BuscarAlumnosAsync</c> y no este ViewModel: qué significa el dato que alguien
+/// tipeó es política de aplicación, y acá no se puede probar sin armar la pantalla con sus seis
+/// dependencias.
+/// </para>
+/// <para>
+/// La búsqueda es contra la base y no un filtro sobre una nómina precargada, a diferencia de
+/// <c>GestionDocentes</c>: la matrícula de alumnos es un orden de magnitud más grande que el
+/// personal docente, y traerla entera en cada entrada a la pantalla para filtrarla en memoria es un
+/// costo que crece con cada ciclo lectivo. Por eso hay botón y no filtro en vivo.
+/// </para>
+/// </remarks>
 internal partial class GestionAlumnosViewModel : ObservableValidator
 {
 	#region Servicio
@@ -30,29 +54,57 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 	[ObservableProperty]
 	private LegajoStore _perfilStore;
 
-	[Required(AllowEmptyStrings=true, ErrorMessage="Se debe ingresar el documento del alumno.")]
-	[RegularExpression(@"^\d{8}$", ErrorMessage="El documento debe ser un número.", MatchTimeoutInMilliseconds=2000)]
+	/// <summary>
+	/// El único campo de búsqueda: documento, o parte del nombre o del apellido.
+	/// </summary>
+	/// <remarks>
+	/// La validación que reemplaza era <c>^\d{8}$</c>, es decir: la pantalla rechazaba las letras.
+	/// Ahora el mínimo son dos caracteres, no por capricho de forma sino porque con uno solo la
+	/// consulta devuelve media institución y la lista deja de servir para elegir.
+	/// </remarks>
+	[Required(AllowEmptyStrings = true, ErrorMessage = "Escribí un documento, un nombre o un apellido.")]
+	[MinLength(2, ErrorMessage = "Escribí al menos dos caracteres.")]
 	[NotifyDataErrorInfo]
 	[NotifyCanExecuteChangedFor(nameof(BuscarCommand))]
 	[ObservableProperty]
-	private string _documento;
+	private string _termino = string.Empty;
 
+	[ObservableProperty]
+	private ObservableCollection<AlumnoEncontradoViewModel> _resultados = new();
+
+	/// <summary>
+	/// El alumno elegido en el índice. Escribirlo recarga la ficha y el resumen académico.
+	/// </summary>
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommand))]
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[ObservableProperty]
-	private PersonaResponse _personaResponse;
+	private AlumnoEncontradoViewModel _alumnoSeleccionado;
 
+	/// <summary>Qué cursa, su promedio y su asistencia. Nulo mientras no haya alumno elegido.</summary>
+	[ObservableProperty]
+	private ResumenAcademicoViewModel _resumen;
+
+	/// <summary>Cuántas coincidencias hubo. Lo lee el índice arriba de la lista.</summary>
+	[ObservableProperty]
+	private string _conteo = string.Empty;
+
+	/// <summary>
+	/// Qué hacer o qué pasó. Lo lee el panel derecho mientras no hay alumno elegido.
+	/// </summary>
+	/// <remarks>
+	/// SE FUE <c>ExisteAlumno</c>, el bool que controlaba la visibilidad de la ficha. La vista
+	/// ahora deriva el estado de <see cref="AlumnoSeleccionado"/> con el converter
+	/// <c>visibleSiHay</c>: un bool paralelo a la selección es un dato que se puede desincronizar
+	/// de ella, y el borrado ya lo había desincronizado una vez.
+	/// </remarks>
 	[ObservableProperty]
 	private string _message = string.Empty;
-
-	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
-	[ObservableProperty]
-	private bool _existeAlumno;
 
 	#region COMMANDs
 	public IAsyncRelayCommand EliminarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	public IAsyncRelayCommand BuscarCommand { get; }
+	public IAsyncRelayCommand CargarResumenCommandAsync { get; }
 	#endregion
 
 
@@ -72,45 +124,63 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 		_perfilStore = perfilBuscadoStore;
 
 		BuscarCommand = new AsyncRelayCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
+		CargarResumenCommandAsync = new AsyncRelayCommand(CargarResumenAsync);
 		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
-		Message = "Buscá un alumno por su documento para ver su perfil, inscribirlo o quitarlo. Si todavía no está cargado, usá «Registrar alumno».";
-		ExisteAlumno = false;
+		Message = "Buscá un alumno por su documento, su nombre o su apellido para ver su perfil, inscribirlo o quitarlo. Si todavía no está cargado, usá «Registrar alumno».";
 	}
 
 	#region BuscarCommand
 	private bool CanExecuteBuscarCommand() =>
-		!string.IsNullOrWhiteSpace(Documento) && !HasErrors;
+		!string.IsNullOrWhiteSpace(Termino) && !HasErrors;
 
 	/// <summary>
-	/// Busca el alumno por documento exacto.
+	/// Trae las coincidencias del término y las deja en el índice.
 	/// </summary>
 	/// <remarks>
-	/// Era <c>async void</c> sobre un <c>RelayCommand</c>: cualquier excepción que no cayera en
-	/// el try —por ejemplo al escribir en el store— no la podía atrapar nadie y terminaba en el
+	/// <para>
+	/// Elige sola cuando hay UNA coincidencia: buscar un documento exacto y tener que hacerle clic
+	/// al único resultado es un paso que no decide nada. Con varias no elige ninguna, porque ahí
+	/// sí hay una decisión y es de quien busca.
+	/// </para>
+	/// <para>
+	/// Era <c>async void</c> sobre un <c>RelayCommand</c>: cualquier excepción que no cayera en el
+	/// try —por ejemplo al escribir en el store— no la podía atrapar nadie y terminaba en el
 	/// manejador global, que apaga la aplicación. Como <c>AsyncRelayCommand</c> además expone
 	/// <c>IsRunning</c>, la pantalla puede mostrar que está buscando.
+	/// </para>
 	/// </remarks>
 	private async Task ExecuteBuscarCommand()
 	{
 		try
 		{
-			var response = await _servicioAlumnos.BuscarPorDNIAsync(new DocumentoRequest(Documento));
-			if (response is null)
+			var encontrados = await _servicioAlumnos.BuscarAlumnosAsync(new BuscarAlumnoRequest(Termino));
+
+			AlumnoSeleccionado = null;
+			Resultados = new ObservableCollection<AlumnoEncontradoViewModel>(
+				encontrados.Select(x => new AlumnoEncontradoViewModel(x)));
+
+			if (Resultados.Count is 0)
 			{
-				ExisteAlumno = false;
-				Message = $"No hay ningún alumno con el documento { Documento }. Revisá el número o registralo con «Registrar alumno».";
+				Conteo = string.Empty;
+				Message = $"No hay ningún alumno que coincida con «{ Termino }». Revisá el dato o registralo con «Registrar alumno».";
 
 				return;
 			}
 
-			PersonaResponse = response;
-			_perfilStore.PersonaID = PersonaResponse.PersonaID;
-			_perfilStore.Documento = PersonaResponse.Documento;
+			Conteo = Contar(Resultados.Count, "coincidencia", "coincidencias");
 
-			ExisteAlumno = true;
-			Message = string.Empty;
+			if (Resultados.Count is 1)
+			{
+				AlumnoSeleccionado = Resultados.First();
+
+				return;
+			}
+
+			// Con varias coincidencias el panel derecho sigue vacío, así que tiene que decir qué
+			// falta. Dejar el mensaje anterior ahí mostraría el texto de la búsqueda pasada.
+			Message = $"{ Conteo }. Elegí una para ver su situación académica y su perfil.";
 		}
 		catch (Exception ex)
 		{
@@ -119,11 +189,73 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 	}
 	#endregion
 
+	#region Alumno elegido
+	/// <summary>
+	/// Elegir un alumno escribe el store y recarga su resumen académico.
+	/// </summary>
+	/// <remarks>
+	/// El store se escribe acá y NO al buscar, que es donde se escribía antes: con una lista de
+	/// resultados, "el alumno que se buscó" y "el alumno que se eligió" dejaron de ser lo mismo, y
+	/// el store es el parámetro de navegación hacia Perfil e Inscripción.
+	///
+	/// La carga del resumen sale por un comando y no desde acá con <c>async void</c>: es el patrón
+	/// de <c>GestionReportesViewModel.OnCursoChanged</c>, y el comando además expone
+	/// <c>IsRunning</c> para que la ficha pueda mostrar que está cargando.
+	/// </remarks>
+	partial void OnAlumnoSeleccionadoChanged(AlumnoEncontradoViewModel value)
+	{
+		Resumen = null;
+
+		if (value is null)
+		{
+			_perfilStore.Limpiar();
+
+			return;
+		}
+
+		_perfilStore.PersonaID = value.PersonaID;
+		_perfilStore.Documento = value.Documento;
+
+		Message = string.Empty;
+
+		CargarResumenCommandAsync.Execute(null);
+	}
+
+	/// <summary>
+	/// Trae el resumen académico del alumno elegido.
+	/// </summary>
+	/// <remarks>
+	/// Un fallo acá NO borra la ficha ni deselecciona: los datos personales ya están en pantalla y
+	/// siguen siendo válidos, así que lo que se pierde es el bloque académico y no la elección. El
+	/// aviso va por diálogo porque una ficha con tres rayas y sin explicación no se distingue de un
+	/// alumno sin trayectoria.
+	/// </remarks>
+	private async Task CargarResumenAsync()
+	{
+		if (AlumnoSeleccionado is null)
+		{
+			return;
+		}
+
+		try
+		{
+			var resumen = await _servicioAlumnos.ConsultarResumenAcademicoAsync(
+				new PersonaRequest(AlumnoSeleccionado.PersonaID));
+
+			Resumen = new ResumenAcademicoViewModel(resumen);
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo cargar la situación académica del alumno");
+		}
+	}
+	#endregion
+
 	#region NavigationCommand
 	private bool CanExecuteNavigationCommand(object obj) => obj switch
 	{
-		"Asignar" => PersonaResponse is not null,
-		"Perfil" => PersonaResponse is not null,
+		"Asignar" => AlumnoSeleccionado is not null,
+		"Perfil" => AlumnoSeleccionado is not null,
 		"Registrar" => true,
 		_ => false
 	};
@@ -149,7 +281,7 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 
 	#region EliminarCommand
 	private bool CanExecuteEliminarCommand() =>
-		PersonaResponse is not null;
+		AlumnoSeleccionado is not null;
 
 	/// <summary>
 	/// Quita el alumno de la institución, con toda su trayectoria.
@@ -177,8 +309,9 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 	/// </remarks>
 	private async Task ExecuteEliminarCommand()
 	{
-		string nombre = $"{ PersonaResponse.Apellido }, { PersonaResponse.Nombre }";
-		var request = new EliminarAlumnoRequest(PersonaResponse.PersonaID);
+		string nombre = AlumnoSeleccionado.NombreCompleto;
+		string documento = AlumnoSeleccionado.Documento;
+		var request = new EliminarAlumnoRequest(AlumnoSeleccionado.PersonaID);
 
 		ImpactoEliminacionAlumnoResponse impacto;
 		try
@@ -195,7 +328,7 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 		// caso de uso es EliminarAlumno, así que acá no aparece un "Quitar" que no se usó.
 		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
 				titulo: $"Eliminar a { nombre } de la institución",
-				consecuencia: DescribirConsecuencia(impacto, PersonaResponse.Documento),
+				consecuencia: DescribirConsecuencia(impacto, documento),
 				verbo: "Eliminar alumno")))
 		{
 			return;
@@ -205,12 +338,18 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 		{
 			await _servicioAlumnos.EliminarAlumnoAsync(request);
 
-			// La pantalla vuelve a su estado inicial: dejar la ficha de un alumno borrado es
-			// la forma más rápida de que alguien opere sobre un registro que ya no existe.
-			PersonaResponse = null;
-			ExisteAlumno = false;
-			Documento = string.Empty;
-			Message = $"{ nombre } ya no figura en la institución. Buscá otro documento para seguir.";
+			// La fila sale del índice y la ficha se vacía: dejar el alumno borrado en la lista es
+			// la forma más rápida de que alguien opere sobre un registro que ya no existe. El
+			// término se conserva, porque la búsqueda que lo encontró sigue siendo la que importa.
+			var borrado = AlumnoSeleccionado;
+			AlumnoSeleccionado = null;
+			Resultados.Remove(borrado);
+
+			Conteo = Resultados.Count is 0
+				? string.Empty
+				: Contar(Resultados.Count, "coincidencia", "coincidencias");
+
+			Message = $"{ nombre } ya no figura en la institución. Buscá otro alumno para seguir.";
 
 			_dialogService.MostrarInformacion($"{ nombre } ya no figura en la institución.", "Alumno eliminado");
 		}

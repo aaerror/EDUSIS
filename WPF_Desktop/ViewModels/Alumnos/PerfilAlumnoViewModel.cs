@@ -25,6 +25,19 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 	[ObservableProperty]
 	private PersonaConDetallesResponse _alumno;
 
+	/// <summary>
+	/// Qué cursa, su promedio por materia, su asistencia y su trayectoria completa.
+	/// </summary>
+	/// <remarks>
+	/// EL PERFIL MOSTRABA TRES BLOQUES —personales, contacto y domicilio— Y NADA ACADÉMICO: se
+	/// podía abrir el perfil de un alumno y no enterarse de que estaba cursando. Es el mismo
+	/// <see cref="ResumenAcademicoViewModel"/> que lee la ficha del índice de Alumnos; acá se
+	/// aprovechan además la tabla de materias y la trayectoria, que la ficha no muestra por
+	/// espacio.
+	/// </remarks>
+	[ObservableProperty]
+	private ResumenAcademicoViewModel _resumen;
+
 	#region Request
 	private ContactoRequest _datosContactoTemporal;
 	private CambiarSexoRequest _datosSexoTemporal;
@@ -108,15 +121,46 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 	/// </remarks>
 	private async Task CargarPerfilAsync()
 	{
+		// .Value es seguro: el constructor ya rechaza un store sin persona elegida.
+		var request = new PersonaRequest(_perfilBuscadoStore.PersonaID.Value);
+
 		try
 		{
-			// .Value es seguro: el constructor ya rechaza un store sin persona elegida.
-			var request = new PersonaRequest(_perfilBuscadoStore.PersonaID.Value);
 			Alumno = await _servicioAlumno.BuscarPorIDAsync(request);
 		}
 		catch (Exception ex)
 		{
 			_dialogService.MostrarError(ex.Message, "No se pudo cargar el perfil del alumno");
+			return;
+		}
+
+		await CargarResumenAcademicoAsync(request);
+	}
+
+	/// <summary>
+	/// Trae la situación académica del alumno.
+	/// </summary>
+	/// <remarks>
+	/// Va en su propio <c>try</c> y DESPUÉS del perfil, no en el mismo bloque: son dos lecturas
+	/// independientes, y si falla la académica los datos personales ya están en pantalla y siguen
+	/// siendo válidos. Compartir el <c>try</c> haría que un fallo al resolver el nombre de una
+	/// materia de 2021 dejara el perfil entero en blanco.
+	///
+	/// Los bloques de contacto y domicilio llaman a <c>CargarPerfilAsync</c> al guardar y al
+	/// cancelar, así que esta lectura se repite en cada una de esas idas y vueltas. Es el precio de
+	/// tener un solo punto de recarga; separarla pediría un segundo comando que las tres
+	/// ediciones tendrían que recordar no llamar.
+	/// </remarks>
+	private async Task CargarResumenAcademicoAsync(PersonaRequest request)
+	{
+		try
+		{
+			Resumen = new ResumenAcademicoViewModel(
+				await _servicioAlumno.ConsultarResumenAcademicoAsync(request));
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo cargar la situación académica del alumno");
 		}
 	}
 

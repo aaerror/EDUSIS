@@ -3,6 +3,7 @@ using Core.ServicioAlumnos.DTOs.Requests;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.UnitTests.Infraestructura;
 using Domain.Cursantes.Calificaciones;
+using Domain.Cursantes;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Fakes;
@@ -31,6 +32,21 @@ public class ServicioAlumnoTests
 	{
 		var alumno = new AlumnoBuilder().Build();
 		_host.UnidadDeTrabajo.AlumnosFake.Sembrar(alumno);
+		return alumno;
+	}
+
+	/// <summary>Un alumno con apellido, nombre y documento elegidos, para las pruebas de búsqueda.</summary>
+	private Domain.Alumnos.Alumno SembrarAlumnoLlamado(string apellido, string nombre, string documento)
+	{
+		var alumno = new AlumnoBuilder()
+			.ConDatosPersonales(new DatosPersonalesBuilder().ConEdad(16)
+														   .ConApellidoYNombre(apellido, nombre)
+														   .ConDocumento(documento))
+			.ConLegajo($"AL{ documento[^4..] }")
+			.Build();
+
+		_host.UnidadDeTrabajo.AlumnosFake.Sembrar(alumno);
+
 		return alumno;
 	}
 
@@ -79,25 +95,90 @@ public class ServicioAlumnoTests
 		response.ShouldBeNull();
 	}
 
+	#region BuscarAlumnosAsync
+	/// <remarks>
+	/// Reemplaza a las dos pruebas de <c>BuscarPorNombreCompletoAsync</c>, que ejercitaban un
+	/// contrato de nombre completo EXACTO —con su coma y sus tildes— que devolvía un solo alumno.
+	/// Lo que estas prueban es la decisión que ese método no tomaba: qué significa el término.
+	/// </remarks>
 	[Fact]
-	public async Task BuscarPorNombreCompletoAsync_encuentra_al_alumno_por_apellido_y_nombre()
+	public async Task BuscarAlumnosAsync_con_un_termino_de_digitos_busca_el_documento_exacto()
 	{
-		var alumno = SembrarAlumno();
-		var nombreCompleto = alumno.DatosPersonales.NombreCompleto();
+		var alumno = SembrarAlumnoLlamado("Pérez", "Juan", "27555444");
+		SembrarAlumnoLlamado("Pérez", "Juana", "27555445");
 
-		var response = await _servicio.BuscarPorNombreCompletoAsync(new NombreCompletoRequest(nombreCompleto));
+		var encontrados = await _servicio.BuscarAlumnosAsync(new BuscarAlumnoRequest("27555444"));
 
-		response.ShouldNotBeNull();
-		response!.PersonaID.ShouldBe(alumno.Id);
+		encontrados.ShouldHaveSingleItem().PersonaID.ShouldBe(alumno.Id);
+	}
+
+	/// <remarks>
+	/// El documento va exacto justamente para que esto NO devuelva nada: con un <c>LIKE</c> parcial,
+	/// tipear dos dígitos listaría media institución y la lista dejaría de servir para elegir.
+	/// </remarks>
+	[Fact]
+	public async Task BuscarAlumnosAsync_con_digitos_no_hace_coincidencia_parcial_del_documento()
+	{
+		SembrarAlumnoLlamado("Pérez", "Juan", "27555444");
+
+		var encontrados = await _servicio.BuscarAlumnosAsync(new BuscarAlumnoRequest("275"));
+
+		encontrados.ShouldBeEmpty();
 	}
 
 	[Fact]
-	public async Task BuscarPorNombreCompletoAsync_sin_coincidencias_devuelve_null()
+	public async Task BuscarAlumnosAsync_con_un_termino_de_letras_coincide_parcialmente_en_el_apellido()
 	{
-		var response = await _servicio.BuscarPorNombreCompletoAsync(new NombreCompletoRequest("Nadie Existente"));
+		SembrarAlumnoLlamado("Pérez", "Juan", "27555444");
+		SembrarAlumnoLlamado("Pérez", "Juana", "27555445");
+		SembrarAlumnoLlamado("Gómez", "Lucía", "30111222");
 
-		response.ShouldBeNull();
+		var encontrados = await _servicio.BuscarAlumnosAsync(new BuscarAlumnoRequest("ére"));
+
+		encontrados.Count.ShouldBe(2);
+		encontrados.Select(x => x.Nombre).ShouldBe(new[] { "Juan", "Juana" });
 	}
+
+	/// <remarks>
+	/// Busca en las DOS columnas. El contrato anterior concatenaba "Apellido, Nombre", así que un
+	/// término que sólo coincidía con el nombre no encontraba nada: el apellido iba adelante.
+	/// </remarks>
+	[Fact]
+	public async Task BuscarAlumnosAsync_tambien_coincide_en_el_nombre_y_no_solo_en_el_apellido()
+	{
+		var alumno = SembrarAlumnoLlamado("Gómez", "Lucía", "30111222");
+
+		var encontrados = await _servicio.BuscarAlumnosAsync(new BuscarAlumnoRequest("Luc"));
+
+		encontrados.ShouldHaveSingleItem().PersonaID.ShouldBe(alumno.Id);
+	}
+
+	[Fact]
+	public async Task BuscarAlumnosAsync_sin_coincidencias_devuelve_vacio()
+	{
+		SembrarAlumnoLlamado("Pérez", "Juan", "27555444");
+
+		var encontrados = await _servicio.BuscarAlumnosAsync(new BuscarAlumnoRequest("Nadie"));
+
+		encontrados.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// Vacío y no la matrícula entera: la búsqueda va contra la base, y "ver a todos" sería una
+	/// consulta sin filtro que nadie pidió.
+	/// </remarks>
+	[Theory]
+	[InlineData("")]
+	[InlineData("   ")]
+	public async Task BuscarAlumnosAsync_con_un_termino_vacio_no_consulta_nada(string termino)
+	{
+		SembrarAlumnoLlamado("Pérez", "Juan", "27555444");
+
+		var encontrados = await _servicio.BuscarAlumnosAsync(new BuscarAlumnoRequest(termino));
+
+		encontrados.ShouldBeEmpty();
+	}
+	#endregion
 
 	[Fact]
 	public async Task EsDocumentoInvalidoAsync_es_false_para_un_documento_libre()
@@ -410,6 +491,369 @@ public class ServicioAlumnoTests
 		impacto.Calificaciones.ShouldBe(0);
 		impacto.RegistrosAsistencia.ShouldBe(0);
 		impacto.CiclosLectivos.ShouldBeEmpty();
+	}
+	#endregion
+
+	#region Resumen académico
+	/// <summary>
+	/// Siembra un alumno inscripto en una división de un curso, con el ciclo lectivo indicado.
+	/// </summary>
+	/// <remarks>
+	/// Siembra TAMBIÉN la división y el curso porque el resumen los resuelve para nombrar lo que el
+	/// alumno cursa. Sin ellos la consulta no falla —devuelve el nombre vacío a propósito, para que
+	/// una división borrada de 2021 no impida abrir el perfil— y por eso una prueba que los omita
+	/// pasaría sin verificar nada.
+	/// </remarks>
+	private (Domain.Alumnos.Alumno Alumno, Domain.Cursantes.Cursante Cursante) SembrarCursada(
+		string periodo = "2026",
+		bool recursante = false,
+		DateTime? fechaInicio = null,
+		DateTime? fechaBaja = null)
+	{
+		var alumno = SembrarAlumno();
+
+		var curso = new CursoBuilder().ConGrado("Tercero").ConNivelEducativo("Secundaria").Build();
+		_host.UnidadDeTrabajo.CursosFake.Sembrar(curso);
+
+		var division = new DivisionBuilder().ConCurso(curso.Id).ConDescripcion("B").Build();
+		_host.UnidadDeTrabajo.DivisionesFake.Sembrar(division);
+
+		var constructor = new CursanteBuilder()
+			.ConAlumno(alumno.Id)
+			.ConDivision(division.Id)
+			.ConCicloLectivo(CicloLectivo.Crear(periodo))
+			.ConFechaInicio(fechaInicio ?? DateTime.Today.AddMonths(-6))
+			.ComoRecursante(recursante);
+
+		if (fechaBaja is not null)
+		{
+			constructor.DadoDeBajaEl(fechaBaja.Value);
+		}
+
+		var cursante = constructor.Build();
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
+
+		return (alumno, cursante);
+	}
+
+	private Guid SembrarMateria(string descripcion)
+	{
+		var materia = new MateriaBuilder().ConDescripcion(descripcion).Build();
+		_host.UnidadDeTrabajo.MateriasFake.Sembrar(materia);
+
+		return materia.Id;
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_de_un_alumno_sin_inscripciones_no_informa_ciclo()
+	{
+		var alumno = SembrarAlumno();
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.CicloLectivo.ShouldBeNull();
+		resumen.EstaCursando.ShouldBeFalse();
+		resumen.Promedio.ShouldBeNull();
+		resumen.TieneCalificaciones.ShouldBeFalse();
+		resumen.Asistencia.TieneRegistro.ShouldBeFalse();
+		resumen.Trayectoria.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_con_un_Id_inexistente_lanza()
+	{
+		await Should.ThrowAsync<NullReferenceException>(
+			() => _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(Guid.NewGuid())));
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_nombra_el_curso_y_la_division_que_cursa()
+	{
+		var (alumno, cursante) = SembrarCursada(periodo: "2026", recursante: true);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.EstaCursando.ShouldBeTrue();
+		resumen.CicloLectivo.ShouldBe("2026");
+		resumen.Cursada.ShouldNotBeNull();
+		resumen.Cursada!.CursanteID.ShouldBe(cursante.Id);
+		resumen.Cursada.Division.ShouldBe("B");
+		resumen.Cursada.Grado.ShouldBe("Tercero");
+		resumen.Cursada.NivelEducativo.ShouldBe("Secundaria");
+		resumen.Cursada.EsRecursante.ShouldBeTrue();
+	}
+
+	/// <remarks>
+	/// El criterio del promedio: la inasistencia a examen NO entra. El dominio la guarda con
+	/// <c>Nota</c> en nulo a propósito, así que contarla obligaría a inventarle un número. Se informa
+	/// aparte, y acá se verifica que esté contada y que no haya movido el promedio: con 8 y 6 el
+	/// promedio es 7, y lo seguiría siendo con diez ausencias encima.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_promedia_las_notas_y_excluye_las_ausencias_a_examen()
+	{
+		var (alumno, cursante) = SembrarCursada();
+		var matematica = SembrarMateria("Matemática");
+
+		cursante.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Parcial, 8, null);
+		cursante.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Recuperatorio, 6, null);
+		cursante.RegistrarInasistenciaAExamen(matematica, DateTime.Today, Instancia.Parcial, null);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.Promedio.ShouldBe(7m);
+		resumen.Rendidas.ShouldBe(2);
+		resumen.AusenciasAExamen.ShouldBe(1);
+		resumen.TieneCalificaciones.ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_sin_ninguna_nota_rendida_deja_el_promedio_en_nulo()
+	{
+		var (alumno, cursante) = SembrarCursada();
+		var matematica = SembrarMateria("Matemática");
+
+		cursante.RegistrarInasistenciaAExamen(matematica, DateTime.Today, Instancia.Parcial, null);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.Promedio.ShouldBeNull();
+		resumen.AusenciasAExamen.ShouldBe(1);
+		resumen.Materias.ShouldHaveSingleItem().Promedio.ShouldBeNull();
+		resumen.Materias.First().Aprobada.ShouldBeFalse();
+	}
+
+	/// <remarks>
+	/// <para>
+	/// EL CRITERIO NO SE PRUEBA ACÁ: vive en <c>RendimientoAcademico</c>, en el dominio, y lo fija
+	/// <c>Domain.UnitTests/Cursantes/RendimientoAcademicoTests</c>. Lo que esta prueba afirma es que
+	/// el caso de uso <strong>delega</strong> en esa regla en lugar de aplicar la suya: un 4 y un 7
+	/// dan 5,5 y no aprueban, y si alguien volviera a escribir el criterio en <c>Core</c> con otro
+	/// umbral o con "última nota", el número que llega al <c>Response</c> dejaría de coincidir.
+	/// </para>
+	/// <para>
+	/// Las dos pruebas son necesarias y no se solapan: la de dominio fija la regla, esta fija el
+	/// cableado. Borrar la de acá dejaría pasar un <c>Core</c> que calcula bien por su cuenta,
+	/// que es el defecto que la migración vino a cerrar.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_aprueba_la_materia_por_promedio_y_no_por_la_ultima_nota()
+	{
+		var (alumno, cursante) = SembrarCursada();
+		var lengua = SembrarMateria("Lengua");
+
+		cursante.RegistrarCalificacion(lengua, DateTime.Today.AddMonths(-2), Instancia.Parcial, 4, null);
+		cursante.RegistrarCalificacion(lengua, DateTime.Today, Instancia.Recuperatorio, 7, null);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.Materias.ShouldHaveSingleItem().Promedio.ShouldBe(5.5m);
+		resumen.Materias.First().Aprobada.ShouldBeFalse();
+		resumen.MateriasAprobadas.ShouldBe(0);
+		resumen.MateriasDesaprobadas.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_agrupa_una_fila_por_materia_en_orden_alfabetico()
+	{
+		var (alumno, cursante) = SembrarCursada();
+		var matematica = SembrarMateria("Matemática");
+		var historia = SembrarMateria("Historia");
+
+		cursante.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Parcial, 9, null);
+		cursante.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Recuperatorio, 7, null);
+		cursante.RegistrarCalificacion(historia, DateTime.Today, Instancia.Parcial, 5, null);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.Materias.Select(x => x.Materia).ShouldBe(new[] { "Historia", "Matemática" });
+		resumen.Materias.First(x => x.Materia == "Matemática").Rendidas.ShouldBe(2);
+		resumen.Materias.First(x => x.Materia == "Matemática").Promedio.ShouldBe(8m);
+		resumen.MateriasAprobadas.ShouldBe(1);
+		resumen.MateriasDesaprobadas.ShouldBe(1);
+	}
+
+	/// <remarks>
+	/// La tardanza NO descuenta —el alumno estuvo en clase— y la falta justificada SÍ, igual que en
+	/// <c>ResumenAsistenciaResponse</c>. Con 4 jornadas, 1 ausencia y 1 inasistencia el porcentaje es
+	/// 50: las dos faltas cuentan y la tardanza no.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_cuenta_la_asistencia_sin_descontar_las_tardanzas()
+	{
+		var (alumno, cursante) = SembrarCursada();
+
+		var planilla = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id).Build();
+		planilla.MarcarPresente(cursante.Id);
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(planilla);
+
+		var conTardanza = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id)
+														.ConFecha(DateTime.Today.AddDays(-1))
+														.Build();
+		conTardanza.MarcarTardanza(cursante.Id, TimeSpan.FromMinutes(10));
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(conTardanza);
+
+		var conAusencia = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id)
+														.ConFecha(DateTime.Today.AddDays(-2))
+														.Build();
+		conAusencia.MarcarAusencia(cursante.Id);
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(conAusencia);
+
+		var conInasistencia = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id)
+															.ConFecha(DateTime.Today.AddDays(-3))
+															.Build();
+		conInasistencia.MarcarInasistencia(cursante.Id);
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(conInasistencia);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.Asistencia.Jornadas.ShouldBe(4);
+		resumen.Asistencia.Presentes.ShouldBe(1);
+		resumen.Asistencia.Tardanzas.ShouldBe(1);
+		resumen.Asistencia.Ausencias.ShouldBe(1);
+		resumen.Asistencia.Inasistencias.ShouldBe(1);
+		resumen.Asistencia.Faltas.ShouldBe(2);
+		resumen.Asistencia.Porcentaje.ShouldBe(50m);
+	}
+
+	/// <remarks>
+	/// La planilla es de la división entera, así que la consulta la trae completa: adentro vienen
+	/// las marcas de los compañeros. Sin el filtro por <c>CursanteID</c> el alumno heredaría las
+	/// faltas de los demás, que es un defecto que ningún número en pantalla delataría.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_no_cuenta_las_marcas_de_los_companeros_de_division()
+	{
+		var (alumno, cursante) = SembrarCursada();
+		var companiero = Guid.NewGuid();
+
+		var compartida = new PlanillaAsistenciaBuilder().ConCursantes(cursante.Id, companiero).Build();
+		compartida.MarcarPresente(cursante.Id);
+		compartida.MarcarAusencia(companiero);
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(compartida);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.Asistencia.Jornadas.ShouldBe(1);
+		resumen.Asistencia.Faltas.ShouldBe(0);
+		resumen.Asistencia.Porcentaje.ShouldBe(100m);
+	}
+
+	/// <remarks>
+	/// EL CASO DEL TRASLADO. <c>Calificacion</c> es entidad hija de <c>Cursante</c>, así que las
+	/// notas anteriores a un cambio de división viven en la inscripción CERRADA. Un promedio que
+	/// mirara sólo la vigente las perdería en silencio: acá serían 9 en vez de 7.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_suma_las_notas_de_la_inscripcion_cerrada_por_traslado()
+	{
+		var (alumno, origen) = SembrarCursada(periodo: "2026",
+											  fechaInicio: DateTime.Today.AddMonths(-6),
+											  fechaBaja: DateTime.Today.AddMonths(-3));
+		var matematica = SembrarMateria("Matemática");
+
+		origen.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-4), Instancia.Parcial, 5, null);
+
+		var destino = new CursanteBuilder().ConAlumno(alumno.Id)
+										   .ConCicloLectivo(CicloLectivo.Crear("2026"))
+										   .ConFechaInicio(DateTime.Today.AddMonths(-3))
+										   .Build();
+		destino.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Recuperatorio, 9, null);
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(destino);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.Promedio.ShouldBe(7m);
+		resumen.Rendidas.ShouldBe(2);
+		resumen.Trayectoria.Count.ShouldBe(2);
+		resumen.Cursada!.CursanteID.ShouldBe(destino.Id);
+	}
+
+	/// <remarks>
+	/// Las notas de otro año NO se mezclan. El promedio es del ciclo de la inscripción vigente; sin
+	/// el filtro por período, un alumno con cinco años de cursada mostraría un número que no
+	/// describe a nadie.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_no_mezcla_las_notas_de_otros_ciclos_lectivos()
+	{
+		var (alumno, vigente) = SembrarCursada(periodo: "2026");
+		var matematica = SembrarMateria("Matemática");
+
+		vigente.RegistrarCalificacion(matematica, DateTime.Today, Instancia.Parcial, 8, null);
+
+		var anterior = new CursanteBuilder().ConAlumno(alumno.Id)
+											.ConCicloLectivo(CicloLectivo.Crear("2025"))
+											.ConFechaInicio(DateTime.Today.AddYears(-1))
+											.DadoDeBajaEl(DateTime.Today.AddMonths(-9))
+											.Build();
+		anterior.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-10), Instancia.Parcial, 2, null);
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(anterior);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.CicloLectivo.ShouldBe("2026");
+		resumen.Promedio.ShouldBe(8m);
+		resumen.Rendidas.ShouldBe(1);
+		// La trayectoria sí trae los dos: es el historial completo, no el ciclo informado.
+		resumen.Trayectoria.Count.ShouldBe(2);
+	}
+
+	/// <remarks>
+	/// Sin inscripción vigente el resumen informa el ciclo de la MÁS RECIENTE y no se queda en
+	/// blanco: un egresado tiene notas y asistencia que siguen siendo su legajo. La pantalla rotula
+	/// el número con ese año, así que el dato no cambia de significado.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_sin_inscripcion_vigente_informa_el_ultimo_ciclo()
+	{
+		var (alumno, cerrada) = SembrarCursada(periodo: "2025",
+											   fechaInicio: DateTime.Today.AddYears(-1),
+											   fechaBaja: DateTime.Today.AddMonths(-6));
+		var matematica = SembrarMateria("Matemática");
+
+		cerrada.RegistrarCalificacion(matematica, DateTime.Today.AddMonths(-7), Instancia.Parcial, 6, null);
+
+		var resumen = await _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.EstaCursando.ShouldBeFalse();
+		resumen.Cursada.ShouldBeNull();
+		resumen.CicloLectivo.ShouldBe("2025");
+		resumen.Promedio.ShouldBe(6m);
+	}
+
+	/// <remarks>
+	/// Es una lectura y no exige permiso, igual que las otras ~30 consultas de <c>Core</c>
+	/// (CORE-16). Las cuatro excepciones declaradas son las de impacto de borrado.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenAcademicoAsync_es_una_lectura_y_no_exige_permiso()
+	{
+		// Patrón vigente del repositorio de código (CORE-16): las lecturas quedan abiertas.
+		var alumno = new AlumnoBuilder().Build();
+		using var host = new HostDeServicios(sembrar: uow => uow.AlumnosFake.Sembrar(alumno),
+											 sesion: SesionDePrueba.SinPermisos());
+
+		var resumen = await host.Resolver<IServicioAlumno>()
+			.ConsultarResumenAcademicoAsync(new PersonaRequest(alumno.Id));
+
+		resumen.AlumnoID.ShouldBe(alumno.Id);
+	}
+
+	/// <remarks>
+	/// Misma guarda para la búsqueda: es la consulta que alimenta el índice de la pantalla, y una
+	/// guarda acá dejaría la pantalla de Alumnos inservible para cualquier rol que la pueda abrir.
+	/// </remarks>
+	[Fact]
+	public async Task BuscarAlumnosAsync_es_una_lectura_y_no_exige_permiso()
+	{
+		using var host = new HostDeServicios(sesion: SesionDePrueba.SinPermisos());
+
+		var encontrados = await host.Resolver<IServicioAlumno>()
+			.BuscarAlumnosAsync(new BuscarAlumnoRequest("Pérez"));
+
+		encontrados.ShouldBeEmpty();
 	}
 	#endregion
 }

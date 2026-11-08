@@ -44,12 +44,253 @@
 									Margin="0 0 0 20"
 									Ruta="{ Binding Path=Ruta }"
 									Titulo="Perfil del alumno"
-									Subtitulo="Datos personales, contacto y domicilio. Cada bloque se edita por separado."/>
+									Subtitulo="Situación académica, datos personales, contacto y domicilio. Cada bloque de datos se edita por separado."/>
 
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
 			<Grid>
 			<ScrollViewer VerticalScrollBarVisibility="Auto">
 				<StackPanel Margin="28 4 28 24">
+					<!--#region SITUACIÓN ACADÉMICA
+						VA PRIMERO Y NO SE EDITA. El perfil tenía tres bloques —personales,
+						contacto y domicilio— y ninguno decía si el alumno estaba cursando: se
+						podía abrir el perfil completo de alguien y no enterarse de que tenía
+						seis materias y ochenta faltas.
+
+						Es el único bloque sin par cancelar/guardar, y eso es lo que dice qué es:
+						nada de acá se escribe desde esta pantalla. El promedio sale de las
+						calificaciones que se cargan en la división y la asistencia de las
+						planillas que toma el preceptor; acá se leen.
+
+						Las dos cifras llevan el ciclo lectivo en el rótulo porque las dos son de
+						un solo período, el de la inscripción vigente. Un "PROMEDIO" a secas
+						obliga a adivinar si son las notas de este año o el acumulado de la
+						escolaridad entera.
+					-->
+					<GroupBox Header="SITUACIÓN ACADÉMICA" Style="{ StaticResource ResourceKey=Seccion }">
+						<StackPanel Visibility="{ Binding Path=Resumen, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+							<!--#region QUÉ CURSA-->
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="CURSANDO"/>
+									<TextBlock Margin="0 4 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Subtitulo }"
+											   Text="{ Binding Path=Resumen.Cursada }"
+											   TextWrapping="Wrap"/>
+								</StackPanel>
+
+								<Border Grid.Column="1"
+										Style="{ StaticResource ResourceKey=Insignia.Alerta }"
+										VerticalAlignment="Center"
+										Visibility="{ Binding Path=Resumen.EsRecursante, Converter={ StaticResource ResourceKey=visibilidad } }">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+											   Text="RECURSANTE"/>
+								</Border>
+							</Grid>
+							<!--#endregion-->
+
+							<!--#region PROMEDIO Y ASISTENCIA-->
+							<Grid Margin="0 18 0 0"
+								  Visibility="{ Binding Path=Resumen.TieneTrayectoria, Converter={ StaticResource ResourceKey=visibilidad } }">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0" Margin="0 0 16 0">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="{ Binding Path=Resumen.CicloLectivo, StringFormat='PROMEDIO {0}' }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Display }"
+											   Text="{ Binding Path=Resumen.Promedio }"/>
+									<TextBlock HorizontalAlignment="Left"
+											   Margin="0 4 0 0"
+											   MaxWidth="320"
+											   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="{ Binding Path=Resumen.DetalleCalificaciones }"
+											   TextWrapping="Wrap"/>
+								</StackPanel>
+
+								<StackPanel Grid.Column="1">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="{ Binding Path=Resumen.CicloLectivo, StringFormat='ASISTENCIA {0}' }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Display }"
+											   Text="{ Binding Path=Resumen.PorcentajeAsistencia }"/>
+									<TextBlock HorizontalAlignment="Left"
+											   Margin="0 4 0 0"
+											   MaxWidth="320"
+											   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="{ Binding Path=Resumen.DetalleAsistencia }"
+											   TextWrapping="Wrap"/>
+								</StackPanel>
+							</Grid>
+							<!--#endregion-->
+
+							<!--#region MATERIAS
+								Una fila por materia y no por calificación: una materia tiene
+								varias instancias —primera nota, recuperatorio, final— y la
+								pregunta es cómo le va en Matemática, no qué sacó en el
+								recuperatorio de agosto. El detalle instancia por instancia es
+								el boletín, que ya se emite desde Documentación.
+							-->
+							<TextBlock Margin="0 20 0 8"
+									   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="MATERIAS DEL CICLO"
+									   Visibility="{ Binding Path=Resumen.TieneTrayectoria, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							<ListView ItemsSource="{ Binding Path=Resumen.Materias }"
+									  MaxHeight="260"
+									  Style="{ StaticResource ResourceKey=Lista.Indice }"
+									  Tag="Todavía no se le cargó ninguna calificación en este ciclo."
+									  Visibility="{ Binding Path=Resumen.TieneTrayectoria, Converter={ StaticResource ResourceKey=visibilidad } }">
+								<ListView.View>
+									<GridView AllowsColumnReorder="False">
+										<GridView.Columns>
+											<GridViewColumn Header="MATERIA" Width="260">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+																   Text="{ Binding Path=Materia, TargetNullValue='Sin datos' }"
+																   TextTrimming="CharacterEllipsis"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="PROMEDIO" Width="96">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.DatoFuerte }"
+																   Text="{ Binding Path=Promedio }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="INSTANCIAS" Width="230">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+																   Text="{ Binding Path=Instancias }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="ESTADO" Width="130">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<!--
+															Dos insignias excluyentes y no una con el
+															brush bindeado: el color ES el estado, y
+															un converter de bool a brush lo escondería
+															detrás de una clave de recurso. Las dos
+															leen el mismo Estado, así que el texto se
+															decide en un solo lugar.
+														-->
+														<Grid>
+															<Border Style="{ StaticResource ResourceKey=Insignia.Activa }"
+																	Visibility="{ Binding Path=Aprobada, Converter={ StaticResource ResourceKey=visibilidad } }">
+																<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+																		   Text="{ Binding Path=Estado }"/>
+															</Border>
+															<Border Style="{ StaticResource ResourceKey=Insignia.Alerta }"
+																	Visibility="{ Binding Path=Aprobada, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+																<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+																		   Text="{ Binding Path=Estado }"/>
+															</Border>
+														</Grid>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+										</GridView.Columns>
+									</GridView>
+								</ListView.View>
+							</ListView>
+							<!--#endregion-->
+
+							<!--#region TRAYECTORIA
+								Todas las inscripciones, de la más reciente a la más vieja. El
+								traslado de división se modela como cerrar la inscripción actual
+								y abrir otra, así que un alumno trasladado tiene más de una fila
+								en el mismo ciclo: la vigente y la cerrada.
+							-->
+							<TextBlock Margin="0 20 0 8"
+									   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+									   Text="TRAYECTORIA"/>
+							<ListView ItemsSource="{ Binding Path=Resumen.Trayectoria }"
+									  MaxHeight="220"
+									  Style="{ StaticResource ResourceKey=Lista.Indice }"
+									  Tag="Todavía no está inscripto en ninguna división.">
+								<ListView.View>
+									<GridView AllowsColumnReorder="False">
+										<GridView.Columns>
+											<GridViewColumn Header="CICLO" Width="86">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+																   Text="{ Binding Path=CicloLectivo }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="CURSO" Width="150">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+																   Text="{ Binding Path=Grado, Converter={ StaticResource ResourceKey=grado } }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="DIVISIÓN" Width="100">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+																   Text="{ Binding Path=Division }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="DESDE" Width="110">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+																   Text="{ Binding Path=FechaInicio, StringFormat=d }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="HASTA" Width="110">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+																   Text="{ Binding Path=FechaFin, StringFormat=d, TargetNullValue='—' }"/>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+											<GridViewColumn Header="ESTADO" Width="120">
+												<GridViewColumn.CellTemplate>
+													<DataTemplate>
+														<Grid>
+															<Border Style="{ StaticResource ResourceKey=Insignia.Activa }"
+																	Visibility="{ Binding Path=EstaActiva, Converter={ StaticResource ResourceKey=visibilidad } }">
+																<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+																		   Text="{ Binding Path=Estado }"/>
+															</Border>
+															<Border Style="{ StaticResource ResourceKey=Insignia }"
+																	Visibility="{ Binding Path=EstaActiva, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
+																<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+																		   Text="{ Binding Path=Estado }"/>
+															</Border>
+														</Grid>
+													</DataTemplate>
+												</GridViewColumn.CellTemplate>
+											</GridViewColumn>
+										</GridView.Columns>
+									</GridView>
+								</ListView.View>
+							</ListView>
+							<!--#endregion-->
+						</StackPanel>
+					</GroupBox>
+					<!--#endregion-->
+
 					<!--#region INFORMACIÓN PERSONAL-->
 					<GroupBox Header="INFORMACIÓN PERSONAL" Style="{ StaticResource ResourceKey=Seccion }">
 						<StackPanel>
