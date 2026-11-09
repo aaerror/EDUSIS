@@ -167,6 +167,11 @@ public sealed class Docente : Persona
 		}
 
 		var puesto = BuscarPuestoDocente(posicionID);
+		if (puesto is null)
+		{
+			throw new PuestoDocenteNoEncontradoException(nameof(posicionID));
+		}
+
 		puesto.EstablecerComoPuestoFijo();
 	}
 

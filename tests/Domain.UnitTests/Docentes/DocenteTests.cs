@@ -154,6 +154,16 @@ public class DocenteTests
 	}
 
 	[Fact]
+	public void CambiarEventualidadCargoDocente_con_un_puesto_inexistente_lanza_PuestoDocenteNoEncontradoException()
+	{
+		var docente = new DocenteBuilder().Build();
+
+		var ex = Should.Throw<Exception>(() => docente.CambiarEventualidadCargoDocente(Guid.NewGuid()));
+
+		ex.GetType().Name.ShouldBe("PuestoDocenteNoEncontradoException");
+	}
+
+	[Fact]
 	public void Rescindir_dos_veces_el_mismo_cargo_lanza_PuestoDocenteSinAsignarException()
 	{
 		var docente = new DocenteBuilder().ConPuesto(nameof(Posicion.Profesor), nameof(EstadoPuesto.Activo)).Build();
