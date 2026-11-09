@@ -82,6 +82,33 @@ public partial class App : Application
 	private bool _volverAlAcceso;
 
 	/// <summary>
+	/// El <see cref="IServiceScope"/> del que salen las dos ventanas de la sesión en curso y, con ellas,
+	/// sus ViewModels de cáscara. Uno por sesión; <see langword="null"/> mientras no hay ninguna.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>Es la mitad de UI-18 que la navegación no cubre.</strong> Cada pantalla recibe su propio
+	/// scope de <c>NavigationService</c>, pero <c>MainViewModel</c> y <c>StartupViewModel</c> no llegan
+	/// por navegación sino por acá, y antes se resolvían del proveedor <strong>raíz</strong>: con los
+	/// servicios de <c>Core</c> registrados <c>Scoped</c>, eso le daba a <c>MainViewModel</c>
+	/// —que inyecta <c>IServicioUsuario</c>— un <c>DbContext</c> de vida de proceso. Arreglar sólo la
+	/// navegación habría dejado el menú como el último dueño de un contexto eterno.
+	/// </para>
+	/// <para>
+	/// <strong>Por sesión y no por proceso</strong>, porque es exactamente lo que dura: el scope muere
+	/// con la ventana principal, igual que los <c>*Store</c> se barren en
+	/// <see cref="LimpiarEstadoDeSesion"/>. Un cambio de usuario estrena contexto, que además es lo
+	/// correcto en seguridad: la sesión nueva no hereda nada rastreado por la anterior.
+	/// </para>
+	/// <para>
+	/// Los <c>Singleton</c> —los stores, la sesión, el mensajero— no se ven afectados: resuelven a la
+	/// misma instancia desde el scope o desde la raíz, que es lo que permite que el barrido de estado
+	/// siga resolviéndose de <c>AppHost.Services</c>.
+	/// </para>
+	/// </remarks>
+	private IServiceScope? _scopeDeSesion;
+
+	/// <summary>
 	/// Arranque de la aplicación: primero el login, después la ventana principal.
 	/// </summary>
 	/// <remarks>
@@ -158,9 +185,16 @@ public partial class App : Application
 		// verse. En el primer arranque no limpia nada y corre igual, que es lo que lo hace seguro.
 		LimpiarEstadoDeSesion();
 
-		// Una sola raíz de DI (AppHost.Services): las ventanas y los servicios de navegación
-		// comparten los Singleton, entre ellos SesionUsuario.
-		var startupWindow = AppHost!.Services.GetRequiredService<StartupWindow>();
+		// El scope de la sesión anterior, si hubo una. Acá y no en OnVentanaPrincipalCerrada porque
+		// este método es el único que lo crea: el que abre es el que cierra el anterior, y así no hay
+		// camino de salida —la X, «Salir», un acceso cancelado— que pueda dejarlo colgado.
+		LiberarScopeDeSesion();
+		_scopeDeSesion = AppHost!.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+		// Las ventanas salen del scope de la sesión y no de la raíz (UI-18): así el DbContext que hay
+		// detrás de MainViewModel dura lo que la sesión y no lo que el proceso. Los Singleton siguen
+		// siendo los mismos —entre ellos SesionUsuario—, porque un scope no los duplica.
+		var startupWindow = _scopeDeSesion.ServiceProvider.GetRequiredService<StartupWindow>();
 
 		// La ventana de acceso es la ventana principal MIENTRAS dura el acceso, y esto no es
 		// cosmético: LoginUsuarioViewModel cierra su propia ventana con
@@ -186,6 +220,8 @@ public partial class App : Application
 		var sesion = AppHost.Services.GetRequiredService<ISesionUsuario>();
 		if (!sesion.EstaAutenticado)
 		{
+			// Nadie entró, así que no hay sesión: el scope que se acababa de crear no tiene dueño.
+			LiberarScopeDeSesion();
 			Shutdown(0);
 			return;
 		}
@@ -196,7 +232,7 @@ public partial class App : Application
 		// MainWindowNavigationStore, y el ContentControl de MainWindow lo resolvía con el
 		// DataTemplate que instancia <windows:MainWindow/>: una Window dentro de un Visual.
 		// El área de contenido arranca vacía hasta que el usuario elige una entrada del menú.
-		var mainWindow = AppHost.Services.GetRequiredService<MainWindow>();
+		var mainWindow = _scopeDeSesion.ServiceProvider.GetRequiredService<MainWindow>();
 
 		// MainWindow pasa a ser la ventana principal recién ahora: hasta acá lo era la de acceso.
 		MainWindow = mainWindow;
@@ -249,6 +285,8 @@ public partial class App : Application
 
 		if (!_volverAlAcceso)
 		{
+			// Fin de la aplicación: acá nadie va a abrir otra sesión que libere este scope.
+			LiberarScopeDeSesion();
 			Shutdown(0);
 			return;
 		}
@@ -300,8 +338,56 @@ public partial class App : Application
 		AppHost.Services.GetRequiredService<StartupWindowNavigationStore>().ViewModel = null!;
 	}
 
+	/// <summary>
+	/// Libera el scope de la sesión que termina, si hay uno.
+	/// </summary>
+	/// <remarks>
+	/// Va DESPUÉS de <see cref="LimpiarEstadoDeSesion"/> en el orden del ciclo, y el orden importa: el
+	/// barrido vacía los tres <c>*NavigationStore</c>, y vaciarlos es lo que libera el scope de la
+	/// pantalla que estaba activa —ver <c>StoreDeNavegacion.Reemplazar</c>—. Liberar primero el de la
+	/// sesión dejaría el de la pantalla vivo un rato más colgado de un store que ya nadie lee.
+	/// </remarks>
+	private void LiberarScopeDeSesion()
+	{
+		_scopeDeSesion?.Dispose();
+		_scopeDeSesion = null;
+	}
+
+	/// <summary>
+	/// Apagado del proceso: libera en orden lo que sostiene conexiones y después el host.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>Cierra UI-24</strong>, que era que acá se llamaba a <c>StopAsync()</c> pero no a
+	/// <c>Dispose()</c>: el contenedor y todo lo <see cref="IDisposable"/> que colgaba de él —el
+	/// <c>DbContext</c>— no se liberaban ordenadamente. <c>StopAsync</c> detiene los
+	/// <c>IHostedService</c>; es <c>Dispose</c> el que baja el <c>ServiceProvider</c>.
+	/// </para>
+	/// <para>
+	/// El orden es de adentro hacia afuera y ninguno de los tres pasos es redundante, porque un
+	/// <see cref="IServiceScope"/> creado con <c>CreateScope()</c> <strong>no</strong> lo libera el
+	/// proveedor raíz: hay que liberarlo por su cuenta. Vaciar los stores libera el scope de la pantalla
+	/// activa (<c>StoreDeNavegacion.Reemplazar</c>), <see cref="LiberarScopeDeSesion"/> el de la
+	/// sesión, y el host lo que quedaba en la raíz. Sin los dos primeros el proceso igual termina y el
+	/// sistema operativo recupera todo, pero las conexiones se cerrarían por caída y no por cierre.
+	/// </para>
+	/// <para>
+	/// Cada paso va en su propio <c>try</c>: esto corre cuando la aplicación ya se está apagando, y que
+	/// falle uno no es razón para saltear los otros ni para morir con una excepción que nadie va a leer.
+	/// </para>
+	/// </remarks>
 	protected override async void OnExit(ExitEventArgs e)
 	{
+		try
+		{
+			LimpiarEstadoDeSesion();
+			LiberarScopeDeSesion();
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"Error al liberar el estado de la sesión: {ex}");
+		}
+
 		try
 		{
 			await AppHost!.StopAsync();
@@ -309,6 +395,15 @@ public partial class App : Application
 		catch (Exception ex)
 		{
 			System.Diagnostics.Debug.WriteLine($"Error al detener el host: {ex}");
+		}
+
+		try
+		{
+			AppHost?.Dispose();
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"Error al liberar el host: {ex}");
 		}
 
 		base.OnExit(e);

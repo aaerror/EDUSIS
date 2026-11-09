@@ -1,3 +1,4 @@
+using Core.ServicioDocentes;
 using Core.Shared;
 using Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -210,6 +211,87 @@ public class ComposicionDelContenedorTests
 		host.Services.GetRequiredService<CatedraStore>().Catedra = Guid.NewGuid();
 
 		var viewModel = host.Services.GetRequiredService<GestionHorariosViewModel>();
+
+		viewModel.ShouldNotBeNull();
+	}
+	#endregion
+
+	#region Alcance de los servicios de Core (UI-18)
+	/// <summary>
+	/// Dos pantallas distintas no comparten los servicios de <c>Core</c> ni, por lo tanto, el
+	/// <c>DbContext</c> que hay detrás.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Es UI-18 afirmado sobre el grafo de DI <strong>real</strong>. Los servicios de <c>Core</c> están
+	/// registrados <c>Scoped</c> en <c>CoreDI</c>, pero antes de este arreglo todos los ViewModels se
+	/// resolvían del proveedor <strong>raíz</strong>, donde <c>Scoped</c> equivale a una instancia por
+	/// proceso: un único <c>DbContext</c> para toda la aplicación, con
+	/// <c>"a second operation was started on this context"</c> si dos cargas se solapaban y un
+	/// <c>ChangeTracker</c> que crecía sin tope.
+	/// </para>
+	/// <para>
+	/// Lo que esta prueba <strong>no</strong> acredita es que el código de producción cree esos scopes
+	/// —eso lo fija <c>NavigationServiceTests</c>—; acredita que crearlos sirva de algo, o sea que el
+	/// registro siga siendo <c>Scoped</c>. Pasar <c>CoreDI</c> a <c>Singleton</c> reabriría UI-18 sin
+	/// tocar una línea de la navegación, y esta prueba es la única que se enteraría.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Un_servicio_de_Core_resuelto_en_dos_scopes_da_dos_instancias()
+	{
+		using var host = ConstruirHost();
+		var fabrica = host.Services.GetRequiredService<IServiceScopeFactory>();
+
+		using var primerScope = fabrica.CreateScope();
+		using var segundoScope = fabrica.CreateScope();
+		var primero = primerScope.ServiceProvider.GetRequiredService<IServicioDocente>();
+		var segundo = segundoScope.ServiceProvider.GetRequiredService<IServicioDocente>();
+
+		segundo.ShouldNotBeSameAs(primero);
+	}
+
+	/// <remarks>
+	/// La contracara: los <c>*Store</c> son <c>Singleton</c> y tienen que seguir siendo la misma
+	/// instancia vistos desde scopes distintos. Si un scope los duplicara, el scope por pantalla
+	/// habría roto el paso de parámetros entre pantallas —que es justamente lo que los stores hacen— y
+	/// el barrido de <c>App.LimpiarEstadoDeSesion</c>, que los resuelve de la raíz, limpiaría copias
+	/// que nadie lee.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Un_store_visto_desde_dos_scopes_sigue_siendo_la_misma_instancia()
+	{
+		using var host = ConstruirHost();
+		var fabrica = host.Services.GetRequiredService<IServiceScopeFactory>();
+
+		using var primerScope = fabrica.CreateScope();
+		using var segundoScope = fabrica.CreateScope();
+		var desdeElPrimero = primerScope.ServiceProvider.GetRequiredService<MainWindowNavigationStore>();
+		var desdeElSegundo = segundoScope.ServiceProvider.GetRequiredService<MainWindowNavigationStore>();
+		var desdeLaRaiz = host.Services.GetRequiredService<MainWindowNavigationStore>();
+
+		desdeElSegundo.ShouldBeSameAs(desdeElPrimero);
+		desdeLaRaiz.ShouldBeSameAs(desdeElPrimero);
+	}
+
+	/// <remarks>
+	/// Un ViewModel tiene que poder resolverse de un scope, que es de donde lo resuelve
+	/// <c>NavigationService</c>. Parece obvio y no lo es: un ViewModel cuya factory en
+	/// <c>WPF_DesktopDI</c> resolviera algo registrado <c>Singleton</c> contra un
+	/// <c>IServiceProvider</c> de scope seguiría funcionando, pero uno que dependiera de algo no
+	/// registrado fallaría sólo por este camino.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Un_view_model_se_resuelve_desde_un_scope_y_no_solo_desde_la_raiz()
+	{
+		using var host = ConstruirHost();
+		var fabrica = host.Services.GetRequiredService<IServiceScopeFactory>();
+
+		using var scope = fabrica.CreateScope();
+		var viewModel = scope.ServiceProvider.GetRequiredService<GestionUsuariosViewModel>();
 
 		viewModel.ShouldNotBeNull();
 	}
