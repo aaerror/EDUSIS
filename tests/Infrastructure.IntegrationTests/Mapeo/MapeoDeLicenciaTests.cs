@@ -55,13 +55,25 @@ public sealed class MapeoDeLicenciaTests : BaseIntegracion
 	}
 
 	/// <summary>
-	/// Defecto H-019: <c>LicenciasConfiguration</c> mapea <c>Observacion</c> como
-	/// <c>varchar(10)</c> pese a que el dominio (<c>Licencia.ModificarObservaciones</c>) admite
-	/// hasta 250 caracteres y el mismo builder configura <c>HasMaxLength(250)</c>. Una
-	/// observación real (&gt; 10 caracteres) revienta con "String or binary data would be
-	/// truncated" al persistir. Ver <c>hallazgos.md</c>.
+	/// Fija el ancho de <c>observacion</c> contra la base: una observación de longitud realista
+	/// persiste y vuelve sin truncar.
 	/// </summary>
-	[Fact(Skip = "Defecto H-019: Observacion mapeada como varchar(10); ver specs/001-automated-test-suite/hallazgos.md")]
+	/// <remarks>
+	/// <para>
+	/// Cubría el defecto H-019 —<c>LicenciasConfiguration</c> mapeaba <c>Observacion</c> como
+	/// <c>varchar(10)</c> mientras el dominio (<c>Licencia.ModificarObservaciones</c>) admite 250,
+	/// así que una observación real revienta con "String or binary data would be truncated"— y
+	/// llevaba <c>[Fact(Skip=…)]</c> por eso.
+	/// </para>
+	/// <para>
+	/// <strong>El Skip se retiró el 2026-11-09</strong>: <c>LicenciasConfiguration.cs:46</c>
+	/// configura <c>HasMaxLength(250).IsUnicode(false)</c>, así que la causa ya no existe y la
+	/// prueba pasa contra SQL Server real. Era un <c>Skip</c> que había sobrevivido a su causa —el
+	/// mismo caso que H-010 y H-023—; detalle en <c>docs/todos-historial.md</c>, nota del
+	/// 2026-11-09 (segunda). <c>TEST-01</c> bajó de 7 a 5 pruebas omitidas.
+	/// </para>
+	/// </remarks>
+	[RequiereSqlServerFact]
 	public async Task Una_observacion_de_licencia_de_longitud_realista_se_persiste_sin_truncar()
 	{
 		var docenteID = await SembrarDocenteAsync();

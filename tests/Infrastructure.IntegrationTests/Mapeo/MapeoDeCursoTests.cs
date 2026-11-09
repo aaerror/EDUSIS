@@ -46,13 +46,26 @@ public sealed class MapeoDeCursoTests : BaseIntegracion
 	}
 
 	/// <summary>
-	/// Defecto H-023: <c>DivisionesConfiguration</c> ya mapea <c>descripcion</c> como
-	/// <c>varchar(1)</c>, pero el esquema de prueba se crea con <c>Database.Migrate()</c> y la
-	/// migración <c>InitCreate</c> todavía declara la columna de ancho fijo, así que un ida y
-	/// vuelta devuelve <c>"A"</c> con relleno de espacios. Se resuelve al regenerar la migración.
-	/// Ver <c>hallazgos.md</c>.
+	/// Fija el tipo de <c>descripcion</c> contra la base: la letra de la división vuelve sin
+	/// relleno de espacios, o sea que la columna es de ancho variable y no fijo.
 	/// </summary>
-	[Fact(Skip = "Defecto H-023: Division.Descripcion vuelve con relleno de espacios hasta regenerar la migración; ver hallazgos.md")]
+	/// <remarks>
+	/// <para>
+	/// Cubría el defecto H-023 —<c>DivisionesConfiguration</c> ya mapeaba <c>descripcion</c> como
+	/// <c>varchar(1)</c>, pero el esquema de prueba se crea con <c>Database.Migrate()</c> y la
+	/// migración <c>InitCreate</c> declaraba la columna de ancho fijo, así que un ida y vuelta
+	/// devolvía <c>"A"</c> con relleno— y llevaba <c>[Fact(Skip=…)]</c> con la condición de salida
+	/// escrita en el mensaje: "hasta regenerar la migración".
+	/// </para>
+	/// <para>
+	/// <strong>Esa condición se cumplió el 2026-10-11</strong>, cuando la migración se regeneró
+	/// desde cero (<c>20261011000305_InitCreate</c>, cierre de H-023), pero el <c>Skip</c> se quedó
+	/// tres semanas más. Se retiró el 2026-11-09 y la prueba pasa contra SQL Server real;
+	/// <c>DivisionesConfiguration.cs:33</c> mapea <c>HasMaxLength(1).IsUnicode(false)</c>. Detalle
+	/// en <c>docs/todos-historial.md</c>, nota del 2026-11-09 (segunda).
+	/// </para>
+	/// </remarks>
+	[RequiereSqlServerFact]
 	public async Task La_descripcion_de_la_division_no_deberia_volver_con_relleno_de_espacios()
 	{
 		var cursoID = await SembrarCursoAsync();
