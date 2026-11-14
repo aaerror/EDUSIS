@@ -1,3 +1,4 @@
+using Domain.Docentes.Exceptions;
 using Domain.Shared;
 
 namespace Domain.Docentes.Puestos;
@@ -69,16 +70,38 @@ public sealed class Puesto : Entity
 		EstablecerPeriodo(desde, hasta);
 	}
 
+	/// <summary>
+	/// Confirma el puesto: lo pasa de eventual a por tiempo indeterminado.
+	/// </summary>
+	/// <remarks>
+	/// Las dos guardas lanzaban <c>ArgumentException</c> del BCL hasta el 2026-11-12. Eran la
+	/// mitad de H-006 / DOM-12: la regla "no se confirma un puesto que ya está confirmado" estaba
+	/// implementada, pero con un tipo del BCL, mientras
+	/// <c>DocenteConfirmadoEnCargoDocenteException</c> existía en el módulo sin ningún throw site.
+	/// Lo que la fila pedía no era inventar la regla sino cablear la excepción que ya la nombraba.
+	/// </remarks>
 	internal void EstablecerComoPuestoFijo()
 	{
 		if (!EstaActivo())
 		{
-			throw new ArgumentException($"El puesto docente no se encuentra activo.\nFecha de finalización: { Periodo.FechaFin.Value.ToString("D") }");
+			// El motivo se discrimina en lugar de leer FechaFin a ciegas, y no es cosmético: hasta
+			// el 2026-11-12 esta guarda interpolaba `Periodo.FechaFin.Value` dando por hecho que un
+			// puesto no activo es un puesto finalizado. Es al revés. `EstablecerPeriodo` rechaza
+			// toda fecha de inicio anterior a hoy y `RangoFechas` exige fin >= inicio, así que
+			// FechaFin nunca queda antes de hoy y `HaFinalizado()` no puede ser cierto para un
+			// puesto recién construido: el único camino a `!EstaActivo()` es un puesto que todavía
+			// no inició. Y si ese puesto es por tiempo indeterminado, FechaFin es nulo y la guarda
+			// moría con InvalidOperationException en vez de con su propia excepción.
+			var motivo = Periodo.HaFinalizado()
+				? $"finalizó el { Periodo.FechaFin!.Value.ToString("D") }"
+				: $"todavía no inició, comienza el { Periodo.FechaInicio.ToString("D") }";
+
+			throw new PuestoDocenteInactivoException(motivo);
 		}
 
 		if (!EsEventual)
 		{
-			throw new ArgumentException("El puesto docente es por tiempo indeterminado.");
+			throw new DocenteConfirmadoEnCargoDocenteException(nameof(EsEventual));
 		}
 
 		EstablecerPeriodo(Periodo.FechaInicio, null);
