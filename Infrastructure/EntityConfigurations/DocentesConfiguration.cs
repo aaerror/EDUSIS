@@ -52,7 +52,6 @@ internal class DocentesConfiguration : IEntityTypeConfiguration<Docente>
 			   .OnDelete(DeleteBehavior.Cascade);
 
 		//builder.Ignore(x => x.EstaActivo());
-		builder.Ignore(x => x.Puesto);
 
 		builder.Navigation(x => x.Puestos)
 			   .UsePropertyAccessMode(PropertyAccessMode.Field);

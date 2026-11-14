@@ -15,7 +15,6 @@ public sealed class Docente : Persona
 	public string Legajo { get; private set; }
 	public string CUIL { get; private set; }
 	public RangoFechas Periodo { get; private set; }
-	public Puesto? Puesto { get; private set; }
 	public bool Activo { get; private set; }
 
 	public IReadOnlyCollection<Puesto> Puestos => _puestos.AsReadOnly();

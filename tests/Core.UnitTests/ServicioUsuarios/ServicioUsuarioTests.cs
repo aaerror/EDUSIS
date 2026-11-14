@@ -50,6 +50,29 @@ public class ServicioUsuarioTests
 	}
 
 	[Fact]
+	public async Task BuscarUsuarioPorIDAsync_informa_los_cargos_vigentes_del_docente()
+	{
+		var docente = new DocenteBuilder().ConPuesto("Profesor").ConPuesto("Preceptor").Build();
+		var usuario = new UsuarioBuilder().ConDocente(docente.Id).Build();
+		_host.UnidadDeTrabajo.DocentesFake.Sembrar(docente);
+		_host.UnidadDeTrabajo.UsuariosFake.Sembrar(usuario);
+
+		var response = await _servicio.BuscarUsuarioPorIDAsync(new UsuarioIDRequest(usuario.Id));
+
+		response.Puesto.ShouldBe("Profesor, Preceptor");
+	}
+
+	[Fact]
+	public async Task BuscarUsuarioPorIDAsync_sin_cargos_informa_que_no_tiene_puesto()
+	{
+		var (_, usuario) = SembrarDocenteConUsuario();
+
+		var response = await _servicio.BuscarUsuarioPorIDAsync(new UsuarioIDRequest(usuario.Id));
+
+		response.Puesto.ShouldBe("Sin puesto docente asignado");
+	}
+
+	[Fact]
 	public async Task BuscarUsuarioPorIDAsync_con_un_Id_inexistente_lanza_UsuarioNoEncontrado()
 	{
 		await Should.ThrowAsync<UsuarioNoEncontradoException>(

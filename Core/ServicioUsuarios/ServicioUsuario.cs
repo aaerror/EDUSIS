@@ -4,6 +4,7 @@ using Core.ServicioUsuarios.Exceptions;
 using Core.ServicioSeguridad;
 using Core.ServicioUsuarios.DTOs.Requests;
 using Core.Shared;
+using Domain.Docentes;
 using Domain.Usuarios;
 using Domain.Shared;
 using Microsoft.Extensions.Logging;
@@ -44,6 +45,21 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 	/// acá — las consultas con tipos de EF van en <c>Infrastructure/Repository/</c>.
 	/// </para>
 	/// </remarks>
+	/// <summary>
+	/// Los cargos vigentes del docente, separados por coma. Sale de <c>Puestos</c> y no de la
+	/// propiedad singular <c>Puesto</c>, que nunca se asignaba y dejaba a todos "sin puesto" (DOM-13).
+	/// </summary>
+	private static string DescribirPuestos(Docente? docente)
+	{
+		var posiciones = docente?.PuestoDocentesAsignados()
+								 .Select(x => x.Posicion.ToString())
+								 .ToList();
+
+		return posiciones is { Count: > 0 }
+			? string.Join(", ", posiciones)
+			: "Sin puesto docente asignado";
+	}
+
 	public async Task<IReadOnlyCollection<UsuarioResponse>> ListarUsuariosAsync()
 	{
 		try
@@ -60,7 +76,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 					usuario.DocenteID,
 					usuario.Username,
 					docente is not null ? docente.DatosPersonales.NombreCompleto() : "(legajo inexistente)",
-					docente?.Puesto is not null ? docente.Puesto.Posicion.ToString() : "Sin puesto docente asignado",
+					DescribirPuestos(docente),
 					usuario.Roles.Select(x => x.Id).ToList()));
 			}
 
@@ -89,7 +105,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 									   docente.Id,
 									   usuario.Username,
 									   docente.DatosPersonales.NombreCompleto(),
-									   docente.Puesto is not null ? docente.Puesto.Posicion.ToString() : "Sin puesto docente asignado",
+									   DescribirPuestos(docente),
 									   // Roles reales del usuario, no los "Basic"/"Custom" que devolvía hardcodeado:
 									   // son el insumo de la autorización (ver Core.Shared.Seguridad.ISesionActual) y
 									   // Viajan como Id, no como descripción (ver UsuarioResponse). Los carga el Include de
