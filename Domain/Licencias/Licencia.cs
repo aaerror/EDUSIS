@@ -225,7 +225,7 @@ public sealed class Licencia : Entity
 			if (observacion.Trim().Length > 250)
 			{
 				var msg = "La observación no debe superar los 250 caracteres.";
-				throw new ExcesoCaracteresException();
+				throw new ExcesoCaracteresException(msg);
 			}
 		}
 
