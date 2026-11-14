@@ -29,16 +29,33 @@ internal partial class GestionCursosViewModel : ObservableObject
 	private ObservableCollection<CursoViewModel> _cursos;
 
 
-	[NotifyPropertyChangedFor(nameof(EliminarCommandAsync))]
-	[NotifyPropertyChangedFor(nameof(NavigationCommand))]
+	// NotifyCanExecuteChangedFor y NO NotifyPropertyChangedFor: el atributo anterior levantaba
+	// PropertyChanged para la PROPIEDAD del comando, que no es la señal que el botón escucha. El
+	// binding releía la propiedad, obtenía la misma instancia de ICommand, la DP no cambiaba y
+	// ButtonBase no volvía a evaluar nada. Los comandos del toolkit tampoco se cuelgan de
+	// CommandManager.RequerySuggested, así que CanExecuteChanged no se levantaba NUNCA: el
+	// ViewModel nacía con Curso en null, el botón Eliminar evaluaba CanExecute una sola vez y
+	// quedaba gris para siempre. Eliminar un curso era inalcanzable desde la UI y todo el bloque
+	// del diálogo de impacto de ExecuteEliminarCommandAsync era código muerto.
+	//
+	// No lo vio nadie porque compila sin warning —EliminarCommandAsync existe como propiedad, así
+	// que el generador no tiene nada que objetar— y porque este archivo era el único del proyecto
+	// con el atributo equivocado. Se encontró recorriendo la app a mano (TEST-16), no con una
+	// suite. Lo fija GestionCursosViewModelTests y lo previene la guarda de convención
+	// Ningun_NotifyPropertyChangedFor_apunta_a_un_comando.
+	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[ObservableProperty]
 	private CursoViewModel _curso;
 
 	[ObservableProperty]
 	private ListCollectionView _listCollection;
 
-	[NotifyPropertyChangedFor(nameof(EliminarCommandAsync))]
-	[NotifyPropertyChangedFor(nameof(NavigationCommand))]
+	// Mismo cambio que en Curso. Acá hoy no cambia ningún comportamiento, porque ni
+	// CanExecuteEliminarCommandAsync ni el NavigationCommand vigente leen HabilitarCursos; se
+	// corrige igual para que la intención quede escrita con el atributo que la cumple.
+	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[ObservableProperty]
 	private bool _habilitarCursos;
 
