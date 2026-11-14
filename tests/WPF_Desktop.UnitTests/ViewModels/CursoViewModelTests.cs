@@ -33,6 +33,36 @@ public class CursoViewModelTests
 		viewModel!.CursoID.ShouldBe(Guid.Empty);
 	}
 
+	/// <remarks>
+	/// Las dos propiedades tipadas existen porque <c>Domain.Cursos.EdadEscolar</c> necesita los
+	/// valores y no las etiquetas, y la alternativa sería un <c>Enum.Parse</c> sobre el texto de
+	/// pantalla. Esta prueba fija que salgan del response y no de parsear las cadenas: si alguien
+	/// las recableara a <c>Enum.Parse(Grado)</c>, seguiría pasando — por eso la que importa es la
+	/// de abajo, con el response nulo, donde un parseo de cadena devolvería el default del enum
+	/// (<c>Grado.Primero</c>, que vale 1) en lugar de nulo.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Expone_el_grado_y_el_nivel_como_valores_del_dominio()
+	{
+		var response = new CursoResponse(Guid.NewGuid(), Grado.Tercero, NivelEducativo.Secundaria);
+
+		var viewModel = new CursoViewModel(response);
+
+		viewModel.ValorGrado.ShouldBe(Grado.Tercero);
+		viewModel.ValorNivelEducativo.ShouldBe(NivelEducativo.Secundaria);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Con_un_response_nulo_los_valores_del_dominio_quedan_en_nulo_y_no_en_el_default_del_enum()
+	{
+		var viewModel = new CursoViewModel(null!);
+
+		viewModel.ValorGrado.ShouldBeNull();
+		viewModel.ValorNivelEducativo.ShouldBeNull();
+	}
+
 	[Theory]
 	[Trait("Categoria", "Unidad")]
 	[InlineData("Divisiones")]

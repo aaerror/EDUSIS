@@ -153,4 +153,40 @@ public class DatosPersonalesTests
 		unos.Equals(otros).ShouldBeTrue();
 	}
 	#endregion
+
+	#region Edad reutilizable
+	/// <remarks>
+	/// <c>Edad(DateTime)</c> se hizo estática y pública el 2026-11-13 para que la pantalla de alta
+	/// de alumno pueda sacar la edad <strong>antes de que el alumno exista como entidad</strong>, y
+	/// compararla contra el grado con <c>Domain.Cursos.EdadEscolar</c>. Lo que esta prueba protege
+	/// es que haya UNA sola implementación: acá vivía el defecto que <c>DOM-20</c> corrigió —la
+	/// edad era días transcurridos / 365 y se adelantaba un día cada cuatro años—, así que una
+	/// segunda copia en la capa de presentación lo reintroduciría sin que nada lo avise.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", Categorias.Unidad)]
+	public void La_edad_estatica_y_la_de_instancia_dan_lo_mismo()
+	{
+		var nacimiento = DateTime.Today.AddYears(-15).AddDays(-3);
+		var datos = new DatosPersonalesBuilder().ConFechaNacimiento(nacimiento).Build();
+
+		DatosPersonales.Edad(nacimiento).ShouldBe(datos.Edad());
+	}
+
+	/// <remarks>
+	/// El caso que <c>DOM-20</c> dejó fijado, ahora por la puerta estática: el día anterior al
+	/// cumpleaños todavía no se cumplió el año.
+	/// </remarks>
+	[Theory]
+	[Trait("Categoria", Categorias.Unidad)]
+	[InlineData(-1, 15)]
+	[InlineData(0, 15)]
+	[InlineData(1, 14)]
+	public void La_edad_estatica_cuenta_el_año_recien_desde_el_dia_del_cumpleaños(int diasHastaElCumpleaños, int edadEsperada)
+	{
+		var nacimiento = DateTime.Today.AddYears(-15).AddDays(diasHastaElCumpleaños);
+
+		DatosPersonales.Edad(nacimiento).ShouldBe(edadEsperada);
+	}
+	#endregion
 }

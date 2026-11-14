@@ -120,20 +120,34 @@ public class DatosPersonales : ValueObject
 
 	public string NombreCompleto() => $"{Apellido}, {Nombre}";
 	
-	public int Edad()
+	/// <summary>
+	/// Edad cumplida al día de hoy a partir de una fecha de nacimiento.
+	/// </summary>
+	/// <remarks>
+	/// <strong>Es estática y pública para que haya una sola implementación de este cálculo.</strong>
+	/// `DOM-20` corrigió acá un defecto que no se ve a simple vista —`Edad()` era días
+	/// transcurridos / 365, así que la edad se adelantaba alrededor de un día cada cuatro años—, y
+	/// cualquier capa que necesite la edad sin tener el agregado delante tiene que pasar por este
+	/// método en lugar de rehacer la resta. Hoy la necesita la pantalla de alta de alumno, que
+	/// compara la edad contra el grado con `Domain.Cursos.EdadEscolar` mientras el alumno todavía
+	/// no existe como entidad.
+	/// </remarks>
+	public static int Edad(DateTime fechaNacimiento)
 	{
 		var hoy = DateTime.Today;
-		var edad = hoy.Year - FechaNacimiento.Year;
+		var edad = hoy.Year - fechaNacimiento.Year;
 
 		// Si el cumpleaños de este año todavía no llegó, no cumplió años.
 		// Un nacido el 29/02 cumple el 28/02 en años no bisiestos (AddYears).
-		if (FechaNacimiento.Date.AddYears(edad) > hoy)
+		if (fechaNacimiento.Date.AddYears(edad) > hoy)
 		{
 			edad--;
 		}
 
 		return edad;
 	}
+
+	public int Edad() => Edad(FechaNacimiento);
 
 	public bool EsMayorDeEdad() => Edad() >= 18;
 

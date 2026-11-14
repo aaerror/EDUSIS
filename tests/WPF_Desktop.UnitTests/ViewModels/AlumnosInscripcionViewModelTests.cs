@@ -13,7 +13,9 @@ using NSubstitute;
 using Shouldly;
 using WPF_Desktop.Store;
 using WPF_Desktop.UnitTests.Dobles;
+using System.IO;
 using WPF_Desktop.ViewModels.Alumnos;
+using WPF_Desktop.ViewModels.Cursos;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.ViewModels;
@@ -564,6 +566,186 @@ public class AlumnosInscripcionViewModelTests
 		codigo.ShouldNotContain("new RegistrarDomicilioRequest(");
 		codigo.ShouldNotContain("new RegistrarContactoRequest(");
 		codigo.ShouldNotContain("Registrar un Docente");
+	}
+	#endregion
+
+	#region Encuadre etario — la franja que hace visible EdadEscolar
+	/// <summary>
+	/// Prepara el ViewModel como queda al llegar al paso 02: la fecha de nacimiento cargada y un
+	/// curso elegido.
+	/// </summary>
+	/// <remarks>
+	/// El curso se asigna por <c>Curso</c> y no por el índice del combo porque es lo que hace la
+	/// vista, y porque asignarlo dispara <c>OnCursoChanged</c>, que es donde se rearma la franja.
+	/// </remarks>
+	private static RegistrarAlumnoViewModel ConUnAlumnoDe(Contexto contexto, int edad, CursoResponse curso)
+	{
+		var viewModel = contexto.CrearRegistro();
+
+		// Tres días de margen para que el cumpleaños ya haya pasado y la edad sea exacta: la
+		// fecha se compara contra hoy, no contra el inicio del ciclo.
+		viewModel.InformacionPersonal.FechaNacimiento = DateTime.Today.AddYears(-edad).AddDays(-3);
+		viewModel.Curso = new CursoViewModel(curso);
+
+		return viewModel;
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Sin_curso_elegido_la_franja_no_dice_nada()
+	{
+		var contexto = new Contexto();
+
+		var viewModel = contexto.CrearRegistro();
+		viewModel.InformacionPersonal.FechaNacimiento = DateTime.Today.AddYears(-12);
+
+		viewModel.EncuadreMedicion.ShouldBeEmpty();
+		viewModel.EncuadreDesvio.ShouldBeEmpty();
+		viewModel.EncuadreGuia.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// Sin fecha de nacimiento el <c>DatePicker</c> deja <c>default(DateTime)</c>, que daría una
+	/// edad de más de dos mil años y una sobreedad absurda. La franja tiene que callarse, no
+	/// gritar.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Sin_fecha_de_nacimiento_la_franja_no_dice_nada()
+	{
+		var contexto = new Contexto();
+
+		var viewModel = contexto.CrearRegistro();
+		viewModel.Curso = new CursoViewModel(contexto.Primero);
+
+		viewModel.EncuadreMedicion.ShouldBeEmpty();
+		viewModel.EncuadreGuia.ShouldBeEmpty();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Con_la_edad_esperada_mide_sin_guia()
+	{
+		var contexto = new Contexto();
+
+		// 12 es la edad esperada de 1° Año de Secundaria.
+		var viewModel = ConUnAlumnoDe(contexto, 12, contexto.Primero);
+
+		viewModel.EncuadreMedicion.ShouldBe("12 años · 1° Año de Secundaria espera 12");
+		viewModel.EncuadreDesvio.ShouldBe("0");
+
+		// La guía vacía es lo que apaga la superficie de aviso en la vista.
+		viewModel.EncuadreGuia.ShouldBeEmpty();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Con_la_sobreedad_tolerada_entera_todavia_no_hay_guia()
+	{
+		var contexto = new Contexto();
+
+		var viewModel = ConUnAlumnoDe(contexto, 16, contexto.Primero);
+
+		viewModel.EncuadreDesvio.ShouldBe("+4");
+		viewModel.EncuadreGuia.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// Uno de los dos casos que motivaron la regla: 18 años en primero de secundaria, +6.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Con_sobreedad_manda_a_mirar_el_legajo()
+	{
+		var contexto = new Contexto();
+
+		var viewModel = ConUnAlumnoDe(contexto, 18, contexto.Primero);
+
+		viewModel.EncuadreMedicion.ShouldBe("18 años · 1° Año de Secundaria espera 12");
+		viewModel.EncuadreDesvio.ShouldBe("+6");
+		viewModel.EncuadreGuia.ShouldContain("legajo");
+	}
+
+	/// <remarks>
+	/// La contracara, y el motivo de que los dos desvíos no compartan texto: por debajo de lo
+	/// esperado la causa probable no es una trayectoria sino un error de tipeo en la fecha.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Por_debajo_de_lo_esperado_manda_a_verificar_la_fecha()
+	{
+		var contexto = new Contexto();
+
+		var viewModel = ConUnAlumnoDe(contexto, 9, contexto.Primero);
+
+		viewModel.EncuadreDesvio.ShouldBe("-3");
+		viewModel.EncuadreGuia.ShouldContain("fecha de nacimiento");
+	}
+
+	/// <remarks>
+	/// <strong>Es la prueba que justifica la regla entera.</strong> La misma edad que en primero es
+	/// un desvío, en un grado más alto está encuadrada: es exactamente lo que
+	/// <c>AlumnoMayorDeEdadException</c> —la excepción absoluta que esta regla reemplazó— no podía
+	/// expresar.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void La_misma_edad_cambia_de_veredicto_segun_el_grado()
+	{
+		var contexto = new Contexto();
+
+		var enPrimero = ConUnAlumnoDe(contexto, 17, contexto.Primero);
+		enPrimero.EncuadreGuia.ShouldNotBeEmpty();
+
+		var enSegundo = ConUnAlumnoDe(contexto, 17, contexto.Segundo);
+		enSegundo.EncuadreGuia.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// El usuario puede volver con "Atrás", corregir la fecha y seguir con el curso ya elegido, así
+	/// que la franja se rearma también al entrar al paso 02 y no sólo al cambiar de curso.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Volver_al_paso_02_recalcula_con_la_fecha_corregida()
+	{
+		var contexto = new Contexto();
+
+		var viewModel = ConUnAlumnoDe(contexto, 18, contexto.Primero);
+		viewModel.EncuadreGuia.ShouldNotBeEmpty();
+
+		// Corrige la fecha con el curso ya elegido y vuelve al paso 02.
+		viewModel.InformacionPersonal.FechaNacimiento = DateTime.Today.AddYears(-12).AddDays(-3);
+		viewModel.Tab = 1;
+
+		viewModel.EncuadreDesvio.ShouldBe("0");
+		viewModel.EncuadreGuia.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// La franja advierte y no bloquea: fijado contra el código fuente porque es la decisión que un
+	/// cambio futuro podría revertir sin que ninguna aserción de estado lo note.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_encuadre_no_interviene_en_si_se_puede_guardar()
+	{
+		var fuente = File.ReadAllText(RutaDe("WPF_Desktop/ViewModels/Alumnos/RegistrarAlumnoViewModel.cs"));
+		var guarda = fuente[fuente.IndexOf("private bool CanExecuteGuardarCommand")..];
+		guarda = guarda[..guarda.IndexOf(';')];
+
+		guarda.ShouldNotContain("Encuadre");
+	}
+
+	private static string RutaDe(string relativa)
+	{
+		var directorio = new DirectoryInfo(AppContext.BaseDirectory);
+		while (directorio is not null && !File.Exists(Path.Combine(directorio.FullName, "EDUSIS.sln")))
+		{
+			directorio = directorio.Parent;
+		}
+
+		return Path.Combine(directorio!.FullName, relativa);
 	}
 	#endregion
 }
