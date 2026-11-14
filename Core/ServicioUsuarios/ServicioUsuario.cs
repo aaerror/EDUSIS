@@ -1,4 +1,5 @@
 ﻿using Core.ServicioAutenticaciones.DTOs.Responses;
+using Core.ServicioUsuarios.Exceptions;
 using Core.ServicioSeguridad;
 using Core.ServicioUsuarios.DTOs.Requests;
 using Core.Shared;
@@ -78,7 +79,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{
-				throw new NullReferenceException($"No se encontró el usuario.");
+				throw new UsuarioNoEncontradoException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(usuario.DocenteID);
@@ -262,7 +263,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{
-				throw new NullReferenceException("No se encontró el usuario.");
+				throw new UsuarioNoEncontradoException();
 			}
 
 			usuario.AgregarRol(request.RolID);
@@ -286,7 +287,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{
-				throw new NullReferenceException("No se encontró el usuario.");
+				throw new UsuarioNoEncontradoException();
 			}
 
 			usuario.QuitarRol(request.RolID);

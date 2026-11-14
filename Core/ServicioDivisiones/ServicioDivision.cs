@@ -1,3 +1,4 @@
+using Core.ServicioCursos.Exceptions;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioDivisiones.Exceptions;
@@ -33,7 +34,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var cicloLectivo = CicloLectivo.Crear(request.CicloLectivo);
@@ -83,7 +84,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var descripciones = await _unitOfWork.Divisiones.DescripcionesDelCursoAsync(request.CursoID);
@@ -108,7 +109,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			// La letra la elige el usuario sobre la propuesta de ProponerDescripcionDivisionAsync:
@@ -172,13 +173,13 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			await _unitOfWork.BeginTransactionAsync();
@@ -249,7 +250,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			var catedras = await _unitOfWork.Catedras.CatedrasSegunDivisionAsync(division.Id);
@@ -290,7 +291,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			var existePreceptor = await _unitOfWork.Divisiones.ExistePreceptorAsignadoAsync(request.DocenteID);
@@ -322,7 +323,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			var existePreceptor = await _unitOfWork.Divisiones.ExistePreceptorAsignadoAsync(request.DocenteID);
@@ -354,7 +355,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			division.QuitarPreceptor();

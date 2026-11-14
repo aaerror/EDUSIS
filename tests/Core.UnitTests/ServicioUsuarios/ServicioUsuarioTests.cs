@@ -1,3 +1,4 @@
+using Core.ServicioUsuarios.Exceptions;
 using Core.ServicioUsuarios;
 using Core.ServicioUsuarios.DTOs.Requests;
 using Core.UnitTests.Infraestructura;
@@ -48,9 +49,9 @@ public class ServicioUsuarioTests
 	}
 
 	[Fact]
-	public async Task BuscarUsuarioPorIDAsync_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task BuscarUsuarioPorIDAsync_con_un_Id_inexistente_lanza_UsuarioNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<UsuarioNoEncontradoException>(
 			() => _servicio.BuscarUsuarioPorIDAsync(new UsuarioIDRequest(Guid.NewGuid())));
 	}
 	#endregion
@@ -209,9 +210,9 @@ public class ServicioUsuarioTests
 	}
 
 	[Fact]
-	public async Task AsignarRolAsync_con_un_usuario_inexistente_lanza_NullReferenceException()
+	public async Task AsignarRolAsync_con_un_usuario_inexistente_lanza_UsuarioNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<UsuarioNoEncontradoException>(
 			() => _servicio.AsignarRolAsync(new ActualizarRolRequest(Guid.NewGuid(), Rol.Docente.Id)));
 	}
 

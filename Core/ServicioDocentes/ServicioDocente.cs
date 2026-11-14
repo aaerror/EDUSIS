@@ -1,4 +1,5 @@
 ﻿using Core.ServicioDocentes.DTOs.Requests;
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioDocentes.DTOs.Responses;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
@@ -38,7 +39,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 
 			if (docente is null)
 			{
-				throw new NullReferenceException($"No se encontró el docente.");
+				throw new DocenteNoEncontradoException();
 			}
 
 			return docente;
@@ -99,7 +100,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 											  .FirstOrDefault();
 			if (docente is null)
 			{
-				throw new NullReferenceException($"No se encontró ningún docente con el D.N.I. { documento }");
+				throw new DocenteNoEncontradoException(documento);
 			}
 
 			return new LegajoDocenteResponse(DocenteID: docente.Id,

@@ -124,7 +124,7 @@ internal class ServicioCurso : IServicio, IServicioCurso
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			// La guarda es lo que vuelve posible la cascada de abajo, no un trámite: sin divisiones no
@@ -195,7 +195,7 @@ internal class ServicioCurso : IServicio, IServicioCurso
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var divisiones = await _unitOfWork.Divisiones.DivisionesDelCursoAsync(curso.Id);

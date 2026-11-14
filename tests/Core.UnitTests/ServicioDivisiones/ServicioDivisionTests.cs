@@ -1,3 +1,4 @@
+using Core.ServicioCursos.Exceptions;
 using Core.ServicioDivisiones;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones.Exceptions;
@@ -75,11 +76,11 @@ public class ServicioDivisionTests
 	}
 
 	[Fact]
-	public async Task ListarDivisionesAsync_con_un_curso_inexistente_lanza_InvalidOperationException()
+	public async Task ListarDivisionesAsync_con_un_curso_inexistente_lanza_CursoNoEncontrado()
 	{
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 
-		await Should.ThrowAsync<InvalidOperationException>(() =>
+		await Should.ThrowAsync<CursoNoEncontradoException>(() =>
 			_servicio.ListarDivisionesAsync(new ListarDivisionesRequest(Guid.NewGuid(), cicloLectivo.Periodo)));
 	}
 	#endregion
@@ -119,9 +120,9 @@ public class ServicioDivisionTests
 	}
 
 	[Fact]
-	public async Task ProponerDescripcionDivisionAsync_con_un_curso_inexistente_lanza_InvalidOperationException()
+	public async Task ProponerDescripcionDivisionAsync_con_un_curso_inexistente_lanza_CursoNoEncontrado()
 	{
-		await Should.ThrowAsync<InvalidOperationException>(() =>
+		await Should.ThrowAsync<CursoNoEncontradoException>(() =>
 			_servicio.ProponerDescripcionDivisionAsync(new ProponerDescripcionRequest(Guid.NewGuid())));
 	}
 	#endregion
@@ -165,9 +166,9 @@ public class ServicioDivisionTests
 	}
 
 	[Fact]
-	public async Task AgregarDivisionAsync_con_un_curso_inexistente_lanza_InvalidOperationException()
+	public async Task AgregarDivisionAsync_con_un_curso_inexistente_lanza_CursoNoEncontrado()
 	{
-		await Should.ThrowAsync<InvalidOperationException>(() =>
+		await Should.ThrowAsync<CursoNoEncontradoException>(() =>
 			_servicio.AgregarDivisionAsync(new AgregarDivisionRequest(Guid.NewGuid(), "A")));
 	}
 
@@ -288,18 +289,18 @@ public class ServicioDivisionTests
 	// AutorizacionDeCasosDeUsoTests, que es donde viven las 72 guardas: EliminarDivisionAsync_sin_
 	// permiso_no_toca_la_transaccion.
 	[Fact]
-	public async Task EliminarDivisionAsync_con_un_curso_inexistente_lanza_InvalidOperationException()
+	public async Task EliminarDivisionAsync_con_un_curso_inexistente_lanza_CursoNoEncontrado()
 	{
-		await Should.ThrowAsync<InvalidOperationException>(() =>
+		await Should.ThrowAsync<CursoNoEncontradoException>(() =>
 			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(Guid.NewGuid(), Guid.NewGuid())));
 	}
 
 	[Fact]
-	public async Task EliminarDivisionAsync_con_una_division_inexistente_lanza_NullReferenceException()
+	public async Task EliminarDivisionAsync_con_una_division_inexistente_lanza_DivisionNoEncontrada()
 	{
 		var curso = SembrarCurso();
 
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<DivisionNoEncontradaException>(() =>
 			_servicio.EliminarDivisionAsync(new EliminarDivisionRequest(curso.Id, Guid.NewGuid())));
 	}
 	#endregion
@@ -365,9 +366,9 @@ public class ServicioDivisionTests
 	}
 
 	[Fact]
-	public async Task AsignarPreceptorAsync_con_una_division_inexistente_lanza_NullReferenceException()
+	public async Task AsignarPreceptorAsync_con_una_division_inexistente_lanza_DivisionNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<DivisionNoEncontradaException>(() =>
 			_servicio.AsignarPreceptorAsync(new RegistrarPreceptorRequest(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())));
 	}
 
@@ -405,9 +406,9 @@ public class ServicioDivisionTests
 	}
 
 	[Fact]
-	public async Task ModificarPreceptorAsync_con_una_division_inexistente_lanza_NullReferenceException()
+	public async Task ModificarPreceptorAsync_con_una_division_inexistente_lanza_DivisionNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<DivisionNoEncontradaException>(() =>
 			_servicio.ModificarPreceptorAsync(new ModificarPreceptorRequest(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())));
 	}
 
@@ -481,9 +482,9 @@ public class ServicioDivisionTests
 	}
 
 	[Fact]
-	public async Task QuitarPreceptorAsync_con_una_division_inexistente_lanza_NullReferenceException()
+	public async Task QuitarPreceptorAsync_con_una_division_inexistente_lanza_DivisionNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<DivisionNoEncontradaException>(() =>
 			_servicio.QuitarPreceptorAsync(new EliminarPreceptorRequest(Guid.NewGuid(), Guid.NewGuid())));
 	}
 	#endregion

@@ -1,3 +1,4 @@
+using Core.ServicioAlumnos.Exceptions;
 using Core.ServicioAlumnos;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.Shared.DTOs.Personas.Requests;
@@ -70,9 +71,9 @@ public class ServicioAlumnoTests
 	}
 
 	[Fact]
-	public async Task BuscarPorIDAsync_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task BuscarPorIDAsync_con_un_Id_inexistente_lanza_AlumnoNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<AlumnoNoEncontradoException>(
 			() => _servicio.BuscarPorIDAsync(new PersonaRequest(Guid.NewGuid())));
 	}
 
@@ -270,9 +271,9 @@ public class ServicioAlumnoTests
 	}
 
 	[Fact]
-	public async Task ActualizarDomicilio_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarDomicilio_con_un_Id_inexistente_lanza_AlumnoNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ActualizarDomicilio(
+		await Should.ThrowAsync<AlumnoNoEncontradoException>(() => _servicio.ActualizarDomicilio(
 			new CambiarDomicilioRequest(Guid.NewGuid(), "Belgrano", "850", "Casa", "", "Yerba Buena", "Tucumán", "Argentina")));
 	}
 
@@ -288,9 +289,9 @@ public class ServicioAlumnoTests
 	}
 
 	[Fact]
-	public async Task ActualizarSexo_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarSexo_con_un_Id_inexistente_lanza_AlumnoNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ActualizarSexo(
+		await Should.ThrowAsync<AlumnoNoEncontradoException>(() => _servicio.ActualizarSexo(
 			new CambiarSexoRequest(Guid.NewGuid(), "Ñáñez", "José María", "Masculino")));
 	}
 
@@ -307,9 +308,9 @@ public class ServicioAlumnoTests
 	}
 
 	[Fact]
-	public async Task ModificarNombreCompleto_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ModificarNombreCompleto_con_un_Id_inexistente_lanza_AlumnoNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<AlumnoNoEncontradoException>(
 			() => _servicio.ModificarNombreCompleto(Guid.NewGuid(), "Paz", "Renata"));
 	}
 
@@ -327,9 +328,9 @@ public class ServicioAlumnoTests
 	}
 
 	[Fact]
-	public async Task ActualizarDireccion_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarDireccion_con_un_Id_inexistente_lanza_AlumnoNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<AlumnoNoEncontradoException>(
 			() => _servicio.ActualizarDireccion(Guid.NewGuid(), new DireccionRequest("Laprida", "42", "Casa", "")));
 	}
 	#endregion
@@ -367,7 +368,7 @@ public class ServicioAlumnoTests
 	{
 		SembrarAlumno();
 
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<AlumnoNoEncontradoException>(
 			() => _servicio.EliminarAlumnoAsync(new EliminarAlumnoRequest(Guid.NewGuid())));
 
 		_host.UnidadDeTrabajo.AlumnosFake.Elementos.ShouldHaveSingleItem();
@@ -562,7 +563,7 @@ public class ServicioAlumnoTests
 	[Fact]
 	public async Task ConsultarResumenAcademicoAsync_con_un_Id_inexistente_lanza()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<AlumnoNoEncontradoException>(
 			() => _servicio.ConsultarResumenAcademicoAsync(new PersonaRequest(Guid.NewGuid())));
 	}
 

@@ -1,3 +1,4 @@
+using Core.ServicioDivisiones.Exceptions;
 using Core.ServicioAsistencias;
 using Core.ServicioAsistencias.DTOs.Requests;
 using Core.ServicioAsistencias.Exceptions;
@@ -114,9 +115,9 @@ public class ServicioAsistenciaTests
 	}
 
 	[Fact]
-	public async Task AbrirPlanillaAsync_con_una_division_inexistente_lanza_NullReferenceException()
+	public async Task AbrirPlanillaAsync_con_una_division_inexistente_lanza_DivisionNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<DivisionNoEncontradaException>(() =>
 			_servicio.AbrirPlanillaAsync(new AbrirPlanillaRequest(Guid.NewGuid(), DateTime.Today)));
 	}
 	#endregion
@@ -335,9 +336,9 @@ public class ServicioAsistenciaTests
 	}
 
 	[Fact]
-	public async Task EliminarPlanillaAsync_con_una_planilla_inexistente_lanza_NullReferenceException()
+	public async Task EliminarPlanillaAsync_con_una_planilla_inexistente_lanza_PlanillaNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<PlanillaNoEncontradaException>(() =>
 			_servicio.EliminarPlanillaAsync(new EliminarPlanillaRequest(Guid.NewGuid(), DateTime.Today)));
 	}
 	#endregion
@@ -364,9 +365,9 @@ public class ServicioAsistenciaTests
 	}
 
 	[Fact]
-	public async Task ConsultarPlanillaAsync_con_una_planilla_inexistente_lanza_NullReferenceException()
+	public async Task ConsultarPlanillaAsync_con_una_planilla_inexistente_lanza_PlanillaNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<PlanillaNoEncontradaException>(() =>
 			_servicio.ConsultarPlanillaAsync(new ConsultarPlanillaRequest(Guid.NewGuid(), DateTime.Today)));
 	}
 	#endregion

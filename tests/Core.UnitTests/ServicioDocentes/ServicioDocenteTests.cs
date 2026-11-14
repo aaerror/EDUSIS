@@ -1,3 +1,4 @@
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioDocentes;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.Shared.DTOs.Personas.Requests;
@@ -65,9 +66,9 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task VerPerfilDocenteAsync_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task VerPerfilDocenteAsync_con_un_Id_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(
 			() => _servicio.VerPerfilDocenteAsync(new DocenteIDRequest(Guid.NewGuid())));
 	}
 
@@ -184,9 +185,9 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task ActualizarContacto_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarContacto_con_un_Id_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ActualizarContacto(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.ActualizarContacto(
 			new CambiarContactoRequest(Guid.NewGuid(), "3815550000", "docente.nuevo@correo.com")));
 	}
 
@@ -203,9 +204,9 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task ActualizarDomicilio_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarDomicilio_con_un_Id_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ActualizarDomicilio(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.ActualizarDomicilio(
 			new CambiarDomicilioRequest(Guid.NewGuid(), "Muñecas", "120", "Casa", "", "Yerba Buena", "Tucumán", "Argentina")));
 	}
 
@@ -221,9 +222,9 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task ActualizarSexo_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarSexo_con_un_Id_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ActualizarSexo(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.ActualizarSexo(
 			new CambiarSexoRequest(Guid.NewGuid(), "Ñáñez", "José María", "Masculino")));
 	}
 	#endregion
@@ -244,9 +245,9 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task DesafectarDocenteAsync_con_un_docente_inexistente_propaga_NullReferenceException()
+	public async Task DesafectarDocenteAsync_con_un_docente_inexistente_propaga_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(
 			() => _servicio.DesafectarDocenteAsync(new DocenteIDRequest(Guid.NewGuid())));
 	}
 

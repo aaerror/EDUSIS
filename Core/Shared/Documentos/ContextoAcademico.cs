@@ -1,3 +1,7 @@
+using Core.ServicioDivisiones.Exceptions;
+using Core.ServicioCursos.Exceptions;
+using Core.ServicioCursantes.Exceptions;
+using Core.ServicioAlumnos.Exceptions;
 using System.ComponentModel;
 using System.Reflection;
 using Domain.Alumnos;
@@ -73,16 +77,16 @@ internal sealed class ContextoAcademico
 	public async Task<ContextoCursante> ResolverCursanteAsync(Guid alumnoID, CicloLectivo cicloLectivo)
 	{
 		var alumno = await _unitOfWork.Alumnos.BuscarPorIDAsync(alumnoID)
-			?? throw new InvalidOperationException("El alumno no existe.");
+			?? throw new AlumnoNoEncontradoException(alumnoID.ToString());
 
 		var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(alumnoID, cicloLectivo)
-			?? throw new InvalidOperationException($"El alumno no tiene una inscripción activa en el ciclo lectivo {cicloLectivo.Periodo}.");
+			?? throw new CursanteNoEncontradoException(cicloLectivo.Periodo);
 
 		var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(cursante.DivisionID)
-			?? throw new InvalidOperationException("No se pudo determinar la división del alumno.");
+			?? throw new DivisionNoEncontradaException(cursante.DivisionID.ToString());
 
 		var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(division.CursoID)
-			?? throw new InvalidOperationException("No se pudo determinar el curso del alumno.");
+			?? throw new CursoNoEncontradoException(division.CursoID.ToString());
 
 		var inscripcionesDelCiclo = await _unitOfWork.Cursantes.BuscarInscripcionesDelCicloAsync(alumnoID, cicloLectivo);
 		var calificacionesDelCiclo = inscripcionesDelCiclo

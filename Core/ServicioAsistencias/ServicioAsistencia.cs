@@ -1,3 +1,4 @@
+using Core.ServicioDivisiones.Exceptions;
 using Core.ServicioAsistencias.DTOs.Requests;
 using Core.ServicioAsistencias.DTOs.Responses;
 using Core.ServicioAsistencias.Exceptions;
@@ -40,7 +41,7 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("División no encontrada.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			var cursantesIDs = await _unitOfWork.Cursantes.BuscarInscriptosEnFechaAsync(request.DivisionID, request.Fecha);
@@ -422,7 +423,7 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 		var planilla = await _unitOfWork.PlanillasAsistencia.BuscarPorDivisionYFechaAsync(divisionID, fecha);
 		if (planilla is null)
 		{
-			throw new NullReferenceException("Planilla de asistencia no encontrada.");
+			throw new PlanillaNoEncontradaException();
 		}
 
 		return planilla;

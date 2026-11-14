@@ -1,3 +1,4 @@
+using Core.ServicioCursantes.Exceptions;
 using Core.ServicioDocumentos;
 using Core.ServicioDocumentos.DTOs.Requests;
 using Core.Shared.Documentos;
@@ -175,7 +176,7 @@ public class ServicioDocumentoTests
 		var alumno = new AlumnoBuilder().Build();
 		_host.UnidadDeTrabajo.AlumnosFake.Sembrar(alumno);
 
-		var ex = await Should.ThrowAsync<InvalidOperationException>(
+		var ex = await Should.ThrowAsync<CursanteNoEncontradoException>(
 			() => _servicio.GenerarCertificadoAlumnoRegularAsync(Pedido(alumno.Id)));
 
 		ex.Message.ShouldContain(CICLO);

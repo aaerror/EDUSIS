@@ -1,3 +1,5 @@
+using Core.ServicioDivisiones.Exceptions;
+using Core.ServicioCursos.Exceptions;
 using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes.DTOs.Responses;
 using Core.Shared.DTOs.Cursadas;
@@ -47,13 +49,13 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			var cicloLectivo = CicloLectivo.Crear(request.Periodo);
@@ -153,13 +155,13 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var inscripcionActual = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (inscripcionActual is null)
 			{
-				throw new NullReferenceException("No se encontró la inscripción del alumno en el ciclo lectivo indicado.");
+				throw new CursanteNoEncontradoException();
 			}
 
 			var divisionDestino = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionDestinoID);
 			if (divisionDestino is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			if (inscripcionActual.DivisionID.Equals(divisionDestino.Id))
@@ -201,7 +203,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var cicloLectivo = CicloLectivo.Crear(request.Periodo);
@@ -284,7 +286,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
 			{
-				throw new NullReferenceException("No se encontró la inscripción del alumno en el ciclo lectivo indicado.");
+				throw new CursanteNoEncontradoException();
 			}
 
 			var respuesta = new List<CalificacionResponse>();
@@ -326,13 +328,13 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
 			{
-				throw new NullReferenceException("No se encontró la inscripción del alumno en el ciclo lectivo indicado.");
+				throw new CursanteNoEncontradoException();
 			}
 
 			var resultPeriodo = Enum.TryParse<Periodo>(request.Periodo, true, out var periodo);
 			if (!resultPeriodo)
 			{
-				throw new ArgumentException("El período especificado no existe.", nameof(request.Periodo));
+				throw new CicloLectivoNoEncontradoException(nameof(request.Periodo));
 			}
 
 			var calificacionID = cursante.RegistrarCalificacion(request.MateriaID, request.Fecha, periodo, request.EsRecuperatorio, request.Nota, request.Observacion);
@@ -361,13 +363,13 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
 			{
-				throw new NullReferenceException("No se encontró la inscripción del alumno en el ciclo lectivo indicado.");
+				throw new CursanteNoEncontradoException();
 			}
 
 			var resultPeriodo = Enum.TryParse<Periodo>(request.Periodo, true, out var periodo);
 			if (!resultPeriodo)
 			{
-				throw new ArgumentException("El período especificado no existe.", nameof(request.Periodo));
+				throw new CicloLectivoNoEncontradoException(nameof(request.Periodo));
 			}
 
 			var calificacionID = cursante.RegistrarInasistenciaAExamen(request.MateriaID, request.Fecha, periodo, request.EsRecuperatorio, request.Observacion);
@@ -396,7 +398,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
 			{
-				throw new NullReferenceException("No se encontró la inscripción del alumno en el ciclo lectivo indicado.");
+				throw new CursanteNoEncontradoException();
 			}
 
 			cursante.QuitarCalificacion(request.CalificacionID);
@@ -423,7 +425,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var cursante = await _unitOfWork.Cursantes.BuscarInscripcionActivaAsync(request.AlumnoID, cicloLectivo);
 			if (cursante is null)
 			{
-				throw new NullReferenceException("No se encontró la inscripción del alumno en el ciclo lectivo indicado.");
+				throw new CursanteNoEncontradoException();
 			}
 
 			cursante.ModificarObservacionCalificacion(request.CalificacionID, request.Observacion);

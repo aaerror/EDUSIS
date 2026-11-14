@@ -1,4 +1,5 @@
 ﻿using Core.ServicioAlumnos.DTOs.Requests;
+using Core.ServicioAlumnos.Exceptions;
 using Core.ServicioAlumnos.DTOs.Responses;
 using Core.Shared.DTOs.Cursadas;
 using Core.Shared.DTOs.Personas.Requests;
@@ -36,8 +37,7 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 		var alumno = await _unitOfWork.Alumnos.BuscarPorIDAsync(personaID);
 		if (alumno is null)
 		{
-			var msg = $"No se encontró el alumno con el siguiente Id: { personaID }";
-			throw new NullReferenceException(msg);
+			throw new AlumnoNoEncontradoException(personaID.ToString());
 		}
 
 		return alumno;
@@ -49,7 +49,7 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 		var response = await BuscarAlumnoPorIDAsync(request.PersonaID);
 		if (response is null)
 		{
-			throw new NullReferenceException($"No se encontró el alumno.");
+			throw new AlumnoNoEncontradoException();
 		}
 
 		return new PersonaConDetallesResponse(

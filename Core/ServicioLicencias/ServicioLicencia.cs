@@ -1,4 +1,5 @@
 ﻿using Core.ServicioDocentes.DTOs.Requests;
+using Core.ServicioLicencias.Exceptions;
 using Core.ServicioLicencias.DTOs.Requests;
 using Core.ServicioLicencias.DTOs.Responses;
 using Core.Shared;
@@ -57,7 +58,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
-				throw new NullReferenceException("Licencia no encontrada.");
+				throw new LicenciaNoEncontradaException();
 			}
 
 			licencia.AprobarLicencia(request.Observacion);
@@ -83,7 +84,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
-				throw new NullReferenceException("Licencia no encontrada.");
+				throw new LicenciaNoEncontradaException();
 			}
 
 			licencia.CancelarLicencia(request.Observacion);
@@ -109,7 +110,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
-				throw new NullReferenceException("Licencia no encontrada.");
+				throw new LicenciaNoEncontradaException();
 			}
 
 			licencia.ModificarPeriodo(request.FechaInicio, request.Dias);
@@ -136,7 +137,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
-				throw new NullReferenceException("Licencia no encontrada.");
+				throw new LicenciaNoEncontradaException();
 			}
 
 			var estado = licencia.Estado;

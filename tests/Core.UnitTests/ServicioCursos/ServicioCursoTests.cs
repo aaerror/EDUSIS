@@ -90,7 +90,7 @@ public class ServicioCursoTests
 		// éxito. Es la misma ruptura que EliminarAlumnoAsync introdujo en ee75a3c.
 		SembrarCurso();
 
-		await Should.ThrowAsync<InvalidOperationException>(
+		await Should.ThrowAsync<CursoNoEncontradoException>(
 			() => _servicio.EliminarCurso(new EliminarCursoRequest(Guid.NewGuid())));
 
 		_host.UnidadDeTrabajo.CursosFake.Elementos.ShouldHaveSingleItem();
