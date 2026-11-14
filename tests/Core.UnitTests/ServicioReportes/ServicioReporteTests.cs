@@ -1,3 +1,5 @@
+using Domain.Shared.Exceptions;
+using Core.ServicioReportes.Exceptions;
 using Core.ServicioReportes;
 using Core.ServicioReportes.DTOs.Requests;
 using Core.Shared.Documentos;
@@ -200,7 +202,7 @@ public class ServicioReporteTests
 
 		// Un reporte de cero filas no es un reporte: el operador se equivocó de ciclo o de
 		// división, y conviene decírselo en lugar de entregarle una hoja en blanco.
-		var ex = await Should.ThrowAsync<InvalidOperationException>(
+		var ex = await Should.ThrowAsync<SinInscripcionesEnElAlcanceException>(
 			() => _servicio.GenerarReporteMatriculasAsync(TodaLaInstitucion()));
 
 		ex.Message.ShouldContain(CICLO);
@@ -292,7 +294,7 @@ public class ServicioReporteTests
 		SembrarEstructura();
 		SembrarInscripcion("AL0001");
 
-		await Should.ThrowAsync<ArgumentException>(
+		await Should.ThrowAsync<FechasInconsistentesException>(
 			() => _servicio.GenerarReporteAsistenciasAsync(
 				new ReporteAsistenciasRequest(CICLO, DateTime.Today, DateTime.Today.AddDays(-5), null)));
 

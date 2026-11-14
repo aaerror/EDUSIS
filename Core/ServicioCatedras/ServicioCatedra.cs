@@ -1,3 +1,4 @@
+using Domain.Curriculas.Exceptions;
 using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.DTOs.Responses;
 using Core.ServicioCatedras.Exceptions;
@@ -80,7 +81,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 			var curricula = await _unitOfWork.Curriculas.BuscarPorIDAsync(materia.CurriculaID);
 			if (curricula is null || !curricula.EstaVigente())
 			{
-				throw new ArgumentException("La currícula de la materia no se encuentra vigente.", nameof(request.MateriaID));
+				throw new CurriculaNoVigenteException();
 			}
 
 			var existeCatedra = await _unitOfWork.Catedras.ExisteCatedraAsync(request.MateriaID, request.DivisionID);

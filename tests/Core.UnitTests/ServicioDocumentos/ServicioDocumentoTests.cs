@@ -1,3 +1,5 @@
+using Domain.Shared.Exceptions;
+using Core.ServicioDocumentos.Exceptions;
 using Core.ServicioCursantes.Exceptions;
 using Core.ServicioDocumentos;
 using Core.ServicioDocumentos.DTOs.Requests;
@@ -234,7 +236,7 @@ public class ServicioDocumentoTests
 
 		// Sin planillas no hay respaldo de la concurrencia: acreditarla sería afirmar algo que el
 		// sistema no registró.
-		var ex = await Should.ThrowAsync<InvalidOperationException>(
+		var ex = await Should.ThrowAsync<SinAsistenciaRegistradaException>(
 			() => _servicio.GenerarCertificadoAsistenciaAsync(
 				new EmitirCertificadoAsistenciaRequest(sembrado.Alumno.Id, CICLO, DateTime.Today.AddDays(-10), DateTime.Today, null)));
 
@@ -247,7 +249,7 @@ public class ServicioDocumentoTests
 	{
 		var sembrado = Sembrar();
 
-		await Should.ThrowAsync<ArgumentException>(
+		await Should.ThrowAsync<FechasInconsistentesException>(
 			() => _servicio.GenerarCertificadoAsistenciaAsync(
 				new EmitirCertificadoAsistenciaRequest(sembrado.Alumno.Id, CICLO, DateTime.Today, DateTime.Today.AddDays(-5), null)));
 

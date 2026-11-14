@@ -1,3 +1,5 @@
+using Domain.Shared.Exceptions;
+using Core.ServicioReportes.Exceptions;
 using Core.ServicioReportes.DTOs.Requests;
 using Core.Shared;
 using Core.Shared.Documentos;
@@ -94,7 +96,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 
 			if (request.Desde.Date > request.Hasta.Date)
 			{
-				throw new ArgumentException("El inicio del período es posterior a su fin.", nameof(request.Desde));
+				throw new FechasInconsistentesException();
 			}
 
 			var inscripciones = await ListarInscripcionesAsync(request.Periodo, request.DivisionID);
@@ -393,7 +395,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 
 		if (!cursantes.Any())
 		{
-			throw new InvalidOperationException($"No hay inscripciones registradas para el alcance solicitado en el ciclo lectivo { periodo }.");
+			throw new SinInscripcionesEnElAlcanceException(periodo);
 		}
 
 		var alumnos = (await _unitOfWork.Alumnos.BuscarTodosAsync()).ToDictionary(x => x.Id);

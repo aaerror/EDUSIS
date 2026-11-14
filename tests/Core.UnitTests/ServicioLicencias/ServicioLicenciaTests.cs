@@ -1,3 +1,4 @@
+using Domain.Licencias.Exceptions;
 using Core.ServicioDocentes.Exceptions;
 using Core.ServicioLicencias.Exceptions;
 using Core.ServicioDocentes.DTOs.Requests;
@@ -180,7 +181,7 @@ public class ServicioLicenciaTests
 			.Build();
 		_host.UnidadDeTrabajo.LicenciasFake.Sembrar(licencia);
 
-		await Should.ThrowAsync<ArgumentException>(() => _servicio.EliminarLicencia(
+		await Should.ThrowAsync<LicenciaNoPendienteException>(() => _servicio.EliminarLicencia(
 			new EliminarLicenciaRequest(licencia.Id, licencia.DocenteID)));
 		_host.UnidadDeTrabajo.LicenciasFake.Elementos.ShouldHaveSingleItem();
 	}

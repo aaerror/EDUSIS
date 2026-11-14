@@ -1,3 +1,4 @@
+using Domain.Licencias.Exceptions;
 using Domain.Licencias;
 using Domain.Licencias.DomainEvents;
 using EDUSIS.TestSupport;
@@ -66,12 +67,12 @@ public class LicenciaTests
 	}
 
 	[Fact]
-	public void Aprobar_o_cancelar_una_licencia_que_no_esta_pendiente_lanza_ArgumentException()
+	public void Aprobar_o_cancelar_una_licencia_que_no_esta_pendiente_lanza_LicenciaNoPendiente()
 	{
 		var licencia = new LicenciaBuilder().Aprobada().Build();
 
-		Should.Throw<ArgumentException>(() => licencia.AprobarLicencia(null));
-		Should.Throw<ArgumentException>(() => licencia.CancelarLicencia(null));
+		Should.Throw<LicenciaNoPendienteException>(() => licencia.AprobarLicencia(null));
+		Should.Throw<LicenciaNoPendienteException>(() => licencia.CancelarLicencia(null));
 	}
 
 	[Fact]

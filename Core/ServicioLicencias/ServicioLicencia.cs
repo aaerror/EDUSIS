@@ -141,11 +141,10 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 				throw new LicenciaNoEncontradaException();
 			}
 
-			var estado = licencia.Estado;
-			if (!estado.Equals(Estado.Pendiente))
-			{
-				throw new ArgumentException("Sólo se pueden eliminar licencias que se encuentran pendientes de aprobar.");
-			}
+			// La regla es del agregado y la aplica el agregado: acá sólo se la invoca. Antes este
+			// bloque leía licencia.Estado, lo comparaba contra Estado.Pendiente y lanzaba un
+			// ArgumentException, que es el servicio supliendo una validación del dominio (CORE-22).
+			licencia.ValidarSePuedeEliminar();
 
 			await _unitOfWork.Licencias.EliminarAsync(licencia.Id);
 			var result = await _unitOfWork.GuardarCambiosAsync();

@@ -1,3 +1,4 @@
+using Domain.Licencias.Exceptions;
 using Domain.Licencias.DomainEvents;
 using Domain.Licencias.Exceptions;
 using Domain.Shared.Exceptions;
@@ -81,7 +82,7 @@ public sealed class Licencia : Entity
 	{
 		if (!Estado.Equals(Estado.Pendiente))
 		{
-			throw new ArgumentException("La licencia no se encuentra pendiente.");
+			throw new LicenciaNoPendienteException();
 		}
 
 		Estado = Estado.Activa;
@@ -94,7 +95,7 @@ public sealed class Licencia : Entity
 	{
 		if (!Estado.Equals(Estado.Pendiente))
 		{
-			throw new ArgumentException("La licencia no se encuentra pendiente.");
+			throw new LicenciaNoPendienteException();
 		}
 
 		Estado = Estado.Cancelada;
@@ -114,6 +115,34 @@ public sealed class Licencia : Entity
 		Periodo = Periodo.ActualizarFechaFin(DateTime.Today);
 
 		AgregarEvento(new LicenciaFinalizadaEvent(Id, DocenteID));
+	}
+
+	/// <summary>
+	/// Una licencia se borra sólo mientras está pendiente de aprobación: una vez aprobada, cancelada o
+	/// finalizada forma parte del legajo del docente y su baja sería perder un antecedente.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Molde de <c>PlanillaAsistencia.ValidarSePuedeEliminar</c> y <c>Curso.ValidarSePuedeEliminar</c>:
+	/// <strong>valida y no cambia estado</strong>, porque la baja de una licencia es borrado físico y no
+	/// una transición. El servicio la invoca y después borra; no lee <c>Estado</c> ni decide nada.
+	/// </para>
+	/// <para>
+	/// Hasta el 2026-11-14 esta regla vivía en <c>ServicioLicencia.EliminarLicencia</c>, que leía
+	/// <c>licencia.Estado</c>, lo comparaba contra <c>Estado.Pendiente</c> y lanzaba un
+	/// <c>ArgumentException</c>. El agregado no exponía nada equivalente: su API iba de
+	/// <c>AprobarLicencia</c> a <c>ModificarObservaciones</c> sin ningún método que encarnara la baja.
+	/// Era CORE-22, y violaba el principio II de la constitución y la regla de <c>CLAUDE.md</c> de que
+	/// las capas superiores no repiten ni suplen las validaciones del dominio.
+	/// </para>
+	/// </remarks>
+	/// <exception cref="LicenciaNoPendienteException">La licencia ya no está pendiente.</exception>
+	public void ValidarSePuedeEliminar()
+	{
+		if (!Estado.Equals(Estado.Pendiente))
+		{
+			throw new LicenciaNoPendienteException();
+		}
 	}
 	#endregion
 

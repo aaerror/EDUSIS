@@ -1,3 +1,4 @@
+using Domain.Curriculas.Exceptions;
 using Core.ServicioCatedras;
 using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.Exceptions;
@@ -115,13 +116,13 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task CrearCatedraAsync_con_la_curricula_de_la_materia_no_vigente_lanza_ArgumentException()
+	public async Task CrearCatedraAsync_con_la_curricula_de_la_materia_no_vigente_lanza_CurriculaNoVigente()
 	{
 		var curricula = SembrarCurriculaNoVigente();
 		var materia = SembrarMateria(curricula.Id);
 		var division = SembrarDivision();
 
-		await Should.ThrowAsync<ArgumentException>(() => _servicio.CrearCatedraAsync(
+		await Should.ThrowAsync<CurriculaNoVigenteException>(() => _servicio.CrearCatedraAsync(
 			new CrearCatedraRequest(materia.Id, division.Id)));
 	}
 
