@@ -9,8 +9,14 @@ namespace Domain.UnitTests.Alumnos;
 /// <summary>
 /// Agregado <see cref="Domain.Alumnos.Alumno"/>: alta (con el evento <c>AlumnoInscriptoDomainEvent</c>
 /// encolado), consulta de estado y baja institucional (<c>AlumnoDesinscriptoDomainEvent</c>).
-/// <c>AlumnoMayorDeEdadException</c> queda cubierta con una prueba <c>Skip</c> (H-004).
 /// </summary>
+/// <remarks>
+/// La regla de edad del alumno NO vive acá: es relacional contra el grado al que se inscribe y la
+/// gobierna <c>Domain.Cursos.EdadEscolar</c> (ver <c>EdadEscolarTests</c>). Hasta el 2026-11-12
+/// esta clase tenía un placeholder vacío con <c>Skip</c> por H-004 que afirmaba una excepción
+/// absoluta, <c>AlumnoMayorDeEdadException</c>, borrada al dirimir la fila: la mayoría de edad ya
+/// era una consulta (<c>DatosPersonales.EsMayorDeEdad()</c>) y no una invariante.
+/// </remarks>
 [Trait("Categoria", Categorias.Unidad)]
 public class AlumnoTests
 {
@@ -108,13 +114,6 @@ public class AlumnoTests
 
 		ex.GetType().Name.ShouldBe("AlumnoInactivoException");
 		alumno.Eventos.ShouldBeEmpty();
-	}
-	#endregion
-
-	#region Excepciones del módulo — defectos conocidos
-	[Fact(Skip = "H-004: AlumnoMayorDeEdadException no se lanza desde ningún constructor ni método del dominio. Ver hallazgos.md.")]
-	public void Un_alumno_que_alcanza_la_mayoria_de_edad_lanza_AlumnoMayorDeEdadException()
-	{
 	}
 	#endregion
 }
