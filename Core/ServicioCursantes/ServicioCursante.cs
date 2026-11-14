@@ -334,7 +334,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var resultPeriodo = Enum.TryParse<Periodo>(request.Periodo, true, out var periodo);
 			if (!resultPeriodo)
 			{
-				throw new CicloLectivoNoEncontradoException(nameof(request.Periodo));
+				throw new ArgumentException($"El período '{ request.Periodo }' no es válido.", nameof(request.Periodo));
 			}
 
 			var calificacionID = cursante.RegistrarCalificacion(request.MateriaID, request.Fecha, periodo, request.EsRecuperatorio, request.Nota, request.Observacion);
@@ -369,7 +369,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 			var resultPeriodo = Enum.TryParse<Periodo>(request.Periodo, true, out var periodo);
 			if (!resultPeriodo)
 			{
-				throw new CicloLectivoNoEncontradoException(nameof(request.Periodo));
+				throw new ArgumentException($"El período '{ request.Periodo }' no es válido.", nameof(request.Periodo));
 			}
 
 			var calificacionID = cursante.RegistrarInasistenciaAExamen(request.MateriaID, request.Fecha, periodo, request.EsRecuperatorio, request.Observacion);
