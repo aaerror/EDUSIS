@@ -11,23 +11,23 @@ internal partial class InformacionPersonalViewModel : ObservableValidator
 	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar el apellido.")]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
-	private string _apellido;
+	private string _apellido = string.Empty;
 
 	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar el nombre.")]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
-	private string _nombre;
+	private string _nombre = string.Empty;
 
 	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar el número de documento.")]
 	[RegularExpression(@"^(\d){8}$", ErrorMessage="Formato de número de documento inválido.")]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
-	private string _documentoNacionalIdentidad;
+	private string _documentoNacionalIdentidad = string.Empty;
 
 	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe seleccionar el sexo.")]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
-	private string _sexo;
+	private string _sexo = string.Empty;
 
 	// Sin ErrorMessage, DataAnnotations contesta en inglés ("The FechaNacimiento field is
 	// required."). Daba igual mientras el motivo vivía sólo en un ToolTip que nadie abría;
@@ -42,7 +42,7 @@ internal partial class InformacionPersonalViewModel : ObservableValidator
 	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar la nacionalidad.")]
 	[NotifyDataErrorInfo]
 	[ObservableProperty]
-	private string _nacionalidad;
+	private string _nacionalidad = string.Empty;
 
 
 	public InformacionPersonalViewModel() { }
