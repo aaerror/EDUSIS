@@ -124,8 +124,6 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		}
 	}*/
 
-	//TODO: ListarDocentesXCargo
-
 	public async Task<IReadOnlyCollection<LegajoDocenteResponse>> ListarDocentesActivosAsync()
 	{
 		try
