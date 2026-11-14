@@ -168,7 +168,33 @@ public class ServicioDocenteTests
 			DatosPersonales = RegistroValido().DatosPersonales with { Documento = existente.DatosPersonales.Documento }
 		};
 
-		await Should.ThrowAsync<ArgumentException>(() => _servicio.RegistrarDocenteAsync(request));
+		await Should.ThrowAsync<DocumentoDocenteDuplicadoException>(() => _servicio.RegistrarDocenteAsync(request));
+	}
+
+	/// <summary>
+	/// El CUIL y el legajo son las otras dos reglas de unicidad del alta, y hasta el 2026-11-14 ninguna
+	/// de las dos tenía prueba: el único test de este bloque cubría el D.N.I., así que las tres se
+	/// resolvían con un <c>ArgumentException</c> del BCL y nadie podía notar si dos de ellas dejaban de
+	/// dispararse. Se agregan al partir esa excepción en una clase por regla.
+	/// </summary>
+	[Fact]
+	public async Task RegistrarDocenteAsync_rechaza_un_CUIL_ya_registrado()
+	{
+		var existente = SembrarDocente();
+
+		var request = RegistroValido() with { CUIL = existente.CUIL };
+
+		await Should.ThrowAsync<CuilDocenteDuplicadoException>(() => _servicio.RegistrarDocenteAsync(request));
+	}
+
+	[Fact]
+	public async Task RegistrarDocenteAsync_rechaza_un_legajo_ya_registrado()
+	{
+		var existente = SembrarDocente();
+
+		var request = RegistroValido() with { Legajo = existente.Legajo };
+
+		await Should.ThrowAsync<LegajoDocenteDuplicadoException>(() => _servicio.RegistrarDocenteAsync(request));
 	}
 	#endregion
 

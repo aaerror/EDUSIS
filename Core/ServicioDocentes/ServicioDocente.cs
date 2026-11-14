@@ -254,7 +254,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 			if (esDNIInvalido)
 			{
 				_logger.LogInformation($"D.N.I. del docente inválido...");
-				throw new ArgumentException("El D.N.I. del docente ya se encuentra registrado.");
+				throw new DocumentoDocenteDuplicadoException();
 			}
 
 			var esCUILInvalido = await _unitOfWork.Docentes
@@ -262,7 +262,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 			if (esCUILInvalido)
 			{
 				_logger.LogInformation($"CUIL del docente inválido...");
-				throw new ArgumentException("El CUIL del docente ya se encuentra registrado.");
+				throw new CuilDocenteDuplicadoException();
 			}
 			
 			var esLegajoInvalido = await _unitOfWork.Docentes
@@ -270,7 +270,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 			if (esLegajoInvalido)
 			{
 				_logger.LogInformation($"Legajo del docente inválido...");
-				throw new ArgumentException("El legajo docente ya se encuentra registrado.");
+				throw new LegajoDocenteDuplicadoException();
 			}
 
 			var datosPersonales = DatosPersonales.Crear(
