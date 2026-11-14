@@ -36,7 +36,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 
 
 	[ObservableProperty]
-	private string _mensaje;
+	private string _mensaje = string.Empty;
 
 	[ObservableProperty]
 	private bool _habilitarMensaje;

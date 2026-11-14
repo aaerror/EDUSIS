@@ -6,12 +6,12 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 internal class CursanteViewModel : ObservableObject
 {
-	private CursanteResponse _cursanteResponse;
+	private CursanteResponse? _cursanteResponse;
 
 	private Guid _cursanteID;
 	private Guid _alumnoID;
-	private string _nombreCompleto;
-	private string _documento;
+	private string _nombreCompleto = string.Empty;
+	private string _documento = string.Empty;
 	private int _edad;
 	private bool _esRecursante;
 

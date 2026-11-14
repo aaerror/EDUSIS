@@ -9,17 +9,17 @@ namespace WPF_Desktop.ViewModels.Cursos;
 internal partial class CursoViewModel : ObservableObject
 {
 	#region Response
-	private readonly CursoResponse _cursoResponse;
+	private readonly CursoResponse? _cursoResponse;
 	#endregion
 
 	[ObservableProperty]
 	private Guid _cursoID = Guid.Empty;
 
 	[ObservableProperty]
-	private string _grado;
+	private string _grado = string.Empty;
 
 	[ObservableProperty]
-	private string _nivelEducativo;
+	private string _nivelEducativo = string.Empty;
 
 	//TODO: Recuperar contadores de divisiones (Divisiones) y alumnos (Alumnos) como feature (decisión #5, ID a registrarse en docs/todos.md)
 
