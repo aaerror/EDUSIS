@@ -1,3 +1,4 @@
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioLicencias;
 using Core.ServicioLicencias.DTOs.Requests;
@@ -54,9 +55,9 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 	}
 
 	[RequiereSqlServerFact]
-	public async Task SolicitarLicencia_con_un_docente_inexistente_propaga_NullReferenceException()
+	public async Task SolicitarLicencia_con_un_docente_inexistente_propaga_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => EnUnScope(sp =>
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => EnUnScope(sp =>
 			sp.GetRequiredService<IServicioLicencia>().SolicitarLicencia(
 				new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 0, "gripe"))));
 	}

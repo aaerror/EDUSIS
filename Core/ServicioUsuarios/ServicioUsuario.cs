@@ -1,4 +1,5 @@
 ﻿using Core.ServicioAutenticaciones.DTOs.Responses;
+using Core.ServicioAutenticaciones.Exceptions;
 using Core.ServicioUsuarios.Exceptions;
 using Core.ServicioSeguridad;
 using Core.ServicioUsuarios.DTOs.Requests;
@@ -108,7 +109,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 
 		if (request is null)
 		{
-			throw new NullReferenceException("Datos incompletos para registrar el usuario.");
+			throw new ArgumentNullException(nameof(request), "Datos incompletos para registrar el usuario.");
 		}
 
 		try
@@ -117,7 +118,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var existeUsuario = await _unitOfWork.Usuarios.ExisteUsuarioDelDocenteAsync(request.DocenteID);
 			if (existeUsuario)
 			{
-				throw new ArgumentException("El docente ya cuenta con un usuario en el sistema.", nameof(request.DocenteID));
+				throw new UsuarioDeDocenteDuplicadoException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(request.DocenteID);
@@ -171,7 +172,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var esValido = await _unitOfWork.Docentes.ExisteDocenteConLegajoAsync(request.DocenteID, request.Legajo);
 			if (!esValido)
 			{
-				throw new ArgumentException("Datos del docente incorrectos.");
+				throw new DatosDelDocenteInvalidosException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(request.DocenteID);
@@ -220,7 +221,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 
 		if (request is null)
 		{
-			throw new NullReferenceException("Datos incompletos para restablecer la clave de identidad del usuario.");
+			throw new ArgumentNullException(nameof(request), "Datos incompletos para restablecer la clave de identidad del usuario.");
 		}
 
 		try
@@ -229,7 +230,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var usuario = await _unitOfWork.Usuarios.BuscarPorUsernameAsync(request.Email);
 			if (usuario is null)
 			{
-				throw new ArgumentException("Datos de acceso incorrectos.");
+				throw new CredencialesInvalidasException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(usuario.DocenteID);

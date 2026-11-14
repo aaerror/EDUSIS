@@ -346,7 +346,7 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 
 			if (request is null)
 			{
-				throw new ArgumentNullException("Datos incompletos para registrar un alumno.");
+				throw new ArgumentNullException(nameof(request), "Datos incompletos para registrar un alumno.");
 			}
 
 			var datosPersonales = DatosPersonales.Crear(

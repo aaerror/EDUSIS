@@ -1,4 +1,5 @@
 ﻿using Core.ServicioDocentes.DTOs.Requests;
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioLicencias.Exceptions;
 using Core.ServicioLicencias.DTOs.Requests;
 using Core.ServicioLicencias.DTOs.Responses;
@@ -164,10 +165,17 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 		{
 			_sesion.Exigir(Permiso.GestionarDocentes);
 
+			// DocenteNoEncontradoException y no "Datos incompletos para registrar la licencia": esta
+			// guarda pregunta si el docente existe, y el mensaje anterior describía otra cosa. Llegaba
+			// tal cual al usuario —las excepciones suben hasta el ViewModel sin ser tragadas—, así que
+			// quien solicitaba una licencia para un docente inexistente leía que sus datos estaban
+			// incompletos. Agrupar los throw del BCL por el texto de su mensaje puso este sitio en la
+			// familia de las guardas de request nulo, que es lo que el mensaje decía y no lo que el
+			// código hace.
 			var existeDocente = await _unitOfWork.Docentes.ExisteIDAsync(request.DocenteID);
 			if (!existeDocente)
 			{
-				throw new NullReferenceException("Datos incompletos para registrar la licencia.");
+				throw new DocenteNoEncontradoException(nameof(request.DocenteID));
 			}
 
 			Licencia licencia;

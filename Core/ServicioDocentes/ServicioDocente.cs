@@ -246,7 +246,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 
 			if (request is null)
 			{
-				throw new NullReferenceException("Datos incompletos para registrar el docente.");
+				throw new ArgumentNullException(nameof(request), "Datos incompletos para registrar el docente.");
 			}
 
 			var esDNIInvalido = await _unitOfWork.Docentes

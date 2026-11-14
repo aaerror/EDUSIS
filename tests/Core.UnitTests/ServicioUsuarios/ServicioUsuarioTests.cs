@@ -1,3 +1,4 @@
+using Core.ServicioAutenticaciones.Exceptions;
 using Core.ServicioUsuarios.Exceptions;
 using Core.ServicioUsuarios;
 using Core.ServicioUsuarios.DTOs.Requests;
@@ -70,11 +71,11 @@ public class ServicioUsuarioTests
 	}
 
 	[Fact]
-	public async Task RegistrarUsuarioAsync_falla_si_el_docente_ya_tiene_usuario()
+	public async Task RegistrarUsuarioAsync_rechaza_un_docente_que_ya_tiene_usuario()
 	{
 		var (docente, _) = SembrarDocenteConUsuario();
 
-		await Should.ThrowAsync<ArgumentException>(
+		await Should.ThrowAsync<UsuarioDeDocenteDuplicadoException>(
 			() => _servicio.RegistrarUsuarioAsync(new RegistrarUsuarioRequest(docente.Id, Rol.Docente.Id)));
 	}
 
@@ -169,9 +170,9 @@ public class ServicioUsuarioTests
 	}
 
 	[Fact]
-	public async Task RestablecerAccesoAsync_con_un_email_sin_usuario_lanza_ArgumentException()
+	public async Task RestablecerAccesoAsync_con_un_email_sin_usuario_lanza_CredencialesInvalidas()
 	{
-		await Should.ThrowAsync<ArgumentException>(
+		await Should.ThrowAsync<CredencialesInvalidasException>(
 			() => _servicio.RestablecerAccesoAsync(new RestablecerAccesoRequest("desconocido@correo.com")));
 	}
 	#endregion
@@ -190,9 +191,9 @@ public class ServicioUsuarioTests
 	}
 
 	[Fact]
-	public async Task SolicitarAccesoAsync_con_datos_de_docente_incorrectos_lanza_ArgumentException()
+	public async Task SolicitarAccesoAsync_con_datos_de_docente_incorrectos_lanza_DatosDelDocenteInvalidos()
 	{
-		await Should.ThrowAsync<ArgumentException>(
+		await Should.ThrowAsync<DatosDelDocenteInvalidosException>(
 			() => _servicio.SolicitarAccesoAsync(new SolicitarAccesoRequest(Guid.NewGuid(), "999999")));
 	}
 	#endregion

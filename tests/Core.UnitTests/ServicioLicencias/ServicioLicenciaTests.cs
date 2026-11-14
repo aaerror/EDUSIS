@@ -1,3 +1,4 @@
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioLicencias.Exceptions;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioLicencias;
@@ -77,9 +78,9 @@ public class ServicioLicenciaTests
 	}
 
 	[Fact]
-	public async Task SolicitarLicencia_con_un_docente_inexistente_lanza_NullReferenceException()
+	public async Task SolicitarLicencia_con_un_docente_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.SolicitarLicencia(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.SolicitarLicencia(
 			new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 0, "Reposo")));
 	}
 
