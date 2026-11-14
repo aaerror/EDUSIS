@@ -3,6 +3,7 @@ using Domain.Cursantes;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Infraestructura;
 using Infrastructure.IntegrationTests.Infraestructura;
+using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Xunit;
 
@@ -346,6 +347,12 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 			await contexto.SaveChangesAsync();
 		}
 
+		// Los registros se cuentan por SQL directo antes y después. Sin esto la prueba afirmaba
+		// sólo que las planillas desaparecieron, que es lo que su nombre NO dice: `registro_asistencia`
+		// no tiene DbSet y por el modelo habría que consultarla a través de su planilla, que es
+		// justamente la que ya no existe.
+		(await ContarRegistrosAsync()).ShouldBe(2);
+
 		using (var uow = CrearUnidadDeTrabajo())
 		{
 			var planillas = await uow.PlanillasAsistencia.BuscarPorDivisionAsync(divisionID);
@@ -355,6 +362,16 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 
 		using var verificacion = CrearUnidadDeTrabajo();
 		(await verificacion.PlanillasAsistencia.BuscarPorDivisionAsync(divisionID)).ShouldBeEmpty();
+		(await ContarRegistrosAsync()).ShouldBe(0);
+	}
+
+	/// <summary>Filas de <c>registro_asistencia</c> en la base, por SQL directo.</summary>
+	private async Task<int> ContarRegistrosAsync()
+	{
+		await using var contexto = Fixture.CrearContexto();
+		return await contexto.Database
+			.SqlQueryRaw<int>("SELECT COUNT(*) AS Value FROM registro_asistencia")
+			.SingleAsync();
 	}
 	#endregion
 }

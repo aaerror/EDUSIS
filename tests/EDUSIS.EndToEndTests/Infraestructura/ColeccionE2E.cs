@@ -144,6 +144,31 @@ public abstract class BaseE2E : IAsyncLifetime
 		return curso;
 	}
 
+	/// <summary>Persiste un <see cref="Domain.Alumnos.Alumno"/> válido directamente y lo devuelve.</summary>
+	/// <remarks>
+	/// Lo necesita todo flujo que inscriba: <c>FK_CURSANTE_ALUMNO</c> apunta a <c>alumno</c>, así que
+	/// un identificador suelto hace fallar el <c>INSERT</c> del cursante. El legajo, el documento y
+	/// el correo salen del contador de la clase porque <c>persona</c> tiene índices únicos sobre los
+	/// tres y Respawn no reinicia la secuencia entre pruebas.
+	/// </remarks>
+	protected async Task<Domain.Alumnos.Alumno> SembrarAlumnoAsync()
+	{
+		var numero = SiguienteNumero();
+
+		var alumno = new AlumnoBuilder()
+			.ConLegajo("AL" + numero[..4])
+			.ConEmail($"alumno.{numero}@correo.com")
+			.ConDatosPersonales(new DatosPersonalesBuilder()
+				.ConDocumento("2" + numero + "0")
+				.ConEdad(15))
+			.Build();
+
+		await using var contexto = Fixture.CrearContexto();
+		contexto.Add(alumno);
+		await contexto.SaveChangesAsync();
+		return alumno;
+	}
+
 	/// <summary>Persiste una <see cref="Domain.Divisiones.Division"/> propia del curso indicado y la devuelve.</summary>
 	protected async Task<Domain.Divisiones.Division> SembrarDivisionAsync(Guid cursoID, string descripcion = "A")
 	{
