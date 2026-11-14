@@ -5,7 +5,7 @@ public class LicenciaInactivaException : Exception
 	private const string ERROR = "La licencia se encuentra inactiva.";
 
 
-	public LicenciaInactivaException() : base() { }
+	public LicenciaInactivaException() : base(ERROR) { }
 
 	public LicenciaInactivaException(string parametro)
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }

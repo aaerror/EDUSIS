@@ -4,7 +4,7 @@ public class FormatoEmailInvalidoException : Exception
 {
     private const string ERROR = "El formato de e-mail es inválido .";
 
-    public FormatoEmailInvalidoException() : base() { }
+    public FormatoEmailInvalidoException() : base(ERROR) { }
     public FormatoEmailInvalidoException(string parametro)
         : base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
     public FormatoEmailInvalidoException(string parametro, Exception exception)

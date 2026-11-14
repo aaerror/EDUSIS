@@ -5,7 +5,7 @@ public class DocenteConfirmadoEnCargoDocenteException : Exception
 	private const string ERROR = "El docente ya se encuentra confirmado en el cargo docente.";
 
 
-	public DocenteConfirmadoEnCargoDocenteException() : base() { }
+	public DocenteConfirmadoEnCargoDocenteException() : base(ERROR) { }
 	public DocenteConfirmadoEnCargoDocenteException(string parametro)
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
 	public DocenteConfirmadoEnCargoDocenteException(string parametro, Exception exception)

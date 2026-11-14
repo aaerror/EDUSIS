@@ -6,7 +6,7 @@ public class LicenciaActivaException : Exception
 
 
 	public LicenciaActivaException()
-		: base() { }
+		: base(ERROR) { }
 
 	public LicenciaActivaException(string parametro)
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }

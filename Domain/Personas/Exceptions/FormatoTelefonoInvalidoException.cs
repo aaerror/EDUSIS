@@ -6,7 +6,7 @@ public class FormatoTelefonoInvalidoException : Exception
 
 
     public FormatoTelefonoInvalidoException()
-        : base() {}
+        : base(ERROR) {}
     public FormatoTelefonoInvalidoException(string parametro)
         : base(string.Format($"{ERROR}. Parámetro: {parametro}")) {}
     public FormatoTelefonoInvalidoException(string parametro, Exception exception)

@@ -6,7 +6,7 @@ public class LicenciaIndefinidaException : Exception
 
 
 	public LicenciaIndefinidaException()
-		: base() { }
+		: base(ERROR) { }
 
 	public LicenciaIndefinidaException(string parametro)
 		: base(string.Format($"{ERROR}. Parámetro: {parametro}")) { }
