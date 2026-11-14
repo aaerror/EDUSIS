@@ -6,7 +6,6 @@ using Core.Shared;
 using Core.Shared.Seguridad;
 using Domain.Cursantes;
 using Domain.Cursantes.Calificaciones;
-using Domain.Cursantes.Exceptions;
 using Domain.Shared;
 using Domain.Usuarios;
 using Microsoft.Extensions.Logging;

@@ -1,4 +1,4 @@
-namespace Domain.Curriculas.Exceptions;
+namespace Core.ServicioCurriculas.Exceptions;
 
 public class CurriculaNoEncontradaException : Exception
 {

@@ -1,6 +1,8 @@
 using Core.ServicioCatedras;
 using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.Exceptions;
+using Core.ServicioDocentes.Exceptions;
+using Core.ServicioMaterias.Exceptions;
 using Core.UnitTests.Infraestructura;
 using Domain.Catedras;
 using Domain.Catedras.Exceptions;
@@ -8,9 +10,7 @@ using Domain.Catedras.SituacionesRevista;
 using Domain.Curriculas;
 using Domain.Divisiones;
 using Domain.Docentes;
-using Domain.Docentes.Exceptions;
 using Domain.Materias;
-using Domain.Materias.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;

@@ -1,4 +1,4 @@
-namespace Domain.Cursantes.Exceptions;
+namespace Core.ServicioCursantes.Exceptions;
 
 public class CursanteNoEncontradoException : Exception
 {

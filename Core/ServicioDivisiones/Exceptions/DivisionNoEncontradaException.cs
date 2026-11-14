@@ -1,4 +1,4 @@
-namespace Domain.Divisiones.Exceptions;
+namespace Core.ServicioDivisiones.Exceptions;
 
 public class DivisionNoEncontradaException : Exception
 {

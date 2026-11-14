@@ -1,4 +1,4 @@
-namespace Domain.Materias.Exceptions;
+namespace Core.ServicioMaterias.Exceptions;
 
 public class MateriaNoEncontradaException : Exception
 {

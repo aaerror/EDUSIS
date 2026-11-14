@@ -1,7 +1,7 @@
 using Core.ServicioCurriculas;
 using Core.ServicioCurriculas.DTOs.Requests;
 using Core.UnitTests.Infraestructura;
-using Domain.Curriculas.Exceptions;
+using Core.ServicioCurriculas.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;

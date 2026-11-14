@@ -1,12 +1,12 @@
 using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Responses;
+using Core.ServicioCurriculas.Exceptions;
 using Core.ServicioMaterias.Exceptions;
 using Core.Shared;
 using Core.Shared.Seguridad;
 using Domain.Curriculas;
 using Domain.Curriculas.Exceptions;
 using Domain.Materias;
-using Domain.Materias.Exceptions;
 using Domain.Shared;
 using Domain.Usuarios;
 using Microsoft.Extensions.Logging;

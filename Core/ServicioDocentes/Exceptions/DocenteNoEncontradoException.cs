@@ -1,4 +1,4 @@
-namespace Domain.Docentes.Exceptions;
+namespace Core.ServicioDocentes.Exceptions;
 
 public class DocenteNoEncontradoException : Exception
 {

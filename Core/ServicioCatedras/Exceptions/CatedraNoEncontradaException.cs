@@ -1,4 +1,4 @@
-namespace Domain.Catedras.Exceptions;
+namespace Core.ServicioCatedras.Exceptions;
 
 public class CatedraNoEncontradaException : Exception
 {

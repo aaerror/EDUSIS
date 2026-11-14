@@ -1,11 +1,11 @@
 using Core.ServicioMaterias;
 using Core.ServicioMaterias.DTOs.Requests;
+using Core.ServicioCurriculas.Exceptions;
 using Core.ServicioMaterias.Exceptions;
 using Core.UnitTests.Infraestructura;
 using Domain.Curriculas;
 using Domain.Curriculas.Exceptions;
 using Domain.Materias;
-using Domain.Materias.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;

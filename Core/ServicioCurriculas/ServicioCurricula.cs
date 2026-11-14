@@ -3,7 +3,7 @@ using Core.ServicioCurriculas.DTOs.Responses;
 using Core.Shared;
 using Core.Shared.Seguridad;
 using Domain.Curriculas;
-using Domain.Curriculas.Exceptions;
+using Core.ServicioCurriculas.Exceptions;
 using Domain.Shared;
 using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
