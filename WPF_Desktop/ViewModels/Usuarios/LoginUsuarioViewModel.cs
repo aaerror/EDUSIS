@@ -75,7 +75,12 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
 
 		// MensajeError se deriva de los errores, así que se avisa cuando ellos cambian.
-		ErrorsChanged += (_, _) => OnPropertyChanged(nameof(MensajeError));
+		// CanExecuteRegistrarCommand lee HasErrors: sin este aviso el comando nunca se reevalúa (UI-25).
+		ErrorsChanged += (_, _) =>
+		{
+			OnPropertyChanged(nameof(MensajeError));
+			RegistrarCommandAsync.NotifyCanExecuteChanged();
+		};
 	}
 
 	/*
