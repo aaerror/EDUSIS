@@ -86,6 +86,7 @@ public sealed class CatedraRepositorioTests : BaseIntegracion
 		var materia2ID = await SembrarMateriaAsync(curriculaID, "Historia");
 
 		var catedra1 = new CatedraBuilder().ConMateria(materia1ID).ConDivision(division1ID).Build();
+		catedra1.AgregarHorario(new HorarioBuilder().Build());
 		var catedra2 = new CatedraBuilder().ConMateria(materia2ID).ConDivision(division1ID).Build();
 		var catedra3 = new CatedraBuilder().ConMateria(materia1ID).ConDivision(division2ID).Build();
 
@@ -100,6 +101,16 @@ public sealed class CatedraRepositorioTests : BaseIntegracion
 		var catedrasDiv1 = await uow.Catedras.CatedrasSegunDivisionAsync(division1ID);
 		catedrasDiv1.Count.ShouldBe(2);
 		catedrasDiv1.ShouldAllBe(x => x.DivisionID == division1ID);
+
+		// Los horarios tienen que venir cargados: `ServicioCatedra.AgregarHorarioAsync` recorre
+		// `otra.Horarios` en memoria para detectar la colisión dentro de la división, así que una
+		// colección vacía no falla, deja pasar el horario superpuesto.
+		// Lo que esta aserción NO acredita: que el `.Include(x => x.Horarios)` de `Consulta()` haga
+		// falta. `Horarios` es `OwnsMany` (`CatedrasConfiguration.cs:76`) y EF carga los owned types
+		// con su dueño, así que ese `Include` es redundante y borrarlo no la pone en rojo. Cubre el
+		// caso de que `Horario` deje de ser owned —pasar a `HasMany` es un refactor plausible—, que
+		// es cuando la carga automática desaparece sin que nadie lo note.
+		catedrasDiv1.Single(x => x.MateriaID == materia1ID).Horarios.ShouldNotBeEmpty();
 
 		var catedrasDiv2 = await uow.Catedras.CatedrasSegunDivisionAsync(division2ID);
 		catedrasDiv2.Count.ShouldBe(1);
@@ -130,6 +141,19 @@ public sealed class CatedraRepositorioTests : BaseIntegracion
 		var catedrasDocente1 = await uow.Catedras.CatedrasSegunDocenteAsync(docente1ID);
 		catedrasDocente1.Count.ShouldBe(1);
 		catedrasDocente1.First().MateriaID.ShouldBe(materia1ID);
+
+		// Las situaciones de revista tienen que venir CARGADAS, no sólo filtradas, y las dos
+		// aserciones de arriba no lo acreditan: el `Where` de la consulta usa
+		// `SituacionesRevista.Any(…)`, que EF traduce a SQL del lado del servidor y resuelve sin
+		// `Include`, así que `Count` y `MateriaID` dan bien con la colección vacía. Quien la lee en
+		// memoria es `Catedra.DocenteEnFunciones()`, y de ella cuelga el invariante
+		// `DocenteEnDosAulasException` de `ServicioCatedra.AgregarHorarioAsync`.
+		// El `.Include(x => x.SituacionesRevista)` de `Consulta()` ya está fijado por
+		// `BuscarPorIDAsync_carga_horarios_y_situaciones_revista`, así que esta aserción no es la
+		// única que ve esa mutación: lo que agrega es fijarlo en LA consulta que usa el invariante.
+		// `BuscarPorIDAsync` y `CatedrasSegunDocenteAsync` comparten `Consulta()` hoy, pero nada
+		// obliga a que sigan compartiéndola, y la de acá es la que alimenta la regla.
+		catedrasDocente1.First().SituacionesRevista.ShouldNotBeEmpty();
 
 		var catedrasDocente2 = await uow.Catedras.CatedrasSegunDocenteAsync(docente2ID);
 		catedrasDocente2.Count.ShouldBe(1);
