@@ -67,7 +67,6 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 
 	#region Response
 	private LegajoDocenteResponse _legajoDocenteResponse;
-	private PuestoResponse _puestoDocenteResponse;
 	#endregion
 
 	[ObservableProperty]
@@ -163,7 +162,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	}
 
 	#region CancelarCommandAsync
-	private bool CanExecuteCancelarCommand(object obj)
+	private bool CanExecuteCancelarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -175,7 +174,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 		}
 	}
 
-	private async Task ExecuteCancelarCommandAsync(object obj)
+	private async Task ExecuteCancelarCommandAsync(object? obj)
 	{
 		await ExecuteCargarPuestosDocentesAsync();
 
@@ -204,7 +203,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	#endregion
 
 	#region EliminarCommandAsync
-	private bool CanExecuteEliminarCommand(object obj)
+	private bool CanExecuteEliminarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -230,7 +229,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	/// ícono de información, y la de eliminar no nombraba ni el puesto.
 	/// </para>
 	/// </remarks>
-	private async Task ExecuteEliminarCommandAsync(object obj)
+	private async Task ExecuteEliminarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -291,7 +290,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	#endregion
 
 	#region GuardarCommandAsync
-	private bool CanExecuteGuardarCommand(object obj)
+	private bool CanExecuteGuardarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -311,7 +310,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	/// preguntarle "¿Está seguro?" encima no agrega información —no se pierde nada, el puesto
 	/// se puede editar o eliminar después— y convertía un alta en tres clics.
 	/// </remarks>
-	private async Task ExecuteGuardarCommandAsync(object obj)
+	private async Task ExecuteGuardarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{

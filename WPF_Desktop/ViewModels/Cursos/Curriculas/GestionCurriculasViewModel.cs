@@ -221,7 +221,7 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 		}
 	}
 
-	private void OnErroresDeLaMateriaChanged(object sender, DataErrorsChangedEventArgs e)
+	private void OnErroresDeLaMateriaChanged(object? sender, DataErrorsChangedEventArgs e)
 	{
 		GuardarCommandAsync.NotifyCanExecuteChanged();
 	}
@@ -415,14 +415,14 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 
 	#region Commands
 	#region NavigationCommand
-	private bool CanExecuteNavigationCommand(object obj) => obj switch
+	private bool CanExecuteNavigationCommand(object? obj) => obj switch
 	{
 		"Cursos" => !HabilitarRegistrarMateria && !HabilitarEditarMateria,
 		"Catedras" => Materia is not null && !HabilitarEditarMateria,
 		_ => false
 	};
 
-	private void ExecuteNavigationCommand(object obj)
+	private void ExecuteNavigationCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -445,14 +445,14 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	/// son las suyas. Antes sólo exigía que el editor estuviera abierto, y con la descripción vacía el
 	/// botón quedaba vivo hasta que <c>Materia.EditarDescripcion</c> tiraba <c>ArgumentNullException</c>.
 	/// </remarks>
-	private bool CanExecuteGuardarCommand(object obj) => obj switch
+	private bool CanExecuteGuardarCommand(object? obj) => obj switch
 	{
 		"Materia" => !HasErrors && CurriculaVigente && AdmiteOtraMateria,
 		"Update" => HabilitarEditarMateria && CurriculaVigente && Materia is not null && !Materia.HasErrors,
 		_ => false
 	};
 
-	private async Task ExecuteGuardarCommandAsync(object obj)
+	private async Task ExecuteGuardarCommandAsync(object? obj)
 	{
 		string messageBoxText = string.Empty;
 		string caption = string.Empty;
@@ -546,13 +546,13 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	#endregion
 
 	#region EditarCommand
-	private bool CanExecuteEditarCommand(object obj) => obj switch
+	private bool CanExecuteEditarCommand(object? obj) => obj switch
 	{
 		"Materia" => Materia is not null && CurriculaVigente && !HabilitarEditarMateria,
 		_ => false
 	};
 
-	private void ExecuteEditarCommand(object obj)
+	private void ExecuteEditarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -572,14 +572,14 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	/// <c>TopesCurriculares</c>—. Antes el botón sólo miraba que hubiera una currícula elegida, así
 	/// que sobre una currícula cerrada o llena abría un formulario que no podía terminar.
 	/// </remarks>
-	private bool CanExecuteRegistrarCommand(object obj) => obj switch
+	private bool CanExecuteRegistrarCommand(object? obj) => obj switch
 	{
 		"Curricula" => !HabilitarRegistrarMateria && !HabilitarEditarMateria,
 		"Materia" => CurriculaVigente && AdmiteOtraMateria && !HabilitarRegistrarMateria && !HabilitarEditarMateria,
 		_ => false
 	};
 
-	private async Task ExecuteRegistrarCommandAsync(object obj)
+	private async Task ExecuteRegistrarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -651,13 +651,13 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	#endregion
 
 	#region EliminarCommandAsync
-	private bool CanExecuteEliminarCommand(object obj) => obj switch
+	private bool CanExecuteEliminarCommand(object? obj) => obj switch
 	{
 		"Materia" => Materia is not null && CurriculaVigente && !HabilitarEditarMateria,
 		_ => false
 	};
 
-	private async Task ExecuteEliminarCommandAsync(object obj)
+	private async Task ExecuteEliminarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -690,14 +690,14 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	#endregion
 
 	#region CancelarCommand
-	private bool CanExecuteCancelarCommand(object obj) => obj switch
+	private bool CanExecuteCancelarCommand(object? obj) => obj switch
 	{
 		"Nueva" => HabilitarRegistrarMateria,
 		"Editar" => HabilitarEditarMateria,
 		_ => false
 	};
 
-	private async Task ExecuteCancelarCommandAsync(object obj)
+	private async Task ExecuteCancelarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{

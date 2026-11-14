@@ -392,10 +392,10 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 	#endregion
 
 	#region NavigationCommand
-	private bool CanExecuteNavigationCommand(object obj) =>
+	private bool CanExecuteNavigationCommand(object? obj) =>
 		LegajoDocenteSeleccionado is not null;
 
-	private void ExecuteNavigationCommand(object obj)
+	private void ExecuteNavigationCommand(object? obj)
 	{
 		if (LegajoDocenteSeleccionado is null)
 		{

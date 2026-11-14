@@ -39,8 +39,6 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 	private ResumenAcademicoViewModel _resumen;
 
 	#region Request
-	private ContactoRequest _datosContactoTemporal;
-	private CambiarSexoRequest _datosSexoTemporal;
 	#endregion
 
 
@@ -181,7 +179,7 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 	#endregion
 
 	#region CancelarCommand
-	private bool CancelarCommandCanExecute(object obj) => obj switch
+	private bool CancelarCommandCanExecute(object? obj) => obj switch
 	{
 		"Contacto" => HabilitarEditarContacto,
 		"Domicilio" => HabilitarEditarDomicilio,
@@ -189,7 +187,7 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 		_ => false
 	};
 
-	private async Task CancelarCommandExecute(object obj)
+	private async Task CancelarCommandExecute(object? obj)
 	{
 		await CargarPerfilAsync();
 
@@ -214,7 +212,7 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 	#endregion
 
 	#region EditarCommand
-	private bool EditarCommandCanExecute(object obj) => obj switch
+	private bool EditarCommandCanExecute(object? obj) => obj switch
 	{
 		"Contacto" => !HabilitarEditarContacto,
 		"Domicilio" => !HabilitarEditarDomicilio,
@@ -222,7 +220,7 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 		_ => false
 	};
 
-	private void EditarCommandExecute(object obj)
+	private void EditarCommandExecute(object? obj)
 	{
 		switch (obj as string)
 		{
@@ -243,7 +241,7 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 	#endregion
 
 	#region GuardarCommand
-	private bool GuardarCommandCanExecute(object obj) => obj switch
+	private bool GuardarCommandCanExecute(object? obj) => obj switch
 	{
 		"Contacto" => HabilitarEditarContacto,
 		"Domicilio" => HabilitarEditarDomicilio,
@@ -256,7 +254,7 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 	/// usuario abrió el bloque, lo modificó a la vista y apretó "Guardar cambios"; un cartel
 	/// que le repita lo que tiene delante y le pregunte "¿Desea continuar?" es un paso de más.
 	/// </summary>
-	private async Task GuardarCommandExecute(object obj)
+	private async Task GuardarCommandExecute(object? obj)
 	{
 		switch (obj)
 		{

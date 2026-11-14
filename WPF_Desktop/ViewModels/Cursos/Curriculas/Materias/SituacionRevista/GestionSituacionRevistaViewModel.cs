@@ -453,7 +453,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	/// <c>CanExecute</c> de esta pantalla. Sin esto, completar la fecha de fin que falta no encendía
 	/// el botón de guardar hasta que algo más lo notificara.
 	/// </remarks>
-	private void OnSituacionRevistaINSERTPropertyChanged(object sender, PropertyChangedEventArgs e)
+	private void OnSituacionRevistaINSERTPropertyChanged(object? sender, PropertyChangedEventArgs e)
 	{
 		if (e.PropertyName is nameof(SituacionRevistaViewModel.Cargo))
 		{
@@ -476,13 +476,13 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 
 	#region Commands
 	#region CancelarCommand
-	private bool CanExecuteCancelarCommand(object obj) => obj switch
+	private bool CanExecuteCancelarCommand(object? obj) => obj switch
 	{
 		"Insert" => SituacionRevistaINSERT is not null,
 		_ => false
 	};
 
-	private async Task ExecuteCancelarCommandAsync(object obj)
+	private async Task ExecuteCancelarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -511,7 +511,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	/// Y exige el término elegido, porque el dominio lo pide posterior a hoy: sin esa condición el
 	/// botón abría su confirmación para después reventar con un <c>ArgumentException</c>.
 	/// </remarks>
-	private bool CanExecuteEditarCommand(object obj) => obj switch
+	private bool CanExecuteEditarCommand(object? obj) => obj switch
 	{
 		// Quitar del aula: el dominio sólo pide que haya alguien en funciones.
 		"Docente" => SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.EnFunciones,
@@ -519,7 +519,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 		_ => false
 	};
 
-	private async Task ExecuteEditarCommandAsync(object obj)
+	private async Task ExecuteEditarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -604,13 +604,13 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	/// gate sólo pedía que hubiera una fila elegida. Sobre una designación ya finalizada el botón
 	/// quedaba vivo, abría su confirmación destructiva y recién después reventaba.
 	/// </remarks>
-	private bool CanExecuteEliminarCommand(object obj) => obj switch
+	private bool CanExecuteEliminarCommand(object? obj) => obj switch
 	{
 		"Docente" => SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.Vigente,
 		_ => false
 	};
 
-	private async Task ExecuteEliminarCommandAsync(object obj)
+	private async Task ExecuteEliminarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -672,7 +672,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	/// un solo día que nadie pidió ni vio.
 	/// </para>
 	/// </remarks>
-	private bool CanExecuteGuardarCommand(object obj) => obj switch
+	private bool CanExecuteGuardarCommand(object? obj) => obj switch
 	{
 		"Insert" => SituacionRevistaINSERT is not null
 				 && !SituacionRevistaINSERT.HasErrors
@@ -682,7 +682,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 		_ => false
 	};
 
-	private async Task ExecuteGuardarCommandAsync(object obj)
+	private async Task ExecuteGuardarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -780,13 +780,13 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	#endregion
 
 	#region NavigationCommand
-	private bool CanExecuteNavigationCommand(object obj) => obj switch
+	private bool CanExecuteNavigationCommand(object? obj) => obj switch
 	{
 		"Materias" => !HabilitarInsert,
 		_ => false
 	};
 
-	private void ExecuteNavigationCommand(object obj)
+	private void ExecuteNavigationCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -798,13 +798,13 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	#endregion
 
 	#region RegistrarCommand
-	private bool CanExecuteRegistrarCommand(object obj) => obj switch
+	private bool CanExecuteRegistrarCommand(object? obj) => obj switch
 	{
 		"SituacionRevista" => !HabilitarInsert,
 		_ => false
 	};
 
-	private void ExecuteRegistrarCommand(object obj)
+	private void ExecuteRegistrarCommand(object? obj)
 	{
 		switch (obj)
 		{

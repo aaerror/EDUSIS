@@ -46,7 +46,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	#endregion
 
 	#region Request
-	private EliminarDivisionRequest request;
 	#endregion
 
 	private ObservableCollection<DivisionViewModel> _divisiones;
@@ -298,14 +297,14 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	#endregion
 
 	#region EliminarCommandAsync
-	private bool CanExecuteEliminarCommand(object obj) => obj switch
+	private bool CanExecuteEliminarCommand(object? obj) => obj switch
 	{
 		"Division" => Division is not null,
 		"Preceptor" => Division is not null && Division.PreceptorID is not null,
 		_ => false
 	};
 
-	private async Task ExecuteEliminarCommandAsync(object obj)
+	private async Task ExecuteEliminarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -474,7 +473,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	/// transacción entera ocurre en el modal, que es modal— así que no hay estado a medias que
 	/// proteger y los destinos sólo dependen de que haya una división elegida.
 	/// </remarks>
-	private bool CanExecuteNavigationCommand(object obj) => obj switch
+	private bool CanExecuteNavigationCommand(object? obj) => obj switch
 	{
 		"Curso" => true,
 		"Cursantes" => Division is not null,
@@ -482,7 +481,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		_ => false
 	};
 
-	private void ExecuteNavigationCommand(object obj)
+	private void ExecuteNavigationCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -511,13 +510,13 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	/// una división crea un registro y asignar un preceptor modifica uno que ya existe, y lo único
 	/// que los juntaba era el nombre del comando.
 	/// </remarks>
-	private bool CanExecuteRegistrarCommand(object obj) => obj switch
+	private bool CanExecuteRegistrarCommand(object? obj) => obj switch
 	{
 		"Division" => !string.IsNullOrWhiteSpace(Descripcion) && !HasErrors,
 		_ => false
 	};
 
-	private async Task ExecuteRegistrarCommandAsync (object obj)
+	private async Task ExecuteRegistrarCommandAsync (object? obj)
 	{
 		switch (obj)
 		{
@@ -570,7 +569,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	/// Reemplazar al preceptor no es quitar y volver a asignar —eso dejaría el cargo vacante en el
 	/// medio— sino <c>ModificarPreceptorAsync</c>, una sola unidad de trabajo.
 	/// </remarks>
-	private async Task ExecutePreceptorElegidoCommandAsync(LegajoDocenteViewModel docente)
+	private async Task ExecutePreceptorElegidoCommandAsync(LegajoDocenteViewModel? docente)
 	{
 		if (docente is null || Division is null)
 		{

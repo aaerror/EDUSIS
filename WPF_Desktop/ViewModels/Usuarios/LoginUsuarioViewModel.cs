@@ -147,10 +147,10 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 	#endregion
 
 	#region RegistrarCommand
-	private bool CanExecuteRegistrarCommand(object obj) =>
+	private bool CanExecuteRegistrarCommand(object? obj) =>
 		!HasErrors;
 
-	private async Task ExecuteRegistrarCommand(object obj)
+	private async Task ExecuteRegistrarCommand(object? obj)
 	{
 		switch (obj)
 		{

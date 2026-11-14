@@ -140,7 +140,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 		}
 	}*/
 
-	private void ExecuteNavigationCommand(string obj)
+	private void ExecuteNavigationCommand(string? obj)
 	{
 		switch (obj)
 		{
@@ -194,7 +194,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 	#endregion
 
 	#region EliminarCommandAsync
-	private bool CanExecuteEliminarCommandAsync(object obj)
+	private bool CanExecuteEliminarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -205,7 +205,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 		}
 	}
 
-	private async Task ExecuteEliminarCommandAsync(object obj)
+	private async Task ExecuteEliminarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{

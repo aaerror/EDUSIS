@@ -144,7 +144,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	}
 
 	#region CancelarCommandAsync
-	private bool CanExecuteCancelarCommand(object obj)
+	private bool CanExecuteCancelarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -159,7 +159,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		}
 	}
 
-	private async Task ExecuteCancelarCommand(object obj)
+	private async Task ExecuteCancelarCommand(object? obj)
 	{
 		await ExecuteCargarLicenciasCommand();
 
@@ -184,7 +184,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region GuardarCommandAsync
-	private bool CanExecuteGuardarCommand(object obj)
+	private bool CanExecuteGuardarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -221,7 +221,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	/// <item><b>Eliminar</b> pregunta en rojo y con la consecuencia: no se puede deshacer.</item>
 	/// </list>
 	/// </remarks>
-	private async Task ExecuteGuardarCommandAsync(object obj)
+	private async Task ExecuteGuardarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -354,7 +354,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region EditarCommand
-	private bool CanExecuteEditarCommand(object obj)
+	private bool CanExecuteEditarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -365,7 +365,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		}
 	}
 
-	private void ExecuteEditarCommand(object obj)
+	private void ExecuteEditarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -380,7 +380,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region RegistrarCommand
-	private bool CanExecuteRegistrarCommand(object obj)
+	private bool CanExecuteRegistrarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -391,7 +391,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		}
 	}
 
-	private void ExecuteRegistrarCommand(object obj)
+	private void ExecuteRegistrarCommand(object? obj)
 	{
 		switch (obj)
 		{

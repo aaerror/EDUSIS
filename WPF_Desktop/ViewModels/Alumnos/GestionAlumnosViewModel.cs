@@ -252,7 +252,7 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 	#endregion
 
 	#region NavigationCommand
-	private bool CanExecuteNavigationCommand(object obj) => obj switch
+	private bool CanExecuteNavigationCommand(object? obj) => obj switch
 	{
 		"Asignar" => AlumnoSeleccionado is not null,
 		"Perfil" => AlumnoSeleccionado is not null,
@@ -260,7 +260,7 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 		_ => false
 	};
 
-	private void ExecuteNavigationCommand(object obj)
+	private void ExecuteNavigationCommand(object? obj)
 	{
 		switch (obj)
 		{

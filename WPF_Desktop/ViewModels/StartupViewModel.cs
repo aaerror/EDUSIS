@@ -71,10 +71,10 @@ internal class StartupViewModel : ObservableObject
 	}
 
 	#region NavigationCommand
-	private bool CanExecuteNavigationCommand(object obj) =>
+	private bool CanExecuteNavigationCommand(object? obj) =>
 		true;
 
-	private void ExecuteNavigationCommand(object obj)
+	private void ExecuteNavigationCommand(object? obj)
 	{
 		switch (obj)
 		{
