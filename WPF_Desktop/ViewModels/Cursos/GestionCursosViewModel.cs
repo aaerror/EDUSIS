@@ -51,7 +51,6 @@ internal partial class GestionCursosViewModel : ObservableObject
 	#region Commands
 	public IAsyncRelayCommand CargarCursosCommandAsync { get; }
 	public IAsyncRelayCommand EliminarCommandAsync { get; }
-	public IRelayCommand ListarCommand { get; }
 	public IRelayCommand NavigationCommand { get; }
 	#endregion
 
@@ -77,7 +76,6 @@ internal partial class GestionCursosViewModel : ObservableObject
 		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommandAsync);
 		//NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand);
-		ListarCommand = new RelayCommand<string>(ExecuteListarCommand);
 
 		HabilitarMessage = false;
 	}
@@ -293,18 +291,6 @@ internal partial class GestionCursosViewModel : ObservableObject
 
 		return $"Se eliminan { lista }, con los horarios cargados en ellas. "
 			 + "Esta acción no se puede deshacer.";
-	}
-	#endregion
-
-	#region ListarCommand
-	private void ExecuteListarCommand(object obj)
-	{
-		switch (obj)
-		{
-			case "Curso":
-				ExecuteCargarCursosCommandAsync();
-				break;
-		}
 	}
 	#endregion
 }
