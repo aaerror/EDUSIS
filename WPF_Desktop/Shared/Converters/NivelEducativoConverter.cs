@@ -24,6 +24,12 @@ internal class NivelEducativoConverter : IValueConverter
 
 	public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
 	{
+		// Un binding con el valor aún sin elegir manda null: no hay nada que escribir en el origen.
+		if (value is null)
+		{
+			return Binding.DoNothing;
+		}
+
 		return Enum.Parse(typeof(NivelEducativo), value.ToString());
 	}
 }

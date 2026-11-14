@@ -19,7 +19,7 @@ internal partial class SituacionRevistaViewModel : ObservableValidator
 	private Guid _docenteID = Guid.Empty;
 
 	[ObservableProperty]
-	private string _docente;
+	private string _docente = string.Empty;
 
 	[ObservableProperty]
 	private string _cargo = string.Empty;
