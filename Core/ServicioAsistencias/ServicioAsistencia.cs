@@ -273,7 +273,7 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
-			return await _unitOfWork.PlanillasAsistencia.ContarFaltasAsync(request.CursanteID, request.Tipo);
+			return await _unitOfWork.PlanillasAsistencia.ContarPorTipoAsync(request.CursanteID, request.Tipo);
 		}
 		catch (Exception ex)
 		{
@@ -316,7 +316,7 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 
 	/// <remarks>
 	/// Recorre las planillas del período UNA vez y agrupa sus registros por cursante. La alternativa
-	/// —preguntarle al repositorio por cada alumno— no existe: <c>ContarFaltasAsync</c> es por cursante
+	/// —preguntarle al repositorio por cada alumno— no existe: <c>ContarPorTipoAsync</c> es por cursante
 	/// y por tipo, no acepta fechas, y daría cuatro consultas por alumno contando toda su historia en
 	/// lugar del período pedido.
 	/// </remarks>

@@ -22,7 +22,7 @@ internal class PlanillaAsistenciaRepository : Repository<PlanillaAsistencia>, IP
 		await Consulta()
 			.FirstOrDefaultAsync(x => x.DivisionID == divisionID && x.Fecha == fecha.Date);
 
-	public async Task<int> ContarFaltasAsync(Guid cursanteID, TipoAsistencia tipo) =>
+	public async Task<int> ContarPorTipoAsync(Guid cursanteID, TipoAsistencia tipo) =>
 		await _context.PlanillasAsistencia
 			.SelectMany(p => p.Registros)
 			.CountAsync(r => r.CursanteID == cursanteID && r.Tipo == tipo);

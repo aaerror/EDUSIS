@@ -108,7 +108,7 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 	}
 
 	[RequiereSqlServerFact]
-	public async Task ContarFaltasAsync_cuenta_faltas_de_un_cursante()
+	public async Task ContarPorTipoAsync_cuenta_faltas_de_un_cursante()
 	{
 		var cursoID = await SembrarCursoAsync();
 		var divisionID = await SembrarDivisionAsync(cursoID);
@@ -146,10 +146,10 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		var faltas1 = await uow.PlanillasAsistencia.ContarFaltasAsync(cursante1ID, TipoAsistencia.Ausencia);
+		var faltas1 = await uow.PlanillasAsistencia.ContarPorTipoAsync(cursante1ID, TipoAsistencia.Ausencia);
 		faltas1.ShouldBe(2);
 
-		var faltas2 = await uow.PlanillasAsistencia.ContarFaltasAsync(cursante2ID, TipoAsistencia.Ausencia);
+		var faltas2 = await uow.PlanillasAsistencia.ContarPorTipoAsync(cursante2ID, TipoAsistencia.Ausencia);
 		faltas2.ShouldBe(1);
 	}
 

@@ -8,7 +8,7 @@ public interface IPlanillaAsistenciaRepository : IRepository<PlanillaAsistencia>
 
 	Task<PlanillaAsistencia?> BuscarPorDivisionYFechaAsync(Guid divisionID, DateTime fecha);
 
-	Task<int> ContarFaltasAsync(Guid cursanteID, TipoAsistencia tipo);
+	Task<int> ContarPorTipoAsync(Guid cursanteID, TipoAsistencia tipo);
 
 	/// <summary>
 	/// Planillas de una división dentro del rango, ambos extremos incluidos. La emisión de

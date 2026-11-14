@@ -53,7 +53,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 	/// <summary>
 	/// El resumen de asistencias del alumno. Es lo ÚNICO que se puede preguntar por cursante:
-	/// <c>IPlanillaAsistenciaRepository</c> sólo expone <c>ContarFaltasAsync(cursanteID, tipo)</c>,
+	/// <c>IPlanillaAsistenciaRepository</c> sólo expone <c>ContarPorTipoAsync(cursanteID, tipo)</c>,
 	/// porque el agregado es la planilla —división y fecha— y un alumno no tiene asistencias
 	/// propias que listar. Ver el pendiente anotado en docs/ui-ux.md.
 	/// </summary>

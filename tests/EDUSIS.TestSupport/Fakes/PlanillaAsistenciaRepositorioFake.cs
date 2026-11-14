@@ -12,7 +12,7 @@ public sealed class PlanillaAsistenciaRepositorioFake : RepositorioEnMemoria<Pla
 	public Task<PlanillaAsistencia?> BuscarPorDivisionYFechaAsync(Guid divisionID, DateTime fecha) =>
 		Task.FromResult(_entidades.FirstOrDefault(x => x.DivisionID.Equals(divisionID) && x.Fecha == fecha.Date));
 
-	public Task<int> ContarFaltasAsync(Guid cursanteID, TipoAsistencia tipo) =>
+	public Task<int> ContarPorTipoAsync(Guid cursanteID, TipoAsistencia tipo) =>
 		Task.FromResult(_entidades
 			.SelectMany(p => p.Registros)
 			.Count(r => r.CursanteID.Equals(cursanteID) && r.Tipo == tipo));
