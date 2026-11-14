@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioCursos.DTOs.Responses;
 using Domain.Cursos;
 using Domain.Shared;

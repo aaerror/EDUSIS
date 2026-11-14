@@ -1,4 +1,4 @@
-﻿namespace WPF_Desktop.Security;
+namespace WPF_Desktop.Security;
 
 internal enum AuthType
 {

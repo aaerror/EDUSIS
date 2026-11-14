@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes.DTOs.Responses;

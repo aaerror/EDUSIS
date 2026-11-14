@@ -1,4 +1,4 @@
-﻿namespace WPF_Desktop.Navigation;
+namespace WPF_Desktop.Navigation;
 
 internal interface INavigationService
 {

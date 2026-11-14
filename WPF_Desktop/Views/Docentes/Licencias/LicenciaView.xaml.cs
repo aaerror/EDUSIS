@@ -1,4 +1,4 @@
-﻿using System.Windows.Controls;
+using System.Windows.Controls;
 
 namespace WPF_Desktop.Views.Docentes.Licencias;
 

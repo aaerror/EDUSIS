@@ -1,4 +1,4 @@
-﻿using Domain.Shared;
+using Domain.Shared;
 using System.Globalization;
 using System.Windows.Data;
 using System;

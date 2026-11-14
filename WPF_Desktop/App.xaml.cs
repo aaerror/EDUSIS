@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using Core.Shared;
 using Infrastructure;
 using Microsoft.Extensions.DependencyInjection;

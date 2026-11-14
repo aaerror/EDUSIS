@@ -1,4 +1,4 @@
-﻿using Domain.Docentes.Puestos;
+using Domain.Docentes.Puestos;
 using System;
 using System.Globalization;
 using System.Windows.Data;

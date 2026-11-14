@@ -1,4 +1,4 @@
-﻿namespace WPF_Desktop.State.Authenticator;
+namespace WPF_Desktop.State.Authenticator;
 
 public interface IAuthenticator
 {

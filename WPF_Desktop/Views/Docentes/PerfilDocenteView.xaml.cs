@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System.Windows.Controls;
 using WPF_Desktop.ViewModels.Docentes;
 

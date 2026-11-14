@@ -1,4 +1,4 @@
-﻿using Domain.Personas.Domicilios;
+using Domain.Personas.Domicilios;
 using System.Globalization;
 using System.Windows.Data;
 using System;

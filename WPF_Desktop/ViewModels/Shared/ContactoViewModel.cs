@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Core.Shared.DTOs.Personas.Responses;
 using System.ComponentModel.DataAnnotations;
 

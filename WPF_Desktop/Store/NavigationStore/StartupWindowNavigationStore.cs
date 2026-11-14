@@ -1,4 +1,4 @@
-﻿namespace WPF_Desktop.Store.NavigationStore;
+namespace WPF_Desktop.Store.NavigationStore;
 
 /// <summary>
 /// El ViewModel activo del área de contenido de <c>StartupWindow</c>: acceso y registro de cuenta.

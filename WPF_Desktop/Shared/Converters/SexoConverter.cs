@@ -1,4 +1,4 @@
-﻿using Domain.Personas;
+using Domain.Personas;
 using System.Globalization;
 using System.Windows.Data;
 using System;

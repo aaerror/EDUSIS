@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 namespace WPF_Desktop.Store;
 
 /// <summary>

@@ -1,4 +1,4 @@
-﻿namespace WPF_Desktop.Store.NavigationStore;
+namespace WPF_Desktop.Store.NavigationStore;
 
 /// <summary>
 /// El ViewModel activo de la ventana modal, y si hay una abierta.
