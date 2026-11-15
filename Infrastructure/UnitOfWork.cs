@@ -108,16 +108,25 @@ public class UnitOfWork : IUnitOfWork
 		FinalizarTransaccion();
 	}
 
+	/// <remarks>
+	/// El rollback revierte la base pero no el <c>ChangeTracker</c>: lo guardado dentro de la
+	/// transacción queda rastreado como <c>Unchanged</c> (la base ya no lo tiene) y lo que no llegó
+	/// a guardarse sigue <c>Added</c>. Como el contexto vive lo que vive la pantalla, el siguiente
+	/// guardado de esa pantalla reinsertaría lo pendiente o haría UPDATE sobre filas revertidas.
+	/// Se limpia el tracker para que lo próximo se relea de la base.
+	/// </remarks>
 	public void RollbackTransaction()
 	{
 		TransaccionActual.Rollback();
 		FinalizarTransaccion();
+		_context.ChangeTracker.Clear();
 	}
 
 	public async Task RollbackTransactionAsync()
 	{
 		await TransaccionActual.RollbackAsync();
 		FinalizarTransaccion();
+		_context.ChangeTracker.Clear();
 	}
 	#endregion
 
