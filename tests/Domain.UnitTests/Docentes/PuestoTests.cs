@@ -1,6 +1,7 @@
 using Domain.Docentes.Exceptions;
 using System.Reflection;
 using Domain.Docentes.Puestos;
+using Domain.Shared;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -44,11 +45,11 @@ public class PuestoTests
 	}
 
 	[Fact]
-	public void Un_puesto_con_fecha_de_inicio_anterior_a_hoy_lanza_ArgumentException()
+	public void Un_puesto_con_fecha_de_inicio_anterior_a_hoy_lanza_InicioPuestoPasadoException()
 	{
 		var builder = new PuestoBuilder().ConDesde(DateTime.Today.AddDays(-1));
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		Should.Throw<InicioPuestoPasadoException>(() => builder.Build());
 	}
 
 	[Fact]
@@ -104,6 +105,28 @@ public class PuestoTests
 		docente.CambiarEventualidadCargoDocente(puesto.Id);
 
 		puesto.EsEventual.ShouldBeFalse();
+		puesto.Periodo.FechaFin.ShouldBeNull();
+	}
+
+	/// <remarks>
+	/// Regresión: confirmar reutilizaba la validación de alta ("no se carga un período que ya
+	/// empezó"), así que un puesto eventual sólo podía confirmarse el mismo día en que iniciaba.
+	/// El alta rechaza inicios pasados, de modo que el puesto ya iniciado se fabrica por reflexión
+	/// sobre el setter privado de <c>Periodo</c>, como lo rehidrataría EF desde la base.
+	/// </remarks>
+	[Fact]
+	public void EstablecerComoPuestoFijo_sobre_un_puesto_eventual_iniciado_antes_de_hoy_conserva_el_inicio()
+	{
+		var docente = new PuestoBuilder().ConHasta(DateTime.Today.AddMonths(6)).BuildDocente();
+		var puesto = docente.Puestos.Single();
+		var inicio = DateTime.Today.AddMonths(-2);
+		typeof(Puesto).GetProperty(nameof(Puesto.Periodo))!
+			.SetValue(puesto, RangoFechas.Create(inicio, DateTime.Today.AddMonths(4)));
+
+		docente.CambiarEventualidadCargoDocente(puesto.Id);
+
+		puesto.EsEventual.ShouldBeFalse();
+		puesto.Periodo.FechaInicio.ShouldBe(inicio);
 		puesto.Periodo.FechaFin.ShouldBeNull();
 	}
 

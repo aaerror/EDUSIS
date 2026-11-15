@@ -46,7 +46,7 @@ public sealed class Docente : Persona
 
 		if (fechaAlta.Date > DateTime.Today.Date)
 		{
-			throw new ArgumentException($"La fecha de alta ({fechaAlta.Date.ToString("D")}) debe ser anterior al día de hoy ({DateTime.Now.Date.ToString("D")}).");
+			throw new FechaAltaDocenteFuturaException(fechaAlta.Date.ToString("D"));
 		}
 
 		ValidarLegajo(legajo);
@@ -66,7 +66,7 @@ public sealed class Docente : Persona
 	{
 		if (!Regex.IsMatch(legajoDocente, @"^(\d{6})$"))
 		{
-			throw new FormatException($"Verificar el legajo del docente: { nameof(legajoDocente) }.");
+			throw new LegajoDocenteInvalidoException(legajoDocente);
 		}
 	}
 
@@ -75,7 +75,7 @@ public sealed class Docente : Persona
 		//@"^\d{2}-\d{8}-\d{1}$
 		if (!Regex.IsMatch(cuil, @"\b(20|23|24|27|30|33|34)(\D)?[0-9]{8}(\D)?[0-9]"))
 		{
-			throw new FormatException($"Verificar el CUIL del docente: { nameof(cuil) }.");
+			throw new CuilDocenteInvalidoException(cuil);
 		}
 	}
 
@@ -107,7 +107,7 @@ public sealed class Docente : Persona
 
 	public void AsignarCargoDocente(string unaPosicion, string unEstado, DateTime fechaInicio, DateTime? fechaFin)
 	{
-		var posicion = Enum.Parse<Posicion>(unaPosicion);
+		var posicion = Puesto.ConvertirPosicion(unaPosicion);
 
 		if (!Activo)
 		{
@@ -121,7 +121,7 @@ public sealed class Docente : Persona
 
 		if (Periodo.FechaInicio > fechaInicio.Date)
 		{
-			throw new ArgumentException($"La fecha de inicio en el cargo docente debe ser la misma a la fecha de alta del docente en la institución o posterior.");
+			throw new InicioPuestoAnteriorAlAltaDocenteException(nameof(fechaInicio));
 		}
 
 
@@ -134,20 +134,16 @@ public sealed class Docente : Persona
 		var puesto = BuscarPuestoDocente(puestoID);
 		if (puesto is null)
 		{
-			throw new ArgumentException("Puesto docente no encontrado.", nameof(puestoID));
+			throw new PuestoDocenteNoEncontradoException(nameof(puestoID));
 		}
 
 		var estado = puesto.Estado;
 		if (!estado.Equals(EstadoPuesto.Pendiente))
 		{
-			throw new ArgumentException("El puesto docente que desea modificar no se encuentra pendiente.");
+			throw new PuestoDocenteNoPendienteException();
 		}
 
-		var result = Enum.TryParse<Posicion>(unaPosicion, out var posicion);
-		if (!result)
-		{
-			throw new ArgumentException("Posición inválida.", nameof(unaPosicion));
-		}
+		var posicion = Puesto.ConvertirPosicion(unaPosicion);
 
 		var asignada = EsPosicionAsignada(posicion);
 		if (asignada)
@@ -217,7 +213,7 @@ public sealed class Docente : Persona
 
 		if (!puestoDocente.Estado.Equals(EstadoPuesto.Pendiente))
 		{
-			throw new ArgumentException("El puesto docente no se encuentra pendiente.");
+			throw new PuestoDocenteNoPendienteException();
 		}
 
 		_puestos.Remove(puestoDocente);

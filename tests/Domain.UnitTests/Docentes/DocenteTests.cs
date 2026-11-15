@@ -54,30 +54,30 @@ public class DocenteTests
 	}
 
 	[Fact]
-	public void Una_fecha_de_alta_futura_lanza_ArgumentException()
+	public void Una_fecha_de_alta_futura_lanza_FechaAltaDocenteFuturaException()
 	{
 		var builder = new DocenteBuilder().ConFechaAlta(DateTime.Today.AddDays(1));
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		Should.Throw<FechaAltaDocenteFuturaException>(() => builder.Build());
 	}
 
 	[Theory]
 	[InlineData("12345")]
 	[InlineData("1002000")]
 	[InlineData("ABCDEF")]
-	public void Un_legajo_que_no_tiene_6_digitos_lanza_FormatException(string legajo)
+	public void Un_legajo_que_no_tiene_6_digitos_lanza_LegajoDocenteInvalidoException(string legajo)
 	{
 		var builder = new DocenteBuilder().ConLegajo(legajo);
 
-		Should.Throw<FormatException>(() => builder.Build());
+		Should.Throw<LegajoDocenteInvalidoException>(() => builder.Build());
 	}
 
 	[Fact]
-	public void Un_cuil_con_prefijo_invalido_lanza_FormatException()
+	public void Un_cuil_con_prefijo_invalido_lanza_CuilDocenteInvalidoException()
 	{
 		var builder = new DocenteBuilder().ConCuil("99301112229");
 
-		Should.Throw<FormatException>(() => builder.Build());
+		Should.Throw<CuilDocenteInvalidoException>(() => builder.Build());
 	}
 	#endregion
 
@@ -136,11 +136,11 @@ public class DocenteTests
 	}
 
 	[Fact]
-	public void AsignarCargoDocente_con_fecha_de_inicio_anterior_al_alta_lanza_ArgumentException()
+	public void AsignarCargoDocente_con_fecha_de_inicio_anterior_al_alta_lanza_InicioPuestoAnteriorAlAltaDocenteException()
 	{
 		var docente = new DocenteBuilder().ConFechaAlta(DateTime.Today.AddYears(-1)).Build();
 
-		Should.Throw<ArgumentException>(() =>
+		Should.Throw<InicioPuestoAnteriorAlAltaDocenteException>(() =>
 			docente.AsignarCargoDocente(nameof(Posicion.Profesor), nameof(EstadoPuesto.Pendiente), DateTime.Today.AddYears(-2), null));
 	}
 
@@ -188,22 +188,57 @@ public class DocenteTests
 	}
 
 	[Fact]
-	public void EliminarCargoDocente_de_un_puesto_no_pendiente_lanza_ArgumentException()
+	public void EliminarCargoDocente_de_un_puesto_no_pendiente_lanza_PuestoDocenteNoPendienteException()
 	{
 		var docente = new DocenteBuilder().ConPuesto(nameof(Posicion.Profesor), nameof(EstadoPuesto.Activo)).Build();
 		var puestoID = docente.Puestos.ShouldHaveSingleItem().Id;
 
-		Should.Throw<ArgumentException>(() => docente.EliminarCargoDocente(puestoID));
+		Should.Throw<PuestoDocenteNoPendienteException>(() => docente.EliminarCargoDocente(puestoID));
 	}
 
 	[Fact]
-	public void ModificarCargoDocente_de_un_puesto_no_pendiente_lanza_ArgumentException()
+	public void ModificarCargoDocente_de_un_puesto_no_pendiente_lanza_PuestoDocenteNoPendienteException()
 	{
 		var docente = new DocenteBuilder().ConPuesto(nameof(Posicion.Profesor), nameof(EstadoPuesto.Activo)).Build();
 		var puestoID = docente.Puestos.ShouldHaveSingleItem().Id;
 
-		Should.Throw<ArgumentException>(() =>
+		Should.Throw<PuestoDocenteNoPendienteException>(() =>
 			docente.ModificarCargoDocente(puestoID, nameof(Posicion.Preceptor), DateTime.Today, null));
+	}
+
+	/// <remarks>
+	/// Regresión: <c>AsignarCargoDocente</c> hacía <c>Enum.Parse</c> antes de construir el puesto,
+	/// así que una posición vacía moría con el <c>ArgumentException</c> del BCL (mensaje en
+	/// inglés) y la guarda de <c>Puesto</c> nunca se alcanzaba.
+	/// </remarks>
+	[Theory]
+	[InlineData("")]
+	[InlineData("   ")]
+	public void AsignarCargoDocente_sin_posicion_lanza_PosicionPuestoRequeridaException(string posicion)
+	{
+		var docente = new DocenteBuilder().Build();
+
+		Should.Throw<PosicionPuestoRequeridaException>(() =>
+			docente.AsignarCargoDocente(posicion, nameof(EstadoPuesto.Pendiente), DateTime.Today, null));
+	}
+
+	[Fact]
+	public void ModificarCargoDocente_sin_posicion_lanza_PosicionPuestoRequeridaException()
+	{
+		var docente = new DocenteBuilder().ConPuesto(nameof(Posicion.Profesor), nameof(EstadoPuesto.Pendiente)).Build();
+		var puestoID = docente.Puestos.ShouldHaveSingleItem().Id;
+
+		Should.Throw<PosicionPuestoRequeridaException>(() =>
+			docente.ModificarCargoDocente(puestoID, " ", DateTime.Today, null));
+	}
+
+	[Fact]
+	public void ModificarCargoDocente_con_un_puesto_inexistente_lanza_PuestoDocenteNoEncontradoException()
+	{
+		var docente = new DocenteBuilder().Build();
+
+		Should.Throw<PuestoDocenteNoEncontradoException>(() =>
+			docente.ModificarCargoDocente(Guid.NewGuid(), nameof(Posicion.Preceptor), DateTime.Today, null));
 	}
 	#endregion
 

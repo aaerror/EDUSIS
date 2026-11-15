@@ -20,11 +20,6 @@ public sealed class Puesto : Entity
 	private Puesto(Guid puestoID, Guid docenteID, string estado, string posicion, DateTime desde, DateTime? hasta)
 		: this(puestoID)
 	{
-		if (string.IsNullOrWhiteSpace(posicion))
-		{
-			throw new ArgumentException("Debe ingresar la posición del cargo docente.");
-		}
-
 		var result = Enum.TryParse<EstadoPuesto>(estado, out var estadoPuesto);
 		if (!result)
 		{
@@ -42,24 +37,47 @@ public sealed class Puesto : Entity
 	internal Puesto(Guid docenteID, string estado, string posicion, DateTime desde, DateTime? hasta)
 		: this(Guid.NewGuid(), docenteID, estado, posicion, desde, hasta) { }
 
-	private void EstablecerPosicion(string nuevaPosicion)
+	/// <summary>
+	/// Único punto de conversión de la posición: lo usan el alta, la modificación y
+	/// <c>Docente</c>, que necesita la posición tipada para validar unicidad antes de crear el
+	/// puesto. Si cada llamador parseara por su cuenta, el primero en fallar decidiría la
+	/// excepción y la guarda de posición vacía quedaría inalcanzable.
+	/// </summary>
+	internal static Posicion ConvertirPosicion(string posicion)
 	{
-		var result = Enum.TryParse<Posicion>(nuevaPosicion, out Posicion posicion);
-		if (!result)
+		if (string.IsNullOrWhiteSpace(posicion))
 		{
-			throw new ArgumentException("Se ingresó una posición incorrecta en el puesto docente.", nameof(nuevaPosicion));
+			throw new PosicionPuestoRequeridaException();
 		}
 
-		Posicion = posicion;
+		if (!Enum.TryParse<Posicion>(posicion, out var resultado))
+		{
+			throw new ArgumentException("Se ingresó una posición incorrecta en el puesto docente.", nameof(posicion));
+		}
+
+		return resultado;
 	}
 
+	private void EstablecerPosicion(string nuevaPosicion)
+	{
+		Posicion = ConvertirPosicion(nuevaPosicion);
+	}
+
+	/// <summary>
+	/// Regla de alta y de modificación de un puesto pendiente: no se carga un período que ya empezó.
+	/// </summary>
 	private void EstablecerPeriodo(DateTime desde, DateTime? hasta)
 	{
 		if (DateTime.Today.Date > desde.Date)
 		{
-			throw new ArgumentException("La fecha de alta del cargo docente no puede ser anterior al día de la fecha.");
+			throw new InicioPuestoPasadoException(nameof(desde));
 		}
 
+		AsignarPeriodo(desde, hasta);
+	}
+
+	private void AsignarPeriodo(DateTime desde, DateTime? hasta)
+	{
 		Periodo = !hasta.HasValue ? RangoFechas.Create(desde) : RangoFechas.Create(desde, hasta.Value);
 		EsEventual = hasta.HasValue;
 	}
@@ -102,7 +120,10 @@ public sealed class Puesto : Entity
 			throw new DocenteConfirmadoEnCargoDocenteException(nameof(EsEventual));
 		}
 
-		EstablecerPeriodo(Periodo.FechaInicio, null);
+		// Sin pasar por EstablecerPeriodo: un puesto activo ya inició, casi siempre antes de hoy,
+		// y la regla "no se carga un período que ya empezó" rechazaría toda confirmación posterior
+		// al primer día. Confirmar conserva el inicio y sólo quita la fecha de fin.
+		AsignarPeriodo(Periodo.FechaInicio, null);
 	}
 
 	internal void Rescindir()
