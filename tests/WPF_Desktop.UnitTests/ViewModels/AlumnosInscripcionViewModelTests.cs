@@ -86,7 +86,7 @@ public class AlumnosInscripcionViewModelTests
 
 		public RegistrarAlumnoViewModel CrearRegistro()
 		{
-			return new RegistrarAlumnoViewModel(ServicioAlumnos, ServicioCursos, ServicioCursantes, ServicioDivisiones, Dialogos, NavegarAAlumnos, CicloLectivoStore);
+			return new RegistrarAlumnoViewModel(ServicioAlumnos, ServicioCursos, ServicioDivisiones, Dialogos, NavegarAAlumnos, CicloLectivoStore);
 		}
 	}
 
@@ -357,11 +357,13 @@ public class AlumnosInscripcionViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void RegistrarAlumno_la_inscripcion_llega_a_IServicioCursante_y_no_reimplementa_el_cupo()
+	public void RegistrarAlumno_alta_e_inscripcion_llegan_juntas_a_Core_y_no_reimplementa_el_cupo()
 	{
 		var fuente = RaizDelRepositorio.Leer("WPF_Desktop/ViewModels/Alumnos/RegistrarAlumnoViewModel.cs");
 
-		fuente.ShouldContain("await _servicioCursantes.InscribirCursanteAsync(");
+		fuente.ShouldContain("await _servicioAlumnos.RegistrarEInscribirAlumnoAsync(");
+		fuente.ShouldNotContain("RegistrarAlumnoAsync(");
+		fuente.ShouldNotContain("InscribirCursanteAsync(");
 		fuente.ShouldNotContain("ContarCursantes");
 		fuente.ShouldNotContain("ValidarCupo");
 		fuente.ShouldNotContain("//TODO: Refactorizar");
@@ -423,38 +425,38 @@ public class AlumnosInscripcionViewModelTests
 		// Falta un dato, no se rompió nada: es una advertencia y nombra el campo que falta.
 		contexto.Dialogos.Advertencias.ShouldHaveSingleItem();
 		contexto.Dialogos.Advertencias[0].Mensaje.ShouldContain("teléfono");
-		await contexto.ServicioAlumnos.DidNotReceive().RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
+		viewModel.Tab.ShouldBe(0);
 	}
 
+	/// <remarks>
+	/// Antes este paso ya daba de alta al alumno; si después la inscripción fallaba, quedaba
+	/// registrado sin curso. Ahora no guarda nada: el alta va junto con la inscripción.
+	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Continuar_registra_el_alumno_y_pasa_a_la_solapa_de_inscripcion()
+	public async Task Continuar_pasa_a_la_solapa_de_inscripcion_sin_dar_de_alta_al_alumno()
 	{
 		var contexto = new Contexto();
 		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
-		contexto.ServicioAlumnos.RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>()).Returns(Task.FromResult(Guid.NewGuid()));
 		var viewModel = contexto.CrearRegistro();
 		CompletarFormulario(viewModel);
 
 		await viewModel.ContinuarCommand.ExecuteAsync(null);
 
-		await contexto.ServicioAlumnos.Received(1).RegistrarAlumnoAsync(Arg.Is<RegistrarAlumnoRequest>(r =>
-			r.Apellido == "Perez" && r.Nombre == "Ana" && r.DNI == "33998731" && r.Email == "ana.perez@ejemplo.com"));
 		viewModel.Tab.ShouldBe(1);
+		await contexto.ServicioAlumnos.DidNotReceive().RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
+		await contexto.ServicioAlumnos.DidNotReceive().RegistrarEInscribirAlumnoAsync(Arg.Any<RegistrarEInscribirAlumnoRequest>());
 	}
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Continuar_no_pregunta_nada_antes_de_registrar()
+	public async Task Continuar_no_pregunta_nada()
 	{
-		// La contracara de la prueba de master `Continuar_sin_confirmar_no_registra_nada`: acá el
-		// paso 1 NO confirma. El botón dice "Continuar" y lo que hace es continuar; un alta no es
-		// una acción destructiva y preguntarlo de nuevo no agregaba información. Si alguien vuelve
-		// a meter un diálogo acá, esta prueba lo marca.
+		// El botón dice "Continuar" y lo que hace es continuar; preguntarlo de nuevo no agregaba
+		// información. Si alguien vuelve a meter un diálogo acá, esta prueba lo marca.
 		var contexto = new Contexto();
 		contexto.Dialogos.RespuestaDeConfirmacion = false;
 		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
-		contexto.ServicioAlumnos.RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>()).Returns(Task.FromResult(Guid.NewGuid()));
 		var viewModel = contexto.CrearRegistro();
 		CompletarFormulario(viewModel);
 
@@ -462,7 +464,71 @@ public class AlumnosInscripcionViewModelTests
 
 		contexto.Dialogos.Confirmaciones.ShouldBeEmpty();
 		contexto.Dialogos.Solicitudes.ShouldBeEmpty();
-		await contexto.ServicioAlumnos.Received(1).RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
+		viewModel.Tab.ShouldBe(1);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Guardar_da_de_alta_e_inscribe_en_una_sola_llamada_con_los_datos_de_los_dos_pasos()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+		await viewModel.ContinuarCommand.ExecuteAsync(null);
+		viewModel.Curso = viewModel.Cursos[0];
+		viewModel.Division = viewModel.Divisiones[0];
+
+		await viewModel.GuardarCommand.ExecuteAsync(null);
+
+		await contexto.ServicioAlumnos.Received(1).RegistrarEInscribirAlumnoAsync(Arg.Is<RegistrarEInscribirAlumnoRequest>(r =>
+			r.Alumno.Apellido == "Perez" && r.Alumno.DNI == "33998731" && r.Alumno.Email == "ana.perez@ejemplo.com" &&
+			r.CursoID == contexto.Primero.CursoID &&
+			r.DivisionID == contexto.DivisionA.DivisionID &&
+			r.Periodo == CicloDelStore));
+		await contexto.ServicioAlumnos.DidNotReceive().RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
+		await contexto.ServicioCursantes.DidNotReceive().InscribirCursanteAsync(Arg.Any<RegistrarCursanteRequest>());
+		viewModel.Tab.ShouldBe(0);
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Guardar_con_un_dato_personal_borrado_vuelve_al_paso_1_y_no_llama_a_Core()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+		await viewModel.ContinuarCommand.ExecuteAsync(null);
+		viewModel.Curso = viewModel.Cursos[0];
+		viewModel.Division = viewModel.Divisiones[0];
+		viewModel.InformacionPersonal.Apellido = string.Empty;
+
+		await viewModel.GuardarCommand.ExecuteAsync(null);
+
+		viewModel.Tab.ShouldBe(0);
+		contexto.Dialogos.Advertencias.ShouldHaveSingleItem().Mensaje.ShouldContain("apellido");
+		await contexto.ServicioAlumnos.DidNotReceive().RegistrarEInscribirAlumnoAsync(Arg.Any<RegistrarEInscribirAlumnoRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Si_Core_rechaza_el_alta_con_inscripcion_la_UI_muestra_el_error_y_conserva_los_datos()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
+		contexto.ServicioAlumnos.RegistrarEInscribirAlumnoAsync(Arg.Any<RegistrarEInscribirAlumnoRequest>())
+				.Returns(Task.FromException<Guid>(new InvalidOperationException("Sin cupo")));
+		var viewModel = contexto.CrearRegistro();
+		CompletarFormulario(viewModel);
+		await viewModel.ContinuarCommand.ExecuteAsync(null);
+		viewModel.Curso = viewModel.Cursos[0];
+		viewModel.Division = viewModel.Divisiones[0];
+
+		await Should.NotThrowAsync(async () => await viewModel.GuardarCommand.ExecuteAsync(null));
+
+		contexto.Dialogos.Errores.ShouldHaveSingleItem().Mensaje.ShouldBe("Sin cupo");
+		viewModel.InformacionPersonal.Apellido.ShouldBe("Perez");
 		viewModel.Tab.ShouldBe(1);
 	}
 
@@ -482,26 +548,23 @@ public class AlumnosInscripcionViewModelTests
 		viewModel.InformacionPersonal.DocumentoNacionalIdentidad.ShouldBe("33998731");
 		viewModel.InformacionPersonal.Apellido.ShouldBe("Perez");
 		contexto.Dialogos.Advertencias.ShouldHaveSingleItem();
-		await contexto.ServicioAlumnos.DidNotReceive().RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>());
 		viewModel.Tab.ShouldBe(0);
 	}
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Si_Core_rechaza_el_alta_la_UI_muestra_el_error_y_no_lo_propaga()
+	public async Task Si_falla_la_consulta_del_documento_la_UI_muestra_el_error_y_no_lo_propaga()
 	{
 		// Con async void esta excepción se perdía en el SynchronizationContext en vez de llegar acá.
 		var contexto = new Contexto();
-		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
-		contexto.ServicioAlumnos.RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>())
-				.Returns(Task.FromException<Guid>(new FormatException("Verificar el legajo del alumno: legajo.")));
+		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>())
+				.Returns(Task.FromException<bool>(new InvalidOperationException("Sin conexión")));
 		var viewModel = contexto.CrearRegistro();
 		CompletarFormulario(viewModel);
 
 		await Should.NotThrowAsync(async () => await viewModel.ContinuarCommand.ExecuteAsync(null));
 
-		contexto.Dialogos.Errores.ShouldHaveSingleItem();
-		contexto.Dialogos.Errores[0].Mensaje.ShouldBe("Verificar el legajo del alumno: legajo.");
+		contexto.Dialogos.Errores.ShouldHaveSingleItem().Mensaje.ShouldBe("Sin conexión");
 		viewModel.Tab.ShouldBe(0);
 	}
 

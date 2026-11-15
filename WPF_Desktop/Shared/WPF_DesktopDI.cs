@@ -210,7 +210,6 @@ internal static class WPF_DesktopDI
 		services.AddTransient<RegistrarAlumnoViewModel>(provider =>
 			new RegistrarAlumnoViewModel(provider.GetRequiredService<IServicioAlumno>(),
 										 provider.GetRequiredService<IServicioCurso>(),
-										 provider.GetRequiredService<IServicioCursante>(),
 										 provider.GetRequiredService<IServicioDivision>(),
 										 provider.GetRequiredService<IDialogService>(),
 										 Navegacion<GestionAlumnosViewModel, MainWindowNavigationStore>(provider),

@@ -3,8 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos;
 using Core.ServicioCursos;
-using Core.ServicioCursantes.DTOs.Requests;
-using Core.ServicioCursantes;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
 using Core.Shared.DTOs.Personas.Requests;
@@ -31,7 +29,6 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 {
 	private readonly IServicioAlumno _servicioAlumnos;
 	private readonly IServicioCurso _servicioCursos;
-	private readonly IServicioCursante _servicioCursantes;
 	private readonly IServicioDivision _servicioDivisiones;
 	private readonly IDialogService _dialogService;
 	private readonly CicloLectivoStore _cicloLectivoStore;
@@ -54,8 +51,6 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 	[ObservableProperty]
 	private DivisionViewModel? _division;
 	#endregion
-
-	private Guid alumnoID = Guid.Empty;
 
 	[Required(AllowEmptyStrings=false, ErrorMessage="Debe ingresar el año en el que desea inscribir el alumno.")]
 	[RegularExpression(@"^(20)\d{2}$", ErrorMessage="Formato inválido del año. Puede ingresar un año comprendido entre el 2000 y el 2099.")]
@@ -179,7 +174,6 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 
 	public RegistrarAlumnoViewModel(IServicioAlumno servicioAlumnos,
 									IServicioCurso servicioCursos,
-									IServicioCursante servicioCursantes,
 									IServicioDivision servicioDivisiones,
 									IDialogService dialogService,
 									INavigationService gestionAlumnosNavigationService,
@@ -188,7 +182,6 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		_servicioAlumnos = servicioAlumnos;
 		_dialogService = dialogService;
 		_servicioCursos = servicioCursos;
-		_servicioCursantes = servicioCursantes;
 		_servicioDivisiones = servicioDivisiones;
 		_cicloLectivoStore = cicloLectivoStore;
 
@@ -343,9 +336,14 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		!InformacionPersonal.HasErrors && !Domicilio.HasErrors && !Contacto.HasErrors;
 
 	/// <summary>
-	/// Paso 1: da de alta la persona y pasa al paso de la inscripción.
+	/// Paso 1: verifica los datos de la persona y pasa al paso de la inscripción. No guarda nada:
+	/// el alta y la inscripción se hacen juntas en el paso 2.
 	/// </summary>
 	/// <remarks>
+	/// <para>
+	/// Antes este paso ya daba de alta al alumno y el paso 2 lo inscribía con otra llamada: si la
+	/// inscripción fallaba (sin cupo, por ejemplo), el alumno quedaba registrado sin curso.
+	/// </para>
 	/// <para>
 	/// Tres cosas cambiaron. Era <c>async void</c>, así que una excepción fuera del try apagaba
 	/// la aplicación en medio de un alta. Si faltaba un campo, reemplazaba los tres ViewModels
@@ -359,26 +357,8 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 	/// </remarks>
 	private async Task ExecuteContinuarCommand()
 	{
-		// Sexo y Vivienda entran en la guarda aunque salgan de un combo y no de un campo de
-		// texto: arrancan sin selección y más abajo se les llama .ToString(), así que no
-		// elegirlos no daba el aviso de datos incompletos sino un NullReferenceException.
-		var faltantes = new List<string>();
-
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido)) { faltantes.Add("apellido"); }
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.Nombre)) { faltantes.Add("nombre"); }
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad)) { faltantes.Add("documento"); }
-		if (string.IsNullOrWhiteSpace(InformacionPersonal.Sexo)) { faltantes.Add("sexo"); }
-		if (string.IsNullOrWhiteSpace(Domicilio.Calle)) { faltantes.Add("calle"); }
-		if (string.IsNullOrWhiteSpace(Domicilio.Vivienda)) { faltantes.Add("tipo de vivienda"); }
-		if (string.IsNullOrWhiteSpace(Domicilio.Localidad)) { faltantes.Add("localidad"); }
-		if (string.IsNullOrWhiteSpace(Domicilio.Provincia)) { faltantes.Add("provincia"); }
-		if (string.IsNullOrWhiteSpace(Contacto.Telefono)) { faltantes.Add("teléfono"); }
-		if (string.IsNullOrWhiteSpace(Contacto.Email)) { faltantes.Add("correo"); }
-
-		if (faltantes.Count > 0)
+		if (AvisarDatosPersonalesFaltantes())
 		{
-			_dialogService.MostrarAdvertencia($"Falta completar: { string.Join(", ", faltantes) }.", "Datos incompletos");
-
 			return;
 		}
 
@@ -394,33 +374,65 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 				return;
 			}
 
-			var request = new RegistrarAlumnoRequest(
-				Apellido: InformacionPersonal.Apellido,
-				Nombre: InformacionPersonal.Nombre,
-				DNI: documento,
-				Sexo: InformacionPersonal.Sexo.ToString(),
-				FechaNacimiento: InformacionPersonal.FechaNacimiento,
-				Nacionalidad: InformacionPersonal.Nacionalidad,
-				Telefono: Contacto.Telefono,
-				Email: Contacto.Email,
-				Calle: Domicilio.Calle,
-				Altura: Domicilio.Altura,
-				Vivienda: Domicilio.Vivienda.ToString(),
-				Observacion: Domicilio.Observaciones,
-				Localidad: Domicilio.Localidad,
-				Provincia: Domicilio.Provincia,
-				Pais: Domicilio.Pais);
-			alumnoID = await _servicioAlumnos.RegistrarAlumnoAsync(request);
-
 			Tab = 1;
-
-			_dialogService.MostrarInformacion($"{ InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }. Falta inscribirlo en una división.", "Alumno registrado");
 		}
 		catch (Exception ex)
 		{
-			_dialogService.MostrarError(ex.Message, "No se pudo registrar el alumno");
+			_dialogService.MostrarError(ex.Message, "No se pudo verificar el documento");
 		}
 	}
+
+	/// <summary>
+	/// Avisa qué datos personales faltan y devuelve si faltaba alguno. La usan los dos pasos: el
+	/// paso 2 no puede dar por hecho que el 1 sigue completo, porque el usuario puede volver y
+	/// borrar un campo.
+	/// </summary>
+	/// <remarks>
+	/// Sexo y Vivienda entran en la guarda aunque salgan de un combo y no de un campo de texto:
+	/// arrancan sin selección y al armar el request se les llama .ToString(), así que no
+	/// elegirlos no daba el aviso de datos incompletos sino un NullReferenceException.
+	/// </remarks>
+	private bool AvisarDatosPersonalesFaltantes()
+	{
+		var faltantes = new List<string>();
+
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido)) { faltantes.Add("apellido"); }
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.Nombre)) { faltantes.Add("nombre"); }
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.DocumentoNacionalIdentidad)) { faltantes.Add("documento"); }
+		if (string.IsNullOrWhiteSpace(InformacionPersonal.Sexo)) { faltantes.Add("sexo"); }
+		if (string.IsNullOrWhiteSpace(Domicilio.Calle)) { faltantes.Add("calle"); }
+		if (string.IsNullOrWhiteSpace(Domicilio.Vivienda)) { faltantes.Add("tipo de vivienda"); }
+		if (string.IsNullOrWhiteSpace(Domicilio.Localidad)) { faltantes.Add("localidad"); }
+		if (string.IsNullOrWhiteSpace(Domicilio.Provincia)) { faltantes.Add("provincia"); }
+		if (string.IsNullOrWhiteSpace(Contacto.Telefono)) { faltantes.Add("teléfono"); }
+		if (string.IsNullOrWhiteSpace(Contacto.Email)) { faltantes.Add("correo"); }
+
+		if (faltantes.Count == 0)
+		{
+			return false;
+		}
+
+		_dialogService.MostrarAdvertencia($"Falta completar: { string.Join(", ", faltantes) }.", "Datos incompletos");
+
+		return true;
+	}
+
+	private RegistrarAlumnoRequest ConstruirAltaDeAlumno() =>
+		new(Apellido: InformacionPersonal.Apellido,
+			Nombre: InformacionPersonal.Nombre,
+			DNI: InformacionPersonal.DocumentoNacionalIdentidad,
+			Sexo: InformacionPersonal.Sexo.ToString(),
+			FechaNacimiento: InformacionPersonal.FechaNacimiento,
+			Nacionalidad: InformacionPersonal.Nacionalidad,
+			Telefono: Contacto.Telefono,
+			Email: Contacto.Email,
+			Calle: Domicilio.Calle,
+			Altura: Domicilio.Altura,
+			Vivienda: Domicilio.Vivienda.ToString(),
+			Observacion: Domicilio.Observaciones,
+			Localidad: Domicilio.Localidad,
+			Provincia: Domicilio.Provincia,
+			Pais: Domicilio.Pais);
 	#endregion
 
 	#region GuardarCommand
@@ -428,7 +440,8 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		!HasErrors && Curso is not null && Division is not null;
 
 	/// <summary>
-	/// Paso 2: inscribe el alumno recién registrado en una división.
+	/// Paso 2: da de alta el alumno y lo inscribe en una división, en un solo caso de uso
+	/// atómico: si la inscripción falla, el alumno no queda registrado.
 	/// </summary>
 	/// <remarks>
 	/// La confirmación se queda, y es de las pocas que vale la pena: el alumno queda inscripto
@@ -453,10 +466,9 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 			return;
 		}
 
-		if (alumnoID.Equals(Guid.Empty))
+		if (AvisarDatosPersonalesFaltantes())
 		{
 			Tab = 0;
-			_dialogService.MostrarAdvertencia("Primero completá el paso de datos personales para dar de alta el alumno.", "El alumno todavía no está registrado");
 
 			return;
 		}
@@ -473,14 +485,14 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 
 		try
 		{
-			// El cupo y la inscripción duplicada los valida Core: acá sólo se muestra la excepción.
-			var request = new RegistrarCursanteRequest(Curso.CursoID, Division.DivisionID, alumnoID, Periodo, FechaInicio);
-			await _servicioCursantes.InscribirCursanteAsync(request);
+			// El formato de los datos, el cupo y la inscripción duplicada los valida Core: acá sólo
+			// se muestra la excepción.
+			var request = new RegistrarEInscribirAlumnoRequest(ConstruirAltaDeAlumno(), Curso.CursoID, Division.DivisionID, Periodo, FechaInicio);
+			await _servicioAlumnos.RegistrarEInscribirAlumnoAsync(request);
 
 			string inscripto = $"{ InformacionPersonal.Apellido }, { InformacionPersonal.Nombre }";
 			string destino = $"{ Grados.Decir(Curso.Grado) } { Division.Descripcion } ({ Periodo })";
 
-			alumnoID = Guid.Empty;
 			InformacionPersonal = new(null);
 			Domicilio = new(null);
 			Contacto = new(null);
@@ -497,7 +509,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		}
 		catch (Exception ex)
 		{
-			_dialogService.MostrarError(ex.Message, "No se pudo inscribir el alumno");
+			_dialogService.MostrarError(ex.Message, "No se pudo registrar e inscribir el alumno");
 		}
 	}
 	#endregion

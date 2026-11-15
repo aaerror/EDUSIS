@@ -1,11 +1,13 @@
 using Core.ServicioAlumnos.Exceptions;
 using Core.ServicioAlumnos;
 using Core.ServicioAlumnos.DTOs.Requests;
+using Core.ServicioDivisiones.Exceptions;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.UnitTests.Infraestructura;
 using Domain.Cursantes.Calificaciones;
 using Domain.Cursantes;
 using Domain.Personas.Exceptions;
+using Domain.Usuarios;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Fakes;
@@ -230,6 +232,71 @@ public class ServicioAlumnoTests
 
 		await Should.ThrowAsync<DocumentoInvalidoException>(() => _servicio.RegistrarAlumnoAsync(request));
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
+	}
+	#endregion
+
+	#region Alta con inscripción
+	private (Guid CursoID, Guid DivisionID) SembrarCursoYDivision()
+	{
+		var curso = new CursoBuilder().Build();
+		var division = new DivisionBuilder().ConCurso(curso.Id).Build();
+		_host.UnidadDeTrabajo.CursosFake.Sembrar(curso);
+		_host.UnidadDeTrabajo.DivisionesFake.Sembrar(division);
+		return (curso.Id, division.Id);
+	}
+
+	[Fact]
+	public async Task RegistrarEInscribirAlumnoAsync_da_de_alta_inscribe_y_confirma_la_transaccion()
+	{
+		var (cursoID, divisionID) = SembrarCursoYDivision();
+
+		var alumnoID = await _servicio.RegistrarEInscribirAlumnoAsync(
+			new RegistrarEInscribirAlumnoRequest(RegistroValido(), cursoID, divisionID, "2026", DateTime.Today));
+
+		_host.UnidadDeTrabajo.AlumnosFake.Elementos.ShouldHaveSingleItem().Id.ShouldBe(alumnoID);
+		var cursante = _host.UnidadDeTrabajo.CursantesFake.Elementos.ShouldHaveSingleItem();
+		cursante.AlumnoID.ShouldBe(alumnoID);
+		cursante.DivisionID.ShouldBe(divisionID);
+		_host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBe(new[] { "BeginTransactionAsync", "CommitTransactionAsync" });
+	}
+
+	/// <remarks>
+	/// El caso que motiva el caso de uso: el alta sale bien y la inscripción no. Antes eran dos
+	/// llamadas desde la pantalla y el alumno quedaba registrado sin curso. El fake no deshace el
+	/// estado en memoria; acá se afirma la secuencia de la transacción.
+	/// </remarks>
+	[Fact]
+	public async Task RegistrarEInscribirAlumnoAsync_si_la_inscripcion_falla_revierte_la_transaccion()
+	{
+		var (cursoID, _) = SembrarCursoYDivision();
+
+		await Should.ThrowAsync<DivisionNoEncontradaException>(() => _servicio.RegistrarEInscribirAlumnoAsync(
+			new RegistrarEInscribirAlumnoRequest(RegistroValido(), cursoID, Guid.NewGuid(), "2026", DateTime.Today)));
+
+		_host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBe(new[] { "BeginTransactionAsync", "RollbackTransactionAsync" });
+	}
+
+	/// <remarks>
+	/// Las dos guardas van antes de abrir la transacción: quien sólo puede dar de alta alumnos no
+	/// llega a guardar al alumno para que después falle la inscripción.
+	/// </remarks>
+	[Fact]
+	public Task RegistrarEInscribirAlumnoAsync_sin_InscribirCursantes_lanza_PermisoDenegado_sin_abrir_transaccion() =>
+		SoloConUnPermisoNoAbreTransaccion(Permiso.GestionarAlumnos);
+
+	[Fact]
+	public Task RegistrarEInscribirAlumnoAsync_sin_GestionarAlumnos_lanza_PermisoDenegado_sin_abrir_transaccion() =>
+		SoloConUnPermisoNoAbreTransaccion(Permiso.InscribirCursantes);
+
+	private static async Task SoloConUnPermisoNoAbreTransaccion(Permiso unico)
+	{
+		using var host = new HostDeServicios(sesion: SesionDePrueba.Con(unico));
+
+		await Should.ThrowAsync<Core.Shared.Seguridad.PermisoDenegadoException>(
+			() => host.Resolver<IServicioAlumno>().RegistrarEInscribirAlumnoAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+		host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
 	}
 	#endregion
 

@@ -4,6 +4,8 @@ using Core.ServicioAlumnos.DTOs.Responses;
 using Core.Shared.DTOs.Cursadas;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
+using Core.ServicioCursantes;
+using Core.ServicioCursantes.DTOs.Requests;
 using Core.Shared;
 using Domain.Alumnos;
 using Domain.Asistencias;
@@ -23,13 +25,15 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	private readonly ILogger<ServicioAlumno> _logger;
 	private readonly IUnitOfWork _unitOfWork;
 	private readonly ISesionActual _sesion;
+	private readonly IServicioCursante _servicioCursante;
 
 
-	public ServicioAlumno(ILogger<ServicioAlumno> logger, IUnitOfWork unitOfWork, ISesionActual sesion)
+	public ServicioAlumno(ILogger<ServicioAlumno> logger, IUnitOfWork unitOfWork, ISesionActual sesion, IServicioCursante servicioCursante)
 	{
 		_sesion = sesion;
 		_logger = logger;
 		_unitOfWork = unitOfWork;
+		_servicioCursante = servicioCursante;
 	}
 
 	private async Task<Alumno> BuscarAlumnoPorIDAsync(Guid personaID)
@@ -380,6 +384,63 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 		}
 		catch (Exception ex)
 		{
+			throw;
+		}
+	}
+
+	/// <remarks>
+	/// Son dos raíces de agregado, así que son dos guardados; la transacción es lo que hace atómico
+	/// el par. Antes la pantalla llamaba a los dos casos de uso por separado y, si fallaba la
+	/// inscripción, el alumno quedaba registrado sin curso.
+	/// <para>
+	/// La inscripción se delega en <see cref="IServicioCursante"/> para no duplicar sus reglas
+	/// (inscripción duplicada, cupo). Los dos servicios son <c>Scoped</c> y comparten la unidad de
+	/// trabajo, así que el guardado de la inscripción cae dentro de esta transacción. Las dos
+	/// guardas de permiso se exigen antes de abrirla: si quedaran dentro, el rollback sin
+	/// transacción iniciada taparía el <c>PermisoDenegadoException</c>.
+	/// </para>
+	/// </remarks>
+	public async Task<Guid> RegistrarEInscribirAlumnoAsync(RegistrarEInscribirAlumnoRequest request)
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GestionarAlumnos);
+			_sesion.Exigir(Permiso.InscribirCursantes);
+
+			if (request is null)
+			{
+				throw new ArgumentNullException(nameof(request), "Datos incompletos para registrar e inscribir un alumno.");
+			}
+
+			await _unitOfWork.BeginTransactionAsync();
+
+			try
+			{
+				var alumnoID = await RegistrarAlumnoAsync(request.Alumno);
+
+				await _servicioCursante.InscribirCursanteAsync(new RegistrarCursanteRequest(
+					CursoID: request.CursoID,
+					DivisionID: request.DivisionID,
+					AlumnoID: alumnoID,
+					Periodo: request.Periodo,
+					FechaInicio: request.FechaInicio,
+					EsRecursante: request.EsRecursante));
+
+				await _unitOfWork.CommitTransactionAsync();
+
+				_logger.LogInformation("Alumno registrado e inscripto correctamente.");
+
+				return alumnoID;
+			}
+			catch
+			{
+				await _unitOfWork.RollbackTransactionAsync();
+				throw;
+			}
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
 			throw;
 		}
 	}

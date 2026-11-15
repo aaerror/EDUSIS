@@ -28,6 +28,12 @@ public interface IServicioAlumno
 	Task<ResumenAcademicoResponse> ConsultarResumenAcademicoAsync(PersonaRequest request);
 
 	Task<Guid> RegistrarAlumnoAsync(RegistrarAlumnoRequest request);
+	/// <summary>
+	/// Da de alta el alumno y lo inscribe de forma atómica: si la inscripción falla (cupo,
+	/// división inexistente), el alumno no queda registrado. Exige los permisos de los dos casos
+	/// de uso.
+	/// </summary>
+	Task<Guid> RegistrarEInscribirAlumnoAsync(RegistrarEInscribirAlumnoRequest request);
 
 	Task<bool> ExisteDocumentoAsync(DocumentoRequest request);
 
