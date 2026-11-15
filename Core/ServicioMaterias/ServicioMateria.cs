@@ -153,6 +153,21 @@ internal class ServicioMateria : IServicio, IServicioMateria
 
 			await ValidarNombreNoDuplicadoAsync(new NombreDuplicadoRequest(request.CurriculaID, materia.Id, request.Descripcion));
 
+			// Cada cátedra guarda una copia de las horas de su materia al crearse (Catedra no conoce a
+			// Materia: se referencian sólo por identificador). Si las horas cambian con cátedras ya
+			// creadas, esas copias quedan desalineadas y nada lo detecta. El agregado no puede
+			// verlo, porque no tiene acceso a las cátedras: lo cierra el servicio. Sólo se bloquea el
+			// cambio de horas; corregir la descripción sigue siendo posible.
+			if (request.HorasCatedra != materia.HorasCatedra)
+			{
+				var catedras = await _unitOfWork.Catedras.CatedrasSegunMateriaAsync(materia.Id);
+
+				if (catedras.Count > 0)
+				{
+					throw new MateriaConCatedrasException();
+				}
+			}
+
 			var totalHorasSinEsta = await _unitOfWork.Materias.TotalHorasCatedraSegunCurriculaAsync(request.CurriculaID) - materia.HorasCatedra;
 
 			TopesCurriculares.ExigirCargaHorariaPosible(totalHorasSinEsta, request.HorasCatedra);
