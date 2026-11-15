@@ -62,18 +62,8 @@ public sealed class SituacionRevista : Entity
 		Guid? reemplazaA = null)
 			: this(Guid.NewGuid(), unDocente, unCargo, fechaFin.HasValue ? RangoFechas.Create(fechaInicio, fechaFin.Value) : RangoFechas.Create(fechaInicio), reemplazaA) {}
 
-	internal static SituacionRevista Crear(
-		Guid unDocente,
-		string unCargo,
-		DateTime fechaInicio,
-		DateTime? fechaFin,
-		Guid? reemplazaA = null)
-	{
-		if (!Enum.TryParse<Cargo>(unCargo, out Cargo cargo))
-			throw new CargoInexistenteException(nameof(unCargo));
-
-		return new SituacionRevista(unDocente, cargo, fechaInicio, fechaFin, reemplazaA);
-	}
+	internal static Cargo ConvertirCargo(string unCargo) =>
+		Enumerados.Convertir<Cargo>(unCargo, valor => new CargoInexistenteException(valor));
 	#endregion
 
 	public bool EsCargoVigente() =>

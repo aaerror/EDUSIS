@@ -20,11 +20,7 @@ public sealed class Puesto : Entity
 	private Puesto(Guid puestoID, Guid docenteID, string estado, string posicion, DateTime desde, DateTime? hasta)
 		: this(puestoID)
 	{
-		var result = Enum.TryParse<EstadoPuesto>(estado, out var estadoPuesto);
-		if (!result)
-		{
-			throw new ArgumentException("Se ingresó un estado de puesto docente incorrecto.", nameof(estado));
-		}
+		var estadoPuesto = Enumerados.Convertir<EstadoPuesto>(estado, valor => new EstadoPuestoInexistenteException(valor));
 
 		// Inactivo sólo se alcanza rescindiendo; un alta que naciera inactiva o en suspenso
 		// saltearía las guardas de Rescindir.
@@ -56,12 +52,7 @@ public sealed class Puesto : Entity
 			throw new PosicionPuestoRequeridaException();
 		}
 
-		if (!Enum.TryParse<Posicion>(posicion, out var resultado))
-		{
-			throw new ArgumentException("Se ingresó una posición incorrecta en el puesto docente.", nameof(posicion));
-		}
-
-		return resultado;
+		return Enumerados.Convertir<Posicion>(posicion, valor => new PosicionInexistenteException(valor));
 	}
 
 	private void EstablecerPosicion(string nuevaPosicion)

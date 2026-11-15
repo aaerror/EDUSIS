@@ -31,24 +31,24 @@ public sealed class Curso : Entity
 		}*/
 
 
-		var result = Enum.TryParse<Grado>(unGrado, out Grado grado);
-		if (!result)
-		{
-			throw new ArgumentException("El grado que se especifico no existe.", nameof(unGrado));
-		}
-
-		result = Enum.TryParse<NivelEducativo>(unNivelEducativo, out NivelEducativo nivelEducativo);
-		if (!result)
-		{
-			throw new ArgumentException("El nivel educativo que se especificó no existe.", nameof(unNivelEducativo));
-		}
-
-		Grado = grado;
-		NivelEducativo = nivelEducativo;
+		Grado = ConvertirGrado(unGrado);
+		NivelEducativo = ConvertirNivelEducativo(unNivelEducativo);
 	}
 
 	public Curso(string grado, string nivelEducativo)
 		: this(Guid.NewGuid(), grado, nivelEducativo) { }
+	#endregion
+
+	#region Conversión
+	/// <summary>
+	/// Públicas porque el alta necesita los valores tipados antes de construir el curso, para
+	/// consultar si ya existe.
+	/// </summary>
+	public static Grado ConvertirGrado(string grado) =>
+		Enumerados.Convertir<Grado>(grado, valor => new GradoInexistenteException(valor));
+
+	public static NivelEducativo ConvertirNivelEducativo(string nivelEducativo) =>
+		Enumerados.Convertir<NivelEducativo>(nivelEducativo, valor => new NivelEducativoInexistenteException(valor));
 	#endregion
 
 	#region Validaciones

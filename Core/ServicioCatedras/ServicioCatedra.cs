@@ -122,15 +122,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 				throw new DocenteNoEncontradoException(nameof(request.DocenteID));
 			}
 
-			// NOTA (violación DDD, ver informe): SituacionRevista.Crear(string) es la factoría que
-			// parsea el cargo y lanza CargoInexistenteException, pero es internal. Sin una
-			// sobrecarga pública de Catedra.Designar que la use, el parseo queda acá.
-			if (!Enum.TryParse<Cargo>(request.Cargo, out var cargo))
-			{
-				throw new ArgumentException($"El cargo '{ request.Cargo }' no es un cargo docente válido.", nameof(request.Cargo));
-			}
-
-			var situacionRevistaID = catedra.Designar(request.DocenteID, cargo, request.FechaInicio, request.FechaFin, request.ReemplazaA);
+			var situacionRevistaID = catedra.Designar(request.DocenteID, request.Cargo, request.FechaInicio, request.FechaFin, request.ReemplazaA);
 
 			_unitOfWork.Catedras.Modificar(catedra);
 			var result = await _unitOfWork.GuardarCambiosAsync();
@@ -243,7 +235,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 			_sesion.Exigir(Permiso.GestionarCatedras);
 
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
-			var horario = CrearHorario(request.Turno, request.DiaSemana, request.HoraInicio, request.DuracionHoraCatedra);
+			var horario = Horario.Crear(request.Turno, request.DiaSemana, request.HoraInicio, request.DuracionHoraCatedra);
 
 			// La colisión de horarios en la división y el docente en dos aulas a la vez son
 			// reglas que cruzan cátedras: ningún agregado puede verlas, así que el barrido lo
@@ -293,7 +285,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 			_sesion.Exigir(Permiso.GestionarCatedras);
 
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
-			var horario = CrearHorario(request.Turno, request.DiaSemana, request.HoraInicio, request.DuracionHoraCatedra);
+			var horario = Horario.Crear(request.Turno, request.DiaSemana, request.HoraInicio, request.DuracionHoraCatedra);
 
 			catedra.QuitarHorario(horario);
 
@@ -309,20 +301,6 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		}
 	}
 
-	private static Horario CrearHorario(string turno, string diaSemana, TimeOnly horaInicio, int duracionHoraCatedra)
-	{
-		if (!Enum.TryParse<Turno>(turno, out var unTurno))
-		{
-			throw new ArgumentException($"El turno '{ turno }' no es válido.", nameof(turno));
-		}
-
-		if (!Enum.TryParse<Dia>(diaSemana, out var unDia))
-		{
-			throw new ArgumentException($"El día '{ diaSemana }' no es válido.", nameof(diaSemana));
-		}
-
-		return Horario.Crear(unTurno, unDia, horaInicio, duracionHoraCatedra);
-	}
 	#endregion
 
 	#region Listar cátedras

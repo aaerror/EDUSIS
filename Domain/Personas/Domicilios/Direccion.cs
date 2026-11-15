@@ -1,3 +1,4 @@
+using Domain.Personas.Exceptions;
 using Domain.Shared.Exceptions;
 using Domain.Shared;
 
@@ -33,7 +34,7 @@ public class Direccion : ValueObject
 	}
 
 	public static Direccion Crear(string calle, string altura, string vivienda, string observacion) =>
-		new(calle, altura, Enum.Parse<Vivienda>(vivienda), observacion);
+		new(calle, altura, Enumerados.Convertir<Vivienda>(vivienda, valor => new ViviendaInexistenteException(valor)), observacion);
 
 	public override IEnumerable<object> GetEqualityCommponents()
 	{

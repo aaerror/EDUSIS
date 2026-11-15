@@ -78,9 +78,12 @@ public class DatosPersonales : ValueObject
 			new(apellido,
 				nombre,
 				dni,
-				Enum.Parse<Sexo>(sexo),
+				ConvertirSexo(sexo),
 				fechaNacimiento,
 				nacionalidad);
+
+	private static Sexo ConvertirSexo(string sexo) =>
+		Enumerados.Convertir<Sexo>(sexo, valor => new SexoInexistenteException(valor));
 	#endregion
 
 	private void EstablecerFechaNacimiento(DateTime fechaNacimiento)
@@ -100,7 +103,7 @@ public class DatosPersonales : ValueObject
 
 	internal DatosPersonales CambiarSexo(string apellido, string nombre, string sexo)
 	{
-		var nuevoSexo = Enum.Parse<Sexo>(sexo);
+		var nuevoSexo = ConvertirSexo(sexo);
 		if (Sexo.Equals(nuevoSexo))
 		{
 			throw new SexoSinCambiosException(sexo);

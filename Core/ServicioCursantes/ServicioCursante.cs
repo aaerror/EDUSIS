@@ -331,13 +331,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 				throw new CursanteNoEncontradoException();
 			}
 
-			var resultPeriodo = Enum.TryParse<Periodo>(request.Periodo, true, out var periodo);
-			if (!resultPeriodo)
-			{
-				throw new ArgumentException($"El período '{ request.Periodo }' no es válido.", nameof(request.Periodo));
-			}
-
-			var calificacionID = cursante.RegistrarCalificacion(request.MateriaID, request.Fecha, periodo, request.EsRecuperatorio, request.Nota, request.Observacion);
+			var calificacionID = cursante.RegistrarCalificacion(request.MateriaID, request.Fecha, request.Periodo, request.EsRecuperatorio, request.Nota, request.Observacion);
 
 			_unitOfWork.Cursantes.Modificar(cursante);
 			var result = await _unitOfWork.GuardarCambiosAsync();
@@ -366,13 +360,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 				throw new CursanteNoEncontradoException();
 			}
 
-			var resultPeriodo = Enum.TryParse<Periodo>(request.Periodo, true, out var periodo);
-			if (!resultPeriodo)
-			{
-				throw new ArgumentException($"El período '{ request.Periodo }' no es válido.", nameof(request.Periodo));
-			}
-
-			var calificacionID = cursante.RegistrarInasistenciaAExamen(request.MateriaID, request.Fecha, periodo, request.EsRecuperatorio, request.Observacion);
+			var calificacionID = cursante.RegistrarInasistenciaAExamen(request.MateriaID, request.Fecha, request.Periodo, request.EsRecuperatorio, request.Observacion);
 
 			_unitOfWork.Cursantes.Modificar(cursante);
 			var result = await _unitOfWork.GuardarCambiosAsync();

@@ -2,6 +2,7 @@ using Core.ServicioCursos;
 using Core.ServicioCursos.DTOs.Requests;
 using Core.ServicioCursos.Exceptions;
 using Core.UnitTests.Infraestructura;
+using Domain.Cursos.Exceptions;
 using Domain.Materias.DomainEvents;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
@@ -69,6 +70,20 @@ public class ServicioCursoTests
 
 		await Should.ThrowAsync<CursoDuplicadoException>(
 			() => _servicio.RegistrarCurso(new RegistrarCursoRequest("Primero", "Secundaria")));
+	}
+
+	/// <remarks>
+	/// Antes, un grado que no parseaba salteaba el alta en silencio: ni excepción ni guardado,
+	/// y la pantalla la daba por hecha.
+	/// </remarks>
+	[Fact]
+	public async Task RegistrarCurso_con_un_grado_inexistente_lanza_GradoInexistenteException_y_no_guarda()
+	{
+		await Should.ThrowAsync<GradoInexistenteException>(
+			() => _servicio.RegistrarCurso(new RegistrarCursoRequest("Octavo", "Secundaria")));
+
+		_host.UnidadDeTrabajo.CursosFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
 	}
 
 	[Fact]

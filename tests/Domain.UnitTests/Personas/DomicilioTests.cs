@@ -1,4 +1,5 @@
 using Domain.Personas.Domicilios;
+using Domain.Personas.Exceptions;
 using Domain.Shared.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
@@ -84,9 +85,9 @@ public class DomicilioTests
 	}
 
 	[Fact]
-	public void Direccion_con_vivienda_fuera_del_enum_lanza_ArgumentException()
+	public void Direccion_con_vivienda_fuera_del_enum_lanza_ViviendaInexistenteException()
 	{
-		Should.Throw<ArgumentException>(() =>
+		Should.Throw<ViviendaInexistenteException>(() =>
 			Direccion.Crear("Pasaje Ñuñorco", "1234", "Rancho", string.Empty));
 	}
 	#endregion

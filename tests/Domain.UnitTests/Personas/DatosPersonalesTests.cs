@@ -130,9 +130,9 @@ public class DatosPersonalesTests
 	}
 
 	[Fact]
-	public void Crear_con_un_sexo_que_no_es_del_enum_lanza_ArgumentException()
+	public void Crear_con_un_sexo_que_no_es_del_enum_lanza_SexoInexistenteException()
 	{
-		Should.Throw<ArgumentException>(() =>
+		Should.Throw<SexoInexistenteException>(() =>
 			DatosPersonales.Crear("Ñáñez", "José", "30111222", "Otro", new DateTime(1990, 1, 1), "Argentina"));
 	}
 	#endregion

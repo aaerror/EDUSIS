@@ -1,4 +1,5 @@
 using Domain.Cursos;
+using Domain.Cursos.Exceptions;
 using Domain.Materias.DomainEvents;
 using Domain.Shared;
 using EDUSIS.TestSupport;
@@ -30,25 +31,36 @@ public class CursoTests
 	}
 
 	[Fact]
-	public void Un_grado_que_no_esta_en_el_enum_lanza_ArgumentException()
+	public void Un_grado_que_no_esta_en_el_enum_lanza_GradoInexistenteException()
 	{
-		var ex = Should.Throw<ArgumentException>(() => new Curso("Octavo", nameof(NivelEducativo.Secundaria)));
-
-		ex.ParamName.ShouldBe("unGrado");
-		ex.Message.ShouldContain("grado");
+		Should.Throw<GradoInexistenteException>(() => new Curso("Octavo", nameof(NivelEducativo.Secundaria)));
 	}
 
 	[Fact]
-	public void Un_nivel_educativo_que_no_esta_en_el_enum_lanza_ArgumentException()
+	public void Un_nivel_educativo_que_no_esta_en_el_enum_lanza_NivelEducativoInexistenteException()
 	{
 		// El mensaje decía "El grado que se especifico no existe." también acá, por una copia del
-		// guard del grado, y el parámetro informado era el del grado: el usuario leía que fallaba
-		// el dato que había cargado bien.
-		var ex = Should.Throw<ArgumentException>(() => new Curso(nameof(Grado.Primero), "Terciario"));
+		// guard del grado: el usuario leía que fallaba el dato que había cargado bien. Con una
+		// excepción por regla, el tipo ya distingue cuál de los dos falló.
+		Should.Throw<NivelEducativoInexistenteException>(() => new Curso(nameof(Grado.Primero), "Terciario"));
+	}
 
-		ex.ParamName.ShouldBe("unNivelEducativo");
-		ex.Message.ShouldContain("nivel educativo");
-		ex.Message.ShouldNotContain("grado");
+	/// <remarks>
+	/// <c>Enum.TryParse</c> acepta cualquier número y combinaciones con coma; ninguno es un grado.
+	/// </remarks>
+	[Theory]
+	[InlineData("99")]
+	[InlineData("Primero, Segundo")]
+	[InlineData("")]
+	public void Un_grado_numerico_fuera_de_rango_combinado_o_vacio_lanza_GradoInexistenteException(string grado)
+	{
+		Should.Throw<GradoInexistenteException>(() => Curso.ConvertirGrado(grado));
+	}
+
+	[Fact]
+	public void La_conversion_del_grado_no_distingue_mayusculas()
+	{
+		Curso.ConvertirGrado("primero").ShouldBe(Grado.Primero);
 	}
 	#endregion
 

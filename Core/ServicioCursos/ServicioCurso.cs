@@ -55,23 +55,23 @@ internal class ServicioCurso : IServicio, IServicioCurso
 		{
 			_sesion.Exigir(Permiso.GestionarCursos);
 
-			var resultG = Enum.TryParse<Grado>(request.Grado, true, out Grado grado);
-			var resultNE = Enum.TryParse<NivelEducativo>(request.NivelEducativo, true, out NivelEducativo nivelEducativo);
-			if (resultG && resultNE)
+			// Sin rama para el texto inválido: antes, un grado o nivel que no parseaba salteaba el
+			// alta sin avisar y la pantalla la daba por hecha. Ahora lo rechaza el dominio.
+			var grado = Curso.ConvertirGrado(request.Grado);
+			var nivelEducativo = Curso.ConvertirNivelEducativo(request.NivelEducativo);
+
+			var existeCurso = await _unitOfWork.Cursos.ExisteCursoAsync(grado, nivelEducativo);
+			if (existeCurso)
 			{
-				var existeCurso = await _unitOfWork.Cursos.ExisteCursoAsync(grado, nivelEducativo);
-				if (existeCurso)
-				{
-					throw new CursoDuplicadoException();
-				}
-
-				var nuevoCurso = new Curso(request.Grado, request.NivelEducativo);
-				await _unitOfWork.Cursos.AgregarAsync(nuevoCurso);
-
-				var result = await _unitOfWork.GuardarCambiosAsync();
-
-				_logger.LogInformation($"{result} curso registrado correctamente.", result);
+				throw new CursoDuplicadoException();
 			}
+
+			var nuevoCurso = new Curso(request.Grado, request.NivelEducativo);
+			await _unitOfWork.Cursos.AgregarAsync(nuevoCurso);
+
+			var result = await _unitOfWork.GuardarCambiosAsync();
+
+			_logger.LogInformation($"{result} curso registrado correctamente.", result);
 		}
 		catch (Exception ex)
 		{

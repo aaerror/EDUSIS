@@ -81,6 +81,13 @@ public sealed class Catedra : Entity
 	public Guid? DocenteDe(Guid unaSituacionRevista) =>
 		_situaciones.FirstOrDefault(situacion => situacion.Id.Equals(unaSituacionRevista))?.DocenteID;
 
+	/// <summary>
+	/// Entrada desde la capa de aplicación: el cargo llega como texto y su validez es regla del
+	/// dominio (<c>CargoInexistenteException</c>).
+	/// </summary>
+	public Guid Designar(Guid unDocente, string unCargo, DateTime fechaInicio, DateTime? fechaFin, Guid? reemplazaA = null) =>
+		Designar(unDocente, SituacionRevista.ConvertirCargo(unCargo), fechaInicio, fechaFin, reemplazaA);
+
 	public Guid Designar(Guid unDocente, Cargo unCargo, DateTime fechaInicio, DateTime? fechaFin, Guid? reemplazaA = null)
 	{
 		if (_situaciones.Any(situacion => situacion.DocenteID.Equals(unDocente) && situacion.EsCargoVigente()))

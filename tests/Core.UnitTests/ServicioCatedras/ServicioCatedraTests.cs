@@ -7,6 +7,7 @@ using Core.ServicioMaterias.Exceptions;
 using Core.UnitTests.Infraestructura;
 using Domain.Catedras;
 using Domain.Catedras.Exceptions;
+using Domain.Catedras.Horarios.Exceptions;
 using Domain.Catedras.SituacionesRevista;
 using Domain.Curriculas;
 using Domain.Divisiones;
@@ -172,15 +173,12 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task DesignarDocenteAsync_con_un_cargo_invalido_lanza_ArgumentException()
+	public async Task DesignarDocenteAsync_con_un_cargo_invalido_propaga_CargoInexistenteException()
 	{
 		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
 		var docente = SembrarDocente();
 
-		// Punto de fricción documentado en el informe: el cargo se parsea acá porque
-		// SituacionRevista.Crear(string) -la factoría que valida el cargo y lanza
-		// CargoInexistenteException- es internal e inalcanzable desde Core.
-		await Should.ThrowAsync<ArgumentException>(() => _servicio.DesignarDocenteAsync(
+		await Should.ThrowAsync<CargoInexistenteException>(() => _servicio.DesignarDocenteAsync(
 			new DesignarDocenteRequest(catedra.Id, docente.Id, "Bedel", DateTime.Today, null, null)));
 	}
 	#endregion
@@ -294,11 +292,11 @@ public class ServicioCatedraTests
 	}
 
 	[Fact]
-	public async Task AgregarHorarioAsync_con_un_turno_invalido_lanza_ArgumentException()
+	public async Task AgregarHorarioAsync_con_un_turno_invalido_propaga_TurnoInexistenteException()
 	{
 		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
 
-		await Should.ThrowAsync<ArgumentException>(() => _servicio.AgregarHorarioAsync(
+		await Should.ThrowAsync<TurnoInexistenteException>(() => _servicio.AgregarHorarioAsync(
 			new AgregarHorarioRequest(catedra.Id, "Madrugada", "Lunes", new TimeOnly(8, 0), 40)));
 	}
 

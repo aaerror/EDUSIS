@@ -54,11 +54,11 @@ public class PuestoTests
 	}
 
 	[Fact]
-	public void Un_estado_de_puesto_fuera_del_enum_lanza_ArgumentException()
+	public void Un_estado_de_puesto_fuera_del_enum_lanza_EstadoPuestoInexistenteException()
 	{
 		var builder = new PuestoBuilder().ConEstado("Vacaciones");
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		Should.Throw<EstadoPuestoInexistenteException>(() => builder.Build());
 	}
 
 	/// <remarks>
@@ -76,11 +76,11 @@ public class PuestoTests
 	}
 
 	[Fact]
-	public void Una_posicion_fuera_del_enum_lanza_ArgumentException()
+	public void Una_posicion_fuera_del_enum_lanza_PosicionInexistenteException()
 	{
 		var builder = new PuestoBuilder().ConPosicion("Bibliotecario");
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		Should.Throw<PosicionInexistenteException>(() => builder.Build());
 	}
 	#endregion
 

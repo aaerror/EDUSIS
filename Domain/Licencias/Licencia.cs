@@ -44,7 +44,7 @@ public sealed class Licencia : Entity
 		: this(
 			Guid.NewGuid(),
 			docenteID,
-			Enum.Parse<Articulo>(articulo),
+			ConvertirArticulo(articulo),
 			Estado.Pendiente,
 			RangoFechas.Create(fechaInicio),
 			observacion)
@@ -64,11 +64,14 @@ public sealed class Licencia : Entity
 			: this(
 				Guid.NewGuid(),
 				docenteID,
-				Enum.Parse<Articulo>(articulo),
+				ConvertirArticulo(articulo),
 				Estado.Pendiente,
 				RangoFechas.Create(fechaInicio,
 				fechaFin),
 				observacion) { }
+
+	private static Articulo ConvertirArticulo(string articulo) =>
+		Enumerados.Convertir<Articulo>(articulo, valor => new ArticuloInexistenteException(valor));
 	#endregion
 
 	public bool EstaActiva() =>

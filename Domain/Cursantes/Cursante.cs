@@ -115,6 +115,19 @@ public sealed class Cursante : Entity
 	#endregion
 
 	#region Calificaciones
+	/// <summary>
+	/// Entrada desde la capa de aplicación: el período llega como texto y su validez es regla
+	/// del dominio (<c>PeriodoInexistenteException</c>).
+	/// </summary>
+	public Guid RegistrarCalificacion(Guid materiaID, DateTime fecha, string periodo, bool esRecuperatorio, double? nota, string? observacion) =>
+		RegistrarCalificacion(materiaID, fecha, ConvertirPeriodo(periodo), esRecuperatorio, nota, observacion);
+
+	public Guid RegistrarInasistenciaAExamen(Guid materiaID, DateTime fecha, string periodo, bool esRecuperatorio, string? observacion) =>
+		RegistrarInasistenciaAExamen(materiaID, fecha, ConvertirPeriodo(periodo), esRecuperatorio, observacion);
+
+	private static Periodo ConvertirPeriodo(string periodo) =>
+		Enumerados.Convertir<Periodo>(periodo, valor => new PeriodoInexistenteException(valor));
+
 	public Guid RegistrarCalificacion(Guid materiaID, DateTime fecha, Periodo periodo, bool esRecuperatorio, double? nota, string? observacion)
 	{
 		var calificacion = Calificacion.Crear(materiaID, fecha, periodo, esRecuperatorio, nota, observacion);
