@@ -10,7 +10,7 @@ internal class AlumnoRepository : PersonaRepository<Alumno>, IAlumnoRepository
 	public AlumnoRepository(EdusisDBContext context)
 		: base(context) { }
 
-	public async Task<bool> EsLegajoInvalidoAsync(string legajo) =>
+	public async Task<bool> ExisteLegajoAsync(string legajo) =>
 		await _context.Alumnos.AnyAsync(x => EF.Functions.Like(x.Legajo, legajo));
 
 	// Proyección del legajo: el agregado hidratado no hace falta para derivar el siguiente (CORE-13).

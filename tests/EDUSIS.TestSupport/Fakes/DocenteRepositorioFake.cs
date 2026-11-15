@@ -44,9 +44,9 @@ public sealed class DocenteRepositorioFake : RepositorioDePersonasEnMemoria<Doce
 	public Task<bool> ExisteDocenteConLegajoAsync(Guid docenteID, string legajo) =>
 		Task.FromResult(_entidades.Any(x => x.Id.Equals(docenteID) && x.Legajo == legajo));
 
-	public Task<bool> EsCuilInvalidoAsync(string cuil) =>
+	public Task<bool> ExisteCuilAsync(string cuil) =>
 		Task.FromResult(CuilsInvalidos.Contains(cuil) || _entidades.Any(x => x.CUIL == cuil));
 
-	public Task<bool> EsLegajoInvalidoAsync(string legajo) =>
+	public Task<bool> ExisteLegajoAsync(string legajo) =>
 		Task.FromResult(LegajosInvalidos.Contains(legajo) || _entidades.Any(x => x.Legajo == legajo));
 }

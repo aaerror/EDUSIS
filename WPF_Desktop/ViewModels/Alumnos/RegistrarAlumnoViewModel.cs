@@ -387,8 +387,8 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		{
 			string documento = InformacionPersonal.DocumentoNacionalIdentidad;
 
-			var esDocumentoInvalido = await _servicioAlumnos.EsDocumentoInvalidoAsync(new DocumentoRequest(documento));
-			if (esDocumentoInvalido)
+			var documentoYaRegistrado = await _servicioAlumnos.ExisteDocumentoAsync(new DocumentoRequest(documento));
+			if (documentoYaRegistrado)
 			{
 				_dialogService.MostrarAdvertencia($"El documento { documento } ya está registrado con otra persona. Revisá el número o buscá el alumno en el índice.", "Documento repetido");
 

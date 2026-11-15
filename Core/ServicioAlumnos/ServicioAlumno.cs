@@ -384,12 +384,9 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 		}
 	}
 
-	public async Task<bool> EsDocumentoInvalidoAsync(DocumentoRequest request)
+	public async Task<bool> ExisteDocumentoAsync(DocumentoRequest request)
 	{
-		bool esValido = false;
-		esValido = await _unitOfWork.Alumnos.EsDocumentoInvalidoAsync(request.Documento);
-
-		return esValido;
+		return await _unitOfWork.Alumnos.ExisteDocumentoAsync(request.Documento);
 	}
 
 	public async Task ModificarNombreCompleto(Guid alumnoID, string nuevoApellido, string nuevoNombre)

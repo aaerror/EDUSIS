@@ -32,9 +32,9 @@ internal class DocenteRepository : PersonaRepository<Docente>, IDocenteRepositor
 	public async Task<bool> ExisteDocenteConLegajoAsync(Guid docenteID, string legajo) =>
 		await _context.Docentes.AnyAsync(x => x.Id == docenteID && x.Legajo == legajo);
 
-	public async Task<bool> EsCuilInvalidoAsync(string cuil) =>
+	public async Task<bool> ExisteCuilAsync(string cuil) =>
 		await _context.Docentes.AnyAsync(x => EF.Functions.Like(x.CUIL, cuil));
 
-	public async Task<bool> EsLegajoInvalidoAsync(string legajo) =>
+	public async Task<bool> ExisteLegajoAsync(string legajo) =>
 		await _context.Docentes.AnyAsync(x => EF.Functions.Like(x.Legajo, legajo));
 }

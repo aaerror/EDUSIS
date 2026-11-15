@@ -65,14 +65,14 @@ public sealed class AlumnoRepositorioTests : BaseIntegracion
 	}
 
 	[RequiereSqlServerFact]
-	public async Task EsDocumentoInvalidoAsync_es_true_cuando_el_documento_ya_esta_registrado()
+	public async Task ExisteDocumentoAsync_es_true_cuando_el_documento_ya_esta_registrado()
 	{
 		await SembrarAlumnoAsync("30111222", "Ñáñez", "José");
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		(await uow.Alumnos.EsDocumentoInvalidoAsync("30111222")).ShouldBeTrue();
-		(await uow.Alumnos.EsDocumentoInvalidoAsync("99999999")).ShouldBeFalse();
+		(await uow.Alumnos.ExisteDocumentoAsync("30111222")).ShouldBeTrue();
+		(await uow.Alumnos.ExisteDocumentoAsync("99999999")).ShouldBeFalse();
 	}
 
 	[RequiereSqlServerFact]
@@ -90,7 +90,7 @@ public sealed class AlumnoRepositorioTests : BaseIntegracion
 	}
 
 	[RequiereSqlServerFact]
-	public async Task EsLegajoInvalidoAsync_retorna_true_cuando_el_legajo_ya_existe()
+	public async Task ExisteLegajoAsync_retorna_true_cuando_el_legajo_ya_existe()
 	{
 		await SembrarAlumnoAsync("29333444", "Rodríguez", "Carlos", "AL9001");
 
@@ -99,8 +99,8 @@ public sealed class AlumnoRepositorioTests : BaseIntegracion
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		(await uow.Alumnos.EsLegajoInvalidoAsync("AL9001")).ShouldBeTrue();
-		(await uow.Alumnos.EsLegajoInvalidoAsync("AL9999")).ShouldBeFalse();
+		(await uow.Alumnos.ExisteLegajoAsync("AL9001")).ShouldBeTrue();
+		(await uow.Alumnos.ExisteLegajoAsync("AL9999")).ShouldBeFalse();
 	}
 
 	/// <summary>

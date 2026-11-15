@@ -5,7 +5,7 @@ namespace Domain.Alumnos;
 
 public interface IAlumnoRepository : IPersonaRepository<Alumno>
 {
-	Task<bool> EsLegajoInvalidoAsync(string legajo);
+	Task<bool> ExisteLegajoAsync(string legajo);
 	Task<string?> BuscarUltimoLegajoAsync();
 
 	/// <summary>

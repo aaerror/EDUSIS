@@ -12,7 +12,7 @@ internal abstract class PersonaRepository<TEntity> : Repository<TEntity>, IPerso
 	public PersonaRepository(EdusisDBContext context)
 		: base(context) { }
 
-	public async Task<bool> EsDocumentoInvalidoAsync(string documento) =>
+	public async Task<bool> ExisteDocumentoAsync(string documento) =>
 		await DbContext.Set<TEntity>().AnyAsync(x => EF.Functions.Like(x.DatosPersonales.Documento, documento));
 
 	public async Task<bool> ExisteIDAsync(Guid id) =>

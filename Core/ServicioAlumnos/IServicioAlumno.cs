@@ -29,7 +29,7 @@ public interface IServicioAlumno
 
 	Task<Guid> RegistrarAlumnoAsync(RegistrarAlumnoRequest request);
 
-	Task<bool> EsDocumentoInvalidoAsync(DocumentoRequest request);
+	Task<bool> ExisteDocumentoAsync(DocumentoRequest request);
 
 
 	Task ActualizarContacto(CambiarContactoRequest request);

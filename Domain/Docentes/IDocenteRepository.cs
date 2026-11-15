@@ -10,6 +10,6 @@ public interface IDocenteRepository : IPersonaRepository<Docente>
 	Task<IReadOnlyCollection<Docente>> BuscarActivosAsync();
 	Task<IReadOnlyCollection<Docente>> BuscarSegunPosicionAsync(Posicion posicion);
 	Task<bool> ExisteDocenteConLegajoAsync(Guid docenteID, string legajo);
-	Task<bool> EsCuilInvalidoAsync(string cuil);
-	Task<bool> EsLegajoInvalidoAsync(string legajo);
+	Task<bool> ExisteCuilAsync(string cuil);
+	Task<bool> ExisteLegajoAsync(string legajo);
 }

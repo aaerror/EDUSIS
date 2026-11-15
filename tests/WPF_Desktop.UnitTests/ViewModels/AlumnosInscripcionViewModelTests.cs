@@ -431,7 +431,7 @@ public class AlumnosInscripcionViewModelTests
 	public async Task Continuar_registra_el_alumno_y_pasa_a_la_solapa_de_inscripcion()
 	{
 		var contexto = new Contexto();
-		contexto.ServicioAlumnos.EsDocumentoInvalidoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
+		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
 		contexto.ServicioAlumnos.RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>()).Returns(Task.FromResult(Guid.NewGuid()));
 		var viewModel = contexto.CrearRegistro();
 		CompletarFormulario(viewModel);
@@ -453,7 +453,7 @@ public class AlumnosInscripcionViewModelTests
 		// a meter un diálogo acá, esta prueba lo marca.
 		var contexto = new Contexto();
 		contexto.Dialogos.RespuestaDeConfirmacion = false;
-		contexto.ServicioAlumnos.EsDocumentoInvalidoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
+		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
 		contexto.ServicioAlumnos.RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>()).Returns(Task.FromResult(Guid.NewGuid()));
 		var viewModel = contexto.CrearRegistro();
 		CompletarFormulario(viewModel);
@@ -473,7 +473,7 @@ public class AlumnosInscripcionViewModelTests
 		// Master borraba el documento al avisar. Acá queda: el caso corriente es un dígito mal
 		// tipeado, y vaciar el campo obliga a escribir los ocho de nuevo para corregir uno.
 		var contexto = new Contexto();
-		contexto.ServicioAlumnos.EsDocumentoInvalidoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(true));
+		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(true));
 		var viewModel = contexto.CrearRegistro();
 		CompletarFormulario(viewModel);
 
@@ -492,7 +492,7 @@ public class AlumnosInscripcionViewModelTests
 	{
 		// Con async void esta excepción se perdía en el SynchronizationContext en vez de llegar acá.
 		var contexto = new Contexto();
-		contexto.ServicioAlumnos.EsDocumentoInvalidoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
+		contexto.ServicioAlumnos.ExisteDocumentoAsync(Arg.Any<DocumentoRequest>()).Returns(Task.FromResult(false));
 		contexto.ServicioAlumnos.RegistrarAlumnoAsync(Arg.Any<RegistrarAlumnoRequest>())
 				.Returns(Task.FromException<Guid>(new FormatException("Verificar el legajo del alumno: legajo.")));
 		var viewModel = contexto.CrearRegistro();

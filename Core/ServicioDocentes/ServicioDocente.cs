@@ -247,27 +247,27 @@ internal class ServicioDocente : IServicio, IServicioDocente
 				throw new ArgumentNullException(nameof(request), "Datos incompletos para registrar el docente.");
 			}
 
-			var esDNIInvalido = await _unitOfWork.Docentes
-				.EsDocumentoInvalidoAsync(request.DatosPersonales.Documento);
-			if (esDNIInvalido)
+			var dniYaRegistrado = await _unitOfWork.Docentes
+				.ExisteDocumentoAsync(request.DatosPersonales.Documento);
+			if (dniYaRegistrado)
 			{
-				_logger.LogInformation($"D.N.I. del docente inválido...");
+				_logger.LogInformation($"D.N.I. del docente ya registrado.");
 				throw new DocumentoDocenteDuplicadoException();
 			}
 
-			var esCUILInvalido = await _unitOfWork.Docentes
-				.EsCuilInvalidoAsync(request.CUIL);
-			if (esCUILInvalido)
+			var cuilYaRegistrado = await _unitOfWork.Docentes
+				.ExisteCuilAsync(request.CUIL);
+			if (cuilYaRegistrado)
 			{
-				_logger.LogInformation($"CUIL del docente inválido...");
+				_logger.LogInformation($"CUIL del docente ya registrado.");
 				throw new CuilDocenteDuplicadoException();
 			}
 			
-			var esLegajoInvalido = await _unitOfWork.Docentes
-				.EsLegajoInvalidoAsync(request.Legajo);
-			if (esLegajoInvalido)
+			var legajoYaRegistrado = await _unitOfWork.Docentes
+				.ExisteLegajoAsync(request.Legajo);
+			if (legajoYaRegistrado)
 			{
-				_logger.LogInformation($"Legajo del docente inválido...");
+				_logger.LogInformation($"Legajo del docente ya registrado.");
 				throw new LegajoDocenteDuplicadoException();
 			}
 

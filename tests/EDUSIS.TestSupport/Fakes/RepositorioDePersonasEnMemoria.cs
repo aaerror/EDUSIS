@@ -17,7 +17,7 @@ public abstract class RepositorioDePersonasEnMemoria<TEntity> : RepositorioEnMem
 	/// </summary>
 	public HashSet<string> DocumentosInvalidos { get; } = new();
 
-	public Task<bool> EsDocumentoInvalidoAsync(string documento) =>
+	public Task<bool> ExisteDocumentoAsync(string documento) =>
 		Task.FromResult(DocumentosInvalidos.Contains(documento)
 			|| _entidades.Any(x => x.DatosPersonales.Documento == documento));
 

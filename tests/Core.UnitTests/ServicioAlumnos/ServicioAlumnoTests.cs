@@ -182,21 +182,21 @@ public class ServicioAlumnoTests
 	#endregion
 
 	[Fact]
-	public async Task EsDocumentoInvalidoAsync_es_false_para_un_documento_libre()
+	public async Task ExisteDocumentoAsync_es_false_para_un_documento_libre()
 	{
-		var esInvalido = await _servicio.EsDocumentoInvalidoAsync(new DocumentoRequest("41555666"));
+		var yaRegistrado = await _servicio.ExisteDocumentoAsync(new DocumentoRequest("41555666"));
 
-		esInvalido.ShouldBeFalse();
+		yaRegistrado.ShouldBeFalse();
 	}
 
 	[Fact]
-	public async Task EsDocumentoInvalidoAsync_es_true_cuando_el_documento_ya_pertenece_a_un_alumno()
+	public async Task ExisteDocumentoAsync_es_true_cuando_el_documento_ya_pertenece_a_un_alumno()
 	{
 		var alumno = SembrarAlumno();
 
-		var esInvalido = await _servicio.EsDocumentoInvalidoAsync(new DocumentoRequest(alumno.DatosPersonales.Documento));
+		var yaRegistrado = await _servicio.ExisteDocumentoAsync(new DocumentoRequest(alumno.DatosPersonales.Documento));
 
-		esInvalido.ShouldBeTrue();
+		yaRegistrado.ShouldBeTrue();
 	}
 	#endregion
 

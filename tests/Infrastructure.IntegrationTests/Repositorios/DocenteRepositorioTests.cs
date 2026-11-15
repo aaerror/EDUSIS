@@ -84,14 +84,14 @@ public sealed class DocenteRepositorioTests : BaseIntegracion
 	}
 
 	[RequiereSqlServerFact]
-	public async Task EsCuilInvalidoAsync_es_true_cuando_el_cuil_ya_existe()
+	public async Task ExisteCuilAsync_es_true_cuando_el_cuil_ya_existe()
 	{
 		await SembrarDocenteAsync("100600", "27333444556", "Romero", "Ana");
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		(await uow.Docentes.EsCuilInvalidoAsync("27333444556")).ShouldBeTrue();
-		(await uow.Docentes.EsCuilInvalidoAsync("20000000009")).ShouldBeFalse();
+		(await uow.Docentes.ExisteCuilAsync("27333444556")).ShouldBeTrue();
+		(await uow.Docentes.ExisteCuilAsync("20000000009")).ShouldBeFalse();
 	}
 
 	[RequiereSqlServerFact]
