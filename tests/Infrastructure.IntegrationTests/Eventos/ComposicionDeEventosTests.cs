@@ -33,7 +33,7 @@ public sealed class ComposicionDeEventosTests
 	{
 		using var provider = ComposicionRealDeInfraestructura();
 
-		provider.GetServices<INotificationHandler<LicenciaSolicitadaEvent>>().ShouldNotBeEmpty();
+		provider.GetServices<INotificationHandler<LicenciaActivadaEvent>>().ShouldNotBeEmpty();
 		provider.GetServices<INotificationHandler<MateriaEliminadaEvent>>().ShouldNotBeEmpty();
 	}
 
