@@ -1,7 +1,7 @@
 ﻿using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos.DTOs.Responses;
 using Core.Shared.DTOs.Personas.Requests;
-using Core.Shared.DTOs.Personas.Response;
+using Core.Shared.DTOs.Personas.Responses;
 
 namespace Core.ServicioAlumnos;
 

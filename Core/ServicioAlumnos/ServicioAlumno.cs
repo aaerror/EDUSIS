@@ -3,7 +3,7 @@ using Core.ServicioAlumnos.Exceptions;
 using Core.ServicioAlumnos.DTOs.Responses;
 using Core.Shared.DTOs.Cursadas;
 using Core.Shared.DTOs.Personas.Requests;
-using Core.Shared.DTOs.Personas.Response;
+using Core.Shared.DTOs.Personas.Responses;
 using Core.Shared;
 using Domain.Alumnos;
 using Domain.Asistencias;

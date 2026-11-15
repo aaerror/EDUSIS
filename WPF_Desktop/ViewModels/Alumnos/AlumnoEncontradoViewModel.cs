@@ -1,5 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Core.Shared.DTOs.Personas.Response;
+using Core.Shared.DTOs.Personas.Responses;
 using System;
 
 namespace WPF_Desktop.ViewModels.Alumnos;

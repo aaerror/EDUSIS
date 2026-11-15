@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos;
 using Core.Shared.DTOs.Personas.Requests;
-using Core.Shared.DTOs.Personas.Response;
+using Core.Shared.DTOs.Personas.Responses;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;

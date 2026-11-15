@@ -6,7 +6,7 @@ using Core.ServicioDocumentos;
 using Core.ServicioDocumentos.DTOs.Requests;
 using Core.Shared.Documentos;
 using Core.Shared.DTOs.Personas.Requests;
-using Core.Shared.DTOs.Personas.Response;
+using Core.Shared.DTOs.Personas.Responses;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
