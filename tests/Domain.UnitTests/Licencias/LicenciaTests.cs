@@ -1,3 +1,4 @@
+using Domain.Licencias.Exceptions;
 using Domain.Licencias;
 using Domain.Licencias.DomainEvents;
 using EDUSIS.TestSupport;
@@ -32,11 +33,13 @@ public class LicenciaTests
 	}
 
 	[Fact]
-	public void Una_licencia_con_fecha_de_inicio_futura_lanza_ArgumentException()
+	public void Una_licencia_con_fecha_de_inicio_futura_lanza_FechaDeInicioDeLicenciaFuturaException()
 	{
 		var builder = new LicenciaBuilder().ConFechaInicio(DateTime.Today.AddDays(1));
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		var ex = Should.Throw<Exception>(() => builder.Build());
+
+		ex.GetType().Name.ShouldBe("FechaDeInicioDeLicenciaFuturaException");
 	}
 	#endregion
 
@@ -66,12 +69,12 @@ public class LicenciaTests
 	}
 
 	[Fact]
-	public void Aprobar_o_cancelar_una_licencia_que_no_esta_pendiente_lanza_ArgumentException()
+	public void Aprobar_o_cancelar_una_licencia_que_no_esta_pendiente_lanza_LicenciaNoPendiente()
 	{
 		var licencia = new LicenciaBuilder().Aprobada().Build();
 
-		Should.Throw<ArgumentException>(() => licencia.AprobarLicencia(null));
-		Should.Throw<ArgumentException>(() => licencia.CancelarLicencia(null));
+		Should.Throw<LicenciaNoPendienteException>(() => licencia.AprobarLicencia(null));
+		Should.Throw<LicenciaNoPendienteException>(() => licencia.CancelarLicencia(null));
 	}
 
 	[Fact]
@@ -142,11 +145,35 @@ public class LicenciaTests
 	}
 
 	[Fact]
-	public void EstablecerFechaFinalizacion_con_una_fecha_no_posterior_a_hoy_lanza_ArgumentException()
+	public void EstablecerFechaFinalizacion_con_una_fecha_no_posterior_a_hoy_lanza_FechaDeFinalizacionNoPosteriorAHoyException()
 	{
 		var licencia = new LicenciaBuilder().Aprobada().Build();
 
-		Should.Throw<ArgumentException>(() => licencia.EstablecerFechaFinalizacion(DateTime.Today));
+		var ex = Should.Throw<Exception>(() => licencia.EstablecerFechaFinalizacion(DateTime.Today));
+
+		ex.GetType().Name.ShouldBe("FechaDeFinalizacionNoPosteriorAHoyException");
+	}
+
+	[Fact]
+	public void EstablecerFechaFinalizacion_sobre_una_licencia_que_ya_tiene_fecha_de_fin_lanza_LicenciaConFechaDeFinalizacionException()
+	{
+		var licencia = new LicenciaBuilder().ConFechaFin(DateTime.Today.AddDays(10)).Aprobada().Build();
+
+		var ex = Should.Throw<Exception>(() => licencia.EstablecerFechaFinalizacion(DateTime.Today.AddDays(20)));
+
+		ex.GetType().Name.ShouldBe("LicenciaConFechaDeFinalizacionException");
+	}
+
+	[Theory]
+	[InlineData(0)]
+	[InlineData(-3)]
+	public void ExtenderLicencia_sin_una_cantidad_de_dias_positiva_lanza_ExtensionSinDiasException(int cantidadDias)
+	{
+		var licencia = new LicenciaBuilder().ConFechaFin(DateTime.Today.AddDays(10)).Aprobada().Build();
+
+		var ex = Should.Throw<Exception>(() => licencia.ExtenderLicencia(cantidadDias));
+
+		ex.GetType().Name.ShouldBe("ExtensionSinDiasException");
 	}
 
 	[Fact]

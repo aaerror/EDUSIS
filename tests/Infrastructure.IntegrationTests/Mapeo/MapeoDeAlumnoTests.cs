@@ -9,7 +9,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Mapeo;
 
 /// <summary>
-/// US3-1: persistir y releer un <see cref="Alumno"/> contra SQL Server real. Verifica la
+/// Persistir y releer un <see cref="Alumno"/> contra SQL Server real. Verifica la
 /// jerarquía TPT <c>persona</c>/<c>alumno</c>, el value object <c>Domicilio</c> (<c>OwnsOne</c>)
 /// y que los datos con acentos y <c>ñ</c> sobreviven el ida y vuelta sin corrupción.
 /// </summary>
@@ -30,7 +30,7 @@ public sealed class MapeoDeAlumnoTests : BaseIntegracion
 			.ConDomicilio(new DomicilioBuilder()
 				.ConCalle("Pasaje Ñuñorco")
 				.ConLocalidad("Yerba Buena"))
-			.ConLegajo("A-000123")
+			.ConLegajo("AL0123")
 			.Build();
 
 		await using (var contexto = Fixture.CrearContexto())
@@ -44,7 +44,7 @@ public sealed class MapeoDeAlumnoTests : BaseIntegracion
 			var releido = await contexto.Set<Alumno>()
 				.SingleAsync(x => x.Id == alumno.Id);
 
-			releido.Legajo.ShouldBe("A-000123");
+			releido.Legajo.ShouldBe("AL0123");
 			releido.DatosPersonales.Apellido.ShouldBe("Ñáñez Piñón");
 			releido.DatosPersonales.Nombre.ShouldBe("José María");
 			releido.DatosPersonales.Documento.ShouldBe("30111222");

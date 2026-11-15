@@ -33,7 +33,7 @@ public class CursoStoreTests
 	[Trait("Categoria", "Unidad")]
 	public void La_propiedad_no_guarda_un_tipo_de_la_capa_de_presentacion()
 	{
-		// Violación 14 de docs/todos.md: el store guardaba un CursoViewModel, lo que ataba las
+		// El store no debe guardar un ViewModel: guardar un CursoViewModel ataba las
 		// pantallas destino al tipo de presentación de la pantalla de cursos y arrastraba comandos
 		// y validación hasta un Singleton.
 		var tipo = typeof(CursoStore).GetProperty(nameof(CursoStore.Curso))!.PropertyType;

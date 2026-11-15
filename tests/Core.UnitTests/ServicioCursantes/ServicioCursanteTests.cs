@@ -1,8 +1,11 @@
+using Core.ServicioDivisiones.Exceptions;
+using Core.ServicioCursos.Exceptions;
 using Core.ServicioCursantes;
 using Core.ServicioCursantes.DTOs.Requests;
 using Core.ServicioCursantes.Exceptions;
 using Core.UnitTests.Infraestructura;
 using Domain.Alumnos;
+using Domain.Cursantes.Calificaciones;
 using Domain.Cursantes;
 using Domain.Cursantes.Exceptions;
 using Domain.Cursos;
@@ -20,8 +23,6 @@ namespace Core.UnitTests.ServicioCursantes;
 /// <see cref="IServicioCursante"/>: inscripción, listado de cursantes, calificaciones
 /// (registrar, quitar, modificar observación, listar) e inasistencia a examen, con camino feliz
 /// y de error para cada caso de uso, más una prueba de <see cref="InscripcionDuplicadaException"/>.
-/// Cierra H-017: <c>RegistrarCalificacionAsync_persiste_la_nota_del_cursante_en_la_materia</c> ya
-/// no está <c>Skip</c>.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioCursanteTests
@@ -101,11 +102,11 @@ public class ServicioCursanteTests
 	}
 
 	[Fact]
-	public async Task InscribirCursanteAsync_con_un_curso_inexistente_lanza_InvalidOperationException()
+	public async Task InscribirCursanteAsync_con_un_curso_inexistente_lanza_CursoNoEncontrado()
 	{
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
-		await Should.ThrowAsync<InvalidOperationException>(() =>
+		await Should.ThrowAsync<CursoNoEncontradoException>(() =>
 			_servicio.InscribirCursanteAsync(new RegistrarCursanteRequest(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), periodo, DateTime.Today)));
 	}
 
@@ -352,7 +353,7 @@ public class ServicioCursanteTests
 			.ConCicloLectivo(cicloLectivo)
 			.ConFechaInicio(DateTime.Today.AddDays(-30))
 			.Build();
-		original.RegistrarCalificacion(materia.Id, DateTime.Today.AddDays(-20), Domain.Cursantes.Calificaciones.Instancia.Parcial, 8, null);
+		original.RegistrarCalificacion(materia.Id, DateTime.Today.AddDays(-20), Periodo.PrimerCuatrimestre, false, 8, null);
 		_host.UnidadDeTrabajo.CursantesFake.Sembrar(original);
 
 		await _servicio.CambiarDeDivisionAsync(
@@ -379,19 +380,19 @@ public class ServicioCursanteTests
 	}
 
 	[Fact]
-	public async Task CambiarDeDivisionAsync_sin_inscripcion_activa_lanza_NullReferenceException()
+	public async Task CambiarDeDivisionAsync_sin_inscripcion_activa_lanza_CursanteNoEncontrado()
 	{
 		var curso = SembrarCurso();
 		var division = SembrarDivision(curso.Id);
 		var alumno = SembrarAlumno();
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.CambiarDeDivisionAsync(
+		await Should.ThrowAsync<CursanteNoEncontradoException>(() => _servicio.CambiarDeDivisionAsync(
 			new CambiarDivisionCursanteRequest(alumno.Id, cicloLectivo.Periodo, division.Id, DateTime.Today)));
 	}
 
 	[Fact]
-	public async Task CambiarDeDivisionAsync_con_una_division_destino_inexistente_lanza_NullReferenceException()
+	public async Task CambiarDeDivisionAsync_con_una_division_destino_inexistente_lanza_DivisionNoEncontrada()
 	{
 		var curso = SembrarCurso();
 		var division = SembrarDivision(curso.Id);
@@ -399,7 +400,7 @@ public class ServicioCursanteTests
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		SembrarCursante(division.Id, alumno.Id, cicloLectivo);
 
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.CambiarDeDivisionAsync(
+		await Should.ThrowAsync<DivisionNoEncontradaException>(() => _servicio.CambiarDeDivisionAsync(
 			new CambiarDivisionCursanteRequest(alumno.Id, cicloLectivo.Periodo, Guid.NewGuid(), DateTime.Today)));
 	}
 	#endregion
@@ -461,7 +462,7 @@ public class ServicioCursanteTests
 	[Fact]
 	public async Task ConsultarHistorialDeDivisionesAsync_es_una_lectura_y_no_exige_permiso()
 	{
-		// Patrón vigente del repositorio de código (CORE-16): las lecturas quedan abiertas.
+		// Patrón vigente del repositorio de código: las lecturas quedan abiertas.
 		using var host = new HostDeServicios(sesion: SesionDePrueba.SinPermisos());
 
 		var historial = await host.Resolver<IServicioCursante>()
@@ -490,16 +491,16 @@ public class ServicioCursanteTests
 	}
 
 	[Fact]
-	public async Task ListarCursantesAsync_con_un_curso_inexistente_lanza_InvalidOperationException()
+	public async Task ListarCursantesAsync_con_un_curso_inexistente_lanza_CursoNoEncontrado()
 	{
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
-		await Should.ThrowAsync<InvalidOperationException>(() =>
+		await Should.ThrowAsync<CursoNoEncontradoException>(() =>
 			_servicio.ListarCursantesAsync(new BuscarListadoRequest(Guid.NewGuid(), Guid.NewGuid(), periodo)));
 	}
 	#endregion
 
-	#region RegistrarCalificacionAsync (H-017)
+	#region RegistrarCalificacionAsync
 	[Fact]
 	public async Task RegistrarCalificacionAsync_con_una_inscripcion_existente_no_falla()
 	{
@@ -509,18 +510,18 @@ public class ServicioCursanteTests
 		SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
 
 		var calificacionID = await _servicio.RegistrarCalificacionAsync(new CrearCalificationRequest(
-			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, "Parcial", 8, "Buen desempeño"));
+			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, "Buen desempeño"));
 
 		calificacionID.ShouldNotBe(Guid.Empty);
 	}
 
 	[Fact]
-	public async Task RegistrarCalificacionAsync_con_una_inscripcion_inexistente_lanza_NullReferenceException()
+	public async Task RegistrarCalificacionAsync_con_una_inscripcion_inexistente_lanza_CursanteNoEncontrado()
 	{
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.RegistrarCalificacionAsync(
-			new CrearCalificationRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, "Parcial", 8, null)));
+		await Should.ThrowAsync<CursanteNoEncontradoException>(() => _servicio.RegistrarCalificacionAsync(
+			new CrearCalificationRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, null)));
 	}
 
 	[Fact]
@@ -532,7 +533,7 @@ public class ServicioCursanteTests
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
 
 		await _servicio.RegistrarCalificacionAsync(new CrearCalificationRequest(
-			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, "Parcial", 8, "Buen desempeño"));
+			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, "Buen desempeño"));
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();
 		calificacion.MateriaID.ShouldBe(materia.Id);
@@ -552,7 +553,7 @@ public class ServicioCursanteTests
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
 
 		await _servicio.RegistrarInasistenciaAExamenAsync(new RegistrarInasistenciaRequest(
-			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, "Parcial", "Ausente sin aviso"));
+			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, "Ausente sin aviso"));
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();
 		calificacion.Rindio.ShouldBeFalse();
@@ -560,12 +561,12 @@ public class ServicioCursanteTests
 	}
 
 	[Fact]
-	public async Task RegistrarInasistenciaAExamenAsync_con_una_inscripcion_inexistente_lanza_NullReferenceException()
+	public async Task RegistrarInasistenciaAExamenAsync_con_una_inscripcion_inexistente_lanza_CursanteNoEncontrado()
 	{
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.RegistrarInasistenciaAExamenAsync(
-			new RegistrarInasistenciaRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, "Parcial", null)));
+		await Should.ThrowAsync<CursanteNoEncontradoException>(() => _servicio.RegistrarInasistenciaAExamenAsync(
+			new RegistrarInasistenciaRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, null)));
 	}
 	#endregion
 
@@ -577,7 +578,7 @@ public class ServicioCursanteTests
 		var materia = SembrarMateria();
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
-		var calificacionID = cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Domain.Cursantes.Calificaciones.Instancia.Parcial, 8, null);
+		var calificacionID = cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		await _servicio.QuitarCalificacionAsync(new EliminarCalificacionRequest(alumno.Id, cicloLectivo.Periodo, calificacionID));
 
@@ -586,11 +587,11 @@ public class ServicioCursanteTests
 	}
 
 	[Fact]
-	public async Task QuitarCalificacionAsync_con_una_inscripcion_inexistente_lanza_NullReferenceException()
+	public async Task QuitarCalificacionAsync_con_una_inscripcion_inexistente_lanza_CursanteNoEncontrado()
 	{
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<CursanteNoEncontradoException>(() =>
 			_servicio.QuitarCalificacionAsync(new EliminarCalificacionRequest(Guid.NewGuid(), periodo, Guid.NewGuid())));
 	}
 	#endregion
@@ -603,7 +604,7 @@ public class ServicioCursanteTests
 		var materia = SembrarMateria();
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
-		var calificacionID = cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Domain.Cursantes.Calificaciones.Instancia.Parcial, 8, "Observación original");
+		var calificacionID = cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "Observación original");
 
 		await _servicio.ModificarObservacionCalificacionAsync(new ModificarObservacionCalificacionRequest(
 			alumno.Id, cicloLectivo.Periodo, calificacionID, "Observación corregida"));
@@ -614,11 +615,11 @@ public class ServicioCursanteTests
 	}
 
 	[Fact]
-	public async Task ModificarObservacionCalificacionAsync_con_una_inscripcion_inexistente_lanza_NullReferenceException()
+	public async Task ModificarObservacionCalificacionAsync_con_una_inscripcion_inexistente_lanza_CursanteNoEncontrado()
 	{
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ModificarObservacionCalificacionAsync(
+		await Should.ThrowAsync<CursanteNoEncontradoException>(() => _servicio.ModificarObservacionCalificacionAsync(
 			new ModificarObservacionCalificacionRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), "Observación")));
 	}
 	#endregion
@@ -631,7 +632,7 @@ public class ServicioCursanteTests
 		var materia = SembrarMateria("Historia");
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
-		cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Domain.Cursantes.Calificaciones.Instancia.Parcial, 9, null);
+		cursante.RegistrarCalificacion(materia.Id, DateTime.Today, Periodo.PrimerCuatrimestre, false, 9, null);
 
 		var calificaciones = await _servicio.ListarCalificacionesAsync(new ListarCalificacionesRequest(alumno.Id, cicloLectivo.Periodo));
 
@@ -643,11 +644,11 @@ public class ServicioCursanteTests
 	}
 
 	[Fact]
-	public async Task ListarCalificacionesAsync_con_una_inscripcion_inexistente_lanza_NullReferenceException()
+	public async Task ListarCalificacionesAsync_con_una_inscripcion_inexistente_lanza_CursanteNoEncontrado()
 	{
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
-		await Should.ThrowAsync<NullReferenceException>(() =>
+		await Should.ThrowAsync<CursanteNoEncontradoException>(() =>
 			_servicio.ListarCalificacionesAsync(new ListarCalificacionesRequest(Guid.NewGuid(), periodo)));
 	}
 	#endregion

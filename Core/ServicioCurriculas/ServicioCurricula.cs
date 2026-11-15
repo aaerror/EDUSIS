@@ -3,7 +3,7 @@ using Core.ServicioCurriculas.DTOs.Responses;
 using Core.Shared;
 using Core.Shared.Seguridad;
 using Domain.Curriculas;
-using Domain.Curriculas.Exceptions;
+using Core.ServicioCurriculas.Exceptions;
 using Domain.Shared;
 using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
@@ -109,7 +109,7 @@ internal class ServicioCurricula : IServicio, IServicioCurricula
 			// ninguna: con un solo catch alrededor de todo el método, un PermisoDenegadoException de
 			// la guarda de arriba —o un "Ya hay una transacción iniciada" del propio Begin— entraba
 			// al rollback, reventaba ahí y llegaba al ViewModel disfrazado de error de transacción.
-			// Justo la clase de fallo que conviene que llegue nítido: es RBAC. Ver CORE-19.
+			// Justo la clase de fallo que conviene que llegue nítido: es RBAC.
 			try
 			{
 				var curriculas = await _unitOfWork.Curriculas.CurriculasSegunCursoAsync(request.CursoID);

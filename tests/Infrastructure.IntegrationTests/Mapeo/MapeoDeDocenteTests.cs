@@ -10,7 +10,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Mapeo;
 
 /// <summary>
-/// US3-1: persistir y releer un <see cref="Docente"/> con un <see cref="Puesto"/> asignado.
+/// Persistir y releer un <see cref="Docente"/> con un <see cref="Puesto"/> asignado.
 /// Verifica la jerarquía TPT <c>persona</c>/<c>docente</c>, la colección <c>Puestos</c>
 /// (relación con tabla <c>puesto</c>) y el value object <c>Periodo</c> (<c>OwnsOne</c>).
 /// </summary>

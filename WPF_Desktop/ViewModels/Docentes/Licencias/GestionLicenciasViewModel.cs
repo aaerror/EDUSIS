@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioLicencias.DTOs.Requests;
@@ -27,7 +27,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	/// Docente cuyas licencias se gestionan, fijado una sola vez al construir.
 	/// </summary>
 	/// <remarks>
-	/// UI-34: <c>LegajoStore.PersonaID</c> pasó a ser <c>Guid?</c>, y la guarda va acá una vez en
+	/// <c>LegajoStore.PersonaID</c> es <c>Guid?</c>, y la guarda va acá una vez en
 	/// lugar de repetir un <c>.Value</c> en los seis sitios que arman requests. Llegar a esta
 	/// pantalla sin docente elegido es un defecto de navegación y no un estado de la pantalla:
 	/// <c>GestionDocentesViewModel</c> escribe el store antes de navegar.
@@ -144,7 +144,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	}
 
 	#region CancelarCommandAsync
-	private bool CanExecuteCancelarCommand(object obj)
+	private bool CanExecuteCancelarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -159,7 +159,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		}
 	}
 
-	private async Task ExecuteCancelarCommand(object obj)
+	private async Task ExecuteCancelarCommand(object? obj)
 	{
 		await ExecuteCargarLicenciasCommand();
 
@@ -184,7 +184,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region GuardarCommandAsync
-	private bool CanExecuteGuardarCommand(object obj)
+	private bool CanExecuteGuardarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -221,7 +221,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	/// <item><b>Eliminar</b> pregunta en rojo y con la consecuencia: no se puede deshacer.</item>
 	/// </list>
 	/// </remarks>
-	private async Task ExecuteGuardarCommandAsync(object obj)
+	private async Task ExecuteGuardarCommandAsync(object? obj)
 	{
 		switch (obj)
 		{
@@ -354,7 +354,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region EditarCommand
-	private bool CanExecuteEditarCommand(object obj)
+	private bool CanExecuteEditarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -365,7 +365,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		}
 	}
 
-	private void ExecuteEditarCommand(object obj)
+	private void ExecuteEditarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -380,7 +380,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region RegistrarCommand
-	private bool CanExecuteRegistrarCommand(object obj)
+	private bool CanExecuteRegistrarCommand(object? obj)
 	{
 		switch (obj)
 		{
@@ -391,7 +391,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		}
 	}
 
-	private void ExecuteRegistrarCommand(object obj)
+	private void ExecuteRegistrarCommand(object? obj)
 	{
 		switch (obj)
 		{

@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioDocentes.DTOs.Requests;
@@ -79,7 +79,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 		_dialogService = dialogService;
 		_perfilBuscadoStore = perfilBuscadoStore;
 
-		// UI-34: la guarda cubre las dos propiedades del store porque se escriben juntas. Con
+		// La guarda cubre las dos propiedades del store porque se escriben juntas. Con
 		// PersonaID tipado como Guid no nulable, "nadie buscó un docente" llegaba como Guid.Empty y
 		// el request salía igual hacia Core, que lo rechazaba sin que la pantalla explicara nada.
 		if (_perfilBuscadoStore.PersonaID is null || string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))
@@ -123,7 +123,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 	}
 
 	#region EditarCommand
-	private bool EditarCommandCanExecute(object obj)
+	private bool EditarCommandCanExecute(object? obj)
 	{
 		switch (obj as string)
 		{
@@ -138,7 +138,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 		}
 	}
 
-	private void EditarCommandExecute(object obj)
+	private void EditarCommandExecute(object? obj)
 	{
 		switch (obj as string)
 		{
@@ -159,7 +159,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 	#endregion
 
 	#region CancelarCommand
-	private bool CancelarCommandCanExecute(object obj)
+	private bool CancelarCommandCanExecute(object? obj)
 	{
 		switch (obj as string)
 		{
@@ -174,7 +174,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 		}
 	}
 
-	private async Task CancelarCommandExecute(object obj)
+	private async Task CancelarCommandExecute(object? obj)
 	{
 		await CargarPerfilCommandAsyncExecute();
 
@@ -198,7 +198,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 	#endregion
 
 	#region GuardarCommand
-	private bool GuardarCommandCanExecute(object obj)
+	private bool GuardarCommandCanExecute(object? obj)
 	{
 		switch (obj as string)
 		{
@@ -229,7 +229,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 	/// el bloque, así que se sabe cuál de los tres se guardó.
 	/// </para>
 	/// </remarks>
-	private async Task GuardarCommandExecute(object obj)
+	private async Task GuardarCommandExecute(object? obj)
 	{
 		switch (obj)
 		{

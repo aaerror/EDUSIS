@@ -4,7 +4,7 @@ namespace EDUSIS.TestSupport.Infraestructura;
 
 /// <summary>
 /// Sonda de disponibilidad de un motor SQL Server para las suites de integración y
-/// end-to-end (contracts/test-support-api.md §5.1). El resultado se cachea: la sonda se
+/// end-to-end. El resultado se cachea: la sonda se
 /// evalúa una sola vez por proceso de prueba.
 /// </summary>
 public static class DockerDisponible

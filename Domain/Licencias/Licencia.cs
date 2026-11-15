@@ -1,3 +1,4 @@
+using Domain.Licencias.Exceptions;
 using Domain.Licencias.DomainEvents;
 using Domain.Licencias.Exceptions;
 using Domain.Shared.Exceptions;
@@ -50,7 +51,7 @@ public sealed class Licencia : Entity
 	{
 		if (fechaInicio.Date > DateTime.Today.Date)
 		{
-			throw new ArgumentException($"La fecha de inicio no debe mayor a la fecha de hoy ({DateTime.Today.Date.ToString("D")})");
+			throw new FechaDeInicioDeLicenciaFuturaException();
 		}
 	}
 	
@@ -81,7 +82,7 @@ public sealed class Licencia : Entity
 	{
 		if (!Estado.Equals(Estado.Pendiente))
 		{
-			throw new ArgumentException("La licencia no se encuentra pendiente.");
+			throw new LicenciaNoPendienteException();
 		}
 
 		Estado = Estado.Activa;
@@ -94,7 +95,7 @@ public sealed class Licencia : Entity
 	{
 		if (!Estado.Equals(Estado.Pendiente))
 		{
-			throw new ArgumentException("La licencia no se encuentra pendiente.");
+			throw new LicenciaNoPendienteException();
 		}
 
 		Estado = Estado.Cancelada;
@@ -115,6 +116,30 @@ public sealed class Licencia : Entity
 
 		AgregarEvento(new LicenciaFinalizadaEvent(Id, DocenteID));
 	}
+
+	/// <summary>
+	/// Una licencia se borra sólo mientras está pendiente de aprobación: una vez aprobada, cancelada o
+	/// finalizada forma parte del legajo del docente y su baja sería perder un antecedente.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Molde de <c>PlanillaAsistencia.ValidarSePuedeEliminar</c> y <c>Curso.ValidarSePuedeEliminar</c>:
+	/// <strong>valida y no cambia estado</strong>, porque la baja de una licencia es borrado físico y no
+	/// una transición. El servicio la invoca y después borra; no lee <c>Estado</c> ni decide nada.
+	/// </para>
+	/// <para>
+	/// La regla vive acá y no en el servicio: las capas superiores no repiten ni suplen las
+	/// validaciones del dominio, así que <c>ServicioLicencia</c> sólo invoca este método y después borra.
+	/// </para>
+	/// </remarks>
+	/// <exception cref="LicenciaNoPendienteException">La licencia ya no está pendiente.</exception>
+	public void ValidarSePuedeEliminar()
+	{
+		if (!Estado.Equals(Estado.Pendiente))
+		{
+			throw new LicenciaNoPendienteException();
+		}
+	}
 	#endregion
 
 	public double DuracionEn(Tiempo tiempo) =>
@@ -124,8 +149,7 @@ public sealed class Licencia : Entity
 	{
 		if (fechaFin.Date <= DateTime.Today.Date)
 		{
-			var msg = "La fecha de finalización debe ser posterior al día de hoy.";
-			throw new ArgumentException(msg);
+			throw new FechaDeFinalizacionNoPosteriorAHoyException();
 		}
 
 		if (!EstaActiva())
@@ -135,8 +159,7 @@ public sealed class Licencia : Entity
 
 		if (!EsIndefinida())
 		{
-			var msg = "La licencia ya posee una fecha de finalizacion.";
-			throw new ArgumentException(msg);
+			throw new LicenciaConFechaDeFinalizacionException();
 		}
 
 		Periodo = Periodo.ActualizarFechaFin(fechaFin);
@@ -171,8 +194,7 @@ public sealed class Licencia : Entity
 	{
 		if (cantidadDias <= 0)
 		{
-			var msg = "Se debe especificar la cantidad de días que quiere extender la licencia.";
-			throw new ArgumentException(msg);
+			throw new ExtensionSinDiasException();
 		}
 
 		if (!EstaActiva())
@@ -196,7 +218,7 @@ public sealed class Licencia : Entity
 			if (observacion.Trim().Length > 250)
 			{
 				var msg = "La observación no debe superar los 250 caracteres.";
-				throw new ExcesoCaracteresException();
+				throw new ExcesoCaracteresException(msg);
 			}
 		}
 

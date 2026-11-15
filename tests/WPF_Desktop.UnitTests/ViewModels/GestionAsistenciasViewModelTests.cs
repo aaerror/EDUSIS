@@ -452,7 +452,7 @@ public class GestionAsistenciasViewModelTests
 	/// Marca la fila QUE RECIBE y no la que está seleccionada, que son dos alumnos distintos.
 	/// </summary>
 	/// <remarks>
-	/// Es la guarda del defecto que <c>docs/ui-ux.md</c> dejó anotado: un <c>Button</c> dentro de una
+	/// Es la guarda de un defecto conocido: un <c>Button</c> dentro de una
 	/// celda marca el clic como manejado, así que apretar el botón de la fila 3 NO la selecciona, y un
 	/// comando que leyera el <c>SelectedItem</c> terminaría marcándole la inasistencia a la fila 1.
 	/// Acá se eligen explícitamente dos filas diferentes para que el caso falle si alguien vuelve a

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Core.ServicioUsuarios.DTOs.Requests;
 using Core.ServicioUsuarios;
 using Core.Shared.Seguridad;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
 
@@ -19,6 +20,19 @@ internal partial class UsuarioViewModel : ObservableObject
 	[ObservableProperty]
 	[NotifyPropertyChangedFor(nameof(Iniciales))]
 	private string _nombreCompleto;
+
+	/// <summary>
+	/// Los roles de la sesión, por <c>Id</c>. La credencial los muestra con el converter
+	/// <c>roles</c>, el mismo que usa la pantalla de Usuarios.
+	/// </summary>
+	/// <remarks>
+	/// Es el dato que explica el menú: las secciones se habilitan por permiso, los permisos salen
+	/// del rol, y hasta ahora el rol no se veía en ninguna pantalla de la aplicación — ni siquiera
+	/// en la que dice "las secciones que tu rol no habilita aparecen apagadas". Viaja por Id y no
+	/// por descripción por lo que explica el XML-doc de <c>UsuarioResponse</c>.
+	/// </remarks>
+	[ObservableProperty]
+	private IReadOnlyList<int> _rolesIDs = Array.Empty<int>();
 
 	[ObservableProperty]
 	[NotifyPropertyChangedFor(nameof(Estado))]
@@ -77,6 +91,7 @@ internal partial class UsuarioViewModel : ObservableObject
 
 		Username = usuario.Usuario;
 		NombreCompleto = usuario.NombreCompleto;
+		RolesIDs = usuario.RolesIDs;
 		EstaConectado = true;
 	}
 }

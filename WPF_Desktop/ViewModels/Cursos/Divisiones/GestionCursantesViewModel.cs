@@ -16,6 +16,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using Domain.Cursantes.Calificaciones;
 using Domain.Asistencias;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
@@ -26,7 +27,8 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 internal partial class GestionCursantesViewModel : ObservableValidator, IUbicacion
 {
-	private const string INSTANCIA_POR_DEFECTO = "Parcial";
+	// El tramo con el que se abre el formulario: el ciclo arranca por el primer cuatrimestre.
+	private const string PERIODO_POR_DEFECTO = nameof(Periodo.PrimerCuatrimestre);
 
 	#region Vistas del alumno
 	/// <remarks>
@@ -51,9 +53,9 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 	/// <summary>
 	/// El resumen de asistencias del alumno. Es lo ÚNICO que se puede preguntar por cursante:
-	/// <c>IPlanillaAsistenciaRepository</c> sólo expone <c>ContarFaltasAsync(cursanteID, tipo)</c>,
+	/// <c>IPlanillaAsistenciaRepository</c> sólo expone <c>ContarPorTipoAsync(cursanteID, tipo)</c>,
 	/// porque el agregado es la planilla —división y fecha— y un alumno no tiene asistencias
-	/// propias que listar. Ver el pendiente anotado en docs/ui-ux.md.
+	/// propias que listar.
 	/// </summary>
 	private readonly IServicioAsistencia _servicioAsistencia;
 	#endregion
@@ -580,7 +582,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 	/// Por eso esta vista cuenta y no lista: armar el listado desde acá exigiría traer todas
 	/// las planillas del ciclo con <c>BuscarPorDivisionYRangoAsync</c> y filtrarlas por
 	/// cursante, que es construir un read model en la capa de presentación. Lo que falta es una
-	/// consulta en Core con su método de repositorio; está anotado en docs/ui-ux.md.
+	/// consulta en Core con su método de repositorio.
 	/// </remarks>
 	private async Task CargarAsistenciasAsync()
 	{
@@ -620,7 +622,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 		Calificacion = new CalificacionViewModel(null)
 		{
-			Instancia = INSTANCIA_POR_DEFECTO,
+			Periodo = PERIODO_POR_DEFECTO,
 		};
 		Materia = null;
 		MostrarCalificacionView = true;
@@ -649,9 +651,9 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 			return;
 		}
 
-		if (string.IsNullOrWhiteSpace(Calificacion.Instancia))
+		if (string.IsNullOrWhiteSpace(Calificacion.Periodo))
 		{
-			_dialogService.MostrarAdvertencia("Debe elegir la instancia de la calificación.", "Datos incompletos");
+			_dialogService.MostrarAdvertencia("Debe elegir el período de la calificación.", "Datos incompletos");
 			return;
 		}
 
@@ -665,10 +667,11 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 		try
 		{
 			var request = new CrearCalificationRequest(AlumnoID: Cursante.AlumnoID,
-													   Periodo: _periodoListado,
+													   CicloLectivo: _periodoListado,
 													   MateriaID: Materia.MateriaID,
 													   Fecha: Calificacion.Fecha,
-													   Instancia: Calificacion.Instancia,
+													   Periodo: Calificacion.Periodo,
+													   EsRecuperatorio: Calificacion.EsRecuperatorio,
 													   Nota: nota,
 													   Observacion: Calificacion.Observacion);
 			await _servicioCursante.RegistrarCalificacionAsync(request);
@@ -690,19 +693,20 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 			return;
 		}
 
-		if (string.IsNullOrWhiteSpace(Calificacion.Instancia))
+		if (string.IsNullOrWhiteSpace(Calificacion.Periodo))
 		{
-			_dialogService.MostrarAdvertencia("Debe elegir la instancia del examen.", "Datos incompletos");
+			_dialogService.MostrarAdvertencia("Debe elegir el período del examen.", "Datos incompletos");
 			return;
 		}
 
 		try
 		{
 			var request = new RegistrarInasistenciaRequest(AlumnoID: Cursante.AlumnoID,
-														   Periodo: _periodoListado,
+														   CicloLectivo: _periodoListado,
 														   MateriaID: Materia.MateriaID,
 														   Fecha: Calificacion.Fecha,
-														   Instancia: Calificacion.Instancia,
+														   Periodo: Calificacion.Periodo,
+														   EsRecuperatorio: Calificacion.EsRecuperatorio,
 														   Observacion: Calificacion.Observacion);
 			await _servicioCursante.RegistrarInasistenciaAExamenAsync(request);
 

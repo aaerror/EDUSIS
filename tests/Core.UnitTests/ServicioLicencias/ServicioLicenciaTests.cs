@@ -1,3 +1,6 @@
+using Domain.Licencias.Exceptions;
+using Core.ServicioDocentes.Exceptions;
+using Core.ServicioLicencias.Exceptions;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioLicencias;
 using Core.ServicioLicencias.DTOs.Requests;
@@ -76,9 +79,9 @@ public class ServicioLicenciaTests
 	}
 
 	[Fact]
-	public async Task SolicitarLicencia_con_un_docente_inexistente_lanza_NullReferenceException()
+	public async Task SolicitarLicencia_con_un_docente_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.SolicitarLicencia(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.SolicitarLicencia(
 			new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 0, "Reposo")));
 	}
 
@@ -110,9 +113,9 @@ public class ServicioLicenciaTests
 	}
 
 	[Fact]
-	public async Task AprobarLicencia_con_una_licencia_inexistente_lanza_NullReferenceException()
+	public async Task AprobarLicencia_con_una_licencia_inexistente_lanza_LicenciaNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.AprobarLicencia(
+		await Should.ThrowAsync<LicenciaNoEncontradaException>(() => _servicio.AprobarLicencia(
 			new ActualizarEstadoLicenciaRequest(Guid.NewGuid(), Guid.NewGuid(), null)));
 	}
 
@@ -128,9 +131,9 @@ public class ServicioLicenciaTests
 	}
 
 	[Fact]
-	public async Task RechazarLicencia_con_una_licencia_inexistente_lanza_NullReferenceException()
+	public async Task RechazarLicencia_con_una_licencia_inexistente_lanza_LicenciaNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.RechazarLicencia(
+		await Should.ThrowAsync<LicenciaNoEncontradaException>(() => _servicio.RechazarLicencia(
 			new ActualizarEstadoLicenciaRequest(Guid.NewGuid(), Guid.NewGuid(), null)));
 	}
 	#endregion
@@ -149,9 +152,9 @@ public class ServicioLicenciaTests
 	}
 
 	[Fact]
-	public async Task ModificarLicencia_con_una_licencia_inexistente_lanza_NullReferenceException()
+	public async Task ModificarLicencia_con_una_licencia_inexistente_lanza_LicenciaNoEncontrada()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ModificarLicencia(new ModificarLicenciaRequest(
+		await Should.ThrowAsync<LicenciaNoEncontradaException>(() => _servicio.ModificarLicencia(new ModificarLicenciaRequest(
 			Guid.NewGuid(), Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 3, "Prórroga")));
 	}
 	#endregion
@@ -178,7 +181,7 @@ public class ServicioLicenciaTests
 			.Build();
 		_host.UnidadDeTrabajo.LicenciasFake.Sembrar(licencia);
 
-		await Should.ThrowAsync<ArgumentException>(() => _servicio.EliminarLicencia(
+		await Should.ThrowAsync<LicenciaNoPendienteException>(() => _servicio.EliminarLicencia(
 			new EliminarLicenciaRequest(licencia.Id, licencia.DocenteID)));
 		_host.UnidadDeTrabajo.LicenciasFake.Elementos.ShouldHaveSingleItem();
 	}

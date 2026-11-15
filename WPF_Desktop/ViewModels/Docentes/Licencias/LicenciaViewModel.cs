@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioLicencias.DTOs.Responses;
 using Domain.Licencias;
 using System.ComponentModel.DataAnnotations;

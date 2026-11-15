@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioDocentes.DTOs.Responses;
 using Domain.Docentes.Puestos;
 using System.ComponentModel.DataAnnotations;

@@ -1,3 +1,4 @@
+using Core.ServicioAutenticaciones.Exceptions;
 using System.Net;
 using Core.ServicioAutenticaciones;
 using Core.ServicioAutenticaciones.DTOs.Requests;
@@ -12,7 +13,7 @@ namespace Core.UnitTests.ServicioAutenticaciones;
 /// <summary>
 /// <see cref="IServicioAutenticacion"/>: <c>Login</c> valida credenciales contra el hash guardado
 /// del usuario y delega el armado del perfil en <see cref="Core.ServicioUsuarios.IServicioUsuario"/>.
-/// <c>Logout</c> se eliminó de <c>Core</c> (H-014): la sesión es responsabilidad de la presentación.
+/// <c>Logout</c> se eliminó de <c>Core</c>: la sesión es responsabilidad de la presentación.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioAutenticacionTests
@@ -56,18 +57,18 @@ public class ServicioAutenticacionTests
 	}
 
 	[Fact]
-	public async Task Login_con_un_usuario_inexistente_lanza_ArgumentException()
+	public async Task Login_con_un_usuario_inexistente_lanza_CredencialesInvalidas()
 	{
-		await Should.ThrowAsync<ArgumentException>(
+		await Should.ThrowAsync<CredencialesInvalidasException>(
 			() => _servicio.Login(new LoginRequest(new NetworkCredential("no.existe", "cualquiera"))));
 	}
 
 	[Fact]
-	public async Task Login_con_una_clave_incorrecta_lanza_ArgumentException()
+	public async Task Login_con_una_clave_incorrecta_lanza_CredencialesInvalidas()
 	{
 		SembrarUsuarioConClave("maria.gonzalez", "clave-correcta");
 
-		await Should.ThrowAsync<ArgumentException>(
+		await Should.ThrowAsync<CredencialesInvalidasException>(
 			() => _servicio.Login(new LoginRequest(new NetworkCredential("maria.gonzalez", "clave-incorrecta"))));
 	}
 	#endregion

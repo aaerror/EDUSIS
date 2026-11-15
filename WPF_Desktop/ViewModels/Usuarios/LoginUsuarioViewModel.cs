@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioAutenticaciones.DTOs.Requests;
@@ -75,7 +75,12 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
 
 		// MensajeError se deriva de los errores, así que se avisa cuando ellos cambian.
-		ErrorsChanged += (_, _) => OnPropertyChanged(nameof(MensajeError));
+		// CanExecuteRegistrarCommand lee HasErrors: sin este aviso el comando nunca se reevalúa.
+		ErrorsChanged += (_, _) =>
+		{
+			OnPropertyChanged(nameof(MensajeError));
+			RegistrarCommandAsync.NotifyCanExecuteChanged();
+		};
 	}
 
 	/*
@@ -142,10 +147,10 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 	#endregion
 
 	#region RegistrarCommand
-	private bool CanExecuteRegistrarCommand(object obj) =>
+	private bool CanExecuteRegistrarCommand(object? obj) =>
 		!HasErrors;
 
-	private async Task ExecuteRegistrarCommand(object obj)
+	private async Task ExecuteRegistrarCommand(object? obj)
 	{
 		switch (obj)
 		{

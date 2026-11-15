@@ -33,4 +33,10 @@ internal class UsuarioRepository : Repository<Usuario>, IUsuarioRepository
 		var normalizado = NormalizarUsername(username);
 		return await _context.Usuarios.AnyAsync(x => x.Username.ToLower() == normalizado);
 	}
+
+	// Cuenta sobre usuario_rol por el Id del rol. Va por Consulta(), que incluye los roles: sin el
+	// Include la navegación llega vacía y el conteo daría cero para TODOS los roles, que es
+	// exactamente el modo de fallar peor acá — la guarda del último administrador dejaría borrar.
+	public async Task<int> ContarUsuariosConRolAsync(int rolID) =>
+		await Consulta().CountAsync(x => x.Roles.Any(r => r.Id == rolID));
 }

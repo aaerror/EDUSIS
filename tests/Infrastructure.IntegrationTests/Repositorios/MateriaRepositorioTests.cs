@@ -109,9 +109,9 @@ public sealed class MateriaRepositorioTests : BaseIntegracion
 		var cursoID = await SembrarCursoAsync();
 		var curricula1ID = await SembrarCurriculaAsync(cursoID);
 		var curricula2ID = await SembrarCurriculaAsync(cursoID);
-		var materia1 = new MateriaBuilder().ConCurricula(curricula1ID).ConHorasCatedra(4).Build();
-		var materia2 = new MateriaBuilder().ConCurricula(curricula1ID).ConHorasCatedra(3).Build();
-		var materia3 = new MateriaBuilder().ConCurricula(curricula2ID).ConHorasCatedra(5).Build();
+		var materia1 = new MateriaBuilder().ConCurricula(curricula1ID).ConDescripcion("Matemática").ConHorasCatedra(4).Build();
+		var materia2 = new MateriaBuilder().ConCurricula(curricula1ID).ConDescripcion("Historia").ConHorasCatedra(3).Build();
+		var materia3 = new MateriaBuilder().ConCurricula(curricula2ID).ConDescripcion("Geografía").ConHorasCatedra(5).Build();
 
 		await using (var contexto = Fixture.CrearContexto())
 		{
@@ -134,10 +134,10 @@ public sealed class MateriaRepositorioTests : BaseIntegracion
 		var cursoID = await SembrarCursoAsync();
 		var curricula1ID = await SembrarCurriculaAsync(cursoID);
 		var curricula2ID = await SembrarCurriculaAsync(cursoID);
-		var materia1 = new MateriaBuilder().ConCurricula(curricula1ID).Build();
-		var materia2 = new MateriaBuilder().ConCurricula(curricula1ID).Build();
-		var materia3 = new MateriaBuilder().ConCurricula(curricula1ID).Build();
-		var materia4 = new MateriaBuilder().ConCurricula(curricula2ID).Build();
+		var materia1 = new MateriaBuilder().ConCurricula(curricula1ID).ConDescripcion("Biología").Build();
+		var materia2 = new MateriaBuilder().ConCurricula(curricula1ID).ConDescripcion("Física").Build();
+		var materia3 = new MateriaBuilder().ConCurricula(curricula1ID).ConDescripcion("Química").Build();
+		var materia4 = new MateriaBuilder().ConCurricula(curricula2ID).ConDescripcion("Lengua").Build();
 
 		await using (var contexto = Fixture.CrearContexto())
 		{

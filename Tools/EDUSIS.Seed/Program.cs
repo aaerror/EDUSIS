@@ -114,7 +114,7 @@ catch (Exception excepcion)
 /// Ese <c>LogTo</c> escribe directo a <see cref="Console"/> sin pasar por el
 /// <c>ILoggerFactory</c>, así que <strong>ningún consumidor puede silenciarlo</strong> con
 /// <c>AddFilter</c>. Sembrando miles de filas emite decenas de miles de líneas de SQL y tapa por
-/// completo el informe de la corrida. Está registrado como hallazgo en docs/todos.md.
+/// completo el informe de la corrida.
 /// <para>
 /// La cadena no se duplica acá: se lee del contexto que <c>AddInfrastructure</c> acaba de
 /// configurar, con un proveedor temporal que no ejecuta ningún comando. Así sigue habiendo una

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="WPF_Desktop.Views.Alumnos.RegistrarAlumnoView"
+<UserControl x:Class="WPF_Desktop.Views.Alumnos.RegistrarAlumnoView"
 			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:local="clr-namespace:WPF_Desktop.Views.Alumnos"
@@ -111,6 +111,7 @@
 										<RowDefinition Height="Auto"/>
 										<RowDefinition Height="Auto"/>
 										<RowDefinition Height="Auto"/>
+										<RowDefinition Height="Auto"/>
 									</Grid.RowDefinitions>
 
 									<!--#region CURSO-->
@@ -184,6 +185,53 @@
 													SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 													Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
 									</HeaderedContentControl>
+
+									<!--#region ENCUADRE ETARIO
+										LA EDAD CONTRA EL AÑO, COMO MEDICIÓN Y NO COMO ALARMA.
+
+										Cierra el bloque de inscripción igual que la franja de
+										alcance cierra el de los reportes: compone en vivo lo que
+										va a pasar al confirmar. La regla la decide
+										`Domain.Cursos.EdadEscolar` y ADVIERTE, no bloquea, así que
+										acá no hay nada que deshabilite el botón.
+
+										Dos elementos y no uno. La línea de medición aparece con
+										cualquier curso elegido —se lee igual esté encuadrado o no,
+										y por eso no lleva superficie: cuando la edad corresponde
+										no hay nada que destacar—, y la superficie de aviso aparece
+										sólo si hay desvío, enlazada a que el ViewModel haya
+										redactado una guía.
+
+										El color se gasta en UN lugar: la barra de 3px de
+										`Superficie.Aviso`. La insignia del desvío queda neutra a
+										propósito, y la familia es Aviso y nunca Alerta, porque
+										`EDUSIS_Feedback.xaml` reserva Alerta para el error y esto
+										no lo es: el color dice "mirá", no "pará".
+									-->
+									<StackPanel Grid.ColumnSpan="3" Grid.Row="3">
+										<StackPanel Orientation="Horizontal"
+													Visibility="{ Binding Path=EncuadreMedicion, Converter={ StaticResource ResourceKey=visibleSiHayTexto }, Mode=OneWay }">
+											<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+													   Text="{ Binding Path=EncuadreMedicion, Mode=OneWay }"
+													   VerticalAlignment="Center"/>
+
+											<Border Margin="8 0 0 0" Style="{ StaticResource ResourceKey=Insignia }">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+														   Text="{ Binding Path=EncuadreDesvio, Mode=OneWay }"/>
+											</Border>
+										</StackPanel>
+
+										<Border Margin="0 10 0 0"
+												Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+												Visibility="{ Binding Path=EncuadreGuia, Converter={ StaticResource ResourceKey=visibleSiHayTexto }, Mode=OneWay }">
+											<TextBlock HorizontalAlignment="Left"
+													   MaxWidth="700"
+													   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+													   Text="{ Binding Path=EncuadreGuia, Mode=OneWay }"
+													   TextWrapping="Wrap"/>
+										</Border>
+									</StackPanel>
+									<!--#endregion-->
 								</Grid>
 							</GroupBox>
 

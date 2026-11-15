@@ -134,17 +134,19 @@ internal sealed class GeneradorDocumentos : IGeneradorDocumentos
 		var introduccion = Parrafo.Crear(
 			$"Calificaciones registradas de { documento.Alumno.NombreCompleto }, D.N.I. { documento.Alumno.Documento }, " +
 			$"en el { Trayectoria(documento.Alumno) } correspondiente al ciclo lectivo { documento.CicloLectivo }. " +
-			$"Cuando una instancia tiene más de una calificación, se informa la última por fecha.")
+			$"En cada cuatrimestre se informa la nota vigente del período: la del recuperatorio cuando lo hubo.")
 			.ConSangria();
 
 		var tabla = Tabla
-			.Crear(columnas: new[] { "Espacio curricular", "Parcial", "Recuperatorio", "Condición" },
+			.Crear(columnas: new[] { "Espacio curricular", "1° Cuat.", "2° Cuat.", "Final", "Recuperación", "Condición" },
 				   filas: documento.Filas
 					   .Select(fila => (IReadOnlyCollection<string>) new[]
 						   {
 							   fila.Materia,
-							   fila.Parcial,
-							   fila.Recuperatorio,
+							   fila.PrimerCuatrimestre,
+							   fila.SegundoCuatrimestre,
+							   fila.Final,
+							   fila.Recuperacion,
 							   fila.Condicion
 						   })
 					   .ToList())

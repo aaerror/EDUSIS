@@ -1,3 +1,4 @@
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioLicencias;
 using Core.ServicioLicencias.DTOs.Requests;
@@ -10,20 +11,16 @@ using Xunit;
 namespace EDUSIS.EndToEndTests.Flujos;
 
 /// <summary>
-/// Flujo e2e 3 (SC-003 / data-model.md §6): solicitud de licencia de un docente desde la fachada
+/// Flujo e2e 3: solicitud de licencia de un docente desde la fachada
 /// <see cref="IServicioLicencia.SolicitarLicencia"/> hasta SQL Server real, con la composición de
 /// dependencias de producción.
 ///
 /// <para>
 /// El <strong>efecto</strong> del evento de licencia sobre el curso/cursante del docente depende
 /// de que <c>LicenciaSolicitadaEventHandler</c> (assembly <c>Core</c>,
-/// <c>Core/ServicioCursos/Events/</c>) esté registrado en la composición real.
-/// <c>InfrastructureDI</c> sólo escanea el assembly de <c>Infrastructure</c>
-/// (<c>RegisterServicesFromAssemblyContaining&lt;EdusisDBContext&gt;()</c>), así que ese handler
-/// <strong>no</strong> queda registrado: es el defecto <c>H-022</c> de <c>hallazgos.md</c>
-/// (verificado en <c>Infrastructure.IntegrationTests.Eventos.DespachoDeEventosTests</c>). La
-/// prueba del efecto queda <c>Skip</c> y no cuenta como fallo de SC-003 (FR-018, tasks.md
-/// T051/T056). Acá se verifica que la solicitud llega a SQL Server y queda pendiente.
+/// <c>Core/ServicioCursos/Events/</c>) haga algo: el handler está registrado en la composición
+/// real, pero su <c>Handle</c> es un no-op con un TODO. La prueba del efecto queda <c>Skip</c>
+/// y no cuenta como fallo. Acá se verifica que la solicitud llega a SQL Server y queda pendiente.
 /// </para>
 /// </summary>
 public sealed class LicenciaDeDocenteTests : BaseE2E
@@ -54,14 +51,14 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 	}
 
 	[RequiereSqlServerFact]
-	public async Task SolicitarLicencia_con_un_docente_inexistente_propaga_NullReferenceException()
+	public async Task SolicitarLicencia_con_un_docente_inexistente_propaga_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => EnUnScope(sp =>
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => EnUnScope(sp =>
 			sp.GetRequiredService<IServicioLicencia>().SolicitarLicencia(
 				new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 0, "gripe"))));
 	}
 
-	[Fact(Skip = "H-022: el motivo original (InfrastructureDI no escanea el assembly Core) quedó corregido; hoy `RegisterServicesFromAssemblies` incluye los dos assemblies y `LicenciaSolicitadaEventHandler` sí se registra. Pero su `Handle` es un no-op con un TODO (`Core/ServicioCursos/Events/LicenciaSolicitadaEventHandler.cs:19`): devuelve `Task.CompletedTask` sin tocar el curso. El efecto sigue sin ser observable, por una causa distinta. Ver hallazgos.md.")]
+	[Fact(Skip = "Pendiente de implementar el handler de licencia solicitada: `LicenciaSolicitadaEventHandler` sí se registra, pero su `Handle` es un no-op con un TODO (`Core/ServicioCursos/Events/LicenciaSolicitadaEventHandler.cs`): devuelve `Task.CompletedTask` sin tocar el curso, así que el efecto no es observable.")]
 	public void SolicitarLicencia_aplica_el_efecto_del_evento_sobre_el_curso_del_docente()
 	{
 	}

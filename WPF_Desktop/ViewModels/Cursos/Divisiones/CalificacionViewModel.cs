@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Core.ServicioCursantes.DTOs.Responses;
 using System.Collections.ObjectModel;
 using System;
+using WPF_Desktop.Shared;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
@@ -27,8 +28,18 @@ internal partial class CalificacionViewModel : ObservableValidator
 	[ObservableProperty]
 	private DateTime _fecha = DateTime.Today;
 
+	/// <summary>
+	/// El tramo del ciclo, con el nombre del miembro de <c>Periodo</c>: es lo que viaja en el
+	/// request y lo que selecciona la lista desplegable.
+	/// </summary>
 	[ObservableProperty]
-	private string _instancia = string.Empty;
+	[NotifyPropertyChangedFor(nameof(Instancia))]
+	private string _periodo = string.Empty;
+
+	/// <summary>Si la calificación es el segundo intento dentro de ese período.</summary>
+	[ObservableProperty]
+	[NotifyPropertyChangedFor(nameof(Instancia))]
+	private bool _esRecuperatorio;
 
 	[ObservableProperty]
 	private double? _nota;
@@ -45,6 +56,16 @@ internal partial class CalificacionViewModel : ObservableValidator
 	[ObservableProperty]
 	private ObservableCollection<MateriaViewModel> _materias = new();
 
+	/// <summary>
+	/// La instancia como se lee en la grilla: "1° cuatrimestre", "2° cuatrimestre (rec.)".
+	/// </summary>
+	/// <remarks>
+	/// Calculada y no almacenada porque es la lectura de los dos campos que SÍ se editan. Antes era
+	/// un <c>string</c> propio con el valor de un enum de dos miembros, y la celda decía
+	/// "Recuperatorio" sin poder aclarar de cuál de los cuatro posibles se trataba.
+	/// </remarks>
+	public string Instancia => Periodos.DecirInstancia(Periodo, EsRecuperatorio);
+
 
 	public CalificacionViewModel(CalificacionResponse? calificacionResponse)
 	{
@@ -56,7 +77,8 @@ internal partial class CalificacionViewModel : ObservableValidator
 			MateriaID = _calificacionResponse.MateriaID;
 			Materia = _calificacionResponse.Materia;
 			Fecha = _calificacionResponse.Fecha;
-			Instancia = _calificacionResponse.Instancia;
+			Periodo = _calificacionResponse.Periodo;
+			EsRecuperatorio = _calificacionResponse.EsRecuperatorio;
 			Rindio = _calificacionResponse.Rindio;
 			Nota = _calificacionResponse.Nota;
 			Aprobado = _calificacionResponse.Aprobado;

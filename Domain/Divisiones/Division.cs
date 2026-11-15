@@ -7,7 +7,6 @@ namespace Domain.Divisiones;
 public sealed class Division : Entity
 {
 	private const int MAX_ALUMNOS = 35;
-	private const int MINIMO_MATRICULA_PRIMARIA = 15;
 
 	public Guid CursoID { get; private set; } = Guid.Empty;
 	public string Descripcion { get; private set; } = string.Empty;
@@ -130,47 +129,13 @@ public sealed class Division : Entity
 			throw new CupoMaximoAlcanzadoException();
 	}
 
-	/// <summary>
-	/// Una división vacía se elimina siempre, de cualquier nivel. Con cursantes, el nivel decide:
-	/// en Secundaria no se elimina nunca y en Primaria se exige que la matrícula haya caído por
-	/// debajo del mínimo que justifica mantener la división abierta.
-	/// </summary>
-	/// <remarks>
-	/// <para>
-	/// <paramref name="cantidadCursantes"/> es la <em>matrícula vigente</em> del ciclo lectivo, no
-	/// el total histórico de inscripciones: una división sin alumnos cursando llega acá con cero
-	/// aunque arrastre inscripciones cerradas de ciclos anteriores. Esas las frena después una
-	/// guarda de integridad de <c>ServicioDivision.EliminarDivisionAsync</c>, porque
-	/// <c>FK_CURSANTE_DIVISION</c> está declarada con <c>OnDelete(DeleteBehavior.Restrict)</c> y el
-	/// borrado reventaría en SQL Server con una violación de clave ajena en lugar de una excepción
-	/// de dominio.
-	/// </para>
-	/// <para>
-	/// <strong>El orden de esa guarda respecto de esta validación importa</strong>, y está elegido
-	/// para que estas dos ramas sigan vivas: "toda inscripción" contiene a "matrícula vigente", así
-	/// que si la guarda de integridad corriera primero, <paramref name="cantidadCursantes"/>
-	/// llegaría siempre en cero y ni <c>DivisionNoEliminableException</c> ni
-	/// <c>DivisionConMatriculaSuficienteException</c> se dispararían nunca en producción. La
-	/// decisión está documentada en <c>docs/plan/historico/casos-uso-pendientes.md</c>, "La decisión
-	/// sobre la clave ajena de división", y el motivo del orden, en el propio caso de uso.
-	/// </para>
-	/// </remarks>
-	public void ValidarSePuedeEliminar(NivelEducativo nivel, int cantidadCursantes)
-	{
-		if (cantidadCursantes == 0)
-		{
-			return;
-		}
-
-		if (nivel == NivelEducativo.Secundaria)
-		{
-			throw new DivisionNoEliminableException();
-		}
-
-		if (nivel == NivelEducativo.Primaria && cantidadCursantes >= MINIMO_MATRICULA_PRIMARIA)
-		{
-			throw new DivisionConMatriculaSuficienteException();
-		}
-	}
+	// Acá vivía ValidarSePuedeEliminar(NivelEducativo, int): una división de Secundaria con
+	// matrícula no se eliminaba nunca y una de Primaria sólo por debajo de MINIMO_MATRICULA_PRIMARIA
+	// (15). La regla se quitó por decisión de negocio, no por limpieza: eliminar una
+	// división es borrado físico que cascadea su matrícula —cátedras, planillas, cursantes y
+	// sus calificaciones—, informada por el diálogo de confirmación de
+	// ServicioDivision.ConsultarImpactoEliminacionDivisionAsync. No restaurar la guarda: RF-02 y
+	// CU-02 ya no la exigen. DivisionNoEliminableException y
+	// DivisionConMatriculaSuficienteException se borraron con ella.
 	#endregion
 }

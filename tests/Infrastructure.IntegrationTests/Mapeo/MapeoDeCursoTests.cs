@@ -46,13 +46,21 @@ public sealed class MapeoDeCursoTests : BaseIntegracion
 	}
 
 	/// <summary>
-	/// Defecto H-023: <c>DivisionesConfiguration</c> ya mapea <c>descripcion</c> como
-	/// <c>varchar(1)</c>, pero el esquema de prueba se crea con <c>Database.Migrate()</c> y la
-	/// migración <c>InitCreate</c> todavía declara la columna de ancho fijo, así que un ida y
-	/// vuelta devuelve <c>"A"</c> con relleno de espacios. Se resuelve al regenerar la migración.
-	/// Ver <c>hallazgos.md</c>.
+	/// Fija el tipo de <c>descripcion</c> contra la base: la letra de la división vuelve sin
+	/// relleno de espacios, o sea que la columna es de ancho variable y no fijo.
 	/// </summary>
-	[Fact(Skip = "Defecto H-023: Division.Descripcion vuelve con relleno de espacios hasta regenerar la migración; ver hallazgos.md")]
+	/// <remarks>
+	/// <para>
+	/// El esquema de prueba se crea con <c>Database.Migrate()</c>, así que lo que cuenta es el
+	/// tipo que declara la migración y no sólo el mapeo: si la columna quedara de ancho fijo, un
+	/// ida y vuelta devolvería <c>"A"</c> con relleno.
+	/// </para>
+	/// <para>
+	/// <c>DivisionesConfiguration</c> mapea <c>HasMaxLength(1).IsUnicode(false)</c> y la migración
+	/// <c>20261011000305_InitCreate</c> lo refleja.
+	/// </para>
+	/// </remarks>
+	[RequiereSqlServerFact]
 	public async Task La_descripcion_de_la_division_no_deberia_volver_con_relleno_de_espacios()
 	{
 		var cursoID = await SembrarCursoAsync();

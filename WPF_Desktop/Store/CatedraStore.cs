@@ -6,11 +6,14 @@ namespace WPF_Desktop.Store;
 /// Cátedra elegida en la pantalla de cátedras, para que la de situación de revista sepa cuál es.
 /// </summary>
 /// <remarks>
-/// Sigue siendo un <c>Guid</c> que nace en <c>Guid.Empty</c>: es el quinto centinela de la tanda
-/// que UI-34 de <c>docs/todos.md</c> enumera, y no se migró a <c>Guid?</c> en este paso. El store
-/// no notifica cambios a propósito: ver el hallazgo de los eventos muertos en <c>docs/todos.md</c>.
+/// Es un <c>Guid</c> que nace en <c>Guid.Empty</c> (un centinela que el compilador no distingue de
+/// un valor real); lo correcto sería <c>Guid?</c>, como en <c>LegajoStore</c>. El store no notifica
+/// cambios a propósito: los ViewModels son <c>Transient</c> y lo leen en el constructor.
 /// </remarks>
-internal class CatedraStore
+internal class CatedraStore : IEstadoDeSesion
 {
 	public Guid Catedra { get; set; } = Guid.Empty;
+
+	public void Limpiar() =>
+		Catedra = Guid.Empty;
 }

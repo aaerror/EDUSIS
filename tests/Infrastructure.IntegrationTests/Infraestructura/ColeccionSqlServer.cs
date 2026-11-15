@@ -26,8 +26,7 @@ public static class ColeccionSqlServer
 
 /// <summary>
 /// Define la <em>collection</em> de xUnit: una sola <see cref="SqlServerFixture"/> (un
-/// contenedor / una base) para toda la suite de integración (contracts/test-execution.md §5,
-/// FR-009).
+/// contenedor / una base) para toda la suite de integración.
 /// </summary>
 [CollectionDefinition(ColeccionSqlServer.Nombre)]
 public sealed class DefinicionColeccionSqlServer : ICollectionFixture<SqlServerFixture>
@@ -40,12 +39,11 @@ public sealed class DefinicionColeccionSqlServer : ICollectionFixture<SqlServerF
 /// <list type="bullet">
 ///   <item>Las pruebas se anotan con <c>[RequiereSqlServerFact]</c>: sin Docker ni
 ///   <c>EDUSIS_TEST_SQLSERVER</c> quedan <em>Skipped</em> (salida 0), no fallidas
-///   (contracts/test-execution.md §5).</item>
+///   (la decisión se toma al construir el atributo).</item>
 ///   <item>Si el motor está disponible pero el esquema no se pudo preparar (contenedor que no
-///   levanta, migración que no aplica — FR-019), <see cref="InitializeAsync"/> corta con un
-///   error explícito: es un defecto que bloquea la suite y debe quedar en <c>hallazgos.md</c>
-///   (FR-018).</item>
-///   <item>Antes de cada prueba resetea los datos con Respawn (FR-009).</item>
+///   levanta, migración que no aplica), <see cref="InitializeAsync"/> corta con un
+///   error explícito: es un defecto que bloquea la suite, no un motivo para omitir pruebas.</item>
+///   <item>Antes de cada prueba resetea los datos con Respawn.</item>
 /// </list>
 /// </summary>
 [Trait("Categoria", Categorias.Integracion)]
@@ -192,7 +190,7 @@ public abstract class BaseIntegracion : IAsyncLifetime
 	/// El rol es un dato de referencia que la migración siembra con <c>HasData</c>, así que su fila
 	/// ya existe: sin el <c>Attach</c> previo, EF ve la instancia estática de <c>Rol</c> como nueva,
 	/// intenta <c>INSERT INTO rol</c> y choca con <c>PK_ROL</c>. Es el mismo patrón que usa
-	/// <c>Tools/EDUSIS.Seed</c> (ver <c>docs/plan/rbac-y-seed.md</c> §C).
+	/// <c>Tools/EDUSIS.Seed</c>.
 	/// </summary>
 	protected async Task SembrarUsuarioAsync(Usuario usuario)
 	{

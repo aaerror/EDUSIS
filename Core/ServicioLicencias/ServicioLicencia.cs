@@ -1,4 +1,6 @@
 ﻿using Core.ServicioDocentes.DTOs.Requests;
+using Core.ServicioDocentes.Exceptions;
+using Core.ServicioLicencias.Exceptions;
 using Core.ServicioLicencias.DTOs.Requests;
 using Core.ServicioLicencias.DTOs.Responses;
 using Core.Shared;
@@ -57,7 +59,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
-				throw new NullReferenceException("Licencia no encontrada.");
+				throw new LicenciaNoEncontradaException();
 			}
 
 			licencia.AprobarLicencia(request.Observacion);
@@ -83,7 +85,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
-				throw new NullReferenceException("Licencia no encontrada.");
+				throw new LicenciaNoEncontradaException();
 			}
 
 			licencia.CancelarLicencia(request.Observacion);
@@ -109,7 +111,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
-				throw new NullReferenceException("Licencia no encontrada.");
+				throw new LicenciaNoEncontradaException();
 			}
 
 			licencia.ModificarPeriodo(request.FechaInicio, request.Dias);
@@ -136,14 +138,12 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
-				throw new NullReferenceException("Licencia no encontrada.");
+				throw new LicenciaNoEncontradaException();
 			}
 
-			var estado = licencia.Estado;
-			if (!estado.Equals(Estado.Pendiente))
-			{
-				throw new ArgumentException("Sólo se pueden eliminar licencias que se encuentran pendientes de aprobar.");
-			}
+			// La regla es del agregado y la aplica el agregado: acá sólo se la invoca. Comparar
+			// licencia.Estado en el servicio sería suplir una validación del dominio.
+			licencia.ValidarSePuedeEliminar();
 
 			await _unitOfWork.Licencias.EliminarAsync(licencia.Id);
 			var result = await _unitOfWork.GuardarCambiosAsync();
@@ -163,10 +163,17 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 		{
 			_sesion.Exigir(Permiso.GestionarDocentes);
 
+			// DocenteNoEncontradoException y no "Datos incompletos para registrar la licencia": esta
+			// guarda pregunta si el docente existe, y el mensaje anterior describía otra cosa. Llegaba
+			// tal cual al usuario —las excepciones suben hasta el ViewModel sin ser tragadas—, así que
+			// quien solicitaba una licencia para un docente inexistente leía que sus datos estaban
+			// incompletos. Agrupar los throw del BCL por el texto de su mensaje puso este sitio en la
+			// familia de las guardas de request nulo, que es lo que el mensaje decía y no lo que el
+			// código hace.
 			var existeDocente = await _unitOfWork.Docentes.ExisteIDAsync(request.DocenteID);
 			if (!existeDocente)
 			{
-				throw new NullReferenceException("Datos incompletos para registrar la licencia.");
+				throw new DocenteNoEncontradoException(nameof(request.DocenteID));
 			}
 
 			Licencia licencia;

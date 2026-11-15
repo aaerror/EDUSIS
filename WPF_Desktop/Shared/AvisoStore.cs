@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using System;
+using WPF_Desktop.Store;
 
 namespace WPF_Desktop.Shared;
 
@@ -21,7 +22,7 @@ namespace WPF_Desktop.Shared;
 /// <c>ItemsControl</c> desde otro hilo tira <c>NotSupportedException</c>.
 /// </para>
 /// </remarks>
-internal class AvisoStore
+internal class AvisoStore : IEstadoDeSesion
 {
 	private const int MaximoALaVista = 4;
 
@@ -38,6 +39,20 @@ internal class AvisoStore
 
 	public void Descartar(Aviso aviso) =>
 		Avisos.Remove(aviso);
+
+	/// <summary>
+	/// Vacía la cola al cambiar de usuario: un aviso cuenta el resultado de una operación de quien
+	/// la hizo —"Alumno dado de baja"— y no tiene por qué leerlo el que entra después.
+	/// </summary>
+	/// <remarks>
+	/// Los <see cref="DispatcherTimer"/> ya programados siguen corriendo y van a llamar a
+	/// <see cref="Descartar"/> sobre avisos que ya no están en la colección. No hace falta
+	/// cancelarlos: <see cref="ObservableCollection{T}.Remove"/> sobre un elemento ausente devuelve
+	/// <see langword="false"/> y no toca nada. Lo que sí importa es que el timer corre en el hilo de
+	/// la interfaz, así que tampoco puede pisar la colección desde otro hilo.
+	/// </remarks>
+	public void Limpiar() =>
+		Avisos.Clear();
 
 	private void Agregar(TipoDeAviso tipo, string titulo, string mensaje)
 	{

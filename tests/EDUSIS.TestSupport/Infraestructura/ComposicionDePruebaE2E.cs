@@ -10,7 +10,7 @@ namespace EDUSIS.TestSupport.Infraestructura;
 
 /// <summary>
 /// Arma el <see cref="ServiceProvider"/> real de las pruebas end-to-end
-/// (contracts/test-support-api.md §5.3, FR-008, FR-014, FR-017): la misma composición que en
+/// —la misma composición que en
 /// producción —<c>InfrastructureDI.AddInfrastructure()</c> → <c>CoreDI.AddServices()</c>— con
 /// la <strong>única</strong> sustitución de la cadena del <see cref="EdusisDBContext"/> por la
 /// de la base efímera de prueba.
@@ -28,7 +28,7 @@ public static class ComposicionDePruebaE2E
 	/// <summary>
 	/// Construye la composición real apuntando <see cref="EdusisDBContext"/> a
 	/// <paramref name="cadenaDeConexion"/> (la de <see cref="SqlServerFixture.CadenaDeConexion"/>,
-	/// nunca la hardcodeada de <c>InfrastructureDI</c> — FR-016). El llamador es dueño del
+	/// nunca la hardcodeada de <c>InfrastructureDI</c>). El llamador es dueño del
 	/// <see cref="ServiceProvider"/> devuelto y debe liberarlo.
 	/// </summary>
 	public static ServiceProvider Construir(string cadenaDeConexion, ISesionActual? sesion = null)

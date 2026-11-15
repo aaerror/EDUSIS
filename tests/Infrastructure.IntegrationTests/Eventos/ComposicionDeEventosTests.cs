@@ -10,7 +10,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Eventos;
 
 /// <summary>
-/// FR-018: la composición real de <c>InfrastructureDI</c> registra los
+/// La composición real de <c>InfrastructureDI</c> registra los
 /// <c>INotificationHandler</c> definidos en <c>Core</c>.
 /// <para>
 /// No hereda de <see cref="Infraestructura.BaseIntegracion"/> a propósito: sólo arma el

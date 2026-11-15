@@ -1,4 +1,4 @@
-﻿namespace WPF_Desktop.Properties;
+namespace WPF_Desktop.Properties;
 
 // Esta clase le permite controlar eventos específicos en la clase de configuración:
 //	El evento SettingChanging se desencadena antes de cambiar un valor de configuración.

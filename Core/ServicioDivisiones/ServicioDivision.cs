@@ -1,3 +1,4 @@
+using Core.ServicioCursos.Exceptions;
 using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioDivisiones.Exceptions;
@@ -33,7 +34,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var cicloLectivo = CicloLectivo.Crear(request.CicloLectivo);
@@ -83,7 +84,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var descripciones = await _unitOfWork.Divisiones.DescripcionesDelCursoAsync(request.CursoID);
@@ -108,7 +109,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			// La letra la elige el usuario sobre la propuesta de ProponerDescripcionDivisionAsync:
@@ -133,6 +134,34 @@ internal class ServicioDivision : IServicio, IServicioDivision
 		}
 	}
 
+	/// <summary>
+	/// Elimina la división y toda la trayectoria que cuelga de ella: cátedras, planillas de
+	/// asistencia, inscripciones y calificaciones. <strong>Siempre</strong>: no hay guarda de
+	/// matrícula.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Este caso de uso no tiene guarda de negocio por nivel educativo ni guarda de integridad que
+	/// rechace el borrado ante una inscripción histórica: se quitaron por decisión de negocio, junto
+	/// con el requerimiento que las sostenía (RF-02 y CU-02), para que <em>eliminar</em> signifique
+	/// lo mismo en los cinco agregados: borrado físico, con un diálogo que informa qué se destruye.
+	/// </para>
+	/// <para>
+	/// <strong>El orden de los cuatro pasos lo impone el grafo de claves ajenas, no el gusto.</strong>
+	/// Las tres que apuntan a <c>division</c> —<c>FK_CATEDRA_DIVISION</c>,
+	/// <c>FK_PLANILLA_ASISTENCIA_DIVISION</c> y <c>FK_CURSANTE_DIVISION</c>— son <c>Restrict</c>, así
+	/// que la fila de la división es la última que puede caer. Lo que sí cascadea solo son las
+	/// entidades hijas: horarios y situaciones de revista por cátedra, registros por planilla, y
+	/// calificaciones por cursante.
+	/// </para>
+	/// <para>
+	/// La guarda de autorización corre <strong>antes</strong> de <c>BeginTransactionAsync</c> y el
+	/// rollback va en un <c>try</c> propio, con el molde de <c>ServicioAlumno.EliminarAlumnoAsync</c>:
+	/// es el tercer caso de uso de <c>Core</c> con transacción explícita y el defecto de hacer
+	/// rollback sobre una transacción que nunca se abrió porque la autorización falló podría
+	/// reaparecer igual.
+	/// </para>
+	/// </remarks>
 	public async Task EliminarDivisionAsync(EliminarDivisionRequest request)
 	{
 		try
@@ -142,43 +171,101 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
-				throw new InvalidOperationException("El curso no existe.");
+				throw new CursoNoEncontradoException();
 			}
 
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
-			var cicloLectivo = CicloLectivo.Crear(request.CicloLectivo);
-			var cantidadCursantes = await _unitOfWork.Cursantes.ContarCursantesDeDivisionAsync(division.Id, cicloLectivo);
+			await _unitOfWork.BeginTransactionAsync();
 
-			// El orden de las dos guardas que siguen NO es indiferente, y la de abajo contiene a
-			// esta: toda división con matrícula vigente tiene inscripciones, así que la que corra
-			// primero deja muerta a la otra. La regla de negocio va adelante porque tiene el
-			// mensaje que el usuario necesita cuando la división todavía tiene alumnos cursando
-			// ("la matrícula alcanza para mantenerla abierta"), más preciso que "dar de baja o
-			// trasladar". Invertirlas compila, no rompe ningún test y vuelve inalcanzables
-			// DivisionNoEliminableException y DivisionConMatriculaSuficienteException.
-			division.ValidarSePuedeEliminar(curso.NivelEducativo, cantidadCursantes);
-
-			// Guarda de integridad, no regla de negocio: atrapa lo que la validación de arriba no
-			// ve, que son las inscripciones cerradas y las de otros ciclos lectivos. Hace falta
-			// porque FK_CURSANTE_DIVISION está declarada con OnDelete(DeleteBehavior.Restrict)
-			// (Infrastructure/EntityConfigurations/CursantesConfiguration.cs), así que sin ella el
-			// DELETE falla en SQL Server y el usuario ve el nombre de una clave ajena en vez de qué
-			// tiene que hacer. Ningún test lo detectaría: el fake en memoria no tiene claves ajenas.
-			var inscripciones = await _unitOfWork.Cursantes.ContarInscripcionesDeDivisionAsync(division.Id);
-			if (inscripciones > 0)
+			try
 			{
-				throw new DivisionConInscripcionesException();
+				// 1. Las cátedras de la división. Sus horarios y situaciones de revista caen por
+				//    FK_HORARIO_CATEDRA y FK_SITUACION_REVISTA_CATEDRA, que sí son Cascade: son
+				//    entidades hijas de Catedra y no tienen vida propia.
+				var catedras = await _unitOfWork.Catedras.CatedrasSegunDivisionAsync(division.Id);
+				_unitOfWork.Catedras.EliminarRango(catedras);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				// 2. Las planillas de asistencia. Sus registros caen por
+				//    FK_REGISTRO_ASISTENCIA_PLANILLA_ASISTENCIA, también Cascade.
+				var planillas = await _unitOfWork.PlanillasAsistencia.BuscarPorDivisionAsync(division.Id);
+				_unitOfWork.PlanillasAsistencia.EliminarRango(planillas);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				// 3. Las inscripciones, de cualquier ciclo lectivo. Sus calificaciones caen por
+				//    FK_CALIFICACION_CURSANTE, Cascade. Es este paso el que vacía la tabla
+				//    calificacion y, por lo tanto, lo que después vuelve borrables las materias del
+				//    curso: FK_CALIFICACION_MATERIA es Restrict. Ver Curso.ValidarSePuedeEliminar.
+				var cursantes = await _unitOfWork.Cursantes.BuscarInscripcionesDeDivisionAsync(division.Id);
+				_unitOfWork.Cursantes.EliminarRango(cursantes);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				// 4. La división.
+				await _unitOfWork.Divisiones.EliminarAsync(division.Id);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				await _unitOfWork.CommitTransactionAsync();
+
+				_logger.LogInformation($"División { division.Id } eliminada con { cursantes.Count } inscripciones, { planillas.Count } planillas y { catedras.Count } cátedras.");
+			}
+			catch
+			{
+				await _unitOfWork.RollbackTransactionAsync();
+				throw;
+			}
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Qué destruiría eliminar esta división. Lo consume el diálogo de confirmación.
+	/// </summary>
+	/// <remarks>
+	/// <strong>Es una lectura con guarda de permiso</strong>, a diferencia de las
+	/// ~30 consultas de <c>Core</c> que quedan abiertas. La asimetría es deliberada y es la
+	/// misma que ya tiene <c>ServicioAlumno.ConsultarImpactoEliminacionAsync</c>: esta consulta existe
+	/// sólo para servir al borrado, lo que devuelve es el volumen de la trayectoria académica de una
+	/// división entera, y no la consume ninguna pantalla ajena ni ningún combo — así que no corre el
+	/// riesgo que motivó dejar las lecturas abiertas.
+	///
+	/// Sale de las mismas tres consultas que ejecuta el borrado, no de consultas paralelas.
+	/// </remarks>
+	public async Task<ImpactoEliminacionDivisionResponse> ConsultarImpactoEliminacionDivisionAsync(EliminarDivisionRequest request)
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GestionarCursos);
+
+			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
+			if (division is null)
+			{
+				throw new DivisionNoEncontradaException();
 			}
 
-			await _unitOfWork.Divisiones.EliminarAsync(division.Id);
-			var result = await _unitOfWork.GuardarCambiosAsync();
+			var catedras = await _unitOfWork.Catedras.CatedrasSegunDivisionAsync(division.Id);
+			var planillas = await _unitOfWork.PlanillasAsistencia.BuscarPorDivisionAsync(division.Id);
+			var cursantes = await _unitOfWork.Cursantes.BuscarInscripcionesDeDivisionAsync(division.Id);
 
-			_logger.LogInformation($"{ result } división eliminada correctamente.");
+			return new ImpactoEliminacionDivisionResponse(
+				Inscripciones: cursantes.Count,
+				Calificaciones: cursantes.Sum(x => x.Calificaciones.Count),
+				Planillas: planillas.Count,
+				RegistrosAsistencia: planillas.Sum(x => x.Registros.Count),
+				Catedras: catedras.Count,
+				Designaciones: catedras.Sum(x => x.SituacionesRevista.Count),
+				CiclosLectivos: cursantes.Select(x => x.CicloLectivo.Periodo)
+										 .Distinct()
+										 .OrderBy(x => x)
+										 .ToList());
 		}
 		catch (Exception ex)
 		{
@@ -189,7 +276,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	#endregion
 
 	// Las tres operaciones de preceptor exigen GestionarPreceptores y no GestionarCursos: el
-	// diagrama de Secretaría (docs/uml/) le da CU-04/05/06 al Encargado de Secretaría, mientras
+	// diagrama de casos de uso de Secretaría le da CU-04/05/06 al Encargado de Secretaría, mientras
 	// que el alta y la baja de divisiones —acá arriba, con GestionarCursos— son de Secretaría
 	// Académica. Eran el mismo permiso y concedían los dos grupos juntos.
 	#region Preceptor
@@ -202,7 +289,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			var existePreceptor = await _unitOfWork.Divisiones.ExistePreceptorAsignadoAsync(request.DocenteID);
@@ -234,7 +321,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			var existePreceptor = await _unitOfWork.Divisiones.ExistePreceptorAsignadoAsync(request.DocenteID);
@@ -266,7 +353,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("La división no existe.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			division.QuitarPreceptor();

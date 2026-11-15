@@ -1,12 +1,10 @@
 <Project>
 
 	<!--
-		Gestión central de versiones para los proyectos de prueba (FR-020).
+		Gestión central de versiones para los proyectos de prueba.
 		Versiones EXACTAS (sin rango x) para que `dotnet test` sea reproducible
 		en un checkout limpio. Actualizarlas es un cambio deliberado.
-		Justificación de cada paquete: specs/001-automated-test-suite/research.md
-		(§Resumen de dependencias nuevas). Sólo aplica bajo tests/; producción no
-		usa ManagePackageVersionsCentrally.
+		Sólo aplica bajo tests/; producción no usa ManagePackageVersionsCentrally.
 	-->
 	<PropertyGroup>
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>

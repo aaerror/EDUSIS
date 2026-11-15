@@ -26,6 +26,10 @@ public sealed class DocenteRepositorioTests : BaseIntegracion
 				.ConEdad(40))
 			.ConLegajo(legajo)
 			.ConCuil(cuil)
+			// Email derivado del legajo: sin esto los dos docentes de una prueba nacen con el
+			// maria.gonzalez@correo.com del PersonaBuilder y el segundo choca contra IX_persona_email,
+			// que es único. Mismo defecto que tenía el helper de AlumnoRepositorioTests.
+			.ConEmail($"docente.{legajo}@correo.com")
 			.ConPuesto()
 			.Build();
 
@@ -80,14 +84,14 @@ public sealed class DocenteRepositorioTests : BaseIntegracion
 	}
 
 	[RequiereSqlServerFact]
-	public async Task EsCuilInvalidoAsync_es_true_cuando_el_cuil_ya_existe()
+	public async Task ExisteCuilAsync_es_true_cuando_el_cuil_ya_existe()
 	{
 		await SembrarDocenteAsync("100600", "27333444556", "Romero", "Ana");
 
 		using var uow = CrearUnidadDeTrabajo();
 
-		(await uow.Docentes.EsCuilInvalidoAsync("27333444556")).ShouldBeTrue();
-		(await uow.Docentes.EsCuilInvalidoAsync("20000000009")).ShouldBeFalse();
+		(await uow.Docentes.ExisteCuilAsync("27333444556")).ShouldBeTrue();
+		(await uow.Docentes.ExisteCuilAsync("20000000009")).ShouldBeFalse();
 	}
 
 	[RequiereSqlServerFact]

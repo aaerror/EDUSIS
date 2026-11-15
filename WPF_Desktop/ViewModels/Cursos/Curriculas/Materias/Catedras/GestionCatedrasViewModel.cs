@@ -205,29 +205,29 @@ internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 	#endregion
 
 	#region SeleccionarCatedraCommand
-	private bool CanExecuteSeleccionarCatedraCommand(CatedraViewModel catedra)
+	private bool CanExecuteSeleccionarCatedraCommand(CatedraViewModel? catedra)
 	{
 		return catedra is not null && catedra.CatedraID != Guid.Empty;
 	}
 
-	private void ExecuteSeleccionarCatedraCommand(CatedraViewModel catedra)
+	private void ExecuteSeleccionarCatedraCommand(CatedraViewModel? catedra)
 	{
-		_catedraStore.Catedra = catedra.CatedraID;
+		_catedraStore.Catedra = catedra!.CatedraID; // CanExecute ya descartó el null
 		_gestionSituacionRevistaNavigationService.Navigate();
 	}
 	#endregion
 
 	#region VerHorariosCommand
-	private bool CanExecuteVerHorariosCommand(CatedraViewModel catedra)
+	private bool CanExecuteVerHorariosCommand(CatedraViewModel? catedra)
 	{
 		return catedra is not null && catedra.CatedraID != Guid.Empty;
 	}
 
-	private void ExecuteVerHorariosCommand(CatedraViewModel catedra)
+	private void ExecuteVerHorariosCommand(CatedraViewModel? catedra)
 	{
 		// El store se escribe ANTES de navegar: GestionHorariosViewModel es Transient y lee la cátedra en su
 		// constructor, que corre dentro de Navigate(). Si se invierte, la pantalla nace con Guid.Empty.
-		_catedraStore.Catedra = catedra.CatedraID;
+		_catedraStore.Catedra = catedra!.CatedraID; // CanExecute ya descartó el null
 		_gestionHorariosNavigationService.Navigate();
 	}
 	#endregion

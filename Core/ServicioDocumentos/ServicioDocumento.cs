@@ -1,3 +1,5 @@
+using Domain.Shared.Exceptions;
+using Core.ServicioDocumentos.Exceptions;
 using Core.ServicioDocumentos.DTOs.Requests;
 using Core.Shared;
 using Core.Shared.Documentos;
@@ -106,12 +108,12 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 
 			if (request.Desde.Date > request.Hasta.Date)
 			{
-				throw new ArgumentException("El inicio del período es posterior a su fin.", nameof(request.Desde));
+				throw new FechasInconsistentesException();
 			}
 
 			if (request.Desde.Date > DateTime.Today)
 			{
-				throw new ArgumentException("El período del certificado no puede comenzar en el futuro.", nameof(request.Desde));
+				throw new PeriodoFuturoException();
 			}
 
 			var cursante = await ResolverAsync(request.AlumnoID, request.Periodo);
@@ -124,7 +126,7 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 			var concurrio = planillas.Any(planilla => planilla.RegistroDe(cursante.Cursante.Id) is not null);
 			if (!concurrio)
 			{
-				throw new InvalidOperationException("No hay planillas de asistencia del alumno en el período indicado: no se puede certificar la concurrencia.");
+				throw new SinAsistenciaRegistradaException();
 			}
 
 			var documento = new CertificadoAsistenciaDocumento(
@@ -216,8 +218,10 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 				.OrderBy(materia => materia.Descripcion)
 				.Select(materia => new FilaBoletin(
 					Materia: materia.Descripcion,
-					Parcial: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Instancia.Parcial),
-					Recuperatorio: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Instancia.Recuperatorio),
+					PrimerCuatrimestre: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Periodo.PrimerCuatrimestre),
+					SegundoCuatrimestre: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Periodo.SegundoCuatrimestre),
+					Final: ContextoAcademico.DescribirNota(cursante.CalificacionesDelCiclo, materia.Id, Periodo.Final),
+					Recuperacion: ContextoAcademico.DescribirRecuperacion(cursante.CalificacionesDelCiclo, materia.Id),
 					Condicion: ContextoAcademico.DescribirCondicion(cursante.CalificacionesDelCiclo, materia.Id, conNota: true)))
 				.ToList();
 

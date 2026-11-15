@@ -32,13 +32,60 @@ public class CursoTests
 	[Fact]
 	public void Un_grado_que_no_esta_en_el_enum_lanza_ArgumentException()
 	{
-		Should.Throw<ArgumentException>(() => new Curso("Octavo", nameof(NivelEducativo.Secundaria)));
+		var ex = Should.Throw<ArgumentException>(() => new Curso("Octavo", nameof(NivelEducativo.Secundaria)));
+
+		ex.ParamName.ShouldBe("unGrado");
+		ex.Message.ShouldContain("grado");
 	}
 
 	[Fact]
 	public void Un_nivel_educativo_que_no_esta_en_el_enum_lanza_ArgumentException()
 	{
-		Should.Throw<ArgumentException>(() => new Curso(nameof(Grado.Primero), "Terciario"));
+		// El mensaje decía "El grado que se especifico no existe." también acá, por una copia del
+		// guard del grado, y el parámetro informado era el del grado: el usuario leía que fallaba
+		// el dato que había cargado bien.
+		var ex = Should.Throw<ArgumentException>(() => new Curso(nameof(Grado.Primero), "Terciario"));
+
+		ex.ParamName.ShouldBe("unNivelEducativo");
+		ex.Message.ShouldContain("nivel educativo");
+		ex.Message.ShouldNotContain("grado");
+	}
+	#endregion
+
+	#region Baja
+	[Fact]
+	public void ValidarSePuedeEliminar_sin_divisiones_no_lanza()
+	{
+		var curso = new CursoBuilder().Build();
+
+		Should.NotThrow(() => curso.ValidarSePuedeEliminar(0));
+	}
+
+	[Theory]
+	[InlineData(1)]
+	[InlineData(6)]
+	public void ValidarSePuedeEliminar_con_divisiones_lanza_CursoConDivisionesException(int divisiones)
+	{
+		// Una sola división alcanza, y no hay umbral: es lo contrario de la regla que Division tenía
+		// —donde Primaria toleraba hasta 14 cursantes— y es deliberado. El curso no negocia: o no le
+		// queda ninguna división, o no se elimina.
+		var curso = new CursoBuilder().Build();
+
+		var ex = Should.Throw<Exception>(() => curso.ValidarSePuedeEliminar(divisiones));
+
+		ex.GetType().Name.ShouldBe("CursoConDivisionesException");
+	}
+
+	[Fact]
+	public void ValidarSePuedeEliminar_dice_en_el_mensaje_que_hay_que_eliminar_las_divisiones_primero()
+	{
+		// El mensaje viaja tal cual a la pantalla, así que tiene que decir qué hacer y no sólo qué
+		// pasó: es la diferencia entre "no se puede" y "eliminá primero sus divisiones".
+		var curso = new CursoBuilder().Build();
+
+		var ex = Should.Throw<Exception>(() => curso.ValidarSePuedeEliminar(1));
+
+		ex.Message.ShouldContain("divisiones");
 	}
 	#endregion
 

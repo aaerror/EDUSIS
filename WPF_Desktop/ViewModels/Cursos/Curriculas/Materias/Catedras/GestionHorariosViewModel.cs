@@ -103,7 +103,7 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 	/// EL TOPE SE DESCUBRÍA FALLANDO. <c>Catedra.AgregarHorario</c> rechaza con
 	/// <c>HorasCatedraCompletasException</c> cuando <c>HorasAsignadas >= CargaHoraria</c>, y esta
 	/// pantalla no mostraba ninguno de los dos números: el usuario cargaba horarios hasta que uno
-	/// reventaba. Es la misma regla que docs/ui-ux.md ya aplicó en Diseño curricular —"9 de 14
+	/// reventaba. Es la misma regla que se aplica en Diseño curricular —"9 de 14
 	/// espacios · 27 de 40 horas"—: el presupuesto se lee, no se descubre chocándose.
 	/// </remarks>
 	[ObservableProperty]

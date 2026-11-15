@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using WPF_Desktop.UnitTests.Dobles;
+using WPF_Desktop.ViewModels.Alumnos;
 using WPF_Desktop.ViewModels.Cursos.Curriculas;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
@@ -13,8 +14,8 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 
 /// <summary>
 /// Guardas estaticas de la ola W5 sobre el XAML y el codigo fuente, para lo que ningun ViewModel puede afirmar:
-/// <c>UI-01</c> en su raiz (que items ofrece el combo y que propiedad liga), <c>UI-08</c> (un solo sitio que construye
-/// <c>RegistrarMateriaRequest</c>) y que cada <c>Style</c> aplicado a un elemento tenga el <c>TargetType</c> de ese elemento
+/// el combo en su raiz (que items ofrece y que propiedad liga), un solo sitio que construye
+/// <c>RegistrarMateriaRequest</c> y que cada <c>Style</c> aplicado a un elemento tenga el <c>TargetType</c> de ese elemento
 /// (un estilo de <c>Label</c> sobre un <c>TextBlock</c> lanza <c>InvalidOperationException</c> al instanciar la plantilla,
 /// y solo cuando la lista tiene un item).
 /// </summary>
@@ -23,6 +24,7 @@ public class GuardasEstaticasW5Tests
 	private const string GestionCurriculas = "WPF_Desktop/Views/Cursos/Curriculas/GestionCurriculasView.xaml";
 	private const string MateriaView = "WPF_Desktop/Views/Cursos/Curriculas/Materias/MateriaView.xaml";
 	private const string GestionCursantes = "WPF_Desktop/Views/Cursos/Divisiones/GestionCursantesView.xaml";
+	private const string PerfilAlumno = "WPF_Desktop/Views/Alumnos/PerfilAlumnoView.xaml";
 
 	private static readonly XNamespace Xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
 
@@ -36,7 +38,7 @@ public class GuardasEstaticasW5Tests
 		return documento.Descendants().Where(e => e.Name.LocalName == "ComboBox");
 	}
 
-	#region UI-01: el combo expone el valor de dominio, no su indice
+	#region El combo expone el valor de dominio, no su indice
 	[Theory]
 	[Trait("Categoria", "Unidad")]
 	[InlineData(GestionCurriculas, "CargaHoraria")]
@@ -171,7 +173,7 @@ public class GuardasEstaticasW5Tests
 	}
 	#endregion
 
-	#region UI-08: un solo camino de alta de materia
+	#region Un solo camino de alta de materia
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void Un_solo_sitio_de_toda_la_capa_construye_RegistrarMateriaRequest()
@@ -326,9 +328,12 @@ public class GuardasEstaticasW5Tests
 	{
 		DebenExistirEn(typeof(GestionCurriculasViewModel), new[] { "Curriculas", "Materias", "Curricula", "Materia", "CargarCurriculasCommandAsync", "CargarMateriasCommandAsync", "NavigationCommand" });
 		DebenExistirEn(typeof(GestionCursantesViewModel), new[] { "Cursantes", "Cursante", "Calificaciones", "CalificacionSeleccionada", "Materias", "Materia", "Calificacion", "ObservacionEdicion", "MostrarCalificacionView", "CicloLectivo", "CargarCommandAsync", "BuscarCommandAsync", "NuevaCalificacionCommand", "ModificarObservacionCommandAsync", "QuitarCalificacionCommandAsync", "GuardarCalificacionCommandAsync", "RegistrarInasistenciaCommandAsync", "CancelarCalificacionCommand",
-			// UI-CUR-1: la sección de inscripción y el historial de divisiones.
+			// La sección de inscripción y el historial de divisiones.
 			"EsRecursante", "FechaBaja", "FechaCambio", "DivisionDestino", "DivisionesDestino", "Historial", "ModificarRecursanteCommandAsync", "RegistrarBajaCommandAsync", "CambiarDivisionCommandAsync", "CargarHistorialCommandAsync" });
-		DebenExistirEn(typeof(CalificacionViewModel), new[] { "Instancia", "Fecha", "Nota", "Observacion" });
+		// "Periodo" y "EsRecuperatorio" son los dos campos que EDITA el formulario; "Instancia" es la
+		// lectura de ambos que muestra la grilla. Los tres tienen que existir: el formulario bindea
+		// los primeros en TwoWay y un error de nombre ahí no rompe el build, deja el campo muerto.
+		DebenExistirEn(typeof(CalificacionViewModel), new[] { "Periodo", "EsRecuperatorio", "Instancia", "Fecha", "Nota", "Observacion" });
 	}
 
 	private static void DebenExistirEn(Type tipo, IEnumerable<string> propiedades)
@@ -336,6 +341,35 @@ public class GuardasEstaticasW5Tests
 		var faltantes = propiedades.Distinct().Where(p => tipo.GetProperty(p) is null).ToList();
 
 		faltantes.ShouldBeEmpty($"propiedades bindeadas que {tipo.Name} no expone");
+	}
+
+	/// <summary>
+	/// La tabla de materias del perfil bindea propiedades que <c>MateriaCursadaViewModel</c> expone.
+	/// </summary>
+	/// <remarks>
+	/// Sus columnas son <c>GridViewColumn</c> con <c>CellTemplate</c>, así que no declaran
+	/// <c>Binding</c> y <see cref="ColumnasBindeadas"/> no las ve: hay que buscar los <c>Path</c> en
+	/// el texto. Es exactamente la clase de error que no rompe el build y deja la celda vacía, y acá
+	/// nacieron cinco bindings de golpe al reemplazar la columna única "PROMEDIO" por una por
+	/// período. La guarda falla en los dos sentidos: si el XAML deja de bindear una, y si el
+	/// ViewModel deja de exponerla.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void PerfilAlumno_la_tabla_de_materias_bindea_propiedades_que_el_ViewModel_expone()
+	{
+		var propiedades = new[]
+		{
+			"Materia", "PrimerCuatrimestre", "SegundoCuatrimestre", "Final", "Recuperacion",
+			"NotaDeCierre", "Instancias", "Estado"
+		};
+
+		var xaml = File.ReadAllText(RaizDelRepositorio.Resolver(PerfilAlumno));
+
+		var sinBindear = propiedades.Where(p => !Regex.IsMatch(xaml, $@"Path={ p }\b")).ToList();
+		sinBindear.ShouldBeEmpty("propiedades que la tabla de materias del perfil dejó de bindear");
+
+		DebenExistirEn(typeof(MateriaCursadaViewModel), propiedades);
 	}
 
 	[Fact]
@@ -363,7 +397,7 @@ public class GuardasEstaticasW5Tests
 		columnasCalificacion.ShouldBe(new[] { "Materia", "Fecha", "Instancia", "Rindio", "Nota", "Aprobado", "Observacion" });
 		DebenExistirEn(typeof(CalificacionViewModel), columnasCalificacion);
 
-		// UI-CUR-1. "Estado" no es columna bindeada sino el texto de la insignia, así que se
+		// "Estado" no es columna bindeada sino el texto de la insignia, así que se
 		// verifica aparte: la columna es un DataGridTemplateColumn y no declara Binding.
 		var historial = documento.Descendants().Single(e => e.Name.LocalName == "DataGrid" && (string?) e.Attribute(Xaml + "Name") == "DataGrid_Historial");
 		((string) historial.Attribute("ItemsSource")!).ShouldContain("Historial");

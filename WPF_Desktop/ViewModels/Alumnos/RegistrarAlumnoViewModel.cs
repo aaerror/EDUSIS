@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAlumnos.DTOs.Requests;
 using Core.ServicioAlumnos;
@@ -9,6 +9,8 @@ using Core.ServicioDivisiones.DTOs.Requests;
 using Core.ServicioDivisiones;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
+using Domain.Cursos;
+using Domain.Personas;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
@@ -71,6 +73,92 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 	[ObservableProperty]
 	private int _tab = 0;
 
+
+	#region ENCUADRE ETARIO
+	/// <summary>
+	/// La comparación entre la edad del alumno y la que el grado elegido espera, lista para
+	/// mostrar. Vacía mientras no haya curso elegido: sin grado no hay con qué comparar.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>Se muestra la comparación y no el veredicto</strong>, y es la decisión de diseño de
+	/// esta franja. Un "el alumno tiene sobreedad" dice que hay algo raro pero no su forma, y se
+	/// lee como un error aunque la regla no bloquee nada; "14 años · 1° Año de Secundaria espera
+	/// 12 · +2" deja que quien inscribe juzgue la trayectoria, que es exactamente el motivo por el
+	/// que <c>EdadEscolar</c> advierte en lugar de rechazar.
+	/// </para>
+	/// <para>
+	/// El cálculo NO vive acá: la edad la da <c>DatosPersonales.Edad(fechaNacimiento)</c> y el
+	/// veredicto <c>EdadEscolar</c>, las dos en <c>Domain</c>. Este ViewModel sólo las compone y
+	/// redacta: acá no se reimplementa ninguna regla en la presentación, ni se deriva ningún
+	/// umbral ni ninguna edad esperada.
+	/// </para>
+	/// <para>
+	/// Se evalúa en la UI y no en <c>Core</c> porque los dos datos ya están en memoria —la fecha de
+	/// nacimiento se cargó en el paso 01 y el curso se elige en el paso 02— y la advertencia tiene
+	/// que aparecer al elegir, antes de confirmar. Pedirla a <c>Core</c> sería una consulta por
+	/// cada cambio de selección para responder algo que no toca la base.
+	/// </para>
+	/// </remarks>
+	[ObservableProperty]
+	private string _encuadreMedicion = string.Empty;
+
+	/// <summary>Los años de desvío con signo (<c>+2</c>, <c>-1</c>, <c>0</c>), para la insignia.</summary>
+	[ObservableProperty]
+	private string _encuadreDesvio = string.Empty;
+
+	/// <summary>
+	/// Qué hacer con el desvío. Vacía cuando la edad está encuadrada, y es lo que decide si
+	/// aparece la superficie de aviso: la vista enlaza su visibilidad a que este texto exista.
+	/// </summary>
+	/// <remarks>
+	/// <strong>Los dos desvíos comparten color pero no texto, porque no comparten causa
+	/// probable.</strong> La sobreedad suele ser una trayectoria real —repitencia, reingreso,
+	/// escolarización tardía— y lo que corresponde es mirar el legajo; la edad por debajo de lo
+	/// esperado casi nunca es una trayectoria y casi siempre es un error de tipeo en la fecha de
+	/// nacimiento. Un solo mensaje para los dos casos mandaría a revisar lo que no hay que revisar
+	/// en la mitad de las veces.
+	/// </remarks>
+	[ObservableProperty]
+	private string _encuadreGuia = string.Empty;
+
+	/// <summary>
+	/// Rearma la franja. Se llama al elegir curso y al entrar al paso 02, porque el usuario puede
+	/// volver con "Atrás" y corregir la fecha de nacimiento con el curso ya elegido.
+	/// </summary>
+	private void RecalcularEncuadre()
+	{
+		var grado = Curso?.ValorGrado;
+		var nivel = Curso?.ValorNivelEducativo;
+		var nacimiento = InformacionPersonal?.FechaNacimiento;
+
+		// `default(DateTime)` es el estado inicial del DatePicker: todavía no se cargó la fecha.
+		if (grado is null || nivel is null || nacimiento is null || nacimiento == default(DateTime))
+		{
+			EncuadreMedicion = string.Empty;
+			EncuadreDesvio = string.Empty;
+			EncuadreGuia = string.Empty;
+			return;
+		}
+
+		var edad = DatosPersonales.Edad(nacimiento.Value);
+		var esperada = EdadEscolar.EdadEsperada(nivel.Value, grado.Value);
+		var desvio = EdadEscolar.AniosDeDesvio(edad, nivel.Value, grado.Value);
+
+		EncuadreMedicion = $"{ edad } años · { Grados.Decir(grado.Value) } de { nivel.Value } espera { esperada }";
+		EncuadreDesvio = desvio > 0 ? $"+{ desvio }" : desvio.ToString();
+
+		EncuadreGuia = EdadEscolar.Evaluar(edad, nivel.Value, grado.Value) switch
+		{
+			EncuadreEtario.ConSobreedad => "Puede ser una trayectoria con repitencia o reingreso. Revisá el legajo antes de inscribir.",
+			EncuadreEtario.PorDebajoDeLaEdadEsperada => "Verificá la fecha de nacimiento: adelantar año no es una trayectoria habitual.",
+			_ => string.Empty
+		};
+	}
+
+	partial void OnTabChanged(int value) =>
+		RecalcularEncuadre();
+	#endregion
 
 	public ObservableCollection<CursoViewModel> Cursos { get; } = new();
 	public ObservableCollection<DivisionViewModel> Divisiones { get; } = new();
@@ -208,6 +296,9 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		Division = null;
 		Divisiones.Clear();
 
+		// La franja de encuadre depende del grado, así que se rearma con cada cambio de curso.
+		RecalcularEncuadre();
+
 		if (value is not null)
 		{
 			_ = CargarDivisionesAsync(value.CursoID);
@@ -271,7 +362,6 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		// Sexo y Vivienda entran en la guarda aunque salgan de un combo y no de un campo de
 		// texto: arrancan sin selección y más abajo se les llama .ToString(), así que no
 		// elegirlos no daba el aviso de datos incompletos sino un NullReferenceException.
-		// Lo encontró master en UI-33.
 		var faltantes = new List<string>();
 
 		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido)) { faltantes.Add("apellido"); }
@@ -296,8 +386,8 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		{
 			string documento = InformacionPersonal.DocumentoNacionalIdentidad;
 
-			var esDocumentoInvalido = await _servicioAlumnos.EsDocumentoInvalidoAsync(new DocumentoRequest(documento));
-			if (esDocumentoInvalido)
+			var documentoYaRegistrado = await _servicioAlumnos.ExisteDocumentoAsync(new DocumentoRequest(documento));
+			if (documentoYaRegistrado)
 			{
 				_dialogService.MostrarAdvertencia($"El documento { documento } ya está registrado con otra persona. Revisá el número o buscá el alumno en el índice.", "Documento repetido");
 

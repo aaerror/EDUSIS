@@ -32,14 +32,34 @@ public sealed class Cursante : Entity
 			throw new SinDatosDivisionException();
 		}
 
-		if (Guid.Empty.Equals(unAlumno) || cicloLectivo is null)
+		if (Guid.Empty.Equals(unAlumno))
 		{
 			throw new SinDatosAlumnoException();
 		}
 
+		if (cicloLectivo is null)
+		{
+			throw new SinDatosCicloLectivoException();
+		}
+
 		DivisionID = unaDivision;
+
+		// Copia propia del ciclo lectivo, NO la instancia que vino del llamador.
+		//
+		// CicloLectivo se mapea con OwnsOne (CursantesConfiguration), y una entidad propiedad de EF
+		// pertenece a exactamente UN dueño: si dos Cursante comparten la misma instancia, EF le
+		// asigna el owner a uno y al otro le escribe NULL en ciclo_lectivo — que es NOT NULL, así que
+		// el INSERT revienta, y si la columna fuera anulable escribiría NULL en silencio. El defecto
+		// lo encontró el seeder (`var ciclo = ...` reutilizado en un bucle de inscripciones) y lo
+		// reproduce ContarCursantesDeDivisionAsync_devuelve_cantidad_de_cursantes_activos.
+		//
+		// La copia va acá y no en cada llamador porque es el agregado el que no puede compartir su
+		// value object: pedirle a los veinte sitios que inscriben que construyan un ciclo nuevo cada
+		// vez es una regla que nadie va a recordar, y el que la olvide no se entera hasta que inserta
+		// el segundo cursante. La igualdad de ValueObject es estructural, así que la copia es igual
+		// al original y ningún consumidor nota la diferencia.
 		AlumnoID = unAlumno;
-		CicloLectivo = cicloLectivo;
+		CicloLectivo = CicloLectivo.Crear(cicloLectivo.Periodo);
 		FechaInicio = fechaInicio;
 		EsRecursante = esRecursante;
 	}
@@ -95,17 +115,17 @@ public sealed class Cursante : Entity
 	#endregion
 
 	#region Calificaciones
-	public Guid RegistrarCalificacion(Guid materiaID, DateTime fecha, Instancia instancia, double? nota, string? observacion)
+	public Guid RegistrarCalificacion(Guid materiaID, DateTime fecha, Periodo periodo, bool esRecuperatorio, double? nota, string? observacion)
 	{
-		var calificacion = Calificacion.Crear(materiaID, fecha, instancia, nota, observacion);
+		var calificacion = Calificacion.Crear(materiaID, fecha, periodo, esRecuperatorio, nota, observacion);
 		_calificaciones.Add(calificacion);
 
 		return calificacion.Id;
 	}
 
-	public Guid RegistrarInasistenciaAExamen(Guid materiaID, DateTime fecha, Instancia instancia, string? observacion)
+	public Guid RegistrarInasistenciaAExamen(Guid materiaID, DateTime fecha, Periodo periodo, bool esRecuperatorio, string? observacion)
 	{
-		var calificacion = Calificacion.Inasistencia(materiaID, fecha, instancia, observacion);
+		var calificacion = Calificacion.Inasistencia(materiaID, fecha, periodo, esRecuperatorio, observacion);
 		_calificaciones.Add(calificacion);
 
 		return calificacion.Id;

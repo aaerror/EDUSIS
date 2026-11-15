@@ -1,3 +1,4 @@
+using Domain.Docentes.Exceptions;
 using System.Reflection;
 using Domain.Docentes.Puestos;
 using EDUSIS.TestSupport;
@@ -106,13 +107,20 @@ public class PuestoTests
 		puesto.Periodo.FechaFin.ShouldBeNull();
 	}
 
+	/// <remarks>
+	/// La regla se reporta con una excepción de dominio y no con <c>ArgumentException</c> del BCL.
+	/// <c>DocenteConfirmadoEnCargoDocenteException</c>
+	/// NO deriva de <c>ArgumentException</c>, así que esta prueba habría quedado en rojo sin
+	/// actualizarla — es la señal de que el cableado llegó a este camino y no sólo al archivo.
+	/// </remarks>
 	[Fact]
-	public void EstablecerComoPuestoFijo_sobre_un_puesto_indeterminado_lanza_ArgumentException()
+	public void EstablecerComoPuestoFijo_sobre_un_puesto_indeterminado_lanza_DocenteConfirmadoEnCargoDocente()
 	{
 		var docente = new PuestoBuilder().BuildDocente();
 		var puesto = docente.Puestos.Single();
 
-		Should.Throw<ArgumentException>(() => docente.CambiarEventualidadCargoDocente(puesto.Id));
+		Should.Throw<DocenteConfirmadoEnCargoDocenteException>(
+			() => docente.CambiarEventualidadCargoDocente(puesto.Id));
 	}
 
 	[Fact]

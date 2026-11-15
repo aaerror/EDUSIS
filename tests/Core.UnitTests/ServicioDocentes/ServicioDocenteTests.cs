@@ -1,8 +1,11 @@
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioDocentes;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.UnitTests.Infraestructura;
+using Domain.Catedras.SituacionesRevista;
 using Domain.Docentes.Puestos;
+using Domain.Usuarios;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -12,8 +15,10 @@ namespace Core.UnitTests.ServicioDocentes;
 
 /// <summary>
 /// <see cref="IServicioDocente"/>: los métodos públicos (los de licencias quedan comentados
-/// en la interfaz, FR-013) con camino feliz y de error. <c>QuitarDocenteAsync</c> devuelve
-/// <see cref="Task"/> desde H-018 y propaga sus excepciones con normalidad.
+/// en la interfaz) con camino feliz y de error. Las dos bajas —<c>DesafectarDocenteAsync</c>,
+/// que cierra el legajo, y <c>EliminarDocenteAsync</c>, que lo borra— salieron de partir el viejo
+/// <c>QuitarDocenteAsync</c>, que decía "quitar" y desafectaba. Las dos devuelven
+/// <see cref="Task"/> y propagan sus excepciones con normalidad.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioDocenteTests
@@ -61,9 +66,9 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task VerPerfilDocenteAsync_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task VerPerfilDocenteAsync_con_un_Id_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(
 			() => _servicio.VerPerfilDocenteAsync(new DocenteIDRequest(Guid.NewGuid())));
 	}
 
@@ -163,7 +168,32 @@ public class ServicioDocenteTests
 			DatosPersonales = RegistroValido().DatosPersonales with { Documento = existente.DatosPersonales.Documento }
 		};
 
-		await Should.ThrowAsync<ArgumentException>(() => _servicio.RegistrarDocenteAsync(request));
+		await Should.ThrowAsync<DocumentoDocenteDuplicadoException>(() => _servicio.RegistrarDocenteAsync(request));
+	}
+
+	/// <summary>
+	/// El CUIL y el legajo son las otras dos reglas de unicidad del alta, y cada una se lanza con su
+	/// propia excepción (una clase por regla) en lugar de un <c>ArgumentException</c> del BCL, que no
+	/// permitiría notar si alguna dejara de dispararse.
+	/// </summary>
+	[Fact]
+	public async Task RegistrarDocenteAsync_rechaza_un_CUIL_ya_registrado()
+	{
+		var existente = SembrarDocente();
+
+		var request = RegistroValido() with { CUIL = existente.CUIL };
+
+		await Should.ThrowAsync<CuilDocenteDuplicadoException>(() => _servicio.RegistrarDocenteAsync(request));
+	}
+
+	[Fact]
+	public async Task RegistrarDocenteAsync_rechaza_un_legajo_ya_registrado()
+	{
+		var existente = SembrarDocente();
+
+		var request = RegistroValido() with { Legajo = existente.Legajo };
+
+		await Should.ThrowAsync<LegajoDocenteDuplicadoException>(() => _servicio.RegistrarDocenteAsync(request));
 	}
 	#endregion
 
@@ -180,9 +210,9 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task ActualizarContacto_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarContacto_con_un_Id_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ActualizarContacto(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.ActualizarContacto(
 			new CambiarContactoRequest(Guid.NewGuid(), "3815550000", "docente.nuevo@correo.com")));
 	}
 
@@ -199,9 +229,9 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task ActualizarDomicilio_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarDomicilio_con_un_Id_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ActualizarDomicilio(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.ActualizarDomicilio(
 			new CambiarDomicilioRequest(Guid.NewGuid(), "Muñecas", "120", "Casa", "", "Yerba Buena", "Tucumán", "Argentina")));
 	}
 
@@ -217,30 +247,182 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
-	public async Task ActualizarSexo_con_un_Id_inexistente_lanza_NullReferenceException()
+	public async Task ActualizarSexo_con_un_Id_inexistente_lanza_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(() => _servicio.ActualizarSexo(
+		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.ActualizarSexo(
 			new CambiarSexoRequest(Guid.NewGuid(), "Ñáñez", "José María", "Masculino")));
 	}
 	#endregion
 
 	#region Baja institucional
+	// QuitarDocenteAsync se partió en dos: decía "quitar" y desafectaba, con
+	// el borrado real comentado en la línea de al lado. Estas dos pruebas pasaron a nombre nuevo sin
+	// cambiar lo que afirman, porque DesafectarDocenteAsync hace exactamente lo que hacía.
 	[Fact]
-	public async Task QuitarDocenteAsync_completa_la_baja_del_docente_sembrado()
+	public async Task DesafectarDocenteAsync_completa_la_baja_del_docente_sembrado()
 	{
 		var docente = SembrarDocente();
 
-		await _servicio.QuitarDocenteAsync(new DocenteIDRequest(docente.Id));
+		await _servicio.DesafectarDocenteAsync(new DocenteIDRequest(docente.Id));
 
 		docente.Activo.ShouldBeFalse();
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
 	}
 
 	[Fact]
-	public async Task QuitarDocenteAsync_con_un_docente_inexistente_propaga_NullReferenceException()
+	public async Task DesafectarDocenteAsync_con_un_docente_inexistente_propaga_DocenteNoEncontrado()
 	{
-		await Should.ThrowAsync<NullReferenceException>(
-			() => _servicio.QuitarDocenteAsync(new DocenteIDRequest(Guid.NewGuid())));
+		await Should.ThrowAsync<DocenteNoEncontradoException>(
+			() => _servicio.DesafectarDocenteAsync(new DocenteIDRequest(Guid.NewGuid())));
+	}
+
+	[Fact]
+	public async Task DesafectarDocenteAsync_no_borra_el_legajo()
+	{
+		// La distinción que el nombre viejo escondía: desafectar conserva la fila.
+		var docente = SembrarDocente();
+
+		await _servicio.DesafectarDocenteAsync(new DocenteIDRequest(docente.Id));
+
+		_host.UnidadDeTrabajo.DocentesFake.Elementos.ShouldHaveSingleItem();
+	}
+	#endregion
+
+	#region EliminarDocenteAsync
+	[Fact]
+	public async Task EliminarDocenteAsync_borra_el_legajo_sus_licencias_y_su_usuario()
+	{
+		var docente = SembrarDocente();
+		_host.UnidadDeTrabajo.LicenciasFake.Sembrar(new LicenciaBuilder().ConDocente(docente.Id).Build());
+		_host.UnidadDeTrabajo.UsuariosFake.Sembrar(new UsuarioBuilder().ConDocente(docente.Id).Build());
+
+		await _servicio.EliminarDocenteAsync(new DocenteIDRequest(docente.Id));
+
+		_host.UnidadDeTrabajo.DocentesFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.LicenciasFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.UsuariosFake.Elementos.ShouldBeEmpty();
+		_host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldContain("CommitTransactionAsync");
+	}
+
+	[Fact]
+	public async Task EliminarDocenteAsync_vacia_el_cargo_de_preceptor_sin_borrar_la_division()
+	{
+		// La división NO se borra: queda con el cargo vacante, que es un estado que el dominio
+		// modela. Es la diferencia entre "lo que es del docente" y "lo que es de otros".
+		var docente = SembrarDocente();
+		var curso = new CursoBuilder().Build();
+		_host.UnidadDeTrabajo.CursosFake.Sembrar(curso);
+		var division = new DivisionBuilder().ConCurso(curso.Id).Build();
+		division.AsignarPreceptor(docente.Id);
+		_host.UnidadDeTrabajo.DivisionesFake.Sembrar(division);
+
+		await _servicio.EliminarDocenteAsync(new DocenteIDRequest(docente.Id));
+
+		_host.UnidadDeTrabajo.DivisionesFake.Elementos.ShouldHaveSingleItem();
+		division.EstaCargoPreceptorVacante().ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task EliminarDocenteAsync_con_una_designacion_vigente_lanza_y_no_borra_nada()
+	{
+		var docente = SembrarDocente();
+		// Se designa por el dominio y no con SituacionRevistaBuilder: ese builder arma su PROPIA
+		// cátedra auxiliar —el constructor de SituacionRevista es internal— así que la designación
+		// no quedaría en la cátedra que siembra la prueba.
+		var catedra = new CatedraBuilder().Build();
+		catedra.Designar(docente.Id, Cargo.Titular, DateTime.Today.AddMonths(-2), null);
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(catedra);
+
+		var ex = await Should.ThrowAsync<Exception>(
+			() => _servicio.EliminarDocenteAsync(new DocenteIDRequest(docente.Id)));
+
+		ex.GetType().Name.ShouldBe("DocenteConDesignacionesVigentesException");
+		_host.UnidadDeTrabajo.DocentesFake.Elementos.ShouldHaveSingleItem();
+
+		// La guarda corre antes de abrir la transacción: nada de rollback sobre algo inexistente.
+		_host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task EliminarDocenteAsync_del_unico_administrador_lanza_UltimoAdministradorException()
+	{
+		var docente = SembrarDocente();
+		_host.UnidadDeTrabajo.UsuariosFake.Sembrar(
+			new UsuarioBuilder().ConDocente(docente.Id).ConRol(Rol.Admin.Descripcion).Build());
+
+		var ex = await Should.ThrowAsync<Exception>(
+			() => _servicio.EliminarDocenteAsync(new DocenteIDRequest(docente.Id)));
+
+		ex.GetType().Name.ShouldBe("UltimoAdministradorException");
+		_host.UnidadDeTrabajo.DocentesFake.Elementos.ShouldHaveSingleItem();
+		_host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task EliminarDocenteAsync_de_un_administrador_que_no_es_el_ultimo_se_permite()
+	{
+		// La guarda es sobre el ÚLTIMO, no sobre el rol: con dos cuentas Admin el borrado procede.
+		var docente = SembrarDocente();
+		var otroDocente = SembrarDocente();
+		_host.UnidadDeTrabajo.UsuariosFake.Sembrar(
+			new UsuarioBuilder().ConDocente(docente.Id).ConRol(Rol.Admin.Descripcion).Build(),
+			new UsuarioBuilder().ConDocente(otroDocente.Id).ConRol(Rol.Admin.Descripcion).Build());
+
+		await _servicio.EliminarDocenteAsync(new DocenteIDRequest(docente.Id));
+
+		_host.UnidadDeTrabajo.UsuariosFake.Elementos.ShouldHaveSingleItem();
+	}
+	#endregion
+
+	#region ConsultarImpactoEliminacionDocenteAsync
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDocenteAsync_informa_licencias_divisiones_y_usuario()
+	{
+		var docente = SembrarDocente();
+		_host.UnidadDeTrabajo.LicenciasFake.Sembrar(new LicenciaBuilder().ConDocente(docente.Id).Build());
+		_host.UnidadDeTrabajo.UsuariosFake.Sembrar(new UsuarioBuilder().ConDocente(docente.Id).Build());
+
+		var curso = new CursoBuilder().Build();
+		_host.UnidadDeTrabajo.CursosFake.Sembrar(curso);
+		var division = new DivisionBuilder().ConCurso(curso.Id).Build();
+		division.AsignarPreceptor(docente.Id);
+		_host.UnidadDeTrabajo.DivisionesFake.Sembrar(division);
+
+		var impacto = await _servicio.ConsultarImpactoEliminacionDocenteAsync(new DocenteIDRequest(docente.Id));
+
+		impacto.Licencias.ShouldBe(1);
+		impacto.DivisionesQueQuedanSinPreceptor.ShouldBe(1);
+		impacto.TieneUsuario.ShouldBeTrue();
+		impacto.EstaBloqueado.ShouldBeFalse();
+		impacto.TieneVinculos.ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDocenteAsync_marca_el_bloqueo_por_designacion_vigente()
+	{
+		var docente = SembrarDocente();
+		// Se designa por el dominio y no con SituacionRevistaBuilder: ese builder arma su PROPIA
+		// cátedra auxiliar —el constructor de SituacionRevista es internal— así que la designación
+		// no quedaría en la cátedra que siembra la prueba.
+		var catedra = new CatedraBuilder().Build();
+		catedra.Designar(docente.Id, Cargo.Titular, DateTime.Today.AddMonths(-2), null);
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(catedra);
+
+		var impacto = await _servicio.ConsultarImpactoEliminacionDocenteAsync(new DocenteIDRequest(docente.Id));
+
+		impacto.DesignacionesVigentes.ShouldBe(1);
+		impacto.EstaBloqueado.ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDocenteAsync_de_un_legajo_pelado_no_tiene_vinculos()
+	{
+		var docente = SembrarDocente();
+
+		var impacto = await _servicio.ConsultarImpactoEliminacionDocenteAsync(new DocenteIDRequest(docente.Id));
+
+		impacto.TieneVinculos.ShouldBeFalse();
+		impacto.EstaBloqueado.ShouldBeFalse();
 	}
 	#endregion
 

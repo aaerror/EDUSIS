@@ -8,4 +8,5 @@ public interface IServicioCurso
 	Task<IReadOnlyCollection<CursoResponse>> ListarCursosAsync();
 	Task RegistrarCurso(RegistrarCursoRequest request);
 	Task EliminarCurso(EliminarCursoRequest request);
+	Task<ImpactoEliminacionCursoResponse> ConsultarImpactoEliminacionCursoAsync(EliminarCursoRequest request);
 }

@@ -236,8 +236,16 @@
 
 						<!--#region ACCIONES
 							Las tres navegaciones son secundarias y de igual peso entre sí,
-							porque eso es lo que son. Quitar va separado y a la izquierda:
-							una acción destructiva no comparte grupo con las de consulta.
+							porque eso es lo que son. Las dos bajas van separadas y a la
+							izquierda: una acción destructiva no comparte grupo con las de
+							consulta.
+
+							Son DOS y no una desde el 2026-11-06. "Quitar" era un solo botón
+							que en realidad desafectaba —cerraba el legajo sin borrar nada— y
+							el borrado real estaba comentado en Core. Ahora cada verbo hace lo
+							que dice: Desafectar da de baja conservando el legajo, Eliminar lo
+							borra. Desafectar es secundario porque es la operación habitual y
+							reversible en la práctica; Eliminar lleva el estilo de peligro.
 						-->
 						<Grid Grid.Row="2" Margin="0 20 0 0">
 							<Grid.ColumnDefinitions>
@@ -245,11 +253,18 @@
 								<ColumnDefinition Width="*"/>
 							</Grid.ColumnDefinitions>
 
-							<Button Grid.Column="0"
-									Command="{ Binding Path=EliminarCommand }"
-									Content="Quitar"
-									Style="{ StaticResource ResourceKey=Btn.Peligro }"
-									ToolTip="Quitar este docente del listado"/>
+							<StackPanel Grid.Column="0" Orientation="Horizontal">
+								<Button Command="{ Binding Path=DesafectarCommand }"
+										Content="Desafectar"
+										Margin="0 0 8 0"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Dar de baja al docente conservando su legajo"/>
+
+								<Button Command="{ Binding Path=EliminarCommand }"
+										Content="Eliminar"
+										Style="{ StaticResource ResourceKey=Btn.Peligro }"
+										ToolTip="Borrar el legajo del docente del sistema"/>
+							</StackPanel>
 
 							<StackPanel Grid.Column="1"
 										HorizontalAlignment="Right"

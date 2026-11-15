@@ -1,8 +1,10 @@
+using Core.ServicioAutenticaciones.Exceptions;
 using System.Net;
 using Core.ServicioAutenticaciones;
 using Core.ServicioAutenticaciones.DTOs.Requests;
 using Core.ServicioUsuarios;
 using Core.ServicioUsuarios.DTOs.Requests;
+using Domain.Usuarios;
 using EDUSIS.EndToEndTests.Infraestructura;
 using EDUSIS.TestSupport.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +14,7 @@ using Xunit;
 namespace EDUSIS.EndToEndTests.Flujos;
 
 /// <summary>
-/// Flujo e2e 4 (SC-003 / data-model.md §6): registro de un usuario para un docente
+/// Flujo e2e 4: registro de un usuario para un docente
 /// (<see cref="IServicioUsuario.RegistrarUsuarioAsync"/>) y autenticación posterior
 /// (<see cref="IServicioAutenticacion.Login"/>) con credenciales válidas e inválidas, desde la
 /// fachada hasta SQL Server real con la composición de dependencias de producción (hash/salt
@@ -34,7 +36,7 @@ public sealed class RegistroYAutenticacionDeUsuarioTests : BaseE2E
 		var clave = docente.DatosPersonales.Documento;
 
 		await EnUnScope(sp => sp.GetRequiredService<IServicioUsuario>().RegistrarUsuarioAsync(
-			new RegistrarUsuarioRequest(docente.Id, "Docente")));
+			new RegistrarUsuarioRequest(docente.Id, Rol.Docente.Id)));
 
 		var perfil = await EnUnScope(sp => sp.GetRequiredService<IServicioAutenticacion>().Login(
 			new LoginRequest(new NetworkCredential(usuario, clave))));
@@ -50,9 +52,9 @@ public sealed class RegistroYAutenticacionDeUsuarioTests : BaseE2E
 		var docente = await SembrarDocenteAsync();
 
 		await EnUnScope(sp => sp.GetRequiredService<IServicioUsuario>().RegistrarUsuarioAsync(
-			new RegistrarUsuarioRequest(docente.Id, "Docente")));
+			new RegistrarUsuarioRequest(docente.Id, Rol.Docente.Id)));
 
-		await Should.ThrowAsync<ArgumentException>(() => EnUnScope(sp =>
+		await Should.ThrowAsync<CredencialesInvalidasException>(() => EnUnScope(sp =>
 			sp.GetRequiredService<IServicioAutenticacion>().Login(
 				new LoginRequest(new NetworkCredential(docente.Email, "clave-incorrecta")))));
 	}
@@ -60,7 +62,7 @@ public sealed class RegistroYAutenticacionDeUsuarioTests : BaseE2E
 	[RequiereSqlServerFact]
 	public async Task Login_con_un_usuario_que_no_existe_lanza_ArgumentException()
 	{
-		await Should.ThrowAsync<ArgumentException>(() => EnUnScope(sp =>
+		await Should.ThrowAsync<CredencialesInvalidasException>(() => EnUnScope(sp =>
 			sp.GetRequiredService<IServicioAutenticacion>().Login(
 				new LoginRequest(new NetworkCredential("no.existe@correo.com", "cualquiera")))));
 	}

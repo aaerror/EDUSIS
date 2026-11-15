@@ -1,38 +1,23 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using WPF_Desktop.Shared;
-
 namespace WPF_Desktop.Store.NavigationStore;
 
-internal class ModalWindowNavigationStore
+/// <summary>
+/// El ViewModel activo de la ventana modal, y si hay una abierta.
+/// </summary>
+/// <remarks>
+/// El mecanismo de reemplazo y la liberación del scope viven en
+/// <see cref="StoreDeNavegacion"/>. Lo propio de este store es que su vacío significa algo: un modal
+/// sin ViewModel es un modal cerrado, que es lo que leen <c>MainViewModel.ModalEstaAbierto</c> y el
+/// barrido de fin de sesión de <c>App</c>.
+/// </remarks>
+internal class ModalWindowNavigationStore : StoreDeNavegacion
 {
-	private ObservableObject _viewModel;
+	public bool EstaAbierto => TieneViewModel;
 
-	public bool EstaAbierto => _viewModel != null;
-
-	public event Action ViewModelChanged;
-
-
-	public ObservableObject ViewModel
-	{
-		get
-		{
-			return _viewModel;
-		}
-
-		set
-		{
-			//_viewModel?.Dispose();
-			_viewModel = value;
-			OnViewModelChanged();
-		}
-	}
-
-	public void Cerrar()
-	{
-		ViewModel = null;
-	}
-
-	public void OnViewModelChanged() =>
-		ViewModelChanged?.Invoke();
+	/// <summary>
+	/// Cierra el modal. Libera el ViewModel saliente y su scope por el camino de
+	/// <see cref="StoreDeNavegacion.Reemplazar"/>, así que cerrar un modal ya no deja colgado el
+	/// <c>DbContext</c> con el que se abrió.
+	/// </summary>
+	public void Cerrar() =>
+		Reemplazar(null, null);
 }

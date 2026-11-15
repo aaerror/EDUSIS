@@ -18,6 +18,11 @@ internal class DivisionRepository : Repository<Division>, IDivisionRepository
 	public async Task<bool> ExistePreceptorAsignadoAsync(Guid docenteID) =>
 		await _context.Divisiones.AnyAsync(x => x.Preceptor == docenteID);
 
+	public async Task<IReadOnlyCollection<Division>> BuscarPorPreceptorAsync(Guid docenteID) =>
+		await Consulta()
+			.Where(x => x.Preceptor == docenteID)
+			.ToListAsync();
+
 	public async Task<IReadOnlyCollection<string>> DescripcionesDelCursoAsync(Guid cursoID) =>
 		await _context.Divisiones
 			.Where(x => x.CursoID == cursoID)

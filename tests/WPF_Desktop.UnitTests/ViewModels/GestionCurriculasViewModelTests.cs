@@ -20,8 +20,8 @@ using Xunit;
 namespace WPF_Desktop.UnitTests.ViewModels;
 
 /// <summary>
-/// Cubre <see cref="GestionCurriculasViewModel"/> tras la ola W5: <c>UI-01</c> (el numero que el combo muestra es el que
-/// viaja en el request y el que se persiste, sin suma ni resta), <c>UI-08</c> (un solo camino de alta de materia), la
+/// Cubre <see cref="GestionCurriculasViewModel"/> tras la ola W5: el numero que el combo muestra es el que
+/// viaja en el request y el que se persiste (sin suma ni resta), un solo camino de alta de materia, la
 /// particion de dependencias (<see cref="IServicioMateria"/> para materias, <see cref="IServicioCurricula"/> para curriculas),
 /// el destino de la navegacion y las notificaciones de <c>CanExecute</c>.
 /// El combo liga <c>SelectedItem</c> a un valor entero: asignar <c>CargaHoraria</c> o <c>HorasCatedra</c> es exactamente lo
@@ -124,7 +124,7 @@ public class GestionCurriculasViewModelTests
 		return veces;
 	}
 
-	#region UI-01: alta de materia
+	#region Alta de materia
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void La_carga_horaria_inicial_es_1_y_no_0()
@@ -325,7 +325,7 @@ public class GestionCurriculasViewModelTests
 	}
 	#endregion
 
-	#region UI-01: edicion de materia
+	#region Edicion de materia
 	[Theory]
 	[Trait("Categoria", "Unidad")]
 	[InlineData(2, 4)]
@@ -504,8 +504,8 @@ public class GestionCurriculasViewModelTests
 	/// </summary>
 	/// <remarks>
 	/// Antes colapsaba la tarjeta entera y la reemplazaba por un aviso, con lo cual el estado vacío de
-	/// la grilla —que ya trae su frase y dice qué hacer— era código inalcanzable. El contrato de
-	/// <c>docs/ui-ux.md</c> es que toda grilla declara su vacío y que ese vacío se vea.
+	/// la grilla —que ya trae su frase y dice qué hacer— era código inalcanzable.
+	/// Toda grilla declara su vacío y ese vacío tiene que verse.
 	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]

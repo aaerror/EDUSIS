@@ -1,11 +1,11 @@
 using Core.ServicioMaterias;
 using Core.ServicioMaterias.DTOs.Requests;
+using Core.ServicioCurriculas.Exceptions;
 using Core.ServicioMaterias.Exceptions;
 using Core.UnitTests.Infraestructura;
 using Domain.Curriculas;
 using Domain.Curriculas.Exceptions;
 using Domain.Materias;
-using Domain.Materias.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -219,6 +219,51 @@ public class ServicioMateriaTests
 			new ModificarMateriaRequest(curricula.CursoID, curricula.Id, materia.Id, "Matemática", 10));
 
 		materia.HorasCatedra.ShouldBe(10);
+	}
+
+	// Una cátedra guarda una copia de las horas de su materia al crearse. Si la materia
+	// cambia después, esa copia queda desalineada sin que nada lo detecte, así que mientras haya
+	// cátedras la carga horaria no se puede tocar.
+	[Fact]
+	public async Task ModificarMateriaAsync_cambiando_las_horas_con_catedras_registradas_lanza_MateriaConCatedrasException()
+	{
+		var curricula = SembrarCurriculaVigente();
+		var materia = SembrarMateria(curricula.Id, "Matemática", 4);
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(new CatedraBuilder().ConMateria(materia.Id).ConCargaHoraria(4).Build());
+
+		await Should.ThrowAsync<MateriaConCatedrasException>(() => _servicio.ModificarMateriaAsync(
+			new ModificarMateriaRequest(curricula.CursoID, curricula.Id, materia.Id, "Matemática", 6)));
+
+		materia.HorasCatedra.ShouldBe(4);
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
+	}
+
+	[Fact]
+	public async Task ModificarMateriaAsync_sin_cambiar_las_horas_permite_corregir_la_descripcion_aun_con_catedras()
+	{
+		var curricula = SembrarCurriculaVigente();
+		var materia = SembrarMateria(curricula.Id, "Matematica", 4);
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(new CatedraBuilder().ConMateria(materia.Id).ConCargaHoraria(4).Build());
+
+		await _servicio.ModificarMateriaAsync(
+			new ModificarMateriaRequest(curricula.CursoID, curricula.Id, materia.Id, "Matemática", 4));
+
+		materia.Descripcion.ShouldBe("Matemática");
+		materia.HorasCatedra.ShouldBe(4);
+	}
+
+	[Fact]
+	public async Task ModificarMateriaAsync_cambiando_las_horas_de_una_materia_sin_catedras_lo_permite()
+	{
+		var curricula = SembrarCurriculaVigente();
+		var materia = SembrarMateria(curricula.Id, "Matemática", 4);
+		// Una cátedra de OTRA materia no debe bloquear: la regla es por materia, no global.
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(new CatedraBuilder().ConCargaHoraria(4).Build());
+
+		await _servicio.ModificarMateriaAsync(
+			new ModificarMateriaRequest(curricula.CursoID, curricula.Id, materia.Id, "Matemática", 6));
+
+		materia.HorasCatedra.ShouldBe(6);
 	}
 	#endregion
 

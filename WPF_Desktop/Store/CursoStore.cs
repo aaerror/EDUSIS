@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 namespace WPF_Desktop.Store;
 
 /// <summary>
@@ -8,8 +8,7 @@ namespace WPF_Desktop.Store;
 /// <remarks>
 /// <para>
 /// No guarda un <c>CursoViewModel</c>. Un ViewModel como estado compartido ata estas pantallas
-/// entre sí por su tipo de presentación y arrastra comandos y validación hasta un Singleton: es la
-/// violación 14 de <c>docs/todos.md</c>.
+/// entre sí por su tipo de presentación y arrastra comandos y validación hasta un Singleton.
 /// </para>
 /// <para>
 /// Tampoco guarda el <c>CursoResponse</c> completo, aunque el diff sería menor. En un Singleton que
@@ -19,7 +18,10 @@ namespace WPF_Desktop.Store;
 /// </remarks>
 internal sealed record CursoSeleccionado(Guid CursoID, string Grado, string NivelEducativo);
 
-internal class CursoStore
+internal class CursoStore : IEstadoDeSesion
 {
 	public CursoSeleccionado Curso { get; set; }
+
+	public void Limpiar() =>
+		Curso = null!;
 }

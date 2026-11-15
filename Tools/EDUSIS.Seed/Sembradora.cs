@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging;
 namespace EDUSIS.Seed;
 
 /// <summary>
-/// Puebla la base con la escuela demo completa (plan/rbac-y-seed.md, Fase 7).
+/// Puebla la base con la escuela demo completa.
 /// </summary>
 /// <remarks>
 /// Tres capas que conviene no mezclar, y que el plan separó a propósito:
@@ -453,7 +453,6 @@ internal sealed class Sembradora
 	/// con tres <c>GuardarCambiosAsync()</c> (<c>CrearCatedraAsync</c> →
 	/// <c>DesignarDocenteAsync</c> → <c>PonerEnFuncionesAsync</c>). El seeder hace lo mismo: deja
 	/// la cátedra y la designación guardadas y en una segunda pasada marca las funciones.
-	/// Registrado en docs/todos.md.
 	/// </para>
 	/// </remarks>
 	private async Task PonerEnFuncionesDeTodasAsync(
@@ -579,35 +578,69 @@ internal sealed class Sembradora
 	}
 
 	/// <summary>
-	/// Carga dos instancias por materia en las primeras <see cref="MATERIAS_CALIFICADAS"/>
-	/// materias del plan: un parcial aprobado o no, y un recuperatorio sólo cuando el parcial
-	/// quedó debajo de 6. Es la secuencia que la pantalla de calificaciones espera poder mostrar.
+	/// Carga la secuencia completa de un ciclo en las primeras <see cref="MATERIAS_CALIFICADAS"/>
+	/// materias del plan: los dos cuatrimestres, el recuperatorio de cada uno sólo cuando su nota
+	/// quedó debajo del umbral, y la nota final. Es la secuencia que la pantalla de calificaciones
+	/// y el boletín esperan poder mostrar.
 	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Las fechas se cuentan HACIA ATRÁS desde hoy y no sobre el calendario escolar —antes el
+	/// parcial era el 15 de junio del año en curso—: <c>Calificacion</c> rechaza una fecha
+	/// posterior a hoy, así que sembrar en marzo con una fecha de junio hacía fallar al seeder, y
+	/// con dos cuatrimestres la segunda fecha sería futura casi todo el año.
+	/// </para>
+	/// <para>
+	/// No siembra períodos de recuperación: existen para quien no alcanzó la nota final, y la
+	/// escuela demo no modela ese recorrido. Es un hueco conocido de los datos de prueba, no del
+	/// modelo.
+	/// </para>
+	/// </remarks>
 	private void CargarCalificaciones(Cursante cursante, List<Materia> materias)
 	{
-		var fechaDelParcial = new DateTime(DateTime.Today.Year, 6, 15);
-
 		foreach (var materia in materias.Take(MATERIAS_CALIFICADAS))
 		{
-			var notaDelParcial = _faker.Random.Int(2, 10);
+			var primero = CargarPeriodo(cursante, materia, Periodo.PrimerCuatrimestre, DateTime.Today.AddMonths(-5));
+			var segundo = CargarPeriodo(cursante, materia, Periodo.SegundoCuatrimestre, DateTime.Today.AddMonths(-2));
 
+			// La nota final la carga el docente y suele ser el promedio de los cuatrimestres, que es
+			// justamente el caso en que coincide con lo que el sistema calcularía solo.
 			cursante.RegistrarCalificacion(
 				materia.Id,
-				fechaDelParcial,
-				Instancia.Parcial,
-				notaDelParcial,
-				observacion: null);
-
-			if (notaDelParcial < 6)
-			{
-				cursante.RegistrarCalificacion(
-					materia.Id,
-					fechaDelParcial.AddMonths(1),
-					Instancia.Recuperatorio,
-					_faker.Random.Int(4, 10),
-					observacion: "Recuperatorio del primer parcial.");
-			}
+				DateTime.Today.AddDays(-7),
+				Periodo.Final,
+				esRecuperatorio: false,
+				Math.Round((primero + segundo) / 2d, 2),
+				observacion: "Promedio de los dos cuatrimestres.");
 		}
+	}
+
+	/// <summary>
+	/// Un cuatrimestre con su nota, y su recuperatorio si no alcanzó el umbral.
+	/// </summary>
+	/// <returns>La nota que quedó del período, que es la del recuperatorio cuando lo hubo.</returns>
+	private double CargarPeriodo(Cursante cursante, Materia materia, Periodo periodo, DateTime fecha)
+	{
+		var nota = _faker.Random.Int(2, 10);
+
+		cursante.RegistrarCalificacion(materia.Id, fecha, periodo, esRecuperatorio: false, nota, observacion: null);
+
+		if (nota >= Calificacion.NOTA_APROBACION)
+		{
+			return nota;
+		}
+
+		var recuperatorio = _faker.Random.Int(4, 10);
+
+		cursante.RegistrarCalificacion(
+			materia.Id,
+			fecha.AddMonths(1),
+			periodo,
+			esRecuperatorio: true,
+			recuperatorio,
+			observacion: $"Recuperatorio del período { periodo }.");
+
+		return recuperatorio;
 	}
 	#endregion
 
@@ -727,7 +760,7 @@ internal sealed class Sembradora
 		// pensó como nombre de usuario corto y no como dirección de correo: no hay email
 		// institucional real que entre en 18 caracteres. Son dos vocabularios en conflicto y acá
 		// se cede al de la interfaz, que es quien bloquea el botón, para no cambiar una validación
-		// que está fuera del alcance de esta fase. Registrado en docs/todos.md.
+		// que está fuera del alcance del seeder.
 		// Un usuario por rol, y cada uno colgado del puesto que le corresponde: la cuenta de
 		// Preceptoría sale de plantel.Preceptores y la de Secretaría Académica de la segunda
 		// secretaria. Los dos roles nuevos existían en el catálogo sin ninguna cuenta con la que

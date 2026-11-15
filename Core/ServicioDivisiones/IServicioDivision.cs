@@ -9,6 +9,7 @@ public interface IServicioDivision
 	Task<string> ProponerDescripcionDivisionAsync(ProponerDescripcionRequest request);
 	Task AgregarDivisionAsync(AgregarDivisionRequest request);
 	Task EliminarDivisionAsync(EliminarDivisionRequest request);
+	Task<ImpactoEliminacionDivisionResponse> ConsultarImpactoEliminacionDivisionAsync(EliminarDivisionRequest request);
 	Task AsignarPreceptorAsync(RegistrarPreceptorRequest request);
 	Task ModificarPreceptorAsync(ModificarPreceptorRequest request);
 	Task QuitarPreceptorAsync(EliminarPreceptorRequest request);

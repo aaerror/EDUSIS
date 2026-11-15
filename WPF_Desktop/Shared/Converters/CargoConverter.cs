@@ -1,4 +1,4 @@
-﻿using Domain.Catedras.SituacionesRevista;
+using Domain.Catedras.SituacionesRevista;
 using System.Globalization;
 using System.Windows.Data;
 using System;

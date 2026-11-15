@@ -359,7 +359,7 @@ internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacio
 
 	/// <remarks>
 	/// LOS CUATRO MARCADOS RECIBEN LA FILA POR PARÁMETRO y no trabajan sobre <see cref="Registro"/>.
-	/// Es la regla que <c>docs/ui-ux.md</c> dejó anotada: un <c>Button</c> dentro de una celda marca el
+	/// Es una regla de WPF: un <c>Button</c> dentro de una celda marca el
 	/// clic como manejado, así que la fila NO se selecciona al apretarlo, y un comando que operara
 	/// sobre el <c>SelectedItem</c> le marcaría la asistencia a otro alumno. Los botones del pie pasan
 	/// <c>{ Binding Path=Registro }</c>, que es la misma fila por otro camino.

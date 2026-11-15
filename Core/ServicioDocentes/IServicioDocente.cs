@@ -18,7 +18,9 @@ public interface IServicioDocente
 	Task ActualizarContacto(CambiarContactoRequest request);
 	Task ActualizarDomicilio(CambiarDomicilioRequest request);
 	Task ActualizarSexo(CambiarSexoRequest request);
-	Task QuitarDocenteAsync(DocenteIDRequest request);
+	Task DesafectarDocenteAsync(DocenteIDRequest request);
+	Task EliminarDocenteAsync(DocenteIDRequest request);
+	Task<ImpactoEliminacionDocenteResponse> ConsultarImpactoEliminacionDocenteAsync(DocenteIDRequest request);
 
 	/*
 	IReadOnlyCollection<LicenciaResponse> BuscarLicencias(DocenteIDRequest request);

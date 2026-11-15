@@ -1,4 +1,5 @@
 ﻿using Core.ServicioAutenticaciones.DTOs.Requests;
+using Core.ServicioAutenticaciones.Exceptions;
 using Core.ServicioAutenticaciones.DTOs.Responses;
 using Core.ServicioSeguridad;
 using Core.ServicioUsuarios.DTOs.Requests;
@@ -32,7 +33,7 @@ internal class ServicioAutenticacion : IServicio, IServicioAutenticacion
 
 		if (request is null)
 		{
-			throw new NullReferenceException("Datos incompletos para acceder al sistema.");
+			throw new ArgumentNullException(nameof(request), "Datos incompletos para acceder al sistema.");
 		}
 
 		try
@@ -42,14 +43,14 @@ internal class ServicioAutenticacion : IServicio, IServicioAutenticacion
 			var usuario = await _unitOfWork.Usuarios.BuscarPorUsernameAsync(request.credential.UserName);
 			if (usuario is null)
 			{
-				throw new ArgumentException("Datos de acceso incorrectos.");
+				throw new CredencialesInvalidasException();
 			}
 
 			//_unitOfWork.Usuarios.RecuperarDatosAcceso(request.Email, out salt, out hash);
 			var esAccesoValido = _servicioSeguridad.ValidatePassword(request.credential.SecurePassword, usuario.PasswordSalt, usuario.PasswordHash);
 			if (!esAccesoValido)
 			{
-				throw new ArgumentException("Datos de acceso incorrectos.");
+				throw new CredencialesInvalidasException();
 			}
 
 			var response = await _servicioUsuario.BuscarUsuarioPorIDAsync(new UsuarioIDRequest(usuario.Id));

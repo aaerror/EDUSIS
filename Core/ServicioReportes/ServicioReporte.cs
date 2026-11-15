@@ -1,3 +1,5 @@
+using Domain.Shared.Exceptions;
+using Core.ServicioReportes.Exceptions;
 using Core.ServicioReportes.DTOs.Requests;
 using Core.Shared;
 using Core.Shared.Documentos;
@@ -94,7 +96,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 
 			if (request.Desde.Date > request.Hasta.Date)
 			{
-				throw new ArgumentException("El inicio del período es posterior a su fin.", nameof(request.Desde));
+				throw new FechasInconsistentesException();
 			}
 
 			var inscripciones = await ListarInscripcionesAsync(request.Periodo, request.DivisionID);
@@ -182,8 +184,10 @@ internal class ServicioReporte : IServicio, IServicioReporte
 							inscripcion.Division.Descripcion,
 							inscripcion.Alumno.DatosPersonales.NombreCompleto(),
 							materia.Descripcion,
-							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Instancia.Parcial),
-							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Instancia.Recuperatorio),
+							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Periodo.PrimerCuatrimestre),
+							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Periodo.SegundoCuatrimestre),
+							ContextoAcademico.DescribirNota(inscripcion.Cursante.Calificaciones, materia.Id, Periodo.Final),
+							ContextoAcademico.DescribirRecuperacion(inscripcion.Cursante.Calificaciones, materia.Id),
 							ContextoAcademico.DescribirCondicion(inscripcion.Cursante.Calificaciones, materia.Id, conNota: false)
 						});
 				}
@@ -192,7 +196,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 			return await GenerarAsync(
 				titulo: "Reporte de calificaciones",
 				request: request,
-				columnas: new[] { "Curso", "Div.", "Alumno", "Materia", "Parcial", "Recuperatorio", "Condición" },
+				columnas: new[] { "Curso", "Div.", "Alumno", "Materia", "1° Cuat.", "2° Cuat.", "Final", "Recup.", "Condición" },
 				filas: filas,
 				inscripciones: inscripciones);
 		}
@@ -391,7 +395,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 
 		if (!cursantes.Any())
 		{
-			throw new InvalidOperationException($"No hay inscripciones registradas para el alcance solicitado en el ciclo lectivo { periodo }.");
+			throw new SinInscripcionesEnElAlcanceException(periodo);
 		}
 
 		var alumnos = (await _unitOfWork.Alumnos.BuscarTodosAsync()).ToDictionary(x => x.Id);

@@ -33,7 +33,7 @@ namespace WPF_Desktop.ViewModels.Asistencias;
 /// Lo que la justifica es el rol <c>Preceptoria</c>: sus tres permisos
 /// (<c>TomarAsistencia</c>, <c>GenerarDocumentosAsistencia</c>, <c>GenerarReportesDeCursada</c>)
 /// no habilitaban ninguna raíz del menú, así que entraba al sistema y se encontraba las cinco
-/// secciones apagadas. Ver la matriz de <c>docs/ui.md</c> §3.
+/// secciones apagadas.
 /// </para>
 /// <para>
 /// Las dos consultas que usa —<c>ListarCursosAsync</c> y <c>ListarDivisionesAsync</c>— no exigen

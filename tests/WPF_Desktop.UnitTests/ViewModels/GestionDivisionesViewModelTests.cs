@@ -65,6 +65,7 @@ public class GestionDivisionesViewModelTests
 			CicloLectivoStore.CicloLectivo = CicloDelStore;
 
 			DevolverDivisiones();
+			DevolverImpacto();
 
 			ViewModel = new GestionDivisionesViewModel(ServicioDivision,
 													   NavegarACursos,
@@ -83,6 +84,32 @@ public class GestionDivisionesViewModelTests
 		{
 			ServicioDivision.ListarDivisionesAsync(Arg.Any<ListarDivisionesRequest>())
 							.Returns(Task.FromResult<IReadOnlyCollection<DivisionResponse>>(divisiones.ToList()));
+		}
+
+		/// <summary>
+		/// Impacto por defecto: división vacía. Hace falta en el constructor y no sólo en las pruebas
+		/// que lo miran, porque el ViewModel consulta el impacto <strong>antes</strong> de abrir el
+		/// diálogo: sin stub, NSubstitute devuelve <c>null</c> y el armado del texto revienta en
+		/// cualquier prueba que elimine una división.
+		/// </summary>
+		public void DevolverImpacto(
+			int inscripciones = 0,
+			int calificaciones = 0,
+			int planillas = 0,
+			int registros = 0,
+			int catedras = 0,
+			int designaciones = 0,
+			params string[] ciclos)
+		{
+			ServicioDivision.ConsultarImpactoEliminacionDivisionAsync(Arg.Any<EliminarDivisionRequest>())
+							.Returns(Task.FromResult(new ImpactoEliminacionDivisionResponse(
+								Inscripciones: inscripciones,
+								Calificaciones: calificaciones,
+								Planillas: planillas,
+								RegistrosAsistencia: registros,
+								Catedras: catedras,
+								Designaciones: designaciones,
+								CiclosLectivos: ciclos.ToList())));
 		}
 	}
 
@@ -153,9 +180,14 @@ public class GestionDivisionesViewModelTests
 	#endregion
 
 	#region EliminarDivisionAsync
+	// Las dos pruebas que había acá afirmaban que el ciclo lectivo del request salía del store y no
+	// de DateTime.Today. El campo se quitó de EliminarDivisionRequest el 2026-11-06 —el borrado se
+	// lleva las inscripciones de todos los ciclos, así que un período no acotaba nada— y con él se
+	// fue lo que afirmaban. El ciclo del store sigue cubierto por las pruebas de
+	// ListarDivisionesAsync, que sí lo usa.
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Eliminar_una_division_llama_a_EliminarDivisionAsync_con_el_ciclo_lectivo_del_store()
+	public async Task Eliminar_una_division_llama_a_EliminarDivisionAsync_con_el_curso_y_la_division()
 	{
 		var contexto = new Contexto();
 		var division = CrearDivision("A");
@@ -163,22 +195,41 @@ public class GestionDivisionesViewModelTests
 
 		await contexto.ViewModel.EliminarCommandAsync.ExecuteAsync("Division");
 
-		_ = contexto.ServicioDivision.Received(1).EliminarDivisionAsync(new EliminarDivisionRequest(contexto.CursoID, division.DivisionID, CicloDelStore));
+		_ = contexto.ServicioDivision.Received(1).EliminarDivisionAsync(new EliminarDivisionRequest(contexto.CursoID, division.DivisionID));
 	}
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Eliminar_una_division_no_usa_el_ano_de_DateTime_Today_como_ciclo_lectivo()
+	public async Task Eliminar_una_division_consulta_el_impacto_antes_de_preguntar()
 	{
+		// El orden es el que importa: si el diálogo se abriera primero, el usuario confirmaría sin
+		// saber qué pierde, que es exactamente el defecto que tenía el texto anterior.
 		var contexto = new Contexto();
-		contexto.CicloLectivoStore.CicloLectivo = "1850";
+		contexto.DevolverImpacto(inscripciones: 3, calificaciones: 12);
 		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A"));
 
 		await contexto.ViewModel.EliminarCommandAsync.ExecuteAsync("Division");
 
-		var anioActual = DateTime.Today.Year.ToString();
-		_ = contexto.ServicioDivision.DidNotReceive().EliminarDivisionAsync(Arg.Is<EliminarDivisionRequest>(r => r.CicloLectivo == anioActual));
-		_ = contexto.ServicioDivision.Received(1).EliminarDivisionAsync(Arg.Is<EliminarDivisionRequest>(r => r.CicloLectivo == "1850"));
+		_ = contexto.ServicioDivision.Received(1).ConsultarImpactoEliminacionDivisionAsync(Arg.Any<EliminarDivisionRequest>());
+		contexto.Dialogos.Solicitudes.Count.ShouldBe(1);
+		contexto.Dialogos.Solicitudes[0].Consecuencia.ShouldContain("3 inscripciones");
+		contexto.Dialogos.Solicitudes[0].Consecuencia.ShouldContain("12 calificaciones");
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Si_falla_la_consulta_de_impacto_no_se_pregunta_ni_se_elimina()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioDivision.ConsultarImpactoEliminacionDivisionAsync(Arg.Any<EliminarDivisionRequest>())
+								 .Returns(Task.FromException<ImpactoEliminacionDivisionResponse>(new InvalidOperationException("sin conexion")));
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A"));
+
+		await contexto.ViewModel.EliminarCommandAsync.ExecuteAsync("Division");
+
+		contexto.Dialogos.Confirmaciones.ShouldBeEmpty();
+		contexto.Dialogos.Errores.Count.ShouldBe(1);
+		_ = contexto.ServicioDivision.DidNotReceive().EliminarDivisionAsync(Arg.Any<EliminarDivisionRequest>());
 	}
 
 	[Fact]

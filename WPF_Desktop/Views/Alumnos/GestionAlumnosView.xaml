@@ -8,16 +8,20 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 mc:Ignorable="d">
 	<!--
-		ALUMNOS NO TIENE ÍNDICE, Y ES UNA LIMITACIÓN DE LA CAPA DE APLICACIÓN, NO DE DISEÑO.
+		ÍNDICE + FICHA, como Docentes y Cursos.
 
-		IServicioAlumno no expone ningún "listar alumnos": BuscarPorDNIAsync y
-		BuscarPorNombreCompletoAsync devuelven UNA PersonaResponse, no una colección. Mientras
-		eso sea así, la pantalla no puede mostrar el listado que sí muestran Docentes y
-		Cursos, y la búsqueda por documento exacto es el único camino.
+		ACÁ ESTABA ESCRITO QUE ALUMNOS NO PODÍA TENER ÍNDICE, y era cierto: IServicioAlumno sólo
+		sabía buscar por documento exacto o por nombre completo exacto, y las dos devolvían UNA
+		persona. La limitación era de la capa de aplicación, no de diseño. Ahora
+		BuscarAlumnosAsync devuelve colección y el índice existe.
 
-		Lo que sí se arregla: la pantalla ahora DICE que funciona por documento exacto, en vez
-		de presentar un campo vacío y un "Debe buscar un alumno para proceder" que no explica
-		con qué dato buscar ni por qué no hay lista.
+		UN SOLO CAMPO para las dos búsquedas: si son dígitos es el documento y va exacto, si no
+		es parte del nombre o del apellido y va parcial. Quien busca ya sabe qué dato tiene a
+		mano; obligarlo a declarar primero en qué campo lo va a escribir no decide nada.
+
+		Hay botón y no filtro en vivo, a diferencia de Docentes: acá la búsqueda va contra la
+		base porque la matrícula de alumnos es un orden de magnitud más grande que el personal
+		docente, y traerla entera en cada entrada a la pantalla crece con cada ciclo lectivo.
 	-->
 	<Grid Margin="28 24 28 24">
 		<Grid.RowDefinitions>
@@ -29,7 +33,7 @@
 		<components:PaginaComponent Grid.Row="0"
 									Margin="0 0 0 20"
 									Titulo="Alumnos"
-									Subtitulo="Búsqueda por documento, perfil e inscripción a una división">
+									Subtitulo="Búsqueda por documento o nombre, situación académica, perfil e inscripción">
 			<components:PaginaComponent.Accion>
 				<Button Command="{ Binding Path=NavigationCommand }"
 						CommandParameter="Registrar"
@@ -47,58 +51,131 @@
 		</components:PaginaComponent>
 		<!--#endregion-->
 
+		<!--#region CUERPO-->
 		<Border Grid.Row="1" Style="{ StaticResource ResourceKey=Superficie.Tarjeta }">
-			<Grid Margin="28 24">
-				<Grid.RowDefinitions>
-					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="*"/>
-				</Grid.RowDefinitions>
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="360"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
 
-				<!--#region BÚSQUEDA-->
-				<StackPanel Grid.Row="0" MaxWidth="520" HorizontalAlignment="Left">
-					<Label Content="Documento del alumno"
-						   Style="{ StaticResource ResourceKey=Lbl.Campo }"
-						   Target="{ Binding ElementName=CampoDocumento }"/>
-					<StackPanel Orientation="Horizontal">
-						<TextBox x:Name="CampoDocumento"
-								 Tag="8 dígitos, sin puntos"
-								 Text="{ Binding Path=Documento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
-								 Style="{ StaticResource ResourceKey=Txb.Campo }"
-								 Width="220"/>
-						<Button Command="{ Binding Path=BuscarCommand }"
-								Content="Buscar"
-								IsDefault="True"
-								Margin="8 0 0 0"
-								Style="{ StaticResource ResourceKey=Btn.Secundario }"/>
+				<!--#region ÍNDICE-->
+				<Grid Grid.Column="0">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+
+					<StackPanel Grid.Row="0" Margin="16 16 16 12">
+						<Label Content="Buscar alumno"
+							   Style="{ StaticResource ResourceKey=Lbl.Campo }"
+							   Target="{ Binding ElementName=CampoTermino }"/>
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="Auto"/>
+							</Grid.ColumnDefinitions>
+
+							<Grid Grid.Column="0">
+								<TextBox x:Name="CampoTermino"
+										 Tag="DNI, nombre o apellido"
+										 Text="{ Binding Path=Termino, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+										 Padding="34 0 11 0"
+										 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+								<fa:IconBlock Foreground="{ StaticResource ResourceKey=TintaTenue }"
+											  FontSize="12"
+											  HorizontalAlignment="Left"
+											  Icon="MagnifyingGlass"
+											  IsHitTestVisible="False"
+											  Margin="12 0 0 0"
+											  VerticalAlignment="Center"/>
+							</Grid>
+
+							<Button Grid.Column="1"
+									Command="{ Binding Path=BuscarCommand }"
+									Content="Buscar"
+									IsDefault="True"
+									Margin="8 0 0 0"
+									Style="{ StaticResource ResourceKey=Btn.Secundario }"/>
+						</Grid>
+						<TextBlock HorizontalAlignment="Left"
+								   Margin="2 8 0 0"
+								   MaxWidth="320"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="El documento se busca exacto; el nombre y el apellido, por coincidencia parcial."
+								   TextWrapping="Wrap"/>
+						<TextBlock Margin="2 10 0 0"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="{ Binding Path=Conteo }"
+								   Visibility="{ Binding Path=Conteo, Converter={ StaticResource ResourceKey=visibleSiHayTexto } }"/>
 					</StackPanel>
-					<TextBlock Margin="0 8 0 0"
-							   Style="{ StaticResource ResourceKey=Txt.Detalle }"
-							   Text="El documento tiene que coincidir exacto: por ahora no hay listado ni búsqueda parcial de alumnos."
-							   TextWrapping="Wrap"/>
-				</StackPanel>
+
+					<ListView Grid.Row="1"
+							  ItemsSource="{ Binding Path=Resultados }"
+							  SelectedItem="{ Binding Path=AlumnoSeleccionado, Mode=TwoWay }"
+							  Style="{ StaticResource ResourceKey=Lista.Indice }"
+							  Tag="Todavía no buscaste ningún alumno.">
+						<ListView.View>
+							<GridView AllowsColumnReorder="False">
+								<GridView.Columns>
+									<GridViewColumn Header="DNI" Width="92">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Dato }"
+														   Text="{ Binding Path=Documento, TargetNullValue='—' }"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+									</GridViewColumn>
+									<GridViewColumn Header="ALUMNO" Width="226">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+														   Text="{ Binding Path=NombreCompleto, TargetNullValue='Sin datos' }"
+														   TextTrimming="CharacterEllipsis"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+									</GridViewColumn>
+								</GridView.Columns>
+							</GridView>
+						</ListView.View>
+					</ListView>
+				</Grid>
 				<!--#endregion-->
 
-				<!--#region RESULTADO-->
-				<Grid Grid.Row="1" Margin="0 24 0 0">
-					<!-- Sin resultado: el mensaje del ViewModel, con el mismo peso que una ficha vacía. -->
-					<Border HorizontalAlignment="Left"
-							Style="{ StaticResource ResourceKey=Superficie.Aviso }"
-							VerticalAlignment="Top"
-							Visibility="{ Binding Path=ExisteAlumno, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
-						<TextBlock MaxWidth="460"
-								   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-								   Text="{ Binding Path=Message }"
-								   TextWrapping="Wrap"/>
-					</Border>
+				<Rectangle Grid.Column="1" Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
 
-					<Grid Visibility="{ Binding Path=ExisteAlumno, Converter={ StaticResource ResourceKey=visibilidad } }">
+				<!--#region FICHA-->
+				<Grid Grid.Column="2">
+					<!-- Sin elección: la mitad derecha dice qué hacer, no queda en blanco. -->
+					<StackPanel HorizontalAlignment="Center"
+								VerticalAlignment="Center"
+								Visibility="{ Binding Path=AlumnoSeleccionado, Converter={ StaticResource ResourceKey=visibleSiHay }, ConverterParameter=inverso }">
+						<TextBlock Foreground="{ StaticResource ResourceKey=TintaSuave }"
+								   HorizontalAlignment="Center"
+								   Style="{ StaticResource ResourceKey=Txt.Subtitulo }"
+								   Text="Elegí un alumno"/>
+						<TextBlock HorizontalAlignment="Center"
+								   Margin="0 6 0 0"
+								   MaxWidth="340"
+								   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="{ Binding Path=Message }"
+								   TextAlignment="Center"
+								   TextWrapping="Wrap"/>
+					</StackPanel>
+
+					<Grid Margin="28 22"
+						  Visibility="{ Binding Path=AlumnoSeleccionado, Converter={ StaticResource ResourceKey=visibleSiHay } }">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="*"/>
 							<RowDefinition Height="Auto"/>
 						</Grid.RowDefinitions>
 
-						<!--#region FICHA-->
+						<!--
+							LA FICHA: regla verde, identificador tabular y nombre. El mismo gesto
+							encabeza cada registro del sistema, sea docente, alumno o curso.
+						-->
 						<StackPanel Grid.Row="0" Orientation="Horizontal">
 							<Rectangle Fill="{ StaticResource ResourceKey=Primario }"
 									   Margin="0 2 14 2"
@@ -106,60 +183,142 @@
 									   Width="3"/>
 							<StackPanel>
 								<TextBlock Style="{ StaticResource ResourceKey=Txt.Identificador }"
-										   Text="{ Binding Path=PersonaResponse.Documento, StringFormat='DNI {0}' }"/>
+										   Text="{ Binding Path=AlumnoSeleccionado.Documento, StringFormat='DNI {0}', TargetNullValue='SIN DNI' }"/>
 								<TextBlock Margin="0 2 0 0"
-										   Style="{ StaticResource ResourceKey=Txt.Titulo }">
-									<Run Text="{ Binding Path=PersonaResponse.Apellido, Mode=OneWay }"/><Run Text=","/>
-									<Run Text="{ Binding Path=PersonaResponse.Nombre, Mode=OneWay }"/>
-								</TextBlock>
+										   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+										   Text="{ Binding Path=AlumnoSeleccionado.NombreCompleto }"
+										   TextTrimming="CharacterEllipsis"/>
 							</StackPanel>
 						</StackPanel>
-						<!--#endregion-->
 
-						<!--#region DATOS-->
-						<Border Grid.Row="1"
-								Margin="0 20 0 0"
-								Style="{ StaticResource ResourceKey=Superficie.Seccion }"
-								VerticalAlignment="Top">
-							<Grid>
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="Auto"/>
-									<ColumnDefinition Width="*"/>
-								</Grid.ColumnDefinitions>
-								<Grid.RowDefinitions>
-									<RowDefinition Height="Auto"/>
-									<RowDefinition Height="Auto"/>
-									<RowDefinition Height="Auto"/>
-								</Grid.RowDefinitions>
+						<ScrollViewer Grid.Row="1"
+									  Margin="0 20 0 0"
+									  VerticalScrollBarVisibility="Auto">
+							<StackPanel>
+								<!--#region SITUACIÓN ACADÉMICA
+									VA PRIMERO, ANTES DE LOS DATOS PERSONALES, y el orden no es
+									decorativo: la pregunta que trae a alguien a esta pantalla es
+									qué cursa el alumno y cómo le va, no cuál es su nacionalidad.
+									La ficha anterior mostraba nacimiento, sexo y nacionalidad, y
+									nada más.
 
-								<TextBlock Grid.Column="0" Grid.Row="0"
-										   Margin="0 0 24 10"
-										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-										   Text="NACIMIENTO"/>
-								<TextBlock Grid.Column="1" Grid.Row="0"
-										   Margin="0 0 0 10"
-										   Style="{ StaticResource ResourceKey=Txt.Dato }"
-										   Text="{ Binding Path=PersonaResponse.FechaNacimiento, TargetNullValue='—' }"/>
+									Las tres cifras llevan el ciclo lectivo en el rótulo —"PROMEDIO
+									2026"— porque las tres son de un solo período. Un "PROMEDIO" a
+									secas obliga a adivinar si son las notas de este año o el
+									acumulado de la escolaridad entera.
+								-->
+								<Border Style="{ StaticResource ResourceKey=Superficie.Seccion }"
+										Visibility="{ Binding Path=Resumen, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+									<StackPanel>
+										<!-- Qué cursa -->
+										<Grid>
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="*"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
 
-								<TextBlock Grid.Column="0" Grid.Row="1"
-										   Margin="0 0 24 10"
-										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-										   Text="SEXO"/>
-								<TextBlock Grid.Column="1" Grid.Row="1"
-										   Margin="0 0 0 10"
-										   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-										   Text="{ Binding Path=PersonaResponse.Sexo, TargetNullValue='—' }"/>
+											<StackPanel Grid.Column="0">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+														   Text="CURSANDO"/>
+												<TextBlock Margin="0 4 0 0"
+														   Style="{ StaticResource ResourceKey=Txt.Subtitulo }"
+														   Text="{ Binding Path=Resumen.Cursada }"
+														   TextWrapping="Wrap"/>
+											</StackPanel>
 
-								<TextBlock Grid.Column="0" Grid.Row="2"
-										   Margin="0 0 24 0"
-										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
-										   Text="NACIONALIDAD"/>
-								<TextBlock Grid.Column="1" Grid.Row="2"
-										   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-										   Text="{ Binding Path=PersonaResponse.Nacionalidad, TargetNullValue='—' }"/>
-							</Grid>
-						</Border>
-						<!--#endregion-->
+											<Border Grid.Column="1"
+													Style="{ StaticResource ResourceKey=Insignia.Alerta }"
+													VerticalAlignment="Center"
+													Visibility="{ Binding Path=Resumen.EsRecursante, Converter={ StaticResource ResourceKey=visibilidad } }">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+														   Text="RECURSANTE"/>
+											</Border>
+										</Grid>
+
+										<!-- Promedio y asistencia, lado a lado -->
+										<Grid Margin="0 18 0 0"
+											  Visibility="{ Binding Path=Resumen.TieneTrayectoria, Converter={ StaticResource ResourceKey=visibilidad } }">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="*"/>
+												<ColumnDefinition Width="*"/>
+											</Grid.ColumnDefinitions>
+
+											<StackPanel Grid.Column="0" Margin="0 0 12 0">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+														   Text="{ Binding Path=Resumen.CicloLectivo, StringFormat='PROMEDIO {0}' }"/>
+												<TextBlock Margin="0 2 0 0"
+														   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+														   Text="{ Binding Path=Resumen.Promedio }"/>
+												<TextBlock HorizontalAlignment="Left"
+														   Margin="0 4 0 0"
+														   MaxWidth="260"
+														   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+														   Text="{ Binding Path=Resumen.DetalleCalificaciones }"
+														   TextWrapping="Wrap"/>
+											</StackPanel>
+
+											<StackPanel Grid.Column="1">
+												<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+														   Text="{ Binding Path=Resumen.CicloLectivo, StringFormat='ASISTENCIA {0}' }"/>
+												<TextBlock Margin="0 2 0 0"
+														   Style="{ StaticResource ResourceKey=Txt.Titulo }"
+														   Text="{ Binding Path=Resumen.PorcentajeAsistencia }"/>
+												<TextBlock HorizontalAlignment="Left"
+														   Margin="0 4 0 0"
+														   MaxWidth="260"
+														   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+														   Text="{ Binding Path=Resumen.DetalleAsistencia }"
+														   TextWrapping="Wrap"/>
+											</StackPanel>
+										</Grid>
+									</StackPanel>
+								</Border>
+								<!--#endregion-->
+
+								<!--#region DATOS PERSONALES-->
+								<Border Margin="0 12 0 0"
+										Style="{ StaticResource ResourceKey=Superficie.Seccion }">
+									<Grid>
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="*"/>
+										</Grid.ColumnDefinitions>
+										<Grid.RowDefinitions>
+											<RowDefinition Height="Auto"/>
+											<RowDefinition Height="Auto"/>
+											<RowDefinition Height="Auto"/>
+										</Grid.RowDefinitions>
+
+										<TextBlock Grid.Column="0" Grid.Row="0"
+												   Margin="0 0 24 10"
+												   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+												   Text="NACIMIENTO"/>
+										<TextBlock Grid.Column="1" Grid.Row="0"
+												   Margin="0 0 0 10"
+												   Style="{ StaticResource ResourceKey=Txt.Dato }"
+												   Text="{ Binding Path=AlumnoSeleccionado.FechaNacimiento, TargetNullValue='—' }"/>
+
+										<TextBlock Grid.Column="0" Grid.Row="1"
+												   Margin="0 0 24 10"
+												   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+												   Text="SEXO"/>
+										<TextBlock Grid.Column="1" Grid.Row="1"
+												   Margin="0 0 0 10"
+												   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+												   Text="{ Binding Path=AlumnoSeleccionado.Sexo, TargetNullValue='—' }"/>
+
+										<TextBlock Grid.Column="0" Grid.Row="2"
+												   Margin="0 0 24 0"
+												   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+												   Text="NACIONALIDAD"/>
+										<TextBlock Grid.Column="1" Grid.Row="2"
+												   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+												   Text="{ Binding Path=AlumnoSeleccionado.Nacionalidad, TargetNullValue='—' }"/>
+									</Grid>
+								</Border>
+								<!--#endregion-->
+							</StackPanel>
+						</ScrollViewer>
 
 						<!--#region ACCIONES-->
 						<Grid Grid.Row="2" Margin="0 20 0 0">
@@ -182,7 +341,7 @@
 										Content="Perfil"
 										Margin="0 0 8 0"
 										Style="{ StaticResource ResourceKey=Btn.Secundario }"
-										ToolTip="Datos personales, domicilio y contacto"/>
+										ToolTip="Datos personales, materias, asistencia y trayectoria"/>
 								<Button Command="{ Binding Path=NavigationCommand }"
 										CommandParameter="Asignar"
 										Content="Inscribir"
@@ -195,11 +354,12 @@
 				</Grid>
 				<!--#endregion-->
 
-				<components:CargandoComponent Grid.Row="0"
-											  Grid.RowSpan="2"
+				<components:CargandoComponent Grid.Column="0"
+											  Grid.ColumnSpan="3"
 											  EstaCargando="{ Binding Path=BuscarCommand.IsRunning }"
-											  Leyenda="BUSCANDO EL DOCUMENTO"/>
+											  Leyenda="BUSCANDO ALUMNOS"/>
 			</Grid>
 		</Border>
+		<!--#endregion-->
 	</Grid>
 </UserControl>

@@ -126,8 +126,6 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("PK_PLANILLA_ASISTENCIA");
 
-                    b.HasIndex("PreceptorID");
-
                     b.HasIndex("DivisionID", "Fecha")
                         .IsUnique();
 
@@ -280,14 +278,13 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("cursante_id");
 
+                    b.Property<bool>("EsRecuperatorio")
+                        .HasColumnType("bit")
+                        .HasColumnName("es_recuperatorio");
+
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("date")
                         .HasColumnName("fecha");
-
-                    b.Property<string>("Instancia")
-                        .IsRequired()
-                        .HasColumnType("varchar(20)")
-                        .HasColumnName("instancia");
 
                     b.Property<Guid>("MateriaID")
                         .HasColumnType("uniqueidentifier")
@@ -302,6 +299,11 @@ namespace Infrastructure.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(140)")
                         .HasColumnName("observacion");
+
+                    b.Property<string>("Periodo")
+                        .IsRequired()
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("periodo");
 
                     b.Property<bool>("Rindio")
                         .HasColumnType("bit")
@@ -609,9 +611,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasMaxLength(18)
+                        .HasMaxLength(50)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(18)")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("usuario");
 
                     b.HasKey("Id")
@@ -688,13 +690,6 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_PLANILLA_ASISTENCIA_DIVISION");
-
-                    b.HasOne("Domain.Docentes.Docente", null)
-                        .WithMany()
-                        .HasForeignKey("PreceptorID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_PLANILLA_ASISTENCIA_DOCENTE");
                 });
 
             modelBuilder.Entity("Domain.Asistencias.RegistroAsistencia", b =>

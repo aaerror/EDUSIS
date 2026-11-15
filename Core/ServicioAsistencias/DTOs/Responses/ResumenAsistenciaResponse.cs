@@ -7,7 +7,7 @@ namespace Core.ServicioAsistencias.DTOs.Responses;
 /// <remarks>
 /// <para>
 /// Este es el read model que faltaba. Hasta acá lo único que se podía preguntar por alumno era
-/// <c>ContarFaltasAsync(cursanteID, tipo)</c>, un contador de toda su historia sin fecha de corte, así
+/// <c>ContarPorTipoAsync(cursanteID, tipo)</c>, un contador de toda su historia sin fecha de corte, así
 /// que una pantalla que quisiera "las faltas de este mes" tenía que traerse las planillas del período
 /// y recorrerlas, es decir: armar la proyección en la capa de presentación. La proyección vive acá.
 /// </para>

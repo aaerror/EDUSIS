@@ -123,6 +123,46 @@ public sealed class PlanillaAsistencia : Entity
 
 		_registros.Add(new RegistroAsistencia(cursanteID));
 	}
+
+	/// <summary>
+	/// Borra el registro de asistencia de un cursante. Es la contraparte de
+	/// <see cref="IncorporarCursante"/> para el borrado físico de la persona, y <strong>no</strong>
+	/// para sacar a alguien de la lista del día.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>No mira <see cref="Cerrada"/>, y es deliberado.</strong> Es la única operación de este
+	/// agregado que se salta esa guarda. El resto del marcado pasa por <c>ValidarPlanillaAbierta</c> y
+	/// <see cref="IncorporarCursante"/> rechaza con <c>PlanillaCerradaException</c>, porque ahí la
+	/// planilla cerrada es registro histórico y la salida correcta es reabrirla. Acá no: lo que se está
+	/// borrando es el cursante, no corrigiendo el día. Si esto respetara <see cref="Cerrada"/>, un
+	/// alumno con un solo día de asistencia en una planilla cerrada sería indestructible, y la clave
+	/// ajena <c>FK_REGISTRO_ASISTENCIA_CURSANTE</c> —que es <c>Restrict</c>— haría fallar el borrado
+	/// del alumno con una violación de integridad de SQL Server en lugar de con una regla de negocio.
+	/// </para>
+	/// <para>
+	/// La planilla puede quedar sin ningún registro si el cursante borrado era el último. Este agregado
+	/// no decide qué hacer con eso: el caso de uso que orquesta el borrado mira
+	/// <see cref="Registros"/> y elimina la planilla vacía, porque una planilla sin registros no
+	/// documenta ninguna jornada. La invariante de <c>PlanillaSinCursantesException</c> gobierna el
+	/// <em>nacimiento</em> de la planilla, no su final.
+	/// </para>
+	/// </remarks>
+	public void EliminarRegistroDe(Guid cursanteID)
+	{
+		if (Guid.Empty.Equals(cursanteID))
+		{
+			throw new SinDatosCursanteException();
+		}
+
+		var registro = _registros.FirstOrDefault(r => r.CursanteID.Equals(cursanteID));
+		if (registro is null)
+		{
+			throw new CursanteNoIncluidoException();
+		}
+
+		_registros.Remove(registro);
+	}
 	#endregion
 
 	#region Ciclo (cerrar/reabrir)

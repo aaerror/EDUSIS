@@ -1,3 +1,4 @@
+using Domain.Docentes.Exceptions;
 using Domain.Docentes.DomainEvents;
 using Domain.Docentes.Puestos;
 using Domain.Personas;
@@ -12,7 +13,7 @@ namespace Domain.UnitTests.Docentes;
 /// Agregado <see cref="Domain.Docentes.Docente"/>: alta con validación de edad, legajo y CUIL,
 /// baja institucional (evento <c>DocenteDesafectadoDomainEvent</c>) y ciclo de vida de los
 /// cargos docentes. Las excepciones del módulo son <c>internal</c>: se verifican por el nombre
-/// del tipo. Las que ningún método cablea quedan con pruebas <c>Skip</c> (H-006, H-007).
+/// del tipo. Las que ningún método cablea quedan con pruebas <c>Skip</c>.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class DocenteTests
@@ -154,6 +155,16 @@ public class DocenteTests
 	}
 
 	[Fact]
+	public void CambiarEventualidadCargoDocente_con_un_puesto_inexistente_lanza_PuestoDocenteNoEncontradoException()
+	{
+		var docente = new DocenteBuilder().Build();
+
+		var ex = Should.Throw<Exception>(() => docente.CambiarEventualidadCargoDocente(Guid.NewGuid()));
+
+		ex.GetType().Name.ShouldBe("PuestoDocenteNoEncontradoException");
+	}
+
+	[Fact]
 	public void Rescindir_dos_veces_el_mismo_cargo_lanza_PuestoDocenteSinAsignarException()
 	{
 		var docente = new DocenteBuilder().ConPuesto(nameof(Posicion.Profesor), nameof(EstadoPuesto.Activo)).Build();
@@ -196,15 +207,71 @@ public class DocenteTests
 	}
 	#endregion
 
-	#region Excepciones sin cablear
-	[Fact(Skip = "H-006: DocenteConfirmadoEnCargoDocenteException no se lanza desde ningún método del dominio. Ver hallazgos.md.")]
-	public void Confirmar_un_docente_ya_confirmado_en_un_cargo_lanza_DocenteConfirmadoEnCargoDocenteException()
+	#region Confirmación en el cargo
+	/// <remarks>
+	/// La regla de <c>Puesto.EstablecerComoPuestoFijo</c> se afirma contra la excepción de dominio
+	/// y no contra un <c>ArgumentException</c> del BCL. No existe una excepción
+	/// <c>DocenteSinCargoDocenteException</c>, por redundante: el módulo ya
+	/// distingue los tres casos con <c>PuestoDocenteNoEncontradoException</c>,
+	/// <c>PuestoDocenteSinAsignarException</c> y <c>PuestoDocenteAsignadoException</c>, y ningún
+	/// caso de uso necesitaba un cuarto tipo para "el docente no tiene ningún cargo".
+	/// </remarks>
+	[Fact]
+	public void Confirmar_un_puesto_ya_indeterminado_lanza_DocenteConfirmadoEnCargoDocenteException()
 	{
+		var docente = new PuestoBuilder().BuildDocente();
+		var puesto = docente.Puestos.Single();
+
+		Should.Throw<DocenteConfirmadoEnCargoDocenteException>(
+			() => docente.CambiarEventualidadCargoDocente(puesto.Id));
 	}
 
-	[Fact(Skip = "H-007: DocenteSinCargoDocenteException no se lanza desde ningún método del dominio. Ver hallazgos.md.")]
-	public void Operar_sobre_un_docente_sin_cargos_lanza_DocenteSinCargoDocenteException()
+	/// <remarks>
+	/// <para>
+	/// <strong>El puesto no activo es el que todavía no arrancó, no el que terminó</strong>, y es
+	/// la única forma de alcanzar esta guarda. `Puesto.EstablecerPeriodo` rechaza toda fecha de
+	/// inicio anterior a hoy y `RangoFechas` exige fin >= inicio, así que `FechaFin` nunca queda
+	/// antes de hoy y un puesto recién construido no puede estar finalizado. Rescindir tampoco
+	/// sirve: `Rescindir(fechaFin)` pasa por el mismo `RangoFechas`.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	public void Confirmar_un_puesto_que_todavia_no_inicio_lanza_PuestoDocenteInactivoException()
 	{
+		var docente = new PuestoBuilder()
+			.ConDesde(DateTime.Today.AddDays(1))
+			.ConHasta(DateTime.Today.AddMonths(6))
+			.BuildDocente();
+		var puesto = docente.Puestos.Single();
+		puesto.EstaActivo().ShouldBeFalse();
+
+		Should.Throw<PuestoDocenteInactivoException>(
+			() => docente.CambiarEventualidadCargoDocente(puesto.Id));
+	}
+
+	/// <remarks>
+	/// Regresión de un defecto latente que se destapó al cablear la excepción de dominio. La guarda de
+	/// puesto no activo interpolaba `Periodo.FechaFin.Value` para informar la fecha de
+	/// finalización, dando por hecho que existe. Un puesto por tiempo indeterminado que todavía no
+	/// inició la tiene en nulo, así que la guarda moría con `InvalidOperationException` —"Nullable
+	/// object must have a value"— en vez de con la excepción de negocio. Nadie lo había visto
+	/// porque el camino exige las dos condiciones a la vez y ninguna prueba las combinaba.
+	/// </remarks>
+	[Fact]
+	public void Confirmar_un_puesto_indeterminado_que_no_inicio_informa_el_negocio_y_no_un_nulo()
+	{
+		var docente = new PuestoBuilder()
+			.ConDesde(DateTime.Today.AddDays(1))
+			.ConHasta(null)
+			.BuildDocente();
+		var puesto = docente.Puestos.Single();
+		puesto.EstaActivo().ShouldBeFalse();
+		puesto.EsEventual.ShouldBeFalse();
+
+		var ex = Should.Throw<PuestoDocenteInactivoException>(
+			() => docente.CambiarEventualidadCargoDocente(puesto.Id));
+
+		ex.Message.ShouldContain("todavía no inició");
 	}
 	#endregion
 }

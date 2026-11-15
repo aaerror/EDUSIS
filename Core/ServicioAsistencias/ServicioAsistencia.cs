@@ -1,3 +1,4 @@
+using Core.ServicioDivisiones.Exceptions;
 using Core.ServicioAsistencias.DTOs.Requests;
 using Core.ServicioAsistencias.DTOs.Responses;
 using Core.ServicioAsistencias.Exceptions;
@@ -40,7 +41,7 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
 			if (division is null)
 			{
-				throw new NullReferenceException("División no encontrada.");
+				throw new DivisionNoEncontradaException();
 			}
 
 			var cursantesIDs = await _unitOfWork.Cursantes.BuscarInscriptosEnFechaAsync(request.DivisionID, request.Fecha);
@@ -272,7 +273,7 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
-			return await _unitOfWork.PlanillasAsistencia.ContarFaltasAsync(request.CursanteID, request.Tipo);
+			return await _unitOfWork.PlanillasAsistencia.ContarPorTipoAsync(request.CursanteID, request.Tipo);
 		}
 		catch (Exception ex)
 		{
@@ -315,7 +316,7 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 
 	/// <remarks>
 	/// Recorre las planillas del período UNA vez y agrupa sus registros por cursante. La alternativa
-	/// —preguntarle al repositorio por cada alumno— no existe: <c>ContarFaltasAsync</c> es por cursante
+	/// —preguntarle al repositorio por cada alumno— no existe: <c>ContarPorTipoAsync</c> es por cursante
 	/// y por tipo, no acepta fechas, y daría cuatro consultas por alumno contando toda su historia en
 	/// lugar del período pedido.
 	/// </remarks>
@@ -409,30 +410,20 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	}
 
 	/// <summary>
-	/// El porcentaje de asistencia, redondeado a un decimal. Sin marcas devuelve cero: no hay período
-	/// del que opinar, y un 100% sobre cero días diría que la división no faltó nunca.
+	/// El porcentaje de asistencia. La fórmula se mudó a <see cref="PorcentajeDeAsistencia"/> al
+	/// necesitarla también el resumen académico del alumno: dos copias significarían que el
+	/// preceptor y el perfil pueden informar números distintos sobre los mismos registros, que es
+	/// el defecto que <c>Calificacion.NOTA_APROBACION</c> evita por el mismo motivo.
 	/// </summary>
-	/// <remarks>
-	/// La tardanza cuenta como asistida. El alumno llegó tarde pero estuvo en clase, y un porcentaje que
-	/// la descontara diría que faltó un día entero por cinco minutos. Los minutos de la tardanza quedan
-	/// en el registro del día, que es donde significan algo.
-	/// </remarks>
-	private static decimal Porcentaje(int asistidas, int sobre)
-	{
-		if (sobre <= 0)
-		{
-			return decimal.Zero;
-		}
-
-		return Math.Round(asistidas * 100m / sobre, 1, MidpointRounding.AwayFromZero);
-	}
+	private static decimal Porcentaje(int asistidas, int sobre) =>
+		PorcentajeDeAsistencia.Calcular(asistidas, sobre);
 
 	private async Task<PlanillaAsistencia> BuscarPlanillaAsync(Guid divisionID, DateTime fecha)
 	{
 		var planilla = await _unitOfWork.PlanillasAsistencia.BuscarPorDivisionYFechaAsync(divisionID, fecha);
 		if (planilla is null)
 		{
-			throw new NullReferenceException("Planilla de asistencia no encontrada.");
+			throw new PlanillaNoEncontradaException();
 		}
 
 		return planilla;

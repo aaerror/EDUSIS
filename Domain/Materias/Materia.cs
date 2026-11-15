@@ -68,7 +68,6 @@ public sealed class Materia : Entity
 
 	private void EditarCargaHoraria(int horasCatedra)
 	{
-		// TODO: Comprobar que la carga horaria sea divisor de 5 o 10
 		if (horasCatedra <= 0)
 		{
 			throw new CargaHorariaInvalidaException(nameof(horasCatedra));

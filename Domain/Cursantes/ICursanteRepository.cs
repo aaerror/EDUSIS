@@ -21,6 +21,19 @@ public interface ICursanteRepository : IRepository<Cursante>
 	/// alcanza para que el DELETE falle en la base.
 	/// </summary>
 	Task<int> ContarInscripcionesDeDivisionAsync(Guid divisionID);
+
+	/// <summary>
+	/// Las mismas inscripciones que cuenta <see cref="ContarInscripcionesDeDivisionAsync"/>, pero
+	/// materializadas: <strong>todas</strong> las de la división, cualquier ciclo lectivo, activas y
+	/// cerradas, con sus calificaciones cargadas.
+	/// </summary>
+	/// <remarks>
+	/// La consume el borrado de una división, y la consume dos veces —para contar qué se va a
+	/// destruir y para destruirlo—, por el mismo motivo que
+	/// <c>IPlanillaAsistenciaRepository.BuscarPorCursantesAsync</c>: dos consultas distintas podrían
+	/// dar números distintos y el diálogo informaría una cifra mientras el borrado hace otra.
+	/// </remarks>
+	Task<IReadOnlyCollection<Cursante>> BuscarInscripcionesDeDivisionAsync(Guid divisionID);
 	Task<Cursante?> BuscarInscripcionActivaAsync(Guid alumnoID, CicloLectivo cicloLectivo);
 
 	/// <summary>

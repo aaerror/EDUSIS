@@ -1,16 +1,19 @@
 ﻿using Core.ServicioDocentes.DTOs.Requests;
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioDocentes.DTOs.Responses;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.Shared.DTOs.Personas.Responses;
 using Core.Shared;
 using Domain.Docentes.Puestos;
 using Domain.Docentes;
+using Domain.Docentes.Exceptions;
 using Domain.Personas.Domicilios;
 using Domain.Personas;
 using Domain.Shared;
 using Microsoft.Extensions.Logging;
 using Core.Shared.Seguridad;
 using Domain.Usuarios;
+using Domain.Usuarios.Exceptions;
 
 namespace Core.ServicioDocentes;
 
@@ -36,7 +39,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 
 			if (docente is null)
 			{
-				throw new NullReferenceException($"No se encontró el docente.");
+				throw new DocenteNoEncontradoException();
 			}
 
 			return docente;
@@ -97,7 +100,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 											  .FirstOrDefault();
 			if (docente is null)
 			{
-				throw new NullReferenceException($"No se encontró ningún docente con el D.N.I. { documento }");
+				throw new DocenteNoEncontradoException(documento);
 			}
 
 			return new LegajoDocenteResponse(DocenteID: docente.Id,
@@ -120,8 +123,6 @@ internal class ServicioDocente : IServicio, IServicioDocente
 			throw;
 		}
 	}*/
-
-	//TODO: ListarDocentesXCargo
 
 	public async Task<IReadOnlyCollection<LegajoDocenteResponse>> ListarDocentesActivosAsync()
 	{
@@ -243,31 +244,31 @@ internal class ServicioDocente : IServicio, IServicioDocente
 
 			if (request is null)
 			{
-				throw new NullReferenceException("Datos incompletos para registrar el docente.");
+				throw new ArgumentNullException(nameof(request), "Datos incompletos para registrar el docente.");
 			}
 
-			var esDNIInvalido = await _unitOfWork.Docentes
-				.EsDocumentoInvalidoAsync(request.DatosPersonales.Documento);
-			if (esDNIInvalido)
+			var dniYaRegistrado = await _unitOfWork.Docentes
+				.ExisteDocumentoAsync(request.DatosPersonales.Documento);
+			if (dniYaRegistrado)
 			{
-				_logger.LogInformation($"D.N.I. del docente inválido...");
-				throw new ArgumentException("El D.N.I. del docente ya se encuentra registrado.");
+				_logger.LogInformation($"D.N.I. del docente ya registrado.");
+				throw new DocumentoDocenteDuplicadoException();
 			}
 
-			var esCUILInvalido = await _unitOfWork.Docentes
-				.EsCuilInvalidoAsync(request.CUIL);
-			if (esCUILInvalido)
+			var cuilYaRegistrado = await _unitOfWork.Docentes
+				.ExisteCuilAsync(request.CUIL);
+			if (cuilYaRegistrado)
 			{
-				_logger.LogInformation($"CUIL del docente inválido...");
-				throw new ArgumentException("El CUIL del docente ya se encuentra registrado.");
+				_logger.LogInformation($"CUIL del docente ya registrado.");
+				throw new CuilDocenteDuplicadoException();
 			}
 			
-			var esLegajoInvalido = await _unitOfWork.Docentes
-				.EsLegajoInvalidoAsync(request.Legajo);
-			if (esLegajoInvalido)
+			var legajoYaRegistrado = await _unitOfWork.Docentes
+				.ExisteLegajoAsync(request.Legajo);
+			if (legajoYaRegistrado)
 			{
-				_logger.LogInformation($"Legajo del docente inválido...");
-				throw new ArgumentException("El legajo docente ya se encuentra registrado.");
+				_logger.LogInformation($"Legajo del docente ya registrado.");
+				throw new LegajoDocenteDuplicadoException();
 			}
 
 			var datosPersonales = DatosPersonales.Crear(
@@ -391,7 +392,20 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		}
 	}
 
-	public async Task QuitarDocenteAsync(DocenteIDRequest request)
+	/// <summary>
+	/// Da de baja al docente conservando su legajo: cierra su período y lo marca inactivo. No borra
+	/// nada.
+	/// </summary>
+	/// <remarks>
+	/// Es exactamente lo que hacía <c>QuitarDocenteAsync</c>, con el nombre que le corresponde. Ese
+	/// método decía "quitar" y tenía el borrado real comentado en la línea de al lado
+	/// (<c>// _unitOfWork.Docentes.Eliminar(docenteID);</c>): un soft delete con nombre de borrado,
+	/// que es un nombre que miente. La regla es que
+	/// <em>eliminar</em> sea siempre borrado físico y que el soft delete lleve una palabra de negocio
+	/// propia — acá, <em>desafectar</em>, que es la que ya usaba el dominio
+	/// (<c>Docente.Desafectar()</c>, con su <c>DocenteDesafectadoDomainEvent</c>).
+	/// </remarks>
+	public async Task DesafectarDocenteAsync(DocenteIDRequest request)
 	{
 		try
 		{
@@ -400,9 +414,173 @@ internal class ServicioDocente : IServicio, IServicioDocente
 			var unDocente = await BuscarDocentePorIDAsync(request.DocenteID);
 			unDocente.Desafectar();
 
-			// _unitOfWork.Docentes.Eliminar(docenteID);
 			_unitOfWork.Docentes.Modificar(unDocente);
 			await _unitOfWork.GuardarCambiosAsync();
+
+			_logger.LogInformation($"Docente { unDocente.Id } desafectado.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Elimina el legajo del docente y lo que es suyo: sus licencias, su usuario y sus puestos.
+	/// Rechaza si tiene designaciones vigentes en cátedras.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>Las dos guardas corren antes de abrir la transacción</strong> y responden a la
+	/// distinción que gobierna todo este caso de uso: cuando se borra un alumno se destruye SU
+	/// historia; cuando se borra un docente se destruye la de OTROS.
+	/// </para>
+	/// <para>
+	/// <strong>Designaciones vigentes → rechaza.</strong> La situación de revista es la designación
+	/// del docente en una cátedra, y la cátedra pertenece a otra materia, otro agregado. Si
+	/// cascadeara, una cátedra perdería su ocupante en silencio sin pasar por una sola regla de
+	/// <c>Catedra</c> —que valida ocupante único en <c>Designar</c>—. Es la misma forma de guarda que
+	/// usa el curso con sus divisiones: antes de borrar esto, desarmá lo que cuelga de él.
+	/// </para>
+	/// <para>
+	/// <strong>Último administrador → rechaza.</strong> Ver <c>UltimoAdministradorException</c>: sin
+	/// ninguna cuenta con <c>AdministrarUsuarios</c> y <c>AsignarRoles</c>, el sistema queda sin forma
+	/// de recuperar su propia administración desde la aplicación.
+	/// </para>
+	/// <para>
+	/// Lo que sí cascadea es lo que no tiene vida propia sin el docente: sus licencias, su usuario
+	/// —con sus roles, por la cascada de <c>usuario_rol</c>— y sus puestos, que caen solos porque
+	/// <c>FK_PUESTO_DOCENTE</c> es la única <c>Cascade</c> de las seis claves ajenas que apuntan a
+	/// <c>docente</c>.
+	/// </para>
+	/// <para>
+	/// Las divisiones <strong>no</strong> se borran: se les vacía el cargo de preceptor con
+	/// <c>Division.QuitarPreceptor()</c>, que ya existe con su invariante. El cargo vacante es un
+	/// estado que el dominio modela (<c>EstaCargoPreceptorVacante</c>), así que la división queda
+	/// consistente y operativa, nada más que sin preceptor.
+	/// </para>
+	/// <para>
+	/// Las planillas que el docente firmó tampoco se tocan: conservan su <c>PreceptorID</c> como
+	/// firma histórica. Es posible porque <c>FK_PLANILLA_ASISTENCIA_DOCENTE</c> se quitó por migración
+	/// —ver <c>PlanillasAsistenciaConfiguration</c>—: borrar el legajo no desfirma la planilla.
+	/// </para>
+	/// </remarks>
+	public async Task EliminarDocenteAsync(DocenteIDRequest request)
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
+			var unDocente = await BuscarDocentePorIDAsync(request.DocenteID);
+
+			var catedras = await _unitOfWork.Catedras.CatedrasSegunDocenteAsync(unDocente.Id);
+			var vigentes = catedras.SelectMany(x => x.SituacionesRevista)
+								   .Count(x => x.DocenteID.Equals(unDocente.Id) && x.EsCargoVigente());
+			if (vigentes > 0)
+			{
+				throw new DocenteConDesignacionesVigentesException(unDocente.Legajo);
+			}
+
+			var usuario = await _unitOfWork.Usuarios.BuscarPorDocenteAsync(unDocente.Id);
+			if (usuario is not null && usuario.Roles.Any(x => x.Id == Rol.Admin.Id))
+			{
+				var administradores = await _unitOfWork.Usuarios.ContarUsuariosConRolAsync(Rol.Admin.Id);
+				if (administradores <= 1)
+				{
+					throw new UltimoAdministradorException(unDocente.Legajo);
+				}
+			}
+
+			await _unitOfWork.BeginTransactionAsync();
+
+			try
+			{
+				// 1. El cargo de preceptor de cada división que tenga a cargo. No se borra la
+				//    división: queda con el cargo vacante, que es un estado legítimo del dominio.
+				var divisiones = await _unitOfWork.Divisiones.BuscarPorPreceptorAsync(unDocente.Id);
+				foreach (var division in divisiones)
+				{
+					division.QuitarPreceptor();
+				}
+
+				_unitOfWork.Divisiones.ModificarRango(divisiones);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				// 2. Su usuario. Los roles caen por la cascada de usuario_rol.
+				if (usuario is not null)
+				{
+					await _unitOfWork.Usuarios.EliminarAsync(usuario.Id);
+					await _unitOfWork.GuardarCambiosAsync();
+				}
+
+				// 3. Sus licencias.
+				var licencias = await _unitOfWork.Licencias.BuscarLicenciasDeDocenteAsync(unDocente.Id);
+				_unitOfWork.Licencias.EliminarRango(licencias);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				// 4. El legajo. Sus puestos caen por FK_PUESTO_DOCENTE, que ya es Cascade.
+				await _unitOfWork.Docentes.EliminarAsync(unDocente.Id);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				await _unitOfWork.CommitTransactionAsync();
+
+				_logger.LogInformation($"Docente { unDocente.Id } eliminado: { divisiones.Count } divisiones quedaron sin preceptor, { licencias.Count } licencias borradas.");
+			}
+			catch
+			{
+				await _unitOfWork.RollbackTransactionAsync();
+				throw;
+			}
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Qué destruiría eliminar este docente, y qué lo impide si algo lo impide.
+	/// </summary>
+	/// <remarks>
+	/// Lectura <strong>con</strong> guarda de permiso, misma asimetría deliberada frente a las lecturas abiertas
+	/// de <c>Core</c> que las de alumno, división y curso: existe sólo para servir al borrado.
+	///
+	/// <strong>No</strong> informa cuántas planillas firmó, y es una decisión. Contarlas exigiría una
+	/// consulta que filtre <c>planilla_asistencia</c> por <c>preceptor_id</c>, y esa columna se quedó
+	/// sin índice cuando la migración se llevó <c>FK_PLANILLA_ASISTENCIA_DOCENTE</c>: sería un recorrido
+	/// de tabla entera para una cifra decorativa de un diálogo. Que las planillas conservan la firma es
+	/// un hecho fijo de la operación, así que el diálogo lo dice sin número.
+	/// </remarks>
+	public async Task<ImpactoEliminacionDocenteResponse> ConsultarImpactoEliminacionDocenteAsync(DocenteIDRequest request)
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
+			var unDocente = await BuscarDocentePorIDAsync(request.DocenteID);
+
+			var catedras = await _unitOfWork.Catedras.CatedrasSegunDocenteAsync(unDocente.Id);
+			var designaciones = catedras.SelectMany(x => x.SituacionesRevista)
+										.Where(x => x.DocenteID.Equals(unDocente.Id))
+										.ToList();
+
+			var divisiones = await _unitOfWork.Divisiones.BuscarPorPreceptorAsync(unDocente.Id);
+			var licencias = await _unitOfWork.Licencias.BuscarLicenciasDeDocenteAsync(unDocente.Id);
+			var usuario = await _unitOfWork.Usuarios.BuscarPorDocenteAsync(unDocente.Id);
+
+			var esElUltimoAdministrador = usuario is not null
+									   && usuario.Roles.Any(x => x.Id == Rol.Admin.Id)
+									   && await _unitOfWork.Usuarios.ContarUsuariosConRolAsync(Rol.Admin.Id) <= 1;
+
+			return new ImpactoEliminacionDocenteResponse(
+				DesignacionesVigentes: designaciones.Count(x => x.EsCargoVigente()),
+				DesignacionesCerradas: designaciones.Count(x => !x.EsCargoVigente()),
+				DivisionesQueQuedanSinPreceptor: divisiones.Count,
+				Licencias: licencias.Count,
+				TieneUsuario: usuario is not null,
+				EsElUltimoAdministrador: esElUltimoAdministrador);
 		}
 		catch (Exception ex)
 		{

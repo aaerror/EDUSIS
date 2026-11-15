@@ -67,6 +67,32 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 
 	[Fact]
+	public async Task EliminarAlumnoAsync_sin_GestionarAlumnos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioAlumno>().EliminarAlumnoAsync(null!));
+	}
+
+	/// <remarks>
+	/// La <strong>única</strong> consulta de <c>Core</c> con guarda, contra la decisión de alcance que
+	/// deja las lecturas abiertas. Existe sólo para servir al borrado del alumno y lo que
+	/// devuelve es el volumen de la trayectoria académica de una persona; ninguna pantalla la usa para
+	/// poblar un combo, que es el riesgo que motivó la excepción general. Se fija acá para que la
+	/// asimetría sea deliberada y no parezca un descuido al lado de
+	/// <see cref="Los_casos_de_uso_de_lectura_quedan_abiertos_a_proposito"/>.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarImpactoEliminacionAsync_sin_GestionarAlumnos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioAlumno>().ConsultarImpactoEliminacionAsync(null!));
+	}
+
+	[Fact]
 	public async Task RegistrarCurso_sin_GestionarCursos_lanza_PermisoDenegado()
 	{
 		using var host = HostSinPermisos();
@@ -240,7 +266,7 @@ public class AutorizacionDeCasosDeUsoTests
 
 	#region Los permisos partidos no se conceden entre sí
 	/// <remarks>
-	/// Tres permisos nacieron de partir uno existente, porque los diagramas de <c>docs/uml/</c>
+	/// Tres permisos nacieron de partir uno existente, porque los diagramas de casos de uso
 	/// reparten entre actores distintos lo que una sola atribución concedía junta. Estas pruebas
 	/// son las que impiden que la partición se deshaga sin ruido: si alguien volviera a poner
 	/// <c>GestionarCursos</c> en la guarda del preceptor, el resto de la suite seguiría en verde
@@ -377,11 +403,11 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 	#endregion
 
-	#region Decisiones de alcance de la Fase 5
+	#region Decisiones de alcance
 	[Fact]
 	public async Task Los_casos_de_uso_de_lectura_quedan_abiertos_a_proposito()
 	{
-		// Decisión de alcance escrita en plan/rbac-y-seed.md (Fase 5): la autorización cubre la
+		// Decisión de alcance: la autorización cubre la
 		// escritura; las consultas quedan sin guarda porque hay pantallas que leen datos de un
 		// módulo ajeno para poblar combos (GestionDivisiones → ListarPreceptoresActivosAsync).
 		using var host = HostSinPermisos();
@@ -406,7 +432,7 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 	#endregion
 
-	#region La guarda corre antes de abrir la transacción (CORE-19)
+	#region La guarda corre antes de abrir la transacción
 	[Fact]
 	public async Task RegistrarCurriculaAsync_sin_permiso_no_toca_la_transaccion()
 	{
@@ -422,13 +448,115 @@ public class AutorizacionDeCasosDeUsoTests
 		// UnitOfWorkFake tiene las transacciones como no-op y su rollback NO lanza, así que una
 		// prueba que sólo esperara PermisoDenegadoException pasaba en verde con el bug puesto.
 		// El fake es más indulgente que el UnitOfWork real; lo que delata el defecto es que el
-		// rollback se haya llamado. Ver CORE-19 en docs/todos.md.
+		// rollback se haya llamado.
 		using var host = HostSinPermisos();
 
 		await Should.ThrowAsync<PermisoDenegadoException>(
 			() => host.Resolver<IServicioCurricula>().RegistrarCurriculaAsync(null!));
 
 		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// El segundo caso de uso con transacción explícita, desde que el borrado de alumno cascadea a
+	/// mano (registros de asistencia → cursantes → legajo). La prueba de arriba decía "es el ÚNICO de
+	/// Core": ya no lo es, y esta existe para que el mismo defecto no reaparezca acá. Afirma la
+	/// SECUENCIA y no el tipo de excepción, por el mismo motivo: <c>UnitOfWorkFake</c> tiene el
+	/// rollback como no-op y no lanza, así que esperar sólo <c>PermisoDenegadoException</c> pasaría en
+	/// verde con el bug puesto. Lo que delata el defecto es que se haya llamado al rollback.
+	/// </remarks>
+	[Fact]
+	public async Task EliminarAlumnoAsync_sin_permiso_no_toca_la_transaccion()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioAlumno>().EliminarAlumnoAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// El tercero, desde que el borrado de división cascadea a mano (cátedras → planillas →
+	/// cursantes → división). Mismo motivo y misma forma que los dos de arriba: afirma la secuencia
+	/// y no el tipo de excepción, porque el rollback del fake es un no-op que no lanza.
+	/// </remarks>
+	[Fact]
+	public async Task EliminarDivisionAsync_sin_permiso_no_toca_la_transaccion()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDivision>().EliminarDivisionAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// El cuarto. Acá el riesgo es mayor que en los otros tres, porque este caso de uso tiene
+	/// <strong>dos guardas de negocio</strong> antes de la transacción —designaciones vigentes y
+	/// último administrador— y la de permiso tiene que seguir siendo la primera de las tres.
+	/// </remarks>
+	[Fact]
+	public async Task EliminarDocenteAsync_sin_permiso_no_toca_la_transaccion()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocente>().EliminarDocenteAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task DesafectarDocenteAsync_sin_GestionarDocentes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocente>().DesafectarDocenteAsync(null!));
+	}
+	#endregion
+
+	#region Las lecturas de impacto de borrado, que SÍ exigen permiso
+	/// <remarks>
+	/// <para>
+	/// Las tres consultas de impacto son la excepción declarada a
+	/// <see cref="Los_casos_de_uso_de_lectura_quedan_abiertos_a_proposito"/>: existen sólo para
+	/// servir a su borrado, lo que devuelven es el volumen de una trayectoria académica, y no las
+	/// consume ninguna pantalla ajena ni ningún combo — así que no corren el riesgo que motivó dejar
+	/// las ~30 lecturas de <c>Core</c> abiertas.
+	/// </para>
+	/// <para>
+	/// Están afirmadas acá para que la asimetría sea deliberada y no un descuido heredado: si alguien
+	/// "unificara" el criterio quitándoles la guarda, estas pruebas fallan.
+	/// </para>
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDivisionAsync_sin_GestionarCursos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDivision>().ConsultarImpactoEliminacionDivisionAsync(null!));
+	}
+
+	[Fact]
+	public async Task ConsultarImpactoEliminacionCursoAsync_sin_GestionarCursos_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioCurso>().ConsultarImpactoEliminacionCursoAsync(null!));
+	}
+
+	[Fact]
+	public async Task ConsultarImpactoEliminacionDocenteAsync_sin_GestionarDocentes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocente>().ConsultarImpactoEliminacionDocenteAsync(null!));
 	}
 	#endregion
 }

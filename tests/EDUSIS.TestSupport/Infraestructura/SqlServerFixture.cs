@@ -10,18 +10,18 @@ namespace EDUSIS.TestSupport.Infraestructura;
 
 /// <summary>
 /// Fixture de SQL Server para las suites de integración y end-to-end
-/// (contracts/test-support-api.md §5.2). Una instancia por <em>collection</em>.
+/// Una instancia por <em>collection</em>.
 ///
 /// <para>
 /// <see cref="InitializeAsync"/>: si no hay motor disponible marca <see cref="Omitir"/> y
 /// retorna; si existe <c>EDUSIS_TEST_SQLSERVER</c> la usa; si no, arranca un contenedor
 /// <c>mcr.microsoft.com/mssql/server:2022-latest</c>. Luego aplica las migraciones EF Core
-/// existentes por código (<c>Database.Migrate()</c>, FR-019) e inicializa <c>Respawner</c>.
+/// existentes por código (<c>Database.Migrate()</c>) e inicializa <c>Respawner</c>.
 /// </para>
 ///
 /// <para>
-/// Cualquier fallo al preparar la base (contenedor que no levanta, migración que no aplica —
-/// FR-019/FR-018) se traduce en <see cref="Omitir"/> = <c>true</c> con <see cref="MotivoOmision"/>
+/// Cualquier fallo al preparar la base (contenedor que no levanta, migración que no aplica)
+/// se traduce en <see cref="Omitir"/> = <c>true</c> con <see cref="MotivoOmision"/>
 /// explicativo: las pruebas se omiten (skip), la ejecución no se marca como fallida.
 /// </para>
 /// </summary>
@@ -32,7 +32,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 	private Respawner? _respawner;
 	private bool _contenedorPropio;
 
-	/// <summary>Cadena a la base de prueba. Nunca es la de <c>InfrastructureDI</c> (FR-016).</summary>
+	/// <summary>Cadena a la base de prueba. Nunca es la de <c>InfrastructureDI</c>.</summary>
 	public string CadenaDeConexion { get; private set; } = string.Empty;
 
 	/// <summary><c>true</c> cuando no hay base disponible o no se pudo preparar el esquema.</summary>
@@ -57,7 +57,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 			var cadenaExterna = Environment.GetEnvironmentVariable("EDUSIS_TEST_SQLSERVER");
 			if (!string.IsNullOrWhiteSpace(cadenaExterna))
 			{
-				CadenaDeConexion = cadenaExterna;
+				CadenaDeConexion = ConBasePropiaDeEstaSuite(cadenaExterna);
 			}
 			else
 			{
@@ -106,8 +106,8 @@ public sealed class SqlServerFixture : IAsyncLifetime
 	}
 
 	/// <summary>
-	/// Vacía las tablas de datos conservando el esquema y los catálogos de referencia (FR-009;
-	/// ver <see cref="TablasDeReferencia"/>). Se llama en el <c>InitializeAsync</c> de cada clase
+	/// Vacía las tablas de datos conservando el esquema y los catálogos de referencia (ver
+	/// <see cref="TablasDeReferencia"/>). Se llama en el <c>InitializeAsync</c> de cada clase
 	/// de prueba. No-op si la base se omite.
 	/// </summary>
 	public async Task ResetAsync()
@@ -132,10 +132,10 @@ public sealed class SqlServerFixture : IAsyncLifetime
 		if (await FaltaAlgunCatalogoAsync())
 		{
 			// La base ya existía con los catálogos vaciados: el estado que dejaba este mismo
-			// fixture antes de ignorarlos (TEST-09). `Migrate()` no los repone porque el
+			// fixture antes de ignorarlos. `Migrate()` no los repone porque el
 			// historial dice que la migración está aplicada y el `InsertData` no vuelve a
 			// correr, así que la única forma de replicar el `HasData` es recrear el esquema.
-			// Es seguro: `GarantizarQueNoEsProduccion` ya corrió (FR-016) y la base de prueba
+			// Es seguro: `GarantizarQueNoEsProduccion` ya corrió y la base de prueba
 			// es desechable por contrato.
 			await contexto.Database.EnsureDeletedAsync();
 			await contexto.Database.MigrateAsync();
@@ -189,7 +189,65 @@ public sealed class SqlServerFixture : IAsyncLifetime
 	}
 
 	/// <summary>
-	/// FR-016: aborta si la cadena de prueba apunta a la base hardcodeada en
+	/// Le da a cada suite su propia base, derivada de la configurada en
+	/// <c>EDUSIS_TEST_SQLSERVER</c>: <c>EdusisDB_Test</c> → <c>EdusisDB_Test_Infrastructure_IntegrationTests</c>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>Sin esto, <c>dotnet test EDUSIS.sln</c> con un SQL Server externo da fallas
+	/// fantasma.</strong> <c>Infrastructure.IntegrationTests</c> y <c>EDUSIS.EndToEndTests</c> son
+	/// dos assemblies, y el runner los ejecuta <em>en paralelo</em>: las <c>Collection</c> de xUnit
+	/// serializan las clases dentro de un assembly, no entre assemblies. Las dos suites resetean la
+	/// base con Respawn al empezar cada clase, así que una truncaba las tablas mientras la otra
+	/// estaba a mitad de una prueba. El resultado es un conjunto de fallas que cambia en cada
+	/// corrida y que desaparece al ejecutar cada proyecto por separado — el peor modo de fallar que
+	/// tiene una suite.
+	/// </para>
+	/// <para>
+	/// Con Testcontainers el problema no existe porque cada <c>Collection</c> levanta su propio
+	/// contenedor, y por eso nunca se vio: el camino documentado era Docker. El camino de SQL Server
+	/// externo quedaba con una sola base para las dos suites.
+	/// </para>
+	/// <para>
+	/// El sufijo sale del nombre del proyecto, que se deduce de <c>AppContext.BaseDirectory</c>
+	/// —cada assembly de prueba corre desde su propio <c>bin/</c>—. No hace falta crear las bases a
+	/// mano: <c>Database.MigrateAsync()</c> crea la que no exista. La base que el usuario configura
+	/// queda como prefijo y no se toca.
+	/// </para>
+	/// </remarks>
+	private static string ConBasePropiaDeEstaSuite(string cadena)
+	{
+		var constructor = new SqlConnectionStringBuilder(cadena);
+		var sufijo = NombreDelProyectoDePrueba();
+
+		if (!string.IsNullOrEmpty(sufijo) && !constructor.InitialCatalog.EndsWith(sufijo, StringComparison.OrdinalIgnoreCase))
+		{
+			constructor.InitialCatalog = $"{constructor.InitialCatalog}_{sufijo}";
+		}
+
+		return constructor.ConnectionString;
+	}
+
+	/// <summary>
+	/// El nombre del proyecto de prueba en ejecución, saneado para usarse como nombre de base:
+	/// <c>…/tests/EDUSIS.EndToEndTests/bin/Debug/net7.0/</c> → <c>EDUSIS_EndToEndTests</c>.
+	/// </summary>
+	private static string NombreDelProyectoDePrueba()
+	{
+		var partes = AppContext.BaseDirectory
+			.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+
+		var indiceBin = Array.FindLastIndex(partes, x => x.Equals("bin", StringComparison.OrdinalIgnoreCase));
+		if (indiceBin <= 0)
+		{
+			return string.Empty;
+		}
+
+		return partes[indiceBin - 1].Replace('.', '_');
+	}
+
+	/// <summary>
+	/// Aborta si la cadena de prueba apunta a la base hardcodeada en
 	/// <c>InfrastructureDI</c> (<c>localhost</c> / <c>EdusisDB</c>).
 	/// </summary>
 	private static void GarantizarQueNoEsProduccion(string cadena)
@@ -204,7 +262,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 		{
 			throw new InvalidOperationException(
 				"La cadena de conexión de prueba apunta a la base de producción (localhost / EdusisDB). " +
-				"Definí EDUSIS_TEST_SQLSERVER con una base vacía y desechable (FR-016).");
+				"Definí EDUSIS_TEST_SQLSERVER con una base vacía y desechable.");
 		}
 	}
 	#endregion

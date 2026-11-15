@@ -34,7 +34,7 @@ public class MateriaStoreTests
 	[Trait("Categoria", "Unidad")]
 	public void La_propiedad_no_guarda_un_tipo_de_la_capa_de_presentacion()
 	{
-		// Violación 14 de docs/todos.md, y era el peor caso de los tres: MateriaViewModel deriva de
+		// El store no debe guardar un ViewModel, y MateriaViewModel es el peor caso: deriva de
 		// ObservableValidator y lleva [Required] sobre Descripcion, así que el contexto de
 		// navegación arrastraba validación de formulario y podía viajar en estado inválido.
 		var tipo = typeof(MateriaStore).GetProperty(nameof(MateriaStore.Materia))!.PropertyType;

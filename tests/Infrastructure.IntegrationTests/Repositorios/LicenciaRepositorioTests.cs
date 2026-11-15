@@ -7,7 +7,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Repositorios;
 
 /// <summary>
-/// US3-2: <c>LicenciaRepository.BuscarLicenciasDeDocenteAsync</c> devuelve sólo las licencias
+/// <c>LicenciaRepository.BuscarLicenciasDeDocenteAsync</c> devuelve sólo las licencias
 /// del docente indicado sobre datos sembrados.
 /// </summary>
 public sealed class LicenciaRepositorioTests : BaseIntegracion

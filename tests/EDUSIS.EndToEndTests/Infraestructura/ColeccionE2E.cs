@@ -20,7 +20,7 @@ public static class ColeccionE2E
 /// <summary>
 /// Define la <em>collection</em> de xUnit para la suite end-to-end: una sola
 /// <see cref="SqlServerFixture"/> (un contenedor / una base) reutilizada por todas las clases de
-/// flujos (FR-009).
+/// flujos.
 /// </summary>
 [CollectionDefinition(ColeccionE2E.Nombre)]
 public sealed class DefinicionColeccionE2E : ICollectionFixture<SqlServerFixture>
@@ -32,13 +32,11 @@ public sealed class DefinicionColeccionE2E : ICollectionFixture<SqlServerFixture
 /// <em>collection</em> de SQL Server de esta suite.
 /// <list type="bullet">
 ///   <item>Las pruebas se anotan con <c>[RequiereSqlServerFact]</c>: sin Docker ni
-///   <c>EDUSIS_TEST_SQLSERVER</c> quedan <em>Skipped</em> (salida 0), no fallidas
-///   (contracts/test-execution.md §5).</item>
+///   <c>EDUSIS_TEST_SQLSERVER</c> quedan <em>Skipped</em> (salida 0), no fallidas.</item>
 ///   <item>Si el motor está disponible pero el esquema no se pudo preparar (contenedor que no
-///   levanta, migración que no aplica — FR-019), <see cref="InitializeAsync"/> corta con un
-///   error explícito: es un defecto que bloquea la suite y debe quedar en <c>hallazgos.md</c>
-///   (FR-018).</item>
-///   <item>Antes de cada prueba resetea los datos con Respawn (FR-009) y arma una composición
+///   levanta, migración que no aplica), <see cref="InitializeAsync"/> corta con un
+///   error explícito: es un defecto que bloquea la suite.</item>
+///   <item>Antes de cada prueba resetea los datos con Respawn y arma una composición
 ///   de dependencias real fresca (<see cref="ComposicionDePruebaE2E"/>).</item>
 /// </list>
 /// </summary>
@@ -59,7 +57,7 @@ public abstract class BaseE2E : IAsyncLifetime
 	{
 		// Sin motor disponible, `[RequiereSqlServerFact]` ya omitió la prueba en descubrimiento;
 		// este `InitializeAsync` ni siquiera corre. Si llegamos acá con `Omitir`, es porque el
-		// motor está pero el esquema falló: se corta con un mensaje que apunta al defecto (FR-018).
+		// motor está pero el esquema falló: se corta con un mensaje que apunta al defecto.
 		if (Fixture.Omitir)
 		{
 			throw new InvalidOperationException(Fixture.MotivoOmision);
@@ -142,6 +140,31 @@ public abstract class BaseE2E : IAsyncLifetime
 		contexto.Add(curso);
 		await contexto.SaveChangesAsync();
 		return curso;
+	}
+
+	/// <summary>Persiste un <see cref="Domain.Alumnos.Alumno"/> válido directamente y lo devuelve.</summary>
+	/// <remarks>
+	/// Lo necesita todo flujo que inscriba: <c>FK_CURSANTE_ALUMNO</c> apunta a <c>alumno</c>, así que
+	/// un identificador suelto hace fallar el <c>INSERT</c> del cursante. El legajo, el documento y
+	/// el correo salen del contador de la clase porque <c>persona</c> tiene índices únicos sobre los
+	/// tres y Respawn no reinicia la secuencia entre pruebas.
+	/// </remarks>
+	protected async Task<Domain.Alumnos.Alumno> SembrarAlumnoAsync()
+	{
+		var numero = SiguienteNumero();
+
+		var alumno = new AlumnoBuilder()
+			.ConLegajo("AL" + numero[..4])
+			.ConEmail($"alumno.{numero}@correo.com")
+			.ConDatosPersonales(new DatosPersonalesBuilder()
+				.ConDocumento("2" + numero + "0")
+				.ConEdad(15))
+			.Build();
+
+		await using var contexto = Fixture.CrearContexto();
+		contexto.Add(alumno);
+		await contexto.SaveChangesAsync();
+		return alumno;
 	}
 
 	/// <summary>Persiste una <see cref="Domain.Divisiones.Division"/> propia del curso indicado y la devuelve.</summary>

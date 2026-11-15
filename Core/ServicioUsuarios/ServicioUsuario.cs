@@ -1,7 +1,10 @@
 ﻿using Core.ServicioAutenticaciones.DTOs.Responses;
+using Core.ServicioAutenticaciones.Exceptions;
+using Core.ServicioUsuarios.Exceptions;
 using Core.ServicioSeguridad;
 using Core.ServicioUsuarios.DTOs.Requests;
 using Core.Shared;
+using Domain.Docentes;
 using Domain.Usuarios;
 using Domain.Shared;
 using Microsoft.Extensions.Logging;
@@ -25,6 +28,67 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 		_servicioSeguridad = servicioSeguridad;
 	}
 
+	/// <summary>
+	/// Todas las cuentas del sistema con su docente y sus roles, ordenadas por nombre.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Lectura sin guarda de permiso, como el resto de las lecturas de <c>Core</c>, aunque la única
+	/// pantalla que la consume exige <c>AdministrarUsuarios</c> para abrirse. La asimetría con las
+	/// consultas de impacto de borrado es deliberada: aquéllas existen sólo para servir a su borrado,
+	/// ésta es el listado de una pantalla y cae del lado de las ~30 lecturas abiertas.
+	/// </para>
+	/// <para>
+	/// Resuelve el docente de cada cuenta de a uno. Es N+1 y está asumido: el padrón de usuarios del
+	/// sistema tiene el tamaño del plantel docente con cuenta, no el de la matrícula. Si alguna vez
+	/// crece, lo que corresponde es un método de repositorio que haga el join, no un bucle más rápido
+	/// acá — las consultas con tipos de EF van en <c>Infrastructure/Repository/</c>.
+	/// </para>
+	/// </remarks>
+	/// <summary>
+	/// Los cargos vigentes del docente, separados por coma. Sale de <c>Puestos</c> y no de la
+	/// propiedad singular <c>Puesto</c>, que nunca se asignaba y dejaba a todos "sin puesto".
+	/// </summary>
+	private static string DescribirPuestos(Docente? docente)
+	{
+		var posiciones = docente?.PuestoDocentesAsignados()
+								 .Select(x => x.Posicion.ToString())
+								 .ToList();
+
+		return posiciones is { Count: > 0 }
+			? string.Join(", ", posiciones)
+			: "Sin puesto docente asignado";
+	}
+
+	public async Task<IReadOnlyCollection<UsuarioResponse>> ListarUsuariosAsync()
+	{
+		try
+		{
+			var usuarios = await _unitOfWork.Usuarios.BuscarTodosAsync();
+			var respuestas = new List<UsuarioResponse>();
+
+			foreach (var usuario in usuarios)
+			{
+				var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(usuario.DocenteID);
+
+				respuestas.Add(new UsuarioResponse(
+					usuario.Id,
+					usuario.DocenteID,
+					usuario.Username,
+					docente is not null ? docente.DatosPersonales.NombreCompleto() : "(legajo inexistente)",
+					DescribirPuestos(docente),
+					usuario.Roles.Select(x => x.Id).ToList()));
+			}
+
+			return respuestas.OrderBy(x => x.NombreCompleto).ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: {ex.Message}\n");
+			throw;
+		}
+	}
+
 	public async Task<UsuarioResponse> BuscarUsuarioPorIDAsync(UsuarioIDRequest request)
 	{
 		try
@@ -32,7 +96,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{
-				throw new NullReferenceException($"No se encontró el usuario.");
+				throw new UsuarioNoEncontradoException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(usuario.DocenteID);
@@ -41,7 +105,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 									   docente.Id,
 									   usuario.Username,
 									   docente.DatosPersonales.NombreCompleto(),
-									   docente.Puesto is not null ? docente.Puesto.Posicion.ToString() : "Sin puesto docente asignado",
+									   DescribirPuestos(docente),
 									   // Roles reales del usuario, no los "Basic"/"Custom" que devolvía hardcodeado:
 									   // son el insumo de la autorización (ver Core.Shared.Seguridad.ISesionActual) y
 									   // Viajan como Id, no como descripción (ver UsuarioResponse). Los carga el Include de
@@ -61,7 +125,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 
 		if (request is null)
 		{
-			throw new NullReferenceException("Datos incompletos para registrar el usuario.");
+			throw new ArgumentNullException(nameof(request), "Datos incompletos para registrar el usuario.");
 		}
 
 		try
@@ -70,7 +134,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var existeUsuario = await _unitOfWork.Usuarios.ExisteUsuarioDelDocenteAsync(request.DocenteID);
 			if (existeUsuario)
 			{
-				throw new ArgumentException("El docente ya cuenta con un usuario en el sistema.", nameof(request.DocenteID));
+				throw new UsuarioDeDocenteDuplicadoException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(request.DocenteID);
@@ -94,12 +158,21 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			/*char[] delimiter = { ':' };
 			string[] split = saltAndHash.Split(delimiter);*/
 
-			var usuario = new Usuario(request.DocenteID, email, salt, hash);
+			// El rol que el request trae SE USA. Con
+			// `new Usuario(request.DocenteID, email, salt, hash)` —el constructor sin roles— el
+			// rol se descartaría en silencio: todo usuario nacería sin un solo permiso y entraba
+			// al sistema con el menú entero apagado. Ver RegistrarUsuarioRequest.
+			//
+			// Se usa el constructor con roles y no AgregarRol() después, por el mismo motivo que el
+			// seeder: AgregarRol resolvía por descripción, y además así el usuario nunca existe en un
+			// estado intermedio sin rol.
+			var rol = Enumeration.FromValue<Rol>(request.RolID);
+			var usuario = new Usuario(request.DocenteID, email, salt, hash, new List<Rol> { rol });
 
 			await _unitOfWork.Usuarios.AgregarAsync(usuario);
 			await _unitOfWork.GuardarCambiosAsync();
 
-			_logger.LogInformation("Usuario creado correctamente...");
+			_logger.LogInformation($"Usuario creado correctamente con rol { rol.Descripcion }.");
 		}
 		catch (Exception ex)
 		{
@@ -115,7 +188,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var esValido = await _unitOfWork.Docentes.ExisteDocenteConLegajoAsync(request.DocenteID, request.Legajo);
 			if (!esValido)
 			{
-				throw new ArgumentException("Datos del docente incorrectos.");
+				throw new DatosDelDocenteInvalidosException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(request.DocenteID);
@@ -164,7 +237,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 
 		if (request is null)
 		{
-			throw new NullReferenceException("Datos incompletos para restablecer la clave de identidad del usuario.");
+			throw new ArgumentNullException(nameof(request), "Datos incompletos para restablecer la clave de identidad del usuario.");
 		}
 
 		try
@@ -173,7 +246,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var usuario = await _unitOfWork.Usuarios.BuscarPorUsernameAsync(request.Email);
 			if (usuario is null)
 			{
-				throw new ArgumentException("Datos de acceso incorrectos.");
+				throw new CredencialesInvalidasException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(usuario.DocenteID);
@@ -207,10 +280,10 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{
-				throw new NullReferenceException("No se encontró el usuario.");
+				throw new UsuarioNoEncontradoException();
 			}
 
-			usuario.AgregarRol(request.Rol);
+			usuario.AgregarRol(request.RolID);
 
 			_unitOfWork.Usuarios.Modificar(usuario);
 			await _unitOfWork.GuardarCambiosAsync();
@@ -231,10 +304,10 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{
-				throw new NullReferenceException("No se encontró el usuario.");
+				throw new UsuarioNoEncontradoException();
 			}
 
-			usuario.QuitarRol(request.Rol);
+			usuario.QuitarRol(request.RolID);
 
 			_unitOfWork.Usuarios.Modificar(usuario);
 			await _unitOfWork.GuardarCambiosAsync();

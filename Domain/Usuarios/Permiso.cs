@@ -15,7 +15,7 @@ namespace Domain.Usuarios;
 /// </para>
 /// <para>
 /// Los tres últimos nacieron de partir permisos que antes eran uno solo, porque los diagramas de
-/// casos de uso de <c>docs/uml/</c> reparten entre actores distintos lo que una sola atribución
+/// casos de uso reparten entre actores distintos lo que una sola atribución
 /// concedía junto: <see cref="GestionarPreceptores"/> sale de <see cref="GestionarCursos"/>
 /// —CU-04/05/06 son de Secretaría y CU-01/02/03 de Secretaría Académica—,
 /// <see cref="GenerarDocumentosAsistencia"/> de <see cref="GenerarDocumentos"/> —CU-30 es el único

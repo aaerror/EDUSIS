@@ -12,7 +12,7 @@ namespace Domain.UnitTests.Cursantes;
 /// recursante, baja de la inscripción y registro de calificaciones con métodos para crear,
 /// eliminar y modificar observaciones. <c>CalificacionNoEncontradaException</c>,
 /// <c>SinDatosDivisionException</c>, <c>SinDatosAlumnoException</c>,
-/// <c>InscripcionCerradaException</c>, <c>FechaBajaAnteriorAlInicioException</c> y
+/// <c>SinDatosCicloLectivoException</c>, <c>InscripcionCerradaException</c>, <c>FechaBajaAnteriorAlInicioException</c> y
 /// <c>FechaBajaFuturaException</c> son <c>internal</c>: se verifican por el nombre del tipo.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
@@ -46,8 +46,7 @@ public class CursanteTests
 	public void El_constructor_asigna_la_division_indicada()
 	{
 		// Regresión: el ctor recibía la división, la validaba y nunca la asignaba
-		// (docs/plan/historico/plan.md:98). Ya corregido en Domain; este test lo cubre para que no
-		// vuelva a pasar desapercibido.
+		// Este test lo cubre para que no vuelva a pasar desapercibido.
 		var divisionID = Guid.NewGuid();
 
 		var cursante = new CursanteBuilder().ConDivision(divisionID).Build();
@@ -76,13 +75,22 @@ public class CursanteTests
 	}
 
 	[Fact]
-	public void Un_cursante_sin_ciclo_lectivo_lanza_SinDatosAlumnoException_por_un_guard_compartido()
+	public void Un_cursante_sin_ciclo_lectivo_lanza_SinDatosCicloLectivoException()
 	{
-		// HD-003 (docs/plan/hallazgos-tests-dominio.md): el guard del ctor funde dos
-		// precondiciones distintas bajo una sola excepción. Un ciclo lectivo nulo debería
-		// reportarse con una excepción propia (o al menos un guard separado), no como "sin
-		// datos de alumno". Este test nombra la conducta actual, no la consagra como correcta.
+		// El guard del ctor fundía "sin alumno" con "sin ciclo lectivo" y un ciclo nulo se reportaba
+		// como "sin datos de alumno", que es información incorrecta sobre cuál es el dato que falta.
+		// Con un alumno válido, lo que falta es el ciclo, y así se informa.
 		var ex = Should.Throw<Exception>(() => new Cursante(Guid.NewGuid(), Guid.NewGuid(), null!, DateTime.Today));
+
+		ex.GetType().Name.ShouldBe("SinDatosCicloLectivoException");
+	}
+
+	[Fact]
+	public void Un_cursante_sin_alumno_y_sin_ciclo_lectivo_informa_primero_al_alumno()
+	{
+		// El orden de los guards no cambió al separarlos: con las dos precondiciones violadas sigue
+		// ganando el alumno, que era lo que ya reportaba el guard fundido.
+		var ex = Should.Throw<Exception>(() => new Cursante(Guid.NewGuid(), Guid.Empty, null!, DateTime.Today));
 
 		ex.GetType().Name.ShouldBe("SinDatosAlumnoException");
 	}
@@ -194,7 +202,7 @@ public class CursanteTests
 		// Es la razón de DOC-1: las notas no se mudan con el alumno, así que el boletín tiene que
 		// unir las calificaciones de todas las inscripciones del ciclo.
 		var cursante = new CursanteBuilder().ConFechaInicio(DateTime.Today.AddDays(-30)).Build();
-		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today.AddDays(-20), Instancia.Parcial, 8, null);
+		cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today.AddDays(-20), Periodo.PrimerCuatrimestre, false, 8, null);
 
 		cursante.DarDeBaja(DateTime.Today);
 
@@ -209,7 +217,7 @@ public class CursanteTests
 		var cursante = new CursanteBuilder().Build();
 		var materiaID = Guid.NewGuid();
 
-		var id = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Instancia.Parcial, 8, "Muy bien");
+		var id = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "Muy bien");
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();
 		calificacion.Id.ShouldBe(id);
@@ -223,7 +231,7 @@ public class CursanteTests
 		var cursante = new CursanteBuilder().Build();
 		var materiaID = Guid.NewGuid();
 
-		var id = cursante.RegistrarInasistenciaAExamen(materiaID, DateTime.Today, Instancia.Parcial, "Enfermo");
+		var id = cursante.RegistrarInasistenciaAExamen(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, "Enfermo");
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();
 		calificacion.Id.ShouldBe(id);
@@ -235,7 +243,7 @@ public class CursanteTests
 	public void QuitarCalificacion_elimina_una_calificacion_existente()
 	{
 		var cursante = new CursanteBuilder().Build();
-		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, null);
+		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		cursante.QuitarCalificacion(id);
 
@@ -247,8 +255,8 @@ public class CursanteTests
 	{
 		var cursante = new CursanteBuilder().Build();
 		var materiaID = Guid.NewGuid();
-		var primera = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Instancia.Parcial, 8, null);
-		var segunda = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Instancia.Parcial, 8, null);
+		var primera = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
+		var segunda = cursante.RegistrarCalificacion(materiaID, DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, null);
 
 		cursante.QuitarCalificacion(segunda);
 
@@ -270,7 +278,7 @@ public class CursanteTests
 	{
 		var cursante = new CursanteBuilder().Build();
 		var materiaID = Guid.NewGuid();
-		var id = cursante.RegistrarCalificacion(materiaID, new DateTime(2026, 3, 10), Instancia.Recuperatorio, 8, "Original");
+		var id = cursante.RegistrarCalificacion(materiaID, new DateTime(2026, 3, 10), Periodo.PrimerCuatrimestre, true, 8, "Original");
 
 		cursante.ModificarObservacionCalificacion(id, "Modificada");
 
@@ -280,17 +288,19 @@ public class CursanteTests
 		calificacion.Nota.ShouldBe(8);
 		calificacion.MateriaID.ShouldBe(materiaID);
 		calificacion.Fecha.ShouldBe(new DateTime(2026, 3, 10));
-		calificacion.Instancia.ShouldBe(Instancia.Recuperatorio);
+		calificacion.Periodo.ShouldBe(Periodo.PrimerCuatrimestre);
+		calificacion.EsRecuperatorio.ShouldBeTrue();
 	}
 
 	[Fact]
-	public void ModificarObservacionCalificacion_con_mas_de_140_caracteres_lanza_ArgumentException()
+	public void ModificarObservacionCalificacion_con_mas_de_140_caracteres_lanza_ExcesoCaracteresException()
 	{
 		var cursante = new CursanteBuilder().Build();
-		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Instancia.Parcial, 8, "Original");
+		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "Original");
 
-		Should.Throw<ArgumentException>(() => cursante.ModificarObservacionCalificacion(id, new string('a', 141)));
+		var ex = Should.Throw<Exception>(() => cursante.ModificarObservacionCalificacion(id, new string('a', 141)));
 
+		ex.GetType().Name.ShouldBe("ExcesoCaracteresException");
 		cursante.Calificaciones.ShouldHaveSingleItem().Observacion.ShouldBe("Original");
 	}
 

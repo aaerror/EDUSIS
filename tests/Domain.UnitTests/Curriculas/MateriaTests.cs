@@ -13,7 +13,7 @@ namespace Domain.UnitTests.Curriculas;
 /// encolado), edición y baja (<see cref="MateriaEliminadaEvent"/>). Los cargos docentes y los
 /// horarios pasaron al agregado propio <c>Domain.Catedras.Catedra</c> (ver
 /// <c>CatedraTests</c> y <c>SituacionRevistaTests</c>); el alta de calificaciones sigue
-/// comentada en <see cref="Domain.Cursantes.Cursante"/> a propósito (FR-013) y no se prueba.
+/// comentada en <see cref="Domain.Cursantes.Cursante"/> a propósito y no se prueba.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class MateriaTests

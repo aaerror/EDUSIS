@@ -1,15 +1,16 @@
+using Domain.Curriculas.Exceptions;
 using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.DTOs.Responses;
 using Core.ServicioCatedras.Exceptions;
+using Core.ServicioDivisiones.Exceptions;
+using Core.ServicioDocentes.Exceptions;
+using Core.ServicioMaterias.Exceptions;
 using Core.Shared;
 using Core.Shared.Seguridad;
 using Domain.Catedras;
 using Domain.Catedras.Exceptions;
 using Domain.Catedras.Horarios;
 using Domain.Catedras.SituacionesRevista;
-using Domain.Divisiones.Exceptions;
-using Domain.Docentes.Exceptions;
-using Domain.Materias.Exceptions;
 using Domain.Shared;
 using Domain.Usuarios;
 using Microsoft.Extensions.Logging;
@@ -80,7 +81,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 			var curricula = await _unitOfWork.Curriculas.BuscarPorIDAsync(materia.CurriculaID);
 			if (curricula is null || !curricula.EstaVigente())
 			{
-				throw new ArgumentException("La currícula de la materia no se encuentra vigente.", nameof(request.MateriaID));
+				throw new CurriculaNoVigenteException();
 			}
 
 			var existeCatedra = await _unitOfWork.Catedras.ExisteCatedraAsync(request.MateriaID, request.DivisionID);

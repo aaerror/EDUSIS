@@ -12,10 +12,16 @@ public sealed class PlanillaAsistenciaRepositorioFake : RepositorioEnMemoria<Pla
 	public Task<PlanillaAsistencia?> BuscarPorDivisionYFechaAsync(Guid divisionID, DateTime fecha) =>
 		Task.FromResult(_entidades.FirstOrDefault(x => x.DivisionID.Equals(divisionID) && x.Fecha == fecha.Date));
 
-	public Task<int> ContarFaltasAsync(Guid cursanteID, TipoAsistencia tipo) =>
+	public Task<int> ContarPorTipoAsync(Guid cursanteID, TipoAsistencia tipo) =>
 		Task.FromResult(_entidades
 			.SelectMany(p => p.Registros)
 			.Count(r => r.CursanteID.Equals(cursanteID) && r.Tipo == tipo));
+
+	public Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorDivisionAsync(Guid divisionID) =>
+		Task.FromResult((IReadOnlyCollection<PlanillaAsistencia>)_entidades
+			.Where(x => x.DivisionID.Equals(divisionID))
+			.OrderBy(x => x.Fecha)
+			.ToList());
 
 	public Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorDivisionYRangoAsync(Guid divisionID, DateTime desde, DateTime hasta) =>
 		Task.FromResult((IReadOnlyCollection<PlanillaAsistencia>)_entidades
@@ -28,4 +34,18 @@ public sealed class PlanillaAsistenciaRepositorioFake : RepositorioEnMemoria<Pla
 			.Where(x => x.Fecha >= desde.Date && x.Fecha <= hasta.Date)
 			.OrderBy(x => x.Fecha)
 			.ToList());
+
+	public Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorCursantesAsync(IEnumerable<Guid> cursantesIDs)
+	{
+		var ids = cursantesIDs.Distinct().ToHashSet();
+		if (ids.Count is 0)
+		{
+			return Task.FromResult((IReadOnlyCollection<PlanillaAsistencia>)Array.Empty<PlanillaAsistencia>());
+		}
+
+		return Task.FromResult((IReadOnlyCollection<PlanillaAsistencia>)_entidades
+			.Where(x => x.Registros.Any(r => ids.Contains(r.CursanteID)))
+			.OrderBy(x => x.Fecha)
+			.ToList());
+	}
 }
