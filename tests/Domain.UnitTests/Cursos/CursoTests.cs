@@ -32,13 +32,23 @@ public class CursoTests
 	[Fact]
 	public void Un_grado_que_no_esta_en_el_enum_lanza_ArgumentException()
 	{
-		Should.Throw<ArgumentException>(() => new Curso("Octavo", nameof(NivelEducativo.Secundaria)));
+		var ex = Should.Throw<ArgumentException>(() => new Curso("Octavo", nameof(NivelEducativo.Secundaria)));
+
+		ex.ParamName.ShouldBe("unGrado");
+		ex.Message.ShouldContain("grado");
 	}
 
 	[Fact]
 	public void Un_nivel_educativo_que_no_esta_en_el_enum_lanza_ArgumentException()
 	{
-		Should.Throw<ArgumentException>(() => new Curso(nameof(Grado.Primero), "Terciario"));
+		// El mensaje decía "El grado que se especifico no existe." también acá, por una copia del
+		// guard del grado, y el parámetro informado era el del grado: el usuario leía que fallaba
+		// el dato que había cargado bien.
+		var ex = Should.Throw<ArgumentException>(() => new Curso(nameof(Grado.Primero), "Terciario"));
+
+		ex.ParamName.ShouldBe("unNivelEducativo");
+		ex.Message.ShouldContain("nivel educativo");
+		ex.Message.ShouldNotContain("grado");
 	}
 	#endregion
 

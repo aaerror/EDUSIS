@@ -40,7 +40,7 @@ public sealed class Curso : Entity
 		result = Enum.TryParse<NivelEducativo>(unNivelEducativo, out NivelEducativo nivelEducativo);
 		if (!result)
 		{
-			throw new ArgumentException("El grado que se especifico no existe.", nameof(unGrado));
+			throw new ArgumentException("El nivel educativo que se especificó no existe.", nameof(unNivelEducativo));
 		}
 
 		Grado = grado;
