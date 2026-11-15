@@ -379,7 +379,7 @@ public class CatedraTests
 		catedra.FinalizarDesignacion(otra);
 
 		catedra.SituacionEnFuncionesID.ShouldBe(enFunciones);
-		catedra.Eventos.ShouldBeNull();
+		catedra.Eventos.ShouldBeEmpty();
 	}
 	#endregion
 

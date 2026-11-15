@@ -97,7 +97,7 @@ public sealed class UnitOfWorkFake : IUnitOfWork
 		{
 			var entidades = _todosLosRepos
 				.SelectMany(repo => repo.Entidades)
-				.Where(x => x.Eventos is not null && x.Eventos.Any())
+				.Where(x => x.Eventos.Any())
 				.ToList();
 
 			_eventosPublicados.AddRange(entidades.SelectMany(x => x.Eventos));

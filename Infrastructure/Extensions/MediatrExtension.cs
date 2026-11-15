@@ -11,7 +11,7 @@ internal static class MediatrExtension
 		{
 			var entidades = context.ChangeTracker.Entries<Entity>()
 				.Select(x => x.Entity)
-				.Where(x => x.Eventos is not null && x.Eventos.Any())
+				.Where(x => x.Eventos.Any())
 				.ToList();
 
 			if (!entidades.Any())

@@ -59,15 +59,39 @@ public class EntityTests
 
 		una.Equals(otra).ShouldBeTrue();
 	}
+
+	/// <remarks>
+	/// Comparar sólo por <see cref="Entity.Id"/> hacía iguales a todas las entidades sin
+	/// identidad asignada, porque comparten <c>Guid.Empty</c>.
+	/// </remarks>
+	[Fact]
+	public void Dos_entidades_transitorias_distintas_no_son_iguales()
+	{
+		var una = new EntidadDePrueba(Guid.Empty);
+		var otra = new EntidadDePrueba(Guid.Empty);
+
+		una.Equals(otra).ShouldBeFalse();
+		(una == otra).ShouldBeFalse();
+	}
+
+	[Fact]
+	public void Una_entidad_transitoria_es_igual_a_si_misma()
+	{
+		var una = new EntidadDePrueba(Guid.Empty);
+
+		una.Equals(una).ShouldBeTrue();
+		una.GetHashCode().ShouldBe(una.GetHashCode());
+	}
 	#endregion
 
 	#region Cola de eventos
 	[Fact]
-	public void Una_entidad_recien_creada_no_expone_eventos()
+	public void Una_entidad_recien_creada_expone_una_cola_vacia_y_no_null()
 	{
 		var entidad = new EntidadDePrueba(Guid.NewGuid());
 
-		entidad.Eventos.ShouldBeNull();
+		entidad.Eventos.ShouldNotBeNull();
+		entidad.Eventos.ShouldBeEmpty();
 	}
 
 	[Fact]
@@ -109,14 +133,15 @@ public class EntityTests
 	}
 
 	[Fact]
-	public void Eventos_devuelve_una_copia_que_no_afecta_la_cola_interna()
+	public void Eventos_no_permite_modificar_la_cola_interna_desde_afuera()
 	{
 		var entidad = new EntidadDePrueba(Guid.NewGuid());
 		entidad.Encolar(new EventoDePrueba());
 
-		var copia = entidad.Eventos;
+		var vista = (ICollection<IDomainEvent>) entidad.Eventos;
 
-		copia.ShouldNotBeSameAs(entidad.Eventos);
+		Should.Throw<NotSupportedException>(() => vista.Add(new EventoDePrueba()));
+		Should.Throw<NotSupportedException>(() => vista.Clear());
 		entidad.Eventos.Count.ShouldBe(1);
 	}
 	#endregion
