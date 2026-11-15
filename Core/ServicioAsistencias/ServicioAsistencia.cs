@@ -273,7 +273,14 @@ internal class ServicioAsistencia : IServicio, IServicioAsistencia
 	{
 		try
 		{
-			return await _unitOfWork.PlanillasAsistencia.ContarPorTipoAsync(request.CursanteID, request.Tipo);
+			// Con los dos extremos, que sea un rango válido lo decide RangoFechas
+			// (FechasInconsistentesException), no una comparación repetida acá.
+			if (request.Desde.HasValue && request.Hasta.HasValue)
+			{
+				_ = RangoFechas.Create(request.Desde.Value, request.Hasta.Value);
+			}
+
+			return await _unitOfWork.PlanillasAsistencia.ContarPorTipoAsync(request.CursanteID, request.Tipo, request.Desde, request.Hasta);
 		}
 		catch (Exception ex)
 		{

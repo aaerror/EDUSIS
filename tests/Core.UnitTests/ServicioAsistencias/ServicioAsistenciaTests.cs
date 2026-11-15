@@ -396,6 +396,33 @@ public class ServicioAsistenciaTests
 		ausencias.ShouldBe(1);
 	}
 
+	/// <remarks>RF-16: las faltas de un cursante durante un período determinado.</remarks>
+	[Fact]
+	public async Task ContarFaltasAsync_con_periodo_cuenta_solo_las_planillas_dentro_del_rango_con_los_extremos_incluidos()
+	{
+		var cursanteID = Guid.NewGuid();
+		foreach (var dias in new[] { -10, -5, -3, -1 })
+		{
+			SembrarPlanilla(Guid.NewGuid(), DateTime.Today.AddDays(dias), Guid.NewGuid(), new[] { cursanteID })
+				.MarcarInasistencia(cursanteID);
+		}
+
+		var enElRango = await _servicio.ContarFaltasAsync(
+			new ContarFaltasRequest(cursanteID, TipoAsistencia.Inasistencia, DateTime.Today.AddDays(-5), DateTime.Today.AddDays(-3)));
+		var desdeAbierto = await _servicio.ContarFaltasAsync(
+			new ContarFaltasRequest(cursanteID, TipoAsistencia.Inasistencia, Hasta: DateTime.Today.AddDays(-5)));
+
+		enElRango.ShouldBe(2);
+		desdeAbierto.ShouldBe(2);
+	}
+
+	[Fact]
+	public async Task ContarFaltasAsync_con_un_periodo_invertido_lanza_FechasInconsistentesException()
+	{
+		await Should.ThrowAsync<Domain.Shared.Exceptions.FechasInconsistentesException>(() => _servicio.ContarFaltasAsync(
+			new ContarFaltasRequest(Guid.NewGuid(), TipoAsistencia.Inasistencia, DateTime.Today, DateTime.Today.AddDays(-1))));
+	}
+
 	[Fact]
 	public async Task ContarFaltasAsync_devuelve_cero_si_el_cursante_no_tiene_faltas_de_ese_tipo()
 	{

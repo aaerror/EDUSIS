@@ -151,6 +151,10 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 
 		var faltas2 = await uow.PlanillasAsistencia.ContarPorTipoAsync(cursante2ID, TipoAsistencia.Ausencia);
 		faltas2.ShouldBe(1);
+
+		// RF-16: con período, sólo cuenta la planilla de hoy; los extremos se incluyen.
+		var faltasDeHoy = await uow.PlanillasAsistencia.ContarPorTipoAsync(cursante1ID, TipoAsistencia.Ausencia, hoy, hoy);
+		faltasDeHoy.ShouldBe(1);
 	}
 
 	[RequiereSqlServerFact]

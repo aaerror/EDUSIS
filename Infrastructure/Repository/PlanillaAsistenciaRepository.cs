@@ -22,10 +22,25 @@ internal class PlanillaAsistenciaRepository : Repository<PlanillaAsistencia>, IP
 		await Consulta()
 			.FirstOrDefaultAsync(x => x.DivisionID == divisionID && x.Fecha == fecha.Date);
 
-	public async Task<int> ContarPorTipoAsync(Guid cursanteID, TipoAsistencia tipo) =>
-		await _context.PlanillasAsistencia
+	public async Task<int> ContarPorTipoAsync(Guid cursanteID, TipoAsistencia tipo, DateTime? desde = null, DateTime? hasta = null)
+	{
+		// Los extremos se resuelven antes de armar la consulta: un `desde == null || ...` dentro del
+		// Where también traduce, pero manda a SQL una condición que el motor no necesita.
+		var planillas = _context.PlanillasAsistencia.AsQueryable();
+		if (desde.HasValue)
+		{
+			planillas = planillas.Where(p => p.Fecha >= desde.Value.Date);
+		}
+
+		if (hasta.HasValue)
+		{
+			planillas = planillas.Where(p => p.Fecha <= hasta.Value.Date);
+		}
+
+		return await planillas
 			.SelectMany(p => p.Registros)
 			.CountAsync(r => r.CursanteID == cursanteID && r.Tipo == tipo);
+	}
 
 	public async Task<IReadOnlyCollection<PlanillaAsistencia>> BuscarPorDivisionYRangoAsync(Guid divisionID, DateTime desde, DateTime hasta) =>
 		await Consulta()
