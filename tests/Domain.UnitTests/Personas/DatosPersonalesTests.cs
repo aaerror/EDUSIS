@@ -87,14 +87,26 @@ public class DatosPersonalesTests
 
 	#region Invariantes
 	[Theory]
-	[InlineData("", "José", "30111222", "Argentina")]
-	[InlineData("Ñáñez", "  ", "30111222", "Argentina")]
-	[InlineData("Ñáñez", "José", "  ", "Argentina")]
-	[InlineData("Ñáñez", "José", "30111222", "")]
-	public void Crear_con_un_campo_de_texto_vacio_lanza_ArgumentNullException(string apellido, string nombre, string documento, string nacionalidad)
+	[InlineData("", "José", "30111222", "Argentina", typeof(ApellidoRequeridoException))]
+	[InlineData("Ñáñez", "  ", "30111222", "Argentina", typeof(NombreRequeridoException))]
+	[InlineData("Ñáñez", "José", "  ", "Argentina", typeof(DocumentoRequeridoException))]
+	[InlineData("Ñáñez", "José", "30111222", "", typeof(NacionalidadRequeridaException))]
+	public void Crear_con_un_campo_de_texto_vacio_lanza_la_excepcion_de_ese_campo(string apellido, string nombre, string documento, string nacionalidad, Type excepcionEsperada)
 	{
-		Should.Throw<ArgumentNullException>(() =>
-			DatosPersonales.Crear(apellido, nombre, documento, nameof(Sexo.Femenino), new DateTime(1990, 1, 1), nacionalidad));
+		Should.Throw(() =>
+			DatosPersonales.Crear(apellido, nombre, documento, nameof(Sexo.Femenino), new DateTime(1990, 1, 1), nacionalidad),
+			excepcionEsperada);
+	}
+
+	/// <remarks>
+	/// La guarda hacía <c>apellido.Trim()</c> antes de preguntar si estaba vacío: un null
+	/// salía como <see cref="NullReferenceException"/> en lugar del aviso del campo faltante.
+	/// </remarks>
+	[Fact]
+	public void Crear_con_un_campo_de_texto_null_lanza_la_excepcion_de_ese_campo_y_no_NullReferenceException()
+	{
+		Should.Throw<ApellidoRequeridoException>(() =>
+			DatosPersonales.Crear(null!, "José", "30111222", nameof(Sexo.Femenino), new DateTime(1990, 1, 1), "Argentina"));
 	}
 
 	[Theory]
@@ -109,11 +121,11 @@ public class DatosPersonalesTests
 	}
 
 	[Fact]
-	public void Crear_con_fecha_de_nacimiento_futura_lanza_ArgumentException()
+	public void Crear_con_fecha_de_nacimiento_futura_lanza_FechaNacimientoFuturaException()
 	{
 		var futuro = DateTime.Today.AddDays(1);
 
-		Should.Throw<ArgumentException>(() =>
+		Should.Throw<FechaNacimientoFuturaException>(() =>
 			DatosPersonales.Crear("Ñáñez", "José", "30111222", nameof(Sexo.Femenino), futuro, "Argentina"));
 	}
 

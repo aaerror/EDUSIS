@@ -23,21 +23,20 @@ public class DatosPersonales : ValueObject
 		DateTime fechaNacimiento,
 		string nacionalidad)
 	{
-		var mensajeError = "La información personal posee datos incompletos.";
-		// Corroboramos los datos que se ingresa
-		if (string.IsNullOrWhiteSpace(apellido.Trim()))
+		// Sin .Trim() previo: sobre un null lanzaba NullReferenceException antes de llegar a la guarda.
+		if (string.IsNullOrWhiteSpace(apellido))
 		{
-			throw new ArgumentNullException(nameof(apellido), mensajeError);
+			throw new ApellidoRequeridoException();
 		}
 
-		if (string.IsNullOrWhiteSpace(nombre.Trim()))
+		if (string.IsNullOrWhiteSpace(nombre))
 		{
-			throw new ArgumentNullException(nameof(nombre), mensajeError);
+			throw new NombreRequeridoException();
 		}
 
-		if (string.IsNullOrWhiteSpace(documento.Trim()))
+		if (string.IsNullOrWhiteSpace(documento))
 		{
-			throw new ArgumentNullException(nameof(documento), mensajeError);
+			throw new DocumentoRequeridoException();
 		}
 
 		// Validamos el formato del documento ingresado.
@@ -56,15 +55,9 @@ public class DatosPersonales : ValueObject
 		}
 		*/
 
-		if (fechaNacimiento.Date > DateTime.Today.Date)
+		if (string.IsNullOrWhiteSpace(nacionalidad))
 		{
-			var msg = $"La fecha de nacimiento no puede ser mayor a la fecha actual ({DateTime.Today.Date}).";
-			throw new ArgumentException(msg, nameof(fechaNacimiento));
-		}
-
-		if (string.IsNullOrWhiteSpace(nacionalidad.Trim()))
-		{
-			throw new ArgumentNullException(nameof(nacionalidad), mensajeError);
+			throw new NacionalidadRequeridaException();
 		}
 
 		Apellido = apellido;
@@ -94,8 +87,7 @@ public class DatosPersonales : ValueObject
 	{
 		if (fechaNacimiento.Date > DateTime.Today.Date)
 		{
-			var msg = $"La fecha de nacimiento no puede ser mayor a la fecha actual ({DateTime.Today.Date}).";
-			throw new ArgumentException(msg, nameof(fechaNacimiento));
+			throw new FechaNacimientoFuturaException(fechaNacimiento.ToString("d"));
 		}
 
 		FechaNacimiento = fechaNacimiento.Date;
@@ -111,8 +103,7 @@ public class DatosPersonales : ValueObject
 		var nuevoSexo = Enum.Parse<Sexo>(sexo);
 		if (Sexo.Equals(nuevoSexo))
 		{
-			var msg = "Error al hacer el cambio de sexo: El sexo registrado y el nuevo son iguales.";
-			throw new ArgumentException(msg, nameof(nuevoSexo));
+			throw new SexoSinCambiosException(sexo);
 		}
 
 		return new(apellido, nombre, Documento, nuevoSexo, FechaNacimiento, Nacionalidad);

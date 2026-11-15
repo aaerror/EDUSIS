@@ -1,5 +1,6 @@
 using Domain.Personas;
 using Domain.Personas.Domicilios;
+using Domain.Personas.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -106,11 +107,11 @@ public class PersonaTests
 
 	#region Invariantes
 	[Fact]
-	public void CambiarSexo_al_mismo_sexo_registrado_lanza_ArgumentException()
+	public void CambiarSexo_al_mismo_sexo_registrado_lanza_SexoSinCambiosException()
 	{
 		var persona = CrearPersona();
 
-		Should.Throw<ArgumentException>(() => persona.CambiarSexo("Ñáñez", "José", nameof(Sexo.Femenino)));
+		Should.Throw<SexoSinCambiosException>(() => persona.CambiarSexo("Ñáñez", "José", nameof(Sexo.Femenino)));
 	}
 
 	[Fact]
