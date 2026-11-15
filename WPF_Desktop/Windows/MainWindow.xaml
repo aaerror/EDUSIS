@@ -99,7 +99,7 @@
 								   FontSize="25"
 								   FontStretch="SemiCondensed"
 								   FontWeight="Bold"
-								   Foreground="#FFFFFF"
+								   Foreground="{ StaticResource SobrePizarra }"
 								   Text="EDUSIS"
 								   VerticalAlignment="Center"/>
 					</StackPanel>
