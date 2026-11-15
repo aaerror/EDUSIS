@@ -17,6 +17,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System;
 using Domain.Cursantes.Calificaciones;
+using Domain.Cursantes.Exceptions;
 using Domain.Asistencias;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
@@ -402,7 +403,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 			Cursantes = new ObservableCollection<CursanteViewModel>(listado.Select(x => new CursanteViewModel(x)));
 			Cursante = null;
 		}
-		catch (FormatException ex)
+		catch (CicloLectivoInvalidoException ex)
 		{
 			// El formato del ciclo lectivo lo valida el dominio; la UI sólo informa.
 			_dialogService.MostrarAdvertencia(ex.Message, "Ciclo lectivo inválido");

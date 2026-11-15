@@ -1,3 +1,4 @@
+using Domain.Personas.Exceptions;
 using Domain.Shared;
 using System.Text.RegularExpressions;
 
@@ -43,8 +44,7 @@ public class DatosPersonales : ValueObject
 		Regex re = new Regex(@"^(\d{7,8})$");
 		if (!re.IsMatch(documento))
 		{
-			var msg = $"El formato del DNI, {documento}, es inválido. Formatos habilitados: xxxxxxxx";
-			throw new FormatException(msg);
+			throw new DocumentoInvalidoException(documento);
 		}
 
 		/*

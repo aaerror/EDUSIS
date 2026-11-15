@@ -1,4 +1,5 @@
 using Domain.Cursantes;
+using Domain.Cursantes.Exceptions;
 using EDUSIS.TestSupport;
 using Shouldly;
 using Xunit;
@@ -48,9 +49,9 @@ public class CicloLectivoTests
 	[InlineData("20260")]
 	[InlineData("dosmil")]
 	[InlineData("20 6")]
-	public void Crear_con_un_periodo_que_no_son_4_digitos_lanza_FormatException(string periodo)
+	public void Crear_con_un_periodo_que_no_son_4_digitos_lanza_CicloLectivoInvalidoException(string periodo)
 	{
-		Should.Throw<FormatException>(() => CicloLectivo.Crear(periodo));
+		Should.Throw<CicloLectivoInvalidoException>(() => CicloLectivo.Crear(periodo));
 	}
 	#endregion
 

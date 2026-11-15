@@ -1,4 +1,5 @@
 using Domain.Personas;
+using Domain.Personas.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -101,9 +102,9 @@ public class DatosPersonalesTests
 	[InlineData("123456789")]
 	[InlineData("30.111.222")]
 	[InlineData("ABCDEFGH")]
-	public void Crear_con_documento_de_formato_invalido_lanza_FormatException(string documento)
+	public void Crear_con_documento_de_formato_invalido_lanza_DocumentoInvalidoException(string documento)
 	{
-		Should.Throw<FormatException>(() =>
+		Should.Throw<DocumentoInvalidoException>(() =>
 			DatosPersonales.Crear("Ñáñez", "José", documento, nameof(Sexo.Femenino), new DateTime(1990, 1, 1), "Argentina"));
 	}
 

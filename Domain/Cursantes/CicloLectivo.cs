@@ -1,3 +1,4 @@
+using Domain.Cursantes.Exceptions;
 using Domain.Shared;
 using System.Text.RegularExpressions;
 
@@ -18,7 +19,7 @@ public class CicloLectivo : ValueObject
 
 		if (!Regex.IsMatch(periodo, @"^(\d){4}$", RegexOptions.None))
 		{
-			throw new FormatException($"El formato del ciclo lectivo es incorrecto: {periodo}.");
+			throw new CicloLectivoInvalidoException(periodo);
 		}
 
 		Periodo = periodo;

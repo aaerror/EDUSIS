@@ -16,6 +16,7 @@ using Core.ServicioMaterias;
 using Core.ServicioMaterias.DTOs.Requests;
 using Core.ServicioMaterias.DTOs.Responses;
 using Domain.Cursantes.Calificaciones;
+using Domain.Cursantes.Exceptions;
 using Domain.Asistencias;
 using Domain.Cursos;
 using Domain.Shared;
@@ -370,12 +371,12 @@ public class GestionCursantesViewModelTests
 	{
 		var contexto = new Contexto();
 		contexto.ServicioCursante.ListarCursantesAsync(Arg.Any<BuscarListadoRequest>())
-								 .Returns(Task.FromException<IReadOnlyCollection<CursanteResponse>>(new FormatException("ciclo invalido")));
+								 .Returns(Task.FromException<IReadOnlyCollection<CursanteResponse>>(new CicloLectivoInvalidoException("abc")));
 		contexto.ViewModel.CicloLectivo = "abc";
 
 		await contexto.ViewModel.BuscarCommandAsync.ExecuteAsync(null);
 
-		contexto.Dialogos.Advertencias.Single().Mensaje.ShouldBe("ciclo invalido");
+		contexto.Dialogos.Advertencias.Single().Mensaje.ShouldBe(new CicloLectivoInvalidoException("abc").Message);
 		contexto.Dialogos.Errores.ShouldBeEmpty();
 	}
 

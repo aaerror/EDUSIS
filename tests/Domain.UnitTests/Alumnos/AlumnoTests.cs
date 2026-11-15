@@ -1,4 +1,5 @@
 using Domain.Alumnos.DomainEvents;
+using Domain.Alumnos.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -41,9 +42,9 @@ public class AlumnoTests
 	}
 
 	[Fact]
-	public void Un_alumno_con_legajo_de_formato_invalido_lanza_FormatException()
+	public void Un_alumno_con_legajo_de_formato_invalido_lanza_LegajoAlumnoInvalidoException()
 	{
-		Should.Throw<FormatException>(() => new AlumnoBuilder().ConLegajo("A-000123").Build());
+		Should.Throw<LegajoAlumnoInvalidoException>(() => new AlumnoBuilder().ConLegajo("A-000123").Build());
 	}
 	#endregion
 

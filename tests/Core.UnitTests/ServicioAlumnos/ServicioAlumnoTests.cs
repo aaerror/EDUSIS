@@ -5,6 +5,7 @@ using Core.Shared.DTOs.Personas.Requests;
 using Core.UnitTests.Infraestructura;
 using Domain.Cursantes.Calificaciones;
 using Domain.Cursantes;
+using Domain.Personas.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Fakes;
@@ -223,11 +224,11 @@ public class ServicioAlumnoTests
 	}
 
 	[Fact]
-	public async Task RegistrarAlumnoAsync_con_un_DNI_mal_formado_propaga_la_FormatException_del_dominio()
+	public async Task RegistrarAlumnoAsync_con_un_DNI_mal_formado_propaga_la_excepcion_del_dominio()
 	{
 		var request = RegistroValido() with { DNI = "no-es-dni" };
 
-		await Should.ThrowAsync<FormatException>(() => _servicio.RegistrarAlumnoAsync(request));
+		await Should.ThrowAsync<DocumentoInvalidoException>(() => _servicio.RegistrarAlumnoAsync(request));
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
 	}
 	#endregion

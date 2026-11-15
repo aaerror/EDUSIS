@@ -30,7 +30,7 @@ public sealed class Alumno : Persona
 	{
 		if (!Regex.IsMatch(legajo, @"^([A-Z]{2}\d{4})$"))
 		{
-			throw new FormatException($"Verificar el legajo del alumno: {nameof(legajo)}.");
+			throw new LegajoAlumnoInvalidoException(legajo);
 		}
 
 		Legajo = legajo;
