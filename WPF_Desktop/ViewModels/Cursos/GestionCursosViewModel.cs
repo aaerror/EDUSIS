@@ -40,7 +40,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 	//
 	// No lo vio nadie porque compila sin warning —EliminarCommandAsync existe como propiedad, así
 	// que el generador no tiene nada que objetar— y porque este archivo era el único del proyecto
-	// con el atributo equivocado. Se encontró recorriendo la app a mano (TEST-16), no con una
+	// con el atributo equivocado. Se encontró recorriendo la app a mano, no con una
 	// suite. Lo fija GestionCursosViewModelTests y lo previene la guarda de convención
 	// Ningun_NotifyPropertyChangedFor_apunta_a_un_comando.
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]

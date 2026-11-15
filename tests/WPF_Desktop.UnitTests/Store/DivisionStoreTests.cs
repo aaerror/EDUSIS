@@ -31,7 +31,7 @@ public class DivisionStoreTests
 	[Trait("Categoria", "Unidad")]
 	public void La_propiedad_no_guarda_un_tipo_de_la_capa_de_presentacion()
 	{
-		// Violación 14 de docs/todos.md: el store guardaba un DivisionViewModel. El destino sólo
+		// El store no debe guardar un DivisionViewModel. El destino sólo
 		// necesita el identificador, y el DivisionResponse completo habría dejado PreceptorID,
 		// Preceptor y Cursantes obsoletos dentro de un Singleton que nadie limpia.
 		var tipo = typeof(DivisionStore).GetProperty(nameof(DivisionStore.Division))!.PropertyType;

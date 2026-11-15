@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging;
 namespace EDUSIS.Seed;
 
 /// <summary>
-/// Puebla la base con la escuela demo completa (plan/rbac-y-seed.md, Fase 7).
+/// Puebla la base con la escuela demo completa.
 /// </summary>
 /// <remarks>
 /// Tres capas que conviene no mezclar, y que el plan separó a propósito:
@@ -453,7 +453,6 @@ internal sealed class Sembradora
 	/// con tres <c>GuardarCambiosAsync()</c> (<c>CrearCatedraAsync</c> →
 	/// <c>DesignarDocenteAsync</c> → <c>PonerEnFuncionesAsync</c>). El seeder hace lo mismo: deja
 	/// la cátedra y la designación guardadas y en una segunda pasada marca las funciones.
-	/// Registrado en docs/todos.md.
 	/// </para>
 	/// </remarks>
 	private async Task PonerEnFuncionesDeTodasAsync(
@@ -761,7 +760,7 @@ internal sealed class Sembradora
 		// pensó como nombre de usuario corto y no como dirección de correo: no hay email
 		// institucional real que entre en 18 caracteres. Son dos vocabularios en conflicto y acá
 		// se cede al de la interfaz, que es quien bloquea el botón, para no cambiar una validación
-		// que está fuera del alcance de esta fase. Registrado en docs/todos.md.
+		// que está fuera del alcance del seeder.
 		// Un usuario por rol, y cada uno colgado del puesto que le corresponde: la cuenta de
 		// Preceptoría sale de plantel.Preceptores y la de Secretaría Académica de la segunda
 		// secretaria. Los dos roles nuevos existían en el catálogo sin ninguna cuenta con la que

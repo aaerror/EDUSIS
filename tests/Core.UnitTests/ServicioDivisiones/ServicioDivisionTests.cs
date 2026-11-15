@@ -18,11 +18,11 @@ namespace Core.UnitTests.ServicioDivisiones;
 /// el impacto del borrado, y asignar/modificar/quitar preceptor, con camino feliz y de error para
 /// cada caso de uso, más una prueba por cada excepción de <c>Core</c> creada para esta raíz
 /// (<see cref="DivisionDuplicadaException"/>, <see cref="PreceptorAsignadoException"/>). Repone la
-/// intención de las pruebas de <c>ServicioCursoTests</c> que el Bloque A retiró al mudar divisiones
+/// intención de las pruebas de <c>ServicioCursoTests</c> que se retiraron al mudar divisiones
 /// y preceptores a este servicio.
 /// </summary>
 /// <remarks>
-/// <c>DivisionConInscripcionesException</c> estaba en esa lista y se borró el 2026-11-06 con la
+/// <c>DivisionConInscripcionesException</c> se borró con la
 /// guarda que la lanzaba: eliminar una división pasó de rechazar ante una inscripción histórica a
 /// cascadear la matrícula entera.
 /// </remarks>
@@ -196,8 +196,8 @@ public class ServicioDivisionTests
 	#endregion
 
 	#region EliminarDivisionAsync
-	// Las cinco pruebas que había acá afirmaban las DOS guardas que este caso de uso tenía antes del
-	// 2026-11-06: la regla de negocio por nivel educativo (DivisionNoEliminableException,
+	// Las cinco pruebas que había acá afirmaban las DOS guardas que este caso de uso tenía antes:
+	// la regla de negocio por nivel educativo (DivisionNoEliminableException,
 	// DivisionConMatriculaSuficienteException) y la guarda de integridad por inscripciones
 	// (DivisionConInscripcionesException). Las tres excepciones se borraron junto con las guardas: la
 	// división pasa a eliminarse SIEMPRE, cascadeando lo que cuelga de ella.
@@ -346,7 +346,7 @@ public class ServicioDivisionTests
 		impacto.CiclosLectivos.ShouldBeEmpty();
 	}
 
-	// Que esta lectura exija permiso —la asimetría deliberada frente a CORE-16— está afirmado en
+	// Que esta lectura exija permiso —la asimetría deliberada frente a las demás lecturas, que quedan abiertas— está afirmado en
 	// AutorizacionDeCasosDeUsoTests, junto a la de curso y la de alumno.
 	#endregion
 

@@ -14,8 +14,8 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 
 /// <summary>
 /// Guardas estaticas de la ola W5 sobre el XAML y el codigo fuente, para lo que ningun ViewModel puede afirmar:
-/// <c>UI-01</c> en su raiz (que items ofrece el combo y que propiedad liga), <c>UI-08</c> (un solo sitio que construye
-/// <c>RegistrarMateriaRequest</c>) y que cada <c>Style</c> aplicado a un elemento tenga el <c>TargetType</c> de ese elemento
+/// el combo en su raiz (que items ofrece y que propiedad liga), un solo sitio que construye
+/// <c>RegistrarMateriaRequest</c> y que cada <c>Style</c> aplicado a un elemento tenga el <c>TargetType</c> de ese elemento
 /// (un estilo de <c>Label</c> sobre un <c>TextBlock</c> lanza <c>InvalidOperationException</c> al instanciar la plantilla,
 /// y solo cuando la lista tiene un item).
 /// </summary>
@@ -38,7 +38,7 @@ public class GuardasEstaticasW5Tests
 		return documento.Descendants().Where(e => e.Name.LocalName == "ComboBox");
 	}
 
-	#region UI-01: el combo expone el valor de dominio, no su indice
+	#region El combo expone el valor de dominio, no su indice
 	[Theory]
 	[Trait("Categoria", "Unidad")]
 	[InlineData(GestionCurriculas, "CargaHoraria")]
@@ -173,7 +173,7 @@ public class GuardasEstaticasW5Tests
 	}
 	#endregion
 
-	#region UI-08: un solo camino de alta de materia
+	#region Un solo camino de alta de materia
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void Un_solo_sitio_de_toda_la_capa_construye_RegistrarMateriaRequest()
@@ -328,7 +328,7 @@ public class GuardasEstaticasW5Tests
 	{
 		DebenExistirEn(typeof(GestionCurriculasViewModel), new[] { "Curriculas", "Materias", "Curricula", "Materia", "CargarCurriculasCommandAsync", "CargarMateriasCommandAsync", "NavigationCommand" });
 		DebenExistirEn(typeof(GestionCursantesViewModel), new[] { "Cursantes", "Cursante", "Calificaciones", "CalificacionSeleccionada", "Materias", "Materia", "Calificacion", "ObservacionEdicion", "MostrarCalificacionView", "CicloLectivo", "CargarCommandAsync", "BuscarCommandAsync", "NuevaCalificacionCommand", "ModificarObservacionCommandAsync", "QuitarCalificacionCommandAsync", "GuardarCalificacionCommandAsync", "RegistrarInasistenciaCommandAsync", "CancelarCalificacionCommand",
-			// UI-CUR-1: la sección de inscripción y el historial de divisiones.
+			// La sección de inscripción y el historial de divisiones.
 			"EsRecursante", "FechaBaja", "FechaCambio", "DivisionDestino", "DivisionesDestino", "Historial", "ModificarRecursanteCommandAsync", "RegistrarBajaCommandAsync", "CambiarDivisionCommandAsync", "CargarHistorialCommandAsync" });
 		// "Periodo" y "EsRecuperatorio" son los dos campos que EDITA el formulario; "Instancia" es la
 		// lectura de ambos que muestra la grilla. Los tres tienen que existir: el formulario bindea
@@ -397,7 +397,7 @@ public class GuardasEstaticasW5Tests
 		columnasCalificacion.ShouldBe(new[] { "Materia", "Fecha", "Instancia", "Rindio", "Nota", "Aprobado", "Observacion" });
 		DebenExistirEn(typeof(CalificacionViewModel), columnasCalificacion);
 
-		// UI-CUR-1. "Estado" no es columna bindeada sino el texto de la insignia, así que se
+		// "Estado" no es columna bindeada sino el texto de la insignia, así que se
 		// verifica aparte: la columna es un DataGridTemplateColumn y no declara Binding.
 		var historial = documento.Descendants().Single(e => e.Name.LocalName == "DataGrid" && (string?) e.Attribute(Xaml + "Name") == "DataGrid_Historial");
 		((string) historial.Attribute("ItemsSource")!).ShouldContain("Historial");

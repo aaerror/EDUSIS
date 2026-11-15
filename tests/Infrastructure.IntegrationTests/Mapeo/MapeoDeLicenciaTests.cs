@@ -9,7 +9,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Mapeo;
 
 /// <summary>
-/// US3-1: persistir y releer una <see cref="Licencia"/> independiente. Verifica la clave
+/// Persistir y releer una <see cref="Licencia"/> independiente. Verifica la clave
 /// compuesta (<c>licencia_id</c>, <c>docente_id</c>), las conversiones de enum
 /// (<see cref="Articulo"/>, <see cref="Estado"/>) y el value object <c>Periodo</c>.
 /// </summary>
@@ -60,17 +60,13 @@ public sealed class MapeoDeLicenciaTests : BaseIntegracion
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Cubría el defecto H-019 —<c>LicenciasConfiguration</c> mapeaba <c>Observacion</c> como
-	/// <c>varchar(10)</c> mientras el dominio (<c>Licencia.ModificarObservaciones</c>) admite 250,
-	/// así que una observación real revienta con "String or binary data would be truncated"— y
-	/// llevaba <c>[Fact(Skip=…)]</c> por eso.
+	/// Protege contra que <c>LicenciasConfiguration</c> mapee <c>Observacion</c> con un ancho menor
+	/// que el que admite el dominio (<c>Licencia.ModificarObservaciones</c>, 250): una observación
+	/// real reventaría con "String or binary data would be truncated".
 	/// </para>
 	/// <para>
-	/// <strong>El Skip se retiró el 2026-11-09</strong>: <c>LicenciasConfiguration.cs:46</c>
-	/// configura <c>HasMaxLength(250).IsUnicode(false)</c>, así que la causa ya no existe y la
-	/// prueba pasa contra SQL Server real. Era un <c>Skip</c> que había sobrevivido a su causa —el
-	/// mismo caso que H-010 y H-023—; detalle en <c>docs/todos-historial.md</c>, nota del
-	/// 2026-11-09 (segunda). <c>TEST-01</c> bajó de 7 a 5 pruebas omitidas.
+	/// <c>LicenciasConfiguration</c> configura <c>HasMaxLength(250).IsUnicode(false)</c>, que es
+	/// lo que esta prueba verifica contra SQL Server real.
 	/// </para>
 	/// </remarks>
 	[RequiereSqlServerFact]

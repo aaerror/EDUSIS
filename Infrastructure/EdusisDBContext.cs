@@ -93,7 +93,7 @@ public class EdusisDBContext : DbContext
 	/// </para>
 	/// <para>
 	/// <c>Tools/EDUSIS.Seed</c> resolvía esto con un <c>AttachRange</c> de los seis roles antes de
-	/// usarlos, y la predicción #2 de <c>docs/plan/rbac-y-seed.md</c> anticipaba el choque. El
+	/// usarlos. El
 	/// problema de esa solución es que obliga a recordarla: el primer caso de uso que asignó un rol
 	/// sin pasar por el seeder —<c>RegistrarUsuarioAsync</c>, al empezar a usar el rol del request—
 	/// volvió a chocar, y lo hizo contra la base, donde sólo lo ve una prueba end-to-end.

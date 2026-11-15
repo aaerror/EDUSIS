@@ -13,7 +13,7 @@ namespace Core.UnitTests.ServicioAutenticaciones;
 /// <summary>
 /// <see cref="IServicioAutenticacion"/>: <c>Login</c> valida credenciales contra el hash guardado
 /// del usuario y delega el armado del perfil en <see cref="Core.ServicioUsuarios.IServicioUsuario"/>.
-/// <c>Logout</c> se eliminó de <c>Core</c> (H-014): la sesión es responsabilidad de la presentación.
+/// <c>Logout</c> se eliminó de <c>Core</c>: la sesión es responsabilidad de la presentación.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioAutenticacionTests

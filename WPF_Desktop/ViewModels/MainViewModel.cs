@@ -118,9 +118,8 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		AsistenciasCommand = new RelayCommand(() => Navegar(asistenciasNavigationService, "Asistencias"),
 											  () => _sesion.TienePermiso(Permiso.TomarAsistencia));
 
-		// La séptima raíz, y la que cierra UI-46. AdministrarUsuarios y AsignarRoles eran dos de los
-		// siete permisos que no habilitaban ninguna entrada de menú: los dos casos de uso de roles
-		// existían, guardados por permiso, y ningún ViewModel los llamaba.
+		// La séptima raíz. AdministrarUsuarios y AsignarRoles no habilitaban ninguna entrada de
+		// menú: los dos casos de uso de roles están guardados por permiso y sólo esta pantalla los llama.
 		//
 		// Gobierna por AdministrarUsuarios y NO por el OR con AsignarRoles, a diferencia de Cursos,
 		// Documentación y Asistencias. El motivo: la pantalla hace dos cosas y el alta de cuentas es
@@ -249,12 +248,11 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 	/// dos <c>*NavigationStore</c>, que también son <c>Singleton</c> con eventos fuertes.
 	/// </para>
 	/// <para>
-	/// Es el agujero que UI-49 de <c>docs/todos.md</c> describe —los stores reemplazan el ViewModel
-	/// saliente sin disposal ni desuscripción—, que hasta acá era latente porque nada sobrevivía a la
-	/// navegación: <c>WeakReferenceMessenger</c> usa referencias débiles y ningún ViewModel de
-	/// pantalla tiene timers. El cambio de usuario lo vuelve real para el shell, que es el único
-	/// ViewModel suscripto a eventos fuertes. Esto lo cierra para el shell y sólo para el shell; el
-	/// contrato general que UI-49 pide —o los ViewModels son <c>IDisposable</c> y el store los
+	/// El agujero es general —los stores reemplazan el ViewModel saliente sin desuscripción—, pero
+	/// era latente porque nada sobrevivía a la navegación: <c>WeakReferenceMessenger</c> usa
+	/// referencias débiles y ningún ViewModel de pantalla tiene timers. El cambio de usuario lo vuelve
+	/// real para el shell, que es el único ViewModel suscripto a eventos fuertes. Esto lo cierra sólo
+	/// para el shell; el contrato general —o los ViewModels son <c>IDisposable</c> y el store los
 	/// libera, o se documenta que no pueden tener estado liberable— sigue sin escribirse.
 	/// </para>
 	/// <para>

@@ -7,7 +7,7 @@ namespace WPF_Desktop.ViewModels.Shared.Messages;
 /// <remarks>
 /// <para>
 /// Va por el mensajero y no por un <c>*Store</c> porque el receptor —<c>App</c>— ya existe cuando se
-/// produce el dato, que es el criterio que fija <c>CLAUDE.md</c> para elegir entre los dos. No es un
+/// produce el dato, que es el criterio para elegir entre mensajero y store. No es un
 /// parámetro de navegación: nadie lo tiene que leer en su constructor.
 /// </para>
 /// <para>

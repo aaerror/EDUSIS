@@ -6,7 +6,7 @@ namespace WPF_Desktop.Store;
 /// pantalla de cursantes, el único destino de esta navegación.
 /// </summary>
 /// <remarks>
-/// No guarda un <c>DivisionViewModel</c> (violación 14 de <c>docs/todos.md</c>) ni el
+/// No guarda un <c>DivisionViewModel</c> (acoplaría las pantallas por su tipo de presentación) ni el
 /// <c>DivisionResponse</c> completo: <c>PreceptorID</c>, <c>Preceptor</c> y <c>Cursantes</c> no los
 /// lee ningún destino y en un Singleton que nadie limpia quedarían obsoletos en cuanto alguien
 /// cambie el preceptor de la división. Es un record y no un <c>Guid?</c> para que los tres stores

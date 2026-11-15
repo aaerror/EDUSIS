@@ -14,7 +14,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Eventos;
 
 /// <summary>
-/// US3-3 / FR-007: <c>UnitOfWork.GuardarCambiosAsync()</c> publica los eventos de dominio
+/// <c>UnitOfWork.GuardarCambiosAsync()</c> publica los eventos de dominio
 /// encolados <strong>antes</strong> de <c>SaveChangesAsync()</c>
 /// (<c>MediatrExtension.DispatchDomainEventsAsync</c>), y un evento sólo se dispara si la
 /// entidad pasa por el <c>ChangeTracker</c> y se guarda con ese método.

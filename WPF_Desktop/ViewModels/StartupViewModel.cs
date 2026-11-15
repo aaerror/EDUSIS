@@ -103,8 +103,9 @@ internal class StartupViewModel : ObservableObject
 	/// <c>StartupWindowNavigationStore</c> es <c>Singleton</c> con un <c>event Action</c> de
 	/// referencia fuerte. Sin esto, cada sesión deja un ViewModel colgado del store, y la navegación
 	/// del acceso siguiente dispara <see cref="OnViewModelChanged"/> también sobre todos los
-	/// anteriores. Es el agujero que UI-49 de <c>docs/todos.md</c> describe, acotado a las dos
-	/// ventanas que sobreviven a una navegación.
+	/// anteriores. Es el mismo agujero que en <c>MainViewModel</c> —los stores reemplazan el
+	/// ViewModel saliente sin desuscripción—, acotado a las dos ventanas que sobreviven a una
+	/// navegación.
 	/// </remarks>
 	public void Desconectar() =>
 		_navigationStore.ViewModelChanged -= OnViewModelChanged;

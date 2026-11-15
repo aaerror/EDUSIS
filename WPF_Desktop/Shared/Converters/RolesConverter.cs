@@ -17,8 +17,7 @@ namespace WPF_Desktop.Shared.Converters;
 /// La traducción vive acá y no en el <c>Response</c> a propósito. Los roles viajan por <c>Id</c>
 /// porque el Id es canónico y la descripción es <em>presentación</em>: vive en una columna
 /// <c>varchar</c> no unicode, y como alimenta la autorización, degradarla sería perder permisos en
-/// silencio. Decisión #6 de <c>docs/plan/rbac-y-seed.md</c>, explicada en el XML-doc de
-/// <c>UsuarioResponse</c>. La presentación es justamente el lugar donde el Id vuelve a ser texto.
+/// silencio. Está explicado en el XML-doc de <c>UsuarioResponse</c>. La presentación es justamente el lugar donde el Id vuelve a ser texto.
 /// </para>
 /// <para>
 /// Un Id que no esté en el catálogo <strong>no revienta la grilla</strong>: se muestra como

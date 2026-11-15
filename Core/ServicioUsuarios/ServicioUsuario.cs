@@ -33,7 +33,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Lectura sin guarda de permiso, siguiendo la decisión de alcance de CORE-16, aunque la única
+	/// Lectura sin guarda de permiso, como el resto de las lecturas de <c>Core</c>, aunque la única
 	/// pantalla que la consume exige <c>AdministrarUsuarios</c> para abrirse. La asimetría con las
 	/// consultas de impacto de borrado es deliberada: aquéllas existen sólo para servir a su borrado,
 	/// ésta es el listado de una pantalla y cae del lado de las ~30 lecturas abiertas.
@@ -47,7 +47,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 	/// </remarks>
 	/// <summary>
 	/// Los cargos vigentes del docente, separados por coma. Sale de <c>Puestos</c> y no de la
-	/// propiedad singular <c>Puesto</c>, que nunca se asignaba y dejaba a todos "sin puesto" (DOM-13).
+	/// propiedad singular <c>Puesto</c>, que nunca se asignaba y dejaba a todos "sin puesto".
 	/// </summary>
 	private static string DescribirPuestos(Docente? docente)
 	{
@@ -158,9 +158,9 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			/*char[] delimiter = { ':' };
 			string[] split = saltAndHash.Split(delimiter);*/
 
-			// El rol que el request trae SE USA. Hasta el 2026-11-06 esta línea era
-			// `new Usuario(request.DocenteID, email, salt, hash)` —el constructor sin roles— y
-			// request.Rol se descartaba en silencio: todo usuario nacía sin un solo permiso y entraba
+			// El rol que el request trae SE USA. Con
+			// `new Usuario(request.DocenteID, email, salt, hash)` —el constructor sin roles— el
+			// rol se descartaría en silencio: todo usuario nacería sin un solo permiso y entraba
 			// al sistema con el menú entero apagado. Ver RegistrarUsuarioRequest.
 			//
 			// Se usa el constructor con roles y no AgregarRol() después, por el mismo motivo que el

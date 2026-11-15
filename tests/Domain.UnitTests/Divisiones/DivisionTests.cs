@@ -226,7 +226,7 @@ public class DivisionTests
 	// Acá vivía la #region Baja, con cuatro pruebas de Division.ValidarSePuedeEliminar(nivel, int):
 	// que una división vacía se eliminaba en cualquier nivel, que Secundaria con un solo cursante
 	// lanzaba DivisionNoEliminableException y que Primaria lanzaba DivisionConMatriculaSuficiente
-	// recién a partir de 15. Las cuatro se borraron el 2026-11-06 con la regla que afirmaban: la
+	// recién a partir de 15. Las cuatro se borraron con la regla que afirmaban: la
 	// división pasó a eliminarse SIEMPRE, cascadeando su matrícula.
 	//
 	// No se reescribieron porque no quedó nada que afirmar en el dominio: la política vive hoy
@@ -234,5 +234,5 @@ public class DivisionTests
 	// cascada, que es una prueba de Core (ServicioDivisionTests) y no de Division. Las dos
 	// excepciones se borraron en el mismo commit.
 	//
-	// El requerimiento que sostenía la regla —RF-02 y CU-S11 de docs/uml/— se reescribió a la vez.
+	// El requerimiento que sostenía la regla —RF-02 y CU-02 de los diagramas de casos de uso— se reescribió a la vez.
 }

@@ -16,9 +16,8 @@
 		un ScrollViewer de página, y la grilla vivía en una fila Auto adentro de un StackPanel, que
 		mide a sus hijos con alto infinito: nunca le faltaba lugar, así que nunca sacaba su barra de
 		desplazamiento. Desde que la grilla es también el historial de la cátedra, quince
-		designaciones empujaban el detalle y el pie de acciones fuera de la vista. Es el defecto que
-		docs/ui-ux.md nombra con todas las letras, y la forma correcta es la de Asistencias y
-		Cursantes: sin scroll de página, la tarjeta en la fila * y la grilla en la fila * de adentro.
+		designaciones empujaban el detalle y el pie de acciones fuera de la vista. La forma correcta
+		es la de Asistencias y Cursantes: sin scroll de página, la tarjeta en la fila * y la grilla en la fila * de adentro.
 
 		LA MISMA DESIGNACIÓN SE DIBUJABA DOS VECES. "Docente de aula" era una tarjeta propia con un
 		SituacionRevistaView deshabilitado, y abajo el detalle de la fila elegida era OTRO

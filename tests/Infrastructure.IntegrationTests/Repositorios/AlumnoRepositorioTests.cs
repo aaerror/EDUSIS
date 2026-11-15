@@ -8,7 +8,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Repositorios;
 
 /// <summary>
-/// US3-2: las consultas concretas de <c>AlumnoRepository</c> (<c>EF.Functions.Like</c> sobre el
+/// Las consultas concretas de <c>AlumnoRepository</c> (<c>EF.Functions.Like</c> sobre el
 /// value object <c>DatosPersonales</c>) devuelven el conjunto esperado sobre datos sembrados.
 /// </summary>
 public sealed class AlumnoRepositorioTests : BaseIntegracion
@@ -104,7 +104,7 @@ public sealed class AlumnoRepositorioTests : BaseIntegracion
 	}
 
 	/// <summary>
-	/// H-020 (corregido): la búsqueda se traduce a SQL sobre las columnas <c>apellido</c> y
+	/// La búsqueda se traduce a SQL sobre las columnas <c>apellido</c> y
 	/// <c>nombre</c>, con <c>LIKE '%…%'</c> en las dos.
 	/// </summary>
 	/// <remarks>

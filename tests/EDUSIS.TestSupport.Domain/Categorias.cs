@@ -1,8 +1,8 @@
 namespace EDUSIS.TestSupport;
 
 /// <summary>
-/// Único origen válido de los valores de <c>[Trait("Categoria", …)]</c> en todas las suites
-/// (contracts/test-support-api.md §2). La segmentación de <c>dotnet test</c> por capa de señal
+/// Único origen válido de los valores de <c>[Trait("Categoria", …)]</c> en todas las suites.
+/// La segmentación de <c>dotnet test</c> por capa de señal
 /// depende de que estas constantes no se dupliquen como literales sueltos.
 /// </summary>
 public static class Categorias

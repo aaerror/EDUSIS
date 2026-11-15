@@ -12,7 +12,7 @@ namespace WPF_Desktop.UnitTests.Navigation;
 /// de navegación: cada navegación estrena un <see cref="IServiceScope"/> y la pantalla sale de ahí.
 /// </summary>
 /// <remarks>
-/// Es la prueba de UI-18 del lado de la navegación. El contenedor real no sirve para afirmarlo —un
+/// Es la prueba del scope por pantalla del lado de la navegación. El contenedor real no sirve para afirmarlo —un
 /// <c>IServicio*</c> resuelto de dos scopes distintos da dos instancias, pero eso lo garantiza el
 /// contenedor de Microsoft y no este código—; lo que hay que afirmar es que <strong>este servicio
 /// efectivamente crea un scope por navegación y resuelve de ahí</strong>, porque el defecto original
@@ -85,8 +85,8 @@ public class NavigationServiceTests
 	}
 
 	/// <remarks>
-	/// El corazón de UI-18: antes los ViewModels salían del proveedor raíz, así que todas las pantallas
-	/// compartían un <c>DbContext</c> de vida de aplicación. Dos navegaciones tienen que dar dos scopes.
+	/// El corazón del scope por pantalla: si los ViewModels salieran del proveedor raíz, todas las pantallas
+	/// compartirían un <c>DbContext</c> de vida de aplicación. Dos navegaciones tienen que dar dos scopes.
 	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
@@ -161,7 +161,7 @@ public class NavigationServiceTests
 
 	/// <remarks>
 	/// La excepción se propaga y no se traga: tragársela dejaría la pantalla sin cambiar y sin
-	/// explicación, que es la familia de defectos de H-018.
+	/// explicación.
 	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]

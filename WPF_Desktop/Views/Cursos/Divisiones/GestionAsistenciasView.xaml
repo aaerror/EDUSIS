@@ -474,8 +474,7 @@
 							Los botones reciben la fila por CommandParameter y NO operan sobre el
 							SelectedItem: un Button adentro de una celda marca el clic como manejado, así
 							que la fila no se selecciona al apretarlo, y un comando que leyera la
-							selección le marcaría la asistencia a otro alumno. Es el defecto que
-							docs/ui-ux.md dejó anotado.
+							selección le marcaría la asistencia a otro alumno.
 
 							MinHeight es el piso de la fila *: con la planilla del día adentro de un
 							ScrollViewer, lo que no entra se scrollea, y así la grilla nunca queda

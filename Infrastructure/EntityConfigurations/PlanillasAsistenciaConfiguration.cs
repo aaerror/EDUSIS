@@ -33,7 +33,7 @@ internal class PlanillasAsistenciaConfiguration : IEntityTypeConfiguration<Plani
 			   .HasColumnName("preceptor_id")
 			   .IsRequired();
 
-		// NO hay clave ajena a docente, y es deliberado desde el 2026-11-06.
+		// NO hay clave ajena a docente, y es deliberado.
 		//
 		// Acá vivía FK_PLANILLA_ASISTENCIA_DOCENTE, un HasOne<Docente>().WithMany() sin navegación
 		// en Restrict. La planilla referencia al preceptor por PreceptorID, un Guid pelado, que es
@@ -58,8 +58,7 @@ internal class PlanillasAsistenciaConfiguration : IEntityTypeConfiguration<Plani
 		//
 		// Precio asumido: la base ya no impide un preceptor_id huérfano. Para un registro firmado es
 		// la semántica correcta, y la integridad entre raíces de agregado pasa a ser responsabilidad
-		// del caso de uso, que es el que conoce la intención. Misma conclusión que CORE-23.
-
+		// del caso de uso, que es el que conoce la intención.
 		builder.Property(x => x.Fecha)
 			   .HasColumnName("fecha")
 			   .HasColumnType("date")

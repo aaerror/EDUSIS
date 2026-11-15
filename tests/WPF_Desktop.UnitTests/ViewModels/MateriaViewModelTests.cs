@@ -98,8 +98,7 @@ public class MateriaViewModelTests
 	/// <c>MateriaResponse.HorasCatedra</c> (<c>int</c>), bindeada en
 	/// <c>Views/Cursos/Curriculas/Materias/MateriaView.xaml:50</c>. Exigir paridad estricta forzaría
 	/// a volver el ViewModel a <c>int</c>, y entonces "sin elegir" y "cero horas" serían el mismo
-	/// valor. Ver TEST-15 en <c>docs/todos.md</c>.
-	/// </para>
+	/// valor.	/// </para>
 	/// Lo que la prueba sigue atrapando es lo que importa: un campo nuevo del DTO que el ViewModel
 	/// no recibe, y un cambio de tipo que no sea ese ensanchamiento. Los tipos exactos de cada
 	/// propiedad se fijan aparte, en <c>Los_tipos_de_las_propiedades_son_los_esperados</c>.

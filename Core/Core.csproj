@@ -10,8 +10,8 @@
 	</ItemGroup>
 
 	<!--
-		Único cambio de producción de la feature 001-automated-test-suite
-		(data-model.md §2, plan.md Complexity Tracking). Expone los tipos `internal`
+		Único cambio de producción que exige la suite de pruebas automatizada.
+		Expone los tipos `internal`
 		del assembly Core a los proyectos de prueba: `ServicioSeguridad` y su interfaz
 		`internal` no se pueden resolver por DI a través de un contrato público.
 		Sólo metadatos de assembly; no cambia comportamiento ni el binario distribuible.
@@ -21,7 +21,7 @@
 		<InternalsVisibleTo Include="EDUSIS.EndToEndTests" />
 
 		<!--
-			Agregado por plan/rbac-y-seed.md Fase 7: Tools/EDUSIS.Seed necesita
+			Tools/EDUSIS.Seed necesita
 			`IServicioSeguridad` para hashear las contraseñas de los usuarios sembrados
 			con el MISMO algoritmo que valida el login. La alternativa era duplicar el
 			PBKDF2 en el seeder, que divergiría sin aviso al cambiar iteraciones o

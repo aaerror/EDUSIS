@@ -77,7 +77,7 @@ public class AutorizacionDeCasosDeUsoTests
 
 	/// <remarks>
 	/// La <strong>única</strong> consulta de <c>Core</c> con guarda, contra la decisión de alcance que
-	/// deja las lecturas abiertas (CORE-16). Existe sólo para servir al borrado del alumno y lo que
+	/// deja las lecturas abiertas. Existe sólo para servir al borrado del alumno y lo que
 	/// devuelve es el volumen de la trayectoria académica de una persona; ninguna pantalla la usa para
 	/// poblar un combo, que es el riesgo que motivó la excepción general. Se fija acá para que la
 	/// asimetría sea deliberada y no parezca un descuido al lado de
@@ -266,7 +266,7 @@ public class AutorizacionDeCasosDeUsoTests
 
 	#region Los permisos partidos no se conceden entre sí
 	/// <remarks>
-	/// Tres permisos nacieron de partir uno existente, porque los diagramas de <c>docs/uml/</c>
+	/// Tres permisos nacieron de partir uno existente, porque los diagramas de casos de uso
 	/// reparten entre actores distintos lo que una sola atribución concedía junta. Estas pruebas
 	/// son las que impiden que la partición se deshaga sin ruido: si alguien volviera a poner
 	/// <c>GestionarCursos</c> en la guarda del preceptor, el resto de la suite seguiría en verde
@@ -403,11 +403,11 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 	#endregion
 
-	#region Decisiones de alcance de la Fase 5
+	#region Decisiones de alcance
 	[Fact]
 	public async Task Los_casos_de_uso_de_lectura_quedan_abiertos_a_proposito()
 	{
-		// Decisión de alcance escrita en plan/rbac-y-seed.md (Fase 5): la autorización cubre la
+		// Decisión de alcance: la autorización cubre la
 		// escritura; las consultas quedan sin guarda porque hay pantallas que leen datos de un
 		// módulo ajeno para poblar combos (GestionDivisiones → ListarPreceptoresActivosAsync).
 		using var host = HostSinPermisos();
@@ -432,7 +432,7 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 	#endregion
 
-	#region La guarda corre antes de abrir la transacción (CORE-19)
+	#region La guarda corre antes de abrir la transacción
 	[Fact]
 	public async Task RegistrarCurriculaAsync_sin_permiso_no_toca_la_transaccion()
 	{
@@ -448,7 +448,7 @@ public class AutorizacionDeCasosDeUsoTests
 		// UnitOfWorkFake tiene las transacciones como no-op y su rollback NO lanza, así que una
 		// prueba que sólo esperara PermisoDenegadoException pasaba en verde con el bug puesto.
 		// El fake es más indulgente que el UnitOfWork real; lo que delata el defecto es que el
-		// rollback se haya llamado. Ver CORE-19 en docs/todos.md.
+		// rollback se haya llamado.
 		using var host = HostSinPermisos();
 
 		await Should.ThrowAsync<PermisoDenegadoException>(
@@ -525,7 +525,7 @@ public class AutorizacionDeCasosDeUsoTests
 	/// <see cref="Los_casos_de_uso_de_lectura_quedan_abiertos_a_proposito"/>: existen sólo para
 	/// servir a su borrado, lo que devuelven es el volumen de una trayectoria académica, y no las
 	/// consume ninguna pantalla ajena ni ningún combo — así que no corren el riesgo que motivó dejar
-	/// las ~30 lecturas de <c>Core</c> abiertas (CORE-16).
+	/// las ~30 lecturas de <c>Core</c> abiertas.
 	/// </para>
 	/// <para>
 	/// Están afirmadas acá para que la asimetría sea deliberada y no un descuido heredado: si alguien

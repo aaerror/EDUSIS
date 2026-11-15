@@ -11,7 +11,7 @@ using Xunit;
 namespace EDUSIS.EndToEndTests.Flujos;
 
 /// <summary>
-/// Flujo e2e 2 (SC-003 / data-model.md §6): registro de un curso y alta de divisiones desde la
+/// Flujo e2e 2: registro de un curso y alta de divisiones desde la
 /// fachada <see cref="IServicioCurso"/> y <see cref="IServicioDivision"/> hasta SQL Server real.
 /// Las divisiones son un agregado propio: se verifica el estado persistido del curso y de sus
 /// divisiones vía <see cref="IServicioDivision.ListarDivisionesAsync"/> en <em>scopes</em> nuevos.

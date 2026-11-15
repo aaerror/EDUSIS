@@ -12,10 +12,9 @@ namespace WPF_Desktop.UnitTests.Store;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Es la prueba de UI-18 y UI-49 del lado del store. Antes de ese arreglo los tres setters tenían
-/// comentada la línea <c>//_viewModel?.Dispose();</c> y nada liberaba nada: cada navegación dejaba
-/// atrás el ViewModel saliente y, con el scope por pantalla, habría dejado también su
-/// <c>DbContext</c>.
+/// Es la prueba del scope por pantalla y de su liberación del lado del store. Si nada libera lo
+/// anterior, cada navegación deja atrás el ViewModel saliente y, con el scope por pantalla, también
+/// su <c>DbContext</c>.
 /// </para>
 /// <para>
 /// El caso que más importa acá es <see cref="Reemplazar_notifica_ANTES_de_liberar_lo_anterior"/>:

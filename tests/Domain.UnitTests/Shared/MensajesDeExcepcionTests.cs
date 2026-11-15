@@ -13,9 +13,9 @@ namespace Domain.UnitTests.Shared;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Nace de un defecto medido el 2026-11-14: <strong>17 de las 75 excepciones de <c>Domain</c> declaraban
+/// Nace de un defecto medido: <strong>17 de las 75 excepciones de <c>Domain</c> declaraban
 /// su constructor sin parámetros como <c>: base()</c> en vez de <c>: base(ERROR)</c></strong>, y 22 sitios
-/// de <c>throw</c> vivos las lanzaban así. Como <c>CLAUDE.md</c> fija que las excepciones suben hasta el
+/// de <c>throw</c> vivos las lanzaban así. Como las excepciones suben hasta el
 /// ViewModel sin ser tragadas y la UI muestra <c>ex.Message</c>, lo que leía el usuario en esos 22 caminos
 /// era el texto por defecto de .NET <strong>en inglés</strong> —"Exception of type '…' was thrown."— en una
 /// aplicación cuyo código y cuyos mensajes están enteramente en español.

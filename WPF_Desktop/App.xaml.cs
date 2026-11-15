@@ -56,7 +56,7 @@ public partial class App : Application
 		// InvalidOperationException—. Con Scoped resuelto del proveedor raíz había una instancia por
 		// proceso, que es exactamente lo que impedía volver a la pantalla de acceso.
 		//
-		// De paso cierra UI-23 de docs/todos.md: eran Scoped resueltas de la raíz, así que con
+		// Además, como Scoped resueltas de la raíz, con
 		// DOTNET_ENVIRONMENT=Development —donde Host.CreateDefaultBuilder activa ValidateScopes—
 		// GetRequiredService<MainWindow>() lanzaba al arrancar.
 		services.AddTransient(provider => new StartupWindow
@@ -87,7 +87,7 @@ public partial class App : Application
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// <strong>Es la mitad de UI-18 que la navegación no cubre.</strong> Cada pantalla recibe su propio
+	/// <strong>Es la mitad del aislamiento de <c>DbContext</c> que la navegación no cubre.</strong> Cada pantalla recibe su propio
 	/// scope de <c>NavigationService</c>, pero <c>MainViewModel</c> y <c>StartupViewModel</c> no llegan
 	/// por navegación sino por acá, y antes se resolvían del proveedor <strong>raíz</strong>: con los
 	/// servicios de <c>Core</c> registrados <c>Scoped</c>, eso le daba a <c>MainViewModel</c>
@@ -116,8 +116,8 @@ public partial class App : Application
 	/// El orden importa y no es decorativo. Con el RBAC funcional, las entradas del menú de
 	/// <c>MainViewModel</c> se habilitan por permiso, y los permisos salen de la sesión. Si
 	/// <c>MainWindow</c> se abriera antes del login, su ViewModel se construiría sin sesión y el
-	/// menú quedaría deshabilitado: es exactamente el síntoma que estaba registrado como UI-39
-	/// mientras este bloque estuvo comentado.
+	/// menú quedaría deshabilitado: es el síntoma que aparecía mientras
+	/// este bloque estuvo comentado.
 	/// </para>
 	/// <para>
 	/// Desde que existe el cambio de usuario el arranque ya no es lineal sino un CICLO, y por eso el
@@ -191,7 +191,7 @@ public partial class App : Application
 		LiberarScopeDeSesion();
 		_scopeDeSesion = AppHost!.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
 
-		// Las ventanas salen del scope de la sesión y no de la raíz (UI-18): así el DbContext que hay
+		// Las ventanas salen del scope de la sesión y no de la raíz: así el DbContext que hay
 		// detrás de MainViewModel dura lo que la sesión y no lo que el proceso. Los Singleton siguen
 		// siendo los mismos —entre ellos SesionUsuario—, porque un scope no los duplica.
 		var startupWindow = _scopeDeSesion.ServiceProvider.GetRequiredService<StartupWindow>();
@@ -358,9 +358,8 @@ public partial class App : Application
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// <strong>Cierra UI-24</strong>, que era que acá se llamaba a <c>StopAsync()</c> pero no a
-	/// <c>Dispose()</c>: el contenedor y todo lo <see cref="IDisposable"/> que colgaba de él —el
-	/// <c>DbContext</c>— no se liberaban ordenadamente. <c>StopAsync</c> detiene los
+	/// <strong>No basta con <c>StopAsync()</c>:</strong> sin <c>Dispose()</c> el contenedor y todo lo
+	/// <see cref="IDisposable"/> que cuelga de él —el <c>DbContext</c>— no se liberan ordenadamente. <c>StopAsync</c> detiene los
 	/// <c>IHostedService</c>; es <c>Dispose</c> el que baja el <c>ServiceProvider</c>.
 	/// </para>
 	/// <para>

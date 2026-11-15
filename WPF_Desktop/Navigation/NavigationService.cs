@@ -14,13 +14,12 @@ namespace WPF_Desktop.Navigation;
 /// <strong>Reemplaza a las 26 clases de navegación que tenían este mismo cuerpo</strong>
 /// (<c>GestionDocentesNavigationService</c>, <c>RegistrarCursoNavigationService</c>, …), que se
 /// distinguían sólo por el nombre y por cuál de los tres stores recibían. Lo que antes era el nombre
-/// de la clase ahora son los dos parámetros de tipo. Es la primera mitad de UI-50; <strong>la segunda
-/// sigue abierta</strong>: como todos se inyectan en los ViewModels con el tipo
-/// <see cref="INavigationService"/>, invertir dos parámetros de un constructor sigue compilando y
-/// sigue navegando a otro lado. Cerrarla exige tipar la interfaz por destino.
+/// de la clase ahora son los dos parámetros de tipo. <strong>Queda pendiente</strong> tipar la interfaz por
+/// destino: como todos se inyectan en los ViewModels con el tipo <see cref="INavigationService"/>,
+/// invertir dos parámetros de un constructor sigue compilando y sigue navegando a otro lado.
 /// </para>
 /// <para>
-/// <strong>UI-18: por qué un scope por pantalla.</strong> Los servicios de <c>Core</c> están
+/// <strong>Por qué un scope por pantalla.</strong> Los servicios de <c>Core</c> están
 /// registrados <c>Scoped</c> en <c>CoreDI</c>, igual que el <c>DbContext</c> y el <c>IUnitOfWork</c>
 /// de <c>InfrastructureDI</c>. Antes de esto, los ViewModels se resolvían del proveedor
 /// <strong>raíz</strong>, donde "scoped" equivale a "una instancia por proceso": todas las pantallas
@@ -56,7 +55,7 @@ internal sealed class NavigationService<TViewModel, TStore> : INavigationService
 	/// stores y resuelven servicios, así que pueden lanzar. Sin esto el scope quedaría huérfano —nadie
 	/// más tiene una referencia— y con él su <c>DbContext</c>, una conexión filtrada por cada intento
 	/// fallido de navegar. La excepción se propaga igual: tragársela dejaría la pantalla sin cambiar y
-	/// sin explicación, que es la familia de defectos de H-018.
+	/// sin explicación.
 	/// </remarks>
 	public void Navigate()
 	{

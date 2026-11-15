@@ -120,7 +120,7 @@ public class HorarioTests
 	[Fact]
 	public void La_hora_fin_respeta_la_duracion_configurada_no_los_40_minutos_por_defecto()
 	{
-		// Regresión: el turno Noche (H-009) y este cálculo compartían el mismo código; con una
+		// Regresión: el turno Noche y este cálculo compartían el mismo código; con una
 		// duración de 40 (el valor por defecto del builder) esta prueba pasaría igual contra un
 		// cálculo hardcodeado a "+40". Usar 45 prueba que HoraFin realmente usa el parámetro.
 		var horario = new HorarioBuilder()

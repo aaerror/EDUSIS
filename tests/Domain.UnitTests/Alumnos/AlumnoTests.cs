@@ -12,10 +12,9 @@ namespace Domain.UnitTests.Alumnos;
 /// </summary>
 /// <remarks>
 /// La regla de edad del alumno NO vive acá: es relacional contra el grado al que se inscribe y la
-/// gobierna <c>Domain.Cursos.EdadEscolar</c> (ver <c>EdadEscolarTests</c>). Hasta el 2026-11-12
-/// esta clase tenía un placeholder vacío con <c>Skip</c> por H-004 que afirmaba una excepción
-/// absoluta, <c>AlumnoMayorDeEdadException</c>, borrada al dirimir la fila: la mayoría de edad ya
-/// era una consulta (<c>DatosPersonales.EsMayorDeEdad()</c>) y no una invariante.
+/// gobierna <c>Domain.Cursos.EdadEscolar</c> (ver <c>EdadEscolarTests</c>). La mayoría de edad
+/// es una consulta (<c>DatosPersonales.EsMayorDeEdad()</c>) y no una invariante, así que no hay una
+/// excepción absoluta como <c>AlumnoMayorDeEdadException</c>.
 /// </remarks>
 [Trait("Categoria", Categorias.Unidad)]
 public class AlumnoTests

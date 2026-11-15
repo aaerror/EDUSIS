@@ -74,18 +74,16 @@ public sealed class Puesto : Entity
 	/// Confirma el puesto: lo pasa de eventual a por tiempo indeterminado.
 	/// </summary>
 	/// <remarks>
-	/// Las dos guardas lanzaban <c>ArgumentException</c> del BCL hasta el 2026-11-12. Eran la
-	/// mitad de H-006 / DOM-12: la regla "no se confirma un puesto que ya está confirmado" estaba
-	/// implementada, pero con un tipo del BCL, mientras
-	/// <c>DocenteConfirmadoEnCargoDocenteException</c> existía en el módulo sin ningún throw site.
-	/// Lo que la fila pedía no era inventar la regla sino cablear la excepción que ya la nombraba.
+	/// Las guardas lanzan las excepciones propias del módulo y no <c>ArgumentException</c> del BCL:
+	/// la regla "no se confirma un puesto que ya está confirmado" la nombra
+	/// <c>DocenteConfirmadoEnCargoDocenteException</c>.
 	/// </remarks>
 	internal void EstablecerComoPuestoFijo()
 	{
 		if (!EstaActivo())
 		{
 			// El motivo se discrimina en lugar de leer FechaFin a ciegas, y no es cosmético: hasta
-			// el 2026-11-12 esta guarda interpolaba `Periodo.FechaFin.Value` dando por hecho que un
+			// interpolar `Periodo.FechaFin.Value` daría por hecho que un
 			// puesto no activo es un puesto finalizado. Es al revés. `EstablecerPeriodo` rechaza
 			// toda fecha de inicio anterior a hoy y `RangoFechas` exige fin >= inicio, así que
 			// FechaFin nunca queda antes de hoy y `HaFinalizado()` no puede ser cierto para un

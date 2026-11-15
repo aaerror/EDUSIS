@@ -55,7 +55,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 	/// El resumen de asistencias del alumno. Es lo ÚNICO que se puede preguntar por cursante:
 	/// <c>IPlanillaAsistenciaRepository</c> sólo expone <c>ContarPorTipoAsync(cursanteID, tipo)</c>,
 	/// porque el agregado es la planilla —división y fecha— y un alumno no tiene asistencias
-	/// propias que listar. Ver el pendiente anotado en docs/ui-ux.md.
+	/// propias que listar.
 	/// </summary>
 	private readonly IServicioAsistencia _servicioAsistencia;
 	#endregion
@@ -582,7 +582,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 	/// Por eso esta vista cuenta y no lista: armar el listado desde acá exigiría traer todas
 	/// las planillas del ciclo con <c>BuscarPorDivisionYRangoAsync</c> y filtrarlas por
 	/// cursante, que es construir un read model en la capa de presentación. Lo que falta es una
-	/// consulta en Core con su método de repositorio; está anotado en docs/ui-ux.md.
+	/// consulta en Core con su método de repositorio.
 	/// </remarks>
 	private async Task CargarAsistenciasAsync()
 	{

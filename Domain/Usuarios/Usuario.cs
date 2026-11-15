@@ -66,8 +66,7 @@ public class Usuario : Entity
 	/// casos de uso y la interfaz.</strong>
 	/// </summary>
 	/// <remarks>
-	/// Por <c>Id</c> y no por descripción, que es la decisión #6 de
-	/// <c>docs/plan/rbac-y-seed.md</c>: el Id es canónico y la descripción es presentación, vive en
+	/// Por <c>Id</c> y no por descripción: el Id es canónico y la descripción es presentación, vive en
 	/// una columna <c>varchar</c> no unicode y tres de los seis roles llevan acento
 	/// ("Dirección", "Preceptoría", "Secretaría Académica"). Un literal mal escrito por la sobrecarga
 	/// de <c>string</c> falla en ejecución; acá no hay literal que escribir mal.

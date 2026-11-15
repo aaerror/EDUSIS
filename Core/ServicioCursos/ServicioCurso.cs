@@ -90,7 +90,7 @@ internal class ServicioCurso : IServicio, IServicioCurso
 	/// <c>TODO: Eliminar todas las materias y divisiones con este curso asociado</c> admitiendo el
 	/// agujero: <c>FK_DIVISION_CURSO</c> y <c>FK_DISENO_CURRICULAR_CURSO</c> son <c>Restrict</c>, así
 	/// que el borrado de cualquier curso real fallaba en SQL Server y llegaba al ViewModel como
-	/// <c>DbUpdateException</c>. Mismo defecto que tenía alumno antes de CORE-23.
+	/// <c>DbUpdateException</c>. Mismo defecto que tenía el borrado de alumno antes de validar el impacto.
 	/// </para>
 	/// <para>
 	/// <strong>Este caso de uso NO es atómico, y es una decisión.</strong> El cascadeo de materias se
@@ -116,11 +116,8 @@ internal class ServicioCurso : IServicio, IServicioCurso
 		{
 			_sesion.Exigir(Permiso.GestionarCursos);
 
-			// InvalidOperationException y no una CursoNoEncontradoException nueva: ServicioDivision
-			// señala "el curso no existe" exactamente así, y declarar la excepción en Domain para
-			// lanzarla sólo desde Core profundizaría DOM-25 (seis excepciones ya están en esa
-			// situación). La inconsistencia global de cómo se señala "no encontrado" está registrada
-			// en CORE-20 y se resuelve de una vez, no de a un caso de uso.
+			// "No encontrado" se señala con CursoNoEncontradoException, la excepción de política de
+			// aplicación del módulo del agregado: no es una invariante de entidad.
 			var curso = await _unitOfWork.Cursos.BuscarPorIDAsync(request.CursoID);
 			if (curso is null)
 			{
@@ -180,7 +177,7 @@ internal class ServicioCurso : IServicio, IServicioCurso
 	/// Lectura <strong>con</strong> guarda de permiso, misma asimetría deliberada que
 	/// <c>ServicioAlumno.ConsultarImpactoEliminacionAsync</c> y
 	/// <c>ServicioDivision.ConsultarImpactoEliminacionDivisionAsync</c> frente a la decisión de
-	/// alcance de CORE-16: existe sólo para servir al borrado y no la consume ninguna pantalla ajena.
+	/// alcance de las lecturas abiertas de <c>Core</c>: existe sólo para servir al borrado y no la consume ninguna pantalla ajena.
 	///
 	/// Informa <c>Divisiones</c> aunque el borrado no las toque: es el motivo por el que el caso de
 	/// uso va a rechazar, y la pantalla necesita poder decir cuántas hay que eliminar antes en lugar

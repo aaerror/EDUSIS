@@ -128,12 +128,8 @@ public sealed class Licencia : Entity
 	/// una transición. El servicio la invoca y después borra; no lee <c>Estado</c> ni decide nada.
 	/// </para>
 	/// <para>
-	/// Hasta el 2026-11-14 esta regla vivía en <c>ServicioLicencia.EliminarLicencia</c>, que leía
-	/// <c>licencia.Estado</c>, lo comparaba contra <c>Estado.Pendiente</c> y lanzaba un
-	/// <c>ArgumentException</c>. El agregado no exponía nada equivalente: su API iba de
-	/// <c>AprobarLicencia</c> a <c>ModificarObservaciones</c> sin ningún método que encarnara la baja.
-	/// Era CORE-22, y violaba el principio II de la constitución y la regla de <c>CLAUDE.md</c> de que
-	/// las capas superiores no repiten ni suplen las validaciones del dominio.
+	/// La regla vive acá y no en el servicio: las capas superiores no repiten ni suplen las
+	/// validaciones del dominio, así que <c>ServicioLicencia</c> sólo invoca este método y después borra.
 	/// </para>
 	/// </remarks>
 	/// <exception cref="LicenciaNoPendienteException">La licencia ya no está pendiente.</exception>

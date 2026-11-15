@@ -51,18 +51,13 @@ public sealed class MapeoDeCursoTests : BaseIntegracion
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Cubría el defecto H-023 —<c>DivisionesConfiguration</c> ya mapeaba <c>descripcion</c> como
-	/// <c>varchar(1)</c>, pero el esquema de prueba se crea con <c>Database.Migrate()</c> y la
-	/// migración <c>InitCreate</c> declaraba la columna de ancho fijo, así que un ida y vuelta
-	/// devolvía <c>"A"</c> con relleno— y llevaba <c>[Fact(Skip=…)]</c> con la condición de salida
-	/// escrita en el mensaje: "hasta regenerar la migración".
+	/// El esquema de prueba se crea con <c>Database.Migrate()</c>, así que lo que cuenta es el
+	/// tipo que declara la migración y no sólo el mapeo: si la columna quedara de ancho fijo, un
+	/// ida y vuelta devolvería <c>"A"</c> con relleno.
 	/// </para>
 	/// <para>
-	/// <strong>Esa condición se cumplió el 2026-10-11</strong>, cuando la migración se regeneró
-	/// desde cero (<c>20261011000305_InitCreate</c>, cierre de H-023), pero el <c>Skip</c> se quedó
-	/// tres semanas más. Se retiró el 2026-11-09 y la prueba pasa contra SQL Server real;
-	/// <c>DivisionesConfiguration.cs:33</c> mapea <c>HasMaxLength(1).IsUnicode(false)</c>. Detalle
-	/// en <c>docs/todos-historial.md</c>, nota del 2026-11-09 (segunda).
+	/// <c>DivisionesConfiguration</c> mapea <c>HasMaxLength(1).IsUnicode(false)</c> y la migración
+	/// <c>20261011000305_InitCreate</c> lo refleja.
 	/// </para>
 	/// </remarks>
 	[RequiereSqlServerFact]

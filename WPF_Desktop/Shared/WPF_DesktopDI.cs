@@ -395,7 +395,7 @@ internal static class WPF_DesktopDI
 	/// <c>Navegacion<GestionDocentesViewModel, MainWindowNavigationStore>(provider)</c> nombraba una clase y había que abrirla
 	/// para saber a qué ventana escribía; ahora
 	/// <c>Navegacion&lt;GestionDocentesViewModel, MainWindowNavigationStore&gt;(provider)</c> lo dice
-	/// entero. Es la primera mitad de UI-50.
+	/// entero.
 	/// </para>
 	/// <para>
 	/// <strong>El <c>provider</c> que entra acá puede ser el raíz o el de un scope, y las dos cosas están

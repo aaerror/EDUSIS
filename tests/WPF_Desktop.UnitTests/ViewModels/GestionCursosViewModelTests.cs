@@ -14,10 +14,10 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 
 /// <summary>
 /// Cubre el ciclo de habilitación del comando de borrado de <see cref="GestionCursosViewModel"/> y el camino
-/// del diálogo de impacto, que hasta el 2026-11-14 no tenía ninguna prueba.
+/// del diálogo de impacto.
 /// </summary>
 /// <remarks>
-/// La pantalla se recorrió a mano como parte de TEST-16 y el botón <c>Eliminar</c> estaba gris con un curso
+/// Al recorrer la pantalla a mano el botón <c>Eliminar</c> estaba gris con un curso
 /// seleccionado, con divisiones y sin ellas. La causa era que las dos propiedades notificaban con
 /// <c>[NotifyPropertyChangedFor]</c> en vez de <c>[NotifyCanExecuteChangedFor]</c>: eso levanta
 /// <c>PropertyChanged</c> para la propiedad del comando, el binding relee la propiedad, obtiene la misma
@@ -92,7 +92,7 @@ public class GestionCursosViewModelTests
 
 	#region Habilitación del comando de borrado
 	/// <remarks>
-	/// <strong>Esta es la prueba que fija el defecto de TEST-16.</strong> La aserción que importa es la de
+	/// <strong>Esta es la prueba que fija el defecto del botón Eliminar.</strong> La aserción que importa es la de
 	/// <c>avisos</c>: con <c>[NotifyPropertyChangedFor]</c> el contador quedaba en 0 y el botón nunca se
 	/// enteraba de que ya había un curso elegido. Las dos aserciones de <c>CanExecute</c> pasaban igual
 	/// antes y después del arreglo, así que por sí solas no habrían detectado nada.

@@ -108,8 +108,8 @@ public class PuestoTests
 	}
 
 	/// <remarks>
-	/// Afirmaba <c>ArgumentException</c> del BCL hasta el 2026-11-12, cuando se cableó H-006: la
-	/// regla no cambió, cambió el tipo que la reporta. <c>DocenteConfirmadoEnCargoDocenteException</c>
+	/// La regla se reporta con una excepción de dominio y no con <c>ArgumentException</c> del BCL.
+	/// <c>DocenteConfirmadoEnCargoDocenteException</c>
 	/// NO deriva de <c>ArgumentException</c>, así que esta prueba habría quedado en rojo sin
 	/// actualizarla — es la señal de que el cableado llegó a este camino y no sólo al archivo.
 	/// </remarks>

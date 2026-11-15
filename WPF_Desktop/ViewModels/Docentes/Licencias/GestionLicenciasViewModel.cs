@@ -27,7 +27,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	/// Docente cuyas licencias se gestionan, fijado una sola vez al construir.
 	/// </summary>
 	/// <remarks>
-	/// UI-34: <c>LegajoStore.PersonaID</c> pasó a ser <c>Guid?</c>, y la guarda va acá una vez en
+	/// <c>LegajoStore.PersonaID</c> es <c>Guid?</c>, y la guarda va acá una vez en
 	/// lugar de repetir un <c>.Value</c> en los seis sitios que arman requests. Llegar a esta
 	/// pantalla sin docente elegido es un defecto de navegación y no un estado de la pantalla:
 	/// <c>GestionDocentesViewModel</c> escribe el store antes de navegar.

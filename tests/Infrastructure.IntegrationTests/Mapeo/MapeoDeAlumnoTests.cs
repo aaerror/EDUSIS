@@ -9,7 +9,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Mapeo;
 
 /// <summary>
-/// US3-1: persistir y releer un <see cref="Alumno"/> contra SQL Server real. Verifica la
+/// Persistir y releer un <see cref="Alumno"/> contra SQL Server real. Verifica la
 /// jerarquía TPT <c>persona</c>/<c>alumno</c>, el value object <c>Domicilio</c> (<c>OwnsOne</c>)
 /// y que los datos con acentos y <c>ñ</c> sobreviven el ida y vuelta sin corrupción.
 /// </summary>

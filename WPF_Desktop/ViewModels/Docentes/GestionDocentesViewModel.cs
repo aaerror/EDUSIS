@@ -200,9 +200,9 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 
 	#region DesafectarCommand
 	/// <remarks>
-	/// La baja blanda: cierra el período del legajo y lo marca inactivo, sin borrar nada. Hasta el
-	/// 2026-11-06 era lo único que había, y se llamaba "Quitar": un soft delete con nombre de
-	/// borrado, que es el defecto que CORE-24 relevó. Ahora son dos botones con dos verbos distintos.
+	/// La baja blanda: cierra el período del legajo y lo marca inactivo, sin borrar nada. Se separa del
+	/// borrado real con dos botones de verbos distintos: un soft delete llamado "Quitar" parecería
+	/// un borrado.
 	/// </remarks>
 	private bool CanExecuteDesafectarCommand() =>
 		LegajoDocenteSeleccionado is not null;
@@ -412,7 +412,7 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 				break;
 			case "Perfil":
 				// El ID sale del elegido y no del store: acá ya está garantizado no nulo por la
-				// guarda de arriba, y el store lo expone como Guid? desde UI-34.
+				// guarda de arriba, y el store lo expone como Guid?.
 				WeakReferenceMessenger.Default.Send(new DocenteSeleccionadoMessage(LegajoDocenteSeleccionado.DocenteID));
 				_perfilDocenteNavigationService.Navigate();
 				break;

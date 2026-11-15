@@ -141,9 +141,8 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 				throw new LicenciaNoEncontradaException();
 			}
 
-			// La regla es del agregado y la aplica el agregado: acá sólo se la invoca. Antes este
-			// bloque leía licencia.Estado, lo comparaba contra Estado.Pendiente y lanzaba un
-			// ArgumentException, que es el servicio supliendo una validación del dominio (CORE-22).
+			// La regla es del agregado y la aplica el agregado: acá sólo se la invoca. Comparar
+			// licencia.Estado en el servicio sería suplir una validación del dominio.
 			licencia.ValidarSePuedeEliminar();
 
 			await _unitOfWork.Licencias.EliminarAsync(licencia.Id);

@@ -8,7 +8,7 @@ namespace WPF_Desktop.UnitTests.Converters;
 
 /// <summary>
 /// Un binding cuyo valor todavía no se eligió manda <c>null</c> a <c>ConvertBack</c>. Los tres
-/// converters hacían <c>value.ToString()</c> sin guarda y lanzaban <c>NullReferenceException</c> (UI-36).
+/// converters hacían <c>value.ToString()</c> sin guarda y lanzaban <c>NullReferenceException</c>.
 /// </summary>
 public class ConvertBackConNuloTests
 {

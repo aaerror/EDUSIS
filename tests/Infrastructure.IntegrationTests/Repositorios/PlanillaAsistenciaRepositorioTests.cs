@@ -31,8 +31,8 @@ public sealed class PlanillaAsistenciaRepositorioTests : BaseIntegracion
 	/// distingue entre correcta y roja.
 	/// </para>
 	/// <para>
-	/// Es exactamente la ceguera que CORE-23 e INFRA-19 describen, pero del otro lado: no es que el
-	/// fake no detecte lo que falla en EF, es que la prueba que sí iría a EF no se corría.
+	/// Es la ceguera del fake frente a EF, pero del otro lado: no es que el fake no detecte lo que
+	/// falla en EF, es que la prueba que sí iría a EF no se corría.
 	/// </para>
 	/// </remarks>
 	private async Task<Guid> SembrarCursanteAsync(Guid divisionID, string periodo = "2024")

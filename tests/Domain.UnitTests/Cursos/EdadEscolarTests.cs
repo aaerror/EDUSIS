@@ -11,11 +11,10 @@ namespace Domain.UnitTests.Cursos;
 /// inscribe. Advierte y no bloquea, así que lo que se afirma son veredictos y no excepciones.
 /// </summary>
 /// <remarks>
-/// Nació de dirimir <c>H-004</c> / <c>DOM-11</c> el 2026-11-12: la excepción que esa fila
-/// registraba, <c>AlumnoMayorDeEdadException</c>, nombraba una condición <em>absoluta</em> ("el
-/// alumno cumplió la mayoría de edad") para una regla que es <em>relacional</em> — un alumno de 18
-/// en sexto de secundaria es normal y en primero no—, y además ya estaba cubierta como consulta por
-/// <c>DatosPersonales.EsMayorDeEdad()</c>. Se borró junto con su prueba placeholder vacía.
+/// La regla es <em>relacional</em> —un alumno de 18 en sexto de secundaria es normal y en primero
+/// no— y por eso no es una excepción <em>absoluta</em> del tipo "el alumno cumplió la mayoría de
+/// edad" (<c>AlumnoMayorDeEdadException</c>, que se borró): esa condición ya está cubierta como
+/// consulta por <c>DatosPersonales.EsMayorDeEdad()</c>.
 /// </remarks>
 [Trait("Categoria", Categorias.Unidad)]
 public class EdadEscolarTests

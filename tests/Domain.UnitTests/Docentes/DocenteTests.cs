@@ -13,7 +13,7 @@ namespace Domain.UnitTests.Docentes;
 /// Agregado <see cref="Domain.Docentes.Docente"/>: alta con validación de edad, legajo y CUIL,
 /// baja institucional (evento <c>DocenteDesafectadoDomainEvent</c>) y ciclo de vida de los
 /// cargos docentes. Las excepciones del módulo son <c>internal</c>: se verifican por el nombre
-/// del tipo. Las que ningún método cablea quedan con pruebas <c>Skip</c> (H-006, H-007).
+/// del tipo. Las que ningún método cablea quedan con pruebas <c>Skip</c>.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class DocenteTests
@@ -209,11 +209,9 @@ public class DocenteTests
 
 	#region Confirmación en el cargo
 	/// <remarks>
-	/// Reemplaza los dos placeholders vacíos que esta región tenía con <c>Skip</c> por H-006 y
-	/// H-007, dirimidos el 2026-11-12. H-006 era una excepción sin cablear sobre una regla que
-	/// <strong>ya estaba implementada</strong> con <c>ArgumentException</c> del BCL en
-	/// <c>Puesto.EstablecerComoPuestoFijo</c>; acá queda afirmada contra la excepción de dominio.
-	/// H-007 (<c>DocenteSinCargoDocenteException</c>) se borró por redundante: el módulo ya
+	/// La regla de <c>Puesto.EstablecerComoPuestoFijo</c> se afirma contra la excepción de dominio
+	/// y no contra un <c>ArgumentException</c> del BCL. No existe una excepción
+	/// <c>DocenteSinCargoDocenteException</c>, por redundante: el módulo ya
 	/// distingue los tres casos con <c>PuestoDocenteNoEncontradoException</c>,
 	/// <c>PuestoDocenteSinAsignarException</c> y <c>PuestoDocenteAsignadoException</c>, y ningún
 	/// caso de uso necesitaba un cuarto tipo para "el docente no tiene ningún cargo".
@@ -252,7 +250,7 @@ public class DocenteTests
 	}
 
 	/// <remarks>
-	/// Regresión de un defecto latente que se destapó al cablear H-006 el 2026-11-12. La guarda de
+	/// Regresión de un defecto latente que se destapó al cablear la excepción de dominio. La guarda de
 	/// puesto no activo interpolaba `Periodo.FechaFin.Value` para informar la fecha de
 	/// finalización, dando por hecho que existe. Un puesto por tiempo indeterminado que todavía no
 	/// inició la tiene en nulo, así que la guarda moría con `InvalidOperationException` —"Nullable

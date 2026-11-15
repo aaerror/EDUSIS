@@ -32,9 +32,9 @@ using Xunit;
 namespace WPF_Desktop.UnitTests.ViewModels;
 
 /// <summary>
-/// Cubre <see cref="GestionCursantesViewModel"/> tras W5.C: <c>UI-02</c> (la carga de materias pide la curricula con
+/// Cubre <see cref="GestionCursantesViewModel"/> tras W5.C: la carga de materias pide la curricula con
 /// <c>FechaFin is null</c> y nunca <see cref="Guid.Empty"/>; <c>BuscarCursantes</c> llega a
-/// <see cref="IServicioCursante.ListarCursantesAsync"/>), las calificaciones conectadas a Core, la ausencia de un comando
+/// <see cref="IServicioCursante.ListarCursantesAsync"/>, las calificaciones conectadas a Core, la ausencia de un comando
 /// de "editar nota", el periodo del listado como periodo de los requests y las notificaciones de <c>CanExecute</c>.
 /// </summary>
 public class GestionCursantesViewModelTests
@@ -47,7 +47,7 @@ public class GestionCursantesViewModelTests
 		public IServicioMateria ServicioMateria { get; } = Substitute.For<IServicioMateria>();
 		public IServicioCurricula ServicioCurricula { get; } = Substitute.For<IServicioCurricula>();
 
-		/// <summary>UI-CUR-1: la pantalla lista las divisiones del curso para poblar el destino del traslado.</summary>
+		/// <summary>La pantalla lista las divisiones del curso para poblar el destino del traslado.</summary>
 		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
 
 		/// <summary>
@@ -223,7 +223,7 @@ public class GestionCursantesViewModelTests
 	}
 	#endregion
 
-	#region UI-02, primera mitad: carga de materias
+	#region Carga de materias
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public async Task Cargar_pide_las_curriculas_del_curso_del_store()
@@ -313,7 +313,7 @@ public class GestionCursantesViewModelTests
 	}
 	#endregion
 
-	#region UI-02, segunda mitad: BuscarCursantes llega a Core
+	#region BuscarCursantes llega a Core
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public async Task Buscar_llega_a_ListarCursantesAsync_con_curso_division_y_ciclo()
@@ -759,7 +759,7 @@ public class GestionCursantesViewModelTests
 	}
 	#endregion
 
-	#region UI-CUR-1: recursante, baja, traslado e historial
+	#region Recursante, baja, traslado e historial
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public async Task Los_cuatro_comandos_de_inscripcion_exigen_un_alumno_elegido()

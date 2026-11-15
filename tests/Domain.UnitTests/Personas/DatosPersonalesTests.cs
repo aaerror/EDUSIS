@@ -156,10 +156,10 @@ public class DatosPersonalesTests
 
 	#region Edad reutilizable
 	/// <remarks>
-	/// <c>Edad(DateTime)</c> se hizo estática y pública el 2026-11-13 para que la pantalla de alta
+	/// <c>Edad(DateTime)</c> es estática y pública para que la pantalla de alta
 	/// de alumno pueda sacar la edad <strong>antes de que el alumno exista como entidad</strong>, y
 	/// compararla contra el grado con <c>Domain.Cursos.EdadEscolar</c>. Lo que esta prueba protege
-	/// es que haya UNA sola implementación: acá vivía el defecto que <c>DOM-20</c> corrigió —la
+	/// es que haya UNA sola implementación: acá vivió un defecto —la
 	/// edad era días transcurridos / 365 y se adelantaba un día cada cuatro años—, así que una
 	/// segunda copia en la capa de presentación lo reintroduciría sin que nada lo avise.
 	/// </remarks>
@@ -174,7 +174,7 @@ public class DatosPersonalesTests
 	}
 
 	/// <remarks>
-	/// El caso que <c>DOM-20</c> dejó fijado, ahora por la puerta estática: el día anterior al
+	/// El caso del cumpleaños, ahora por la puerta estática: el día anterior al
 	/// cumpleaños todavía no se cumplió el año.
 	/// </remarks>
 	[Theory]

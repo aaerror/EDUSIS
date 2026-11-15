@@ -17,7 +17,7 @@ using Xunit;
 namespace WPF_Desktop.UnitTests.ViewModels;
 
 /// <summary>
-/// <see cref="GestionUsuariosViewModel"/>: la pantalla que cierra UI-46. Cubre el cruce que arma la
+/// <see cref="GestionUsuariosViewModel"/>: la pantalla de cuentas de usuario. Cubre el cruce que arma la
 /// lista de docentes sin cuenta, las tres acciones y —sobre todo— las condiciones de los
 /// <c>CanExecute</c>, que son donde esta pantalla evita carteles de error.
 /// </summary>
@@ -112,7 +112,7 @@ public class GestionUsuariosViewModelTests
 	{
 		// Se construye dentro de la factory del INavigationService, donde no hay nada que atrape
 		// una excepción: una consulta que falle ahí revienta la navegación. La dispara el Loaded
-		// de la vista. Es el mismo defecto que UI-41 registró para MainViewModel.
+		// de la vista. Vale también para MainViewModel.
 		var contexto = new Contexto();
 
 		_ = contexto.ServicioUsuario.DidNotReceive().ListarUsuariosAsync();
@@ -213,7 +213,7 @@ public class GestionUsuariosViewModelTests
 	[Trait("Categoria", "Unidad")]
 	public async Task Crear_cuenta_exige_docente_Y_rol()
 	{
-		// El rol es obligatorio: un alta sin rol es exactamente lo que el bug de UI-46(a) producía
+		// El rol es obligatorio: un alta sin rol es exactamente lo que producía el alta sin validar el rol
 		// —cuentas sin un solo permiso— y lo que esta pantalla no debe poder generar.
 		var contexto = new Contexto();
 		contexto.DevolverDocentes(CrearDocente());
@@ -289,7 +289,7 @@ public class GestionUsuariosViewModelTests
 	[Trait("Categoria", "Unidad")]
 	public void Los_roles_salen_del_dominio_y_son_los_seis()
 	{
-		// No un x:Array en el XAML, que es el defecto que UI-27 registró para las horas cátedra:
+		// No un x:Array en el XAML, que quedaría desfasado del dominio (como pasó con las horas cátedra):
 		// agregar un rol al dominio tiene que aparecer en el combo sin tocar la vista.
 		var contexto = new Contexto();
 

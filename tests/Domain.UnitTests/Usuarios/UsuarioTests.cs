@@ -111,8 +111,8 @@ public class UsuarioTests
 	#endregion
 
 	#region Roles por Id
-	// Las sobrecargas por Id son las que deben usar los casos de uso y la interfaz (decisión #6 de
-	// plan/rbac-y-seed.md). Las de string se conservan para el seeder y los builders, donde el
+	// Las sobrecargas por Id son las que deben usar los casos de uso y la interfaz.
+	// Las de string se conservan para el seeder y los builders, donde el
 	// literal está a la vista de quien lo escribe.
 	[Fact]
 	public void AgregarRol_por_Id_asigna_el_mismo_rol_que_por_descripcion()

@@ -191,8 +191,7 @@
 						traen su propio ScrollViewer por plantilla, y uno de ellos adentro de un
 						ScrollViewer de página se come la rueda del mouse aunque no tenga nada que
 						desplazar: media pantalla quedaba muerta al gesto principal de navegación.
-						La forma correcta es la que usan las pantallas de gestión y la que describe
-						docs/ui-ux.md: la tarjeta llena el alto y cada lista toma una fila *.
+						La forma correcta es la que usan las pantallas de gestión: la tarjeta llena el alto y cada lista toma una fila *.
 					-->
 					<TextBlock Grid.Row="0"
 							   Margin="0 0 0 12"
@@ -371,8 +370,7 @@
 											tiene sólo un ItemsPresenter y ningún
 											GridViewHeaderRowPresenter, así que este ListView nunca
 											muestra los Header de su GridView. Un número suelto al
-											lado del nombre no dice qué es. Ver el pendiente anotado
-											en docs/ui-ux.md.
+											lado del nombre no dice qué es.
 										-->
 										<GridViewColumn DisplayMemberBinding="{ Binding Path=HorasCatedra, Mode=OneWay, StringFormat={}{0} h cátedra }"
 														Header="HORAS CÁTEDRA"

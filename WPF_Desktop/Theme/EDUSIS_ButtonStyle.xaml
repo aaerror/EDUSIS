@@ -71,7 +71,7 @@
 		cuando el botón está gris y no se sabe por qué.
 
 		El caso más visible era el rail: MainWindow documenta que una sección sin permiso "queda
-		visible pero apagada, con el motivo en el ToolTip", y docs/ui.md lo declara decisión
+		visible pero apagada, con el motivo en el ToolTip", por decisión
 		deliberada. No funcionaba en ninguna de las siete entradas.
 
 		Va en los estilos base; Btn.Peligro y Btn.Terciario.Claro lo heredan por BasedOn. Los dos

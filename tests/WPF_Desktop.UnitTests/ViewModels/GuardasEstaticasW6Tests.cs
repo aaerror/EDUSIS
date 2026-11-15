@@ -440,7 +440,7 @@ public class GuardasEstaticasW6Tests
 	[Trait("Categoria", "Unidad")]
 	public void D3_las_dos_bajas_del_docente_se_esperan_con_await_y_sus_metodos_devuelven_Task()
 	{
-		// `QuitarDocenteAsync` se partió en dos el 2026-11-06 (CORE-24): decía "quitar" y
+		// `QuitarDocenteAsync` se partió en dos: decía "quitar" y
 		// desafectaba, con el borrado real comentado al lado. Esta guarda cubría ese único método;
 		// ahora cubre los dos, y además fija que sigan siendo dos. Volver a juntarlos la rompe.
 		var fuente = RaizDelRepositorio.Leer(GestionDocentesCs);

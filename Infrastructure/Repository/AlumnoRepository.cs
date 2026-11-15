@@ -13,7 +13,7 @@ internal class AlumnoRepository : PersonaRepository<Alumno>, IAlumnoRepository
 	public async Task<bool> ExisteLegajoAsync(string legajo) =>
 		await _context.Alumnos.AnyAsync(x => EF.Functions.Like(x.Legajo, legajo));
 
-	// Proyección del legajo: el agregado hidratado no hace falta para derivar el siguiente (CORE-13).
+	// Proyección del legajo: el agregado hidratado no hace falta para derivar el siguiente.
 	public async Task<string?> BuscarUltimoLegajoAsync() =>
 		await _context.Alumnos
 			.Select(x => x.Legajo)

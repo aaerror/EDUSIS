@@ -182,12 +182,12 @@ public class ComposicionDelContenedorTests
 
 	/// <remarks>
 	/// <para>
-	/// La séptima raíz del menú, que cierra UI-46. Tampoco siembra stores: no usa ninguno, porque no
+	/// La séptima raíz del menú. Tampoco siembra stores: no usa ninguno, porque no
 	/// es destino de ningún drill-down.
 	/// </para>
 	/// <para>
 	/// Esta prueba es la que convierte "falta un registro de DI" en una prueba roja en lugar de una
-	/// pantalla en blanco. <c>CLAUDE.md</c> exige cuatro piezas por vista nueva —<c>DataTemplate</c>,
+	/// pantalla en blanco. Una vista nueva necesita cuatro piezas —<c>DataTemplate</c>,
 	/// ViewModel, <c>INavigationService</c> y sus registros—; si falta el del ViewModel, acá revienta.
 	/// </para>
 	/// </remarks>
@@ -216,24 +216,24 @@ public class ComposicionDelContenedorTests
 	}
 	#endregion
 
-	#region Alcance de los servicios de Core (UI-18)
+	#region Alcance de los servicios de Core
 	/// <summary>
 	/// Dos pantallas distintas no comparten los servicios de <c>Core</c> ni, por lo tanto, el
 	/// <c>DbContext</c> que hay detrás.
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Es UI-18 afirmado sobre el grafo de DI <strong>real</strong>. Los servicios de <c>Core</c> están
-	/// registrados <c>Scoped</c> en <c>CoreDI</c>, pero antes de este arreglo todos los ViewModels se
-	/// resolvían del proveedor <strong>raíz</strong>, donde <c>Scoped</c> equivale a una instancia por
-	/// proceso: un único <c>DbContext</c> para toda la aplicación, con
+	/// Afirma el scope por pantalla sobre el grafo de DI <strong>real</strong>. Los servicios de <c>Core</c> están
+	/// registrados <c>Scoped</c> en <c>CoreDI</c>, pero si todos los ViewModels se
+	/// resolvieran del proveedor <strong>raíz</strong>, donde <c>Scoped</c> equivale a una instancia por
+	/// proceso, habría un único <c>DbContext</c> para toda la aplicación, con
 	/// <c>"a second operation was started on this context"</c> si dos cargas se solapaban y un
 	/// <c>ChangeTracker</c> que crecía sin tope.
 	/// </para>
 	/// <para>
 	/// Lo que esta prueba <strong>no</strong> acredita es que el código de producción cree esos scopes
 	/// —eso lo fija <c>NavigationServiceTests</c>—; acredita que crearlos sirva de algo, o sea que el
-	/// registro siga siendo <c>Scoped</c>. Pasar <c>CoreDI</c> a <c>Singleton</c> reabriría UI-18 sin
+	/// registro siga siendo <c>Scoped</c>. Pasar <c>CoreDI</c> a <c>Singleton</c> rompería el aislamiento por pantalla sin
 	/// tocar una línea de la navegación, y esta prueba es la única que se enteraría.
 	/// </para>
 	/// </remarks>

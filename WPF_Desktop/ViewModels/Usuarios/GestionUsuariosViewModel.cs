@@ -19,8 +19,7 @@ using WPF_Desktop.Shared;
 namespace WPF_Desktop.ViewModels.Usuarios;
 
 /// <summary>
-/// Administración de cuentas: crear el usuario de un docente y asignarle o quitarle roles. Cierra
-/// UI-46, que era el resto del hallazgo UI-19.
+/// Administración de cuentas: crear el usuario de un docente y asignarle o quitarle roles.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -38,8 +37,8 @@ namespace WPF_Desktop.ViewModels.Usuarios;
 /// </para>
 /// <para>
 /// Los roles salen de <c>Enumeration.GetAll&lt;Rol&gt;()</c> —del dominio, no de un <c>x:Array</c>
-/// en el XAML, que es el defecto que UI-27 registró para las horas cátedra— y viajan por <c>Id</c>,
-/// nunca por descripción: decisión #6 de <c>plan/rbac-y-seed.md</c>. El combo muestra
+/// en el XAML, que se desincroniza del dominio— y viajan por <c>Id</c>,
+/// nunca por descripción. El combo muestra
 /// <c>Descripcion</c> y manda <c>Id</c>.
 /// </para>
 /// </remarks>
@@ -187,7 +186,7 @@ internal partial class GestionUsuariosViewModel : ObservableObject
 	/// </summary>
 	/// <remarks>
 	/// La pantalla reparte permisos y hasta ahora no decía cuáles: la atribución rol → permisos sólo
-	/// estaba escrita en <c>Domain/Usuarios/Rol.cs</c> y en los diagramas de <c>docs/uml/</c>, así que
+	/// estaba escrita en <c>Domain/Usuarios/Rol.cs</c> y en los diagramas de casos de uso, así que
 	/// el administrador elegía un rol por su nombre y averiguaba qué había concedido entrando con esa
 	/// cuenta. Es presentación de un dato del dominio: se lee, no se reescribe acá.
 	/// </remarks>

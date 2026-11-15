@@ -11,7 +11,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Mapeo;
 
 /// <summary>
-/// US3-1 / Edge Cases: el mapeo es explícito, en español y con <c>snake_case</c>
+/// El mapeo es explícito, en español y con <c>snake_case</c>
 /// (<c>ToTable("docente")</c>, <c>HasColumnName("fecha_nacimiento")</c>), usa TPT para la
 /// jerarquía <see cref="Persona"/>/<see cref="Docente"/>/<see cref="Alumno"/> y aplica la
 /// convención global <c>string → MaxLength(50)</c>. Se verifica sobre el modelo de EF Core,
@@ -72,8 +72,8 @@ public sealed class MapeoSnakeCaseYLongitudesTests : BaseIntegracion
 	/// 50 —<c>calle</c>, <c>localidad</c>, <c>provincia</c>, <c>pais</c>, <c>descripcion</c>,
 	/// <c>apellido</c>, <c>nombre</c>, <c>email</c>— lo declaran con <c>HasMaxLength(50)</c> una por
 	/// una. El <c>HaveMaxLength(50)</c> de <c>EdusisDBContext:78</c> es una red de seguridad que nada
-	/// ejercita, así que no hay propiedad sobre la que observarla sin inventar una. Queda registrado
-	/// en INFRA-20; lo que esta prueba fija es lo que sí es verificable.
+	/// ejercita, así que no hay propiedad sobre la que observarla sin inventar una. Lo que esta
+	/// prueba fija es lo que sí es verificable.
 	/// </para>
 	/// </remarks>
 	[RequiereSqlServerFact]

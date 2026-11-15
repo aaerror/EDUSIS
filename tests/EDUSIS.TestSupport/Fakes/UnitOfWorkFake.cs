@@ -16,7 +16,7 @@ namespace EDUSIS.TestSupport.Fakes;
 /// <summary>
 /// Doble en memoria de <see cref="IUnitOfWork"/> para las pruebas de los servicios de <c>Core</c>
 /// (US2). Reemplaza la persistencia por repos respaldados por <c>List&lt;T&gt;</c> y expone
-/// contadores de verificación (contracts/test-support-api.md §4.1):
+/// contadores de verificación:
 /// <list type="bullet">
 ///   <item><see cref="CantidadDeGuardados"/> — cuántas veces se llamó a <see cref="GuardarCambiosAsync"/>.</item>
 ///   <item><see cref="EventosPublicados"/> — eventos de dominio drenados al guardar (si <see cref="PublicarEventos"/>).</item>

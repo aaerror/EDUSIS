@@ -10,7 +10,7 @@ using Xunit;
 namespace EDUSIS.EndToEndTests.Flujos;
 
 /// <summary>
-/// Flujo e2e 1 (SC-003 / data-model.md §6): alta de alumno desde la fachada
+/// Flujo e2e 1: alta de alumno desde la fachada
 /// <see cref="IServicioAlumno.RegistrarAlumnoAsync"/> hasta SQL Server real, con la composición
 /// de dependencias de producción. Se verifica en un <em>scope</em> nuevo —como haría otra
 /// pantalla— que el alumno quedó persistido con todos sus datos, incluidos acentos y <c>ñ</c>.

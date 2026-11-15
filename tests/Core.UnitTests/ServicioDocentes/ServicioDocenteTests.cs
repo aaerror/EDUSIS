@@ -15,10 +15,10 @@ namespace Core.UnitTests.ServicioDocentes;
 
 /// <summary>
 /// <see cref="IServicioDocente"/>: los métodos públicos (los de licencias quedan comentados
-/// en la interfaz, FR-013) con camino feliz y de error. Las dos bajas —<c>DesafectarDocenteAsync</c>,
+/// en la interfaz) con camino feliz y de error. Las dos bajas —<c>DesafectarDocenteAsync</c>,
 /// que cierra el legajo, y <c>EliminarDocenteAsync</c>, que lo borra— salieron de partir el viejo
-/// <c>QuitarDocenteAsync</c>, que decía "quitar" y desafectaba (CORE-24). Las dos devuelven
-/// <see cref="Task"/> desde H-018 y propagan sus excepciones con normalidad.
+/// <c>QuitarDocenteAsync</c>, que decía "quitar" y desafectaba. Las dos devuelven
+/// <see cref="Task"/> y propagan sus excepciones con normalidad.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioDocenteTests
@@ -172,10 +172,9 @@ public class ServicioDocenteTests
 	}
 
 	/// <summary>
-	/// El CUIL y el legajo son las otras dos reglas de unicidad del alta, y hasta el 2026-11-14 ninguna
-	/// de las dos tenía prueba: el único test de este bloque cubría el D.N.I., así que las tres se
-	/// resolvían con un <c>ArgumentException</c> del BCL y nadie podía notar si dos de ellas dejaban de
-	/// dispararse. Se agregan al partir esa excepción en una clase por regla.
+	/// El CUIL y el legajo son las otras dos reglas de unicidad del alta, y cada una se lanza con su
+	/// propia excepción (una clase por regla) en lugar de un <c>ArgumentException</c> del BCL, que no
+	/// permitiría notar si alguna dejara de dispararse.
 	/// </summary>
 	[Fact]
 	public async Task RegistrarDocenteAsync_rechaza_un_CUIL_ya_registrado()
@@ -256,7 +255,7 @@ public class ServicioDocenteTests
 	#endregion
 
 	#region Baja institucional
-	// QuitarDocenteAsync se partió en dos el 2026-11-06 (CORE-24): decía "quitar" y desafectaba, con
+	// QuitarDocenteAsync se partió en dos: decía "quitar" y desafectaba, con
 	// el borrado real comentado en la línea de al lado. Estas dos pruebas pasaron a nombre nuevo sin
 	// cambiar lo que afirman, porque DesafectarDocenteAsync hace exactamente lo que hacía.
 	[Fact]

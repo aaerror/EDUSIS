@@ -16,7 +16,7 @@ namespace EDUSIS.Seed;
 /// sembrados por <c>HasData</c> en la migración: son parte del esquema, no del dataset.
 /// </para>
 /// <para>
-/// Es exactamente el error que la suite de integración tiene abierto como TEST-09:
+/// Es exactamente el error que tiene hoy la suite de integración:
 /// <c>SqlServerFixture</c> inicializa <c>Respawner</c> ignorando sólo
 /// <c>__EFMigrationsHistory</c>, así que entre pruebas borra también los datos de referencia y
 /// doce pruebas fallan contra <c>FK_CURSANTE_CICLO_LECTIVO</c>. Acá la lista es explícita para

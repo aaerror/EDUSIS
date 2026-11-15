@@ -228,7 +228,7 @@ public class GestionHorariosViewModelTests
 	/// </summary>
 	/// <remarks>
 	/// <c>CatedraResponse.CargaHoraria</c> es opcional. Apagar el alta sobre un dato que no se tiene
-	/// seria mas estricto que el dominio, que es el defecto que docs/ui-ux.md ya corrigio en los cuatro
+	/// seria mas estricto que el dominio, que es el mismo defecto ya corregido en los cuatro
 	/// botones de las designaciones.
 	/// </remarks>
 	[Fact]

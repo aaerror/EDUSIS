@@ -400,7 +400,7 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	/// Es exactamente lo que hacía <c>QuitarDocenteAsync</c>, con el nombre que le corresponde. Ese
 	/// método decía "quitar" y tenía el borrado real comentado en la línea de al lado
 	/// (<c>// _unitOfWork.Docentes.Eliminar(docenteID);</c>): un soft delete con nombre de borrado,
-	/// que es el defecto que CORE-24 relevó. Se partió en dos el 2026-11-06 siguiendo la regla de que
+	/// que es un nombre que miente. La regla es que
 	/// <em>eliminar</em> sea siempre borrado físico y que el soft delete lleve una palabra de negocio
 	/// propia — acá, <em>desafectar</em>, que es la que ya usaba el dominio
 	/// (<c>Docente.Desafectar()</c>, con su <c>DocenteDesafectadoDomainEvent</c>).
@@ -544,8 +544,8 @@ internal class ServicioDocente : IServicio, IServicioDocente
 	/// Qué destruiría eliminar este docente, y qué lo impide si algo lo impide.
 	/// </summary>
 	/// <remarks>
-	/// Lectura <strong>con</strong> guarda de permiso, misma asimetría deliberada frente a CORE-16
-	/// que las de alumno, división y curso: existe sólo para servir al borrado.
+	/// Lectura <strong>con</strong> guarda de permiso, misma asimetría deliberada frente a las lecturas abiertas
+	/// de <c>Core</c> que las de alumno, división y curso: existe sólo para servir al borrado.
 	///
 	/// <strong>No</strong> informa cuántas planillas firmó, y es una decisión. Contarlas exigiría una
 	/// consulta que filtre <c>planilla_asistencia</c> por <c>preceptor_id</c>, y esa columna se quedó

@@ -19,7 +19,7 @@ public class LegajoStoreTests
 	[Trait("Categoria", "Unidad")]
 	public void Un_store_nuevo_no_nace_en_Guid_Empty()
 	{
-		// UI-34 de docs/todos.md: PersonaID era un Guid no nulable que arrancaba en Guid.Empty, un
+		// PersonaID era un Guid no nulable que arrancaba en Guid.Empty, un
 		// centinela que significa lo mismo que null pero que el compilador no distingue. Con eso,
 		// "nadie eligió una persona" llegaba a Core como un identificador cualquiera.
 		var store = new LegajoStore();

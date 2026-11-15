@@ -28,9 +28,8 @@ namespace WPF_Desktop.Store;
 /// Sobre el <c>null!</c> que aparece en varias implementaciones: el valor de construcción de esas
 /// propiedades ES <c>null</c> —nadie eligió todavía un curso, una división ni una materia—, pero
 /// están declaradas como referencia no anulable con <c>Nullable</c> habilitado, así que el
-/// compilador pide el perdón explícito. Declararlas <c>CursoSeleccionado?</c> es lo correcto y es la
-/// dirección que marca UI-34 de <c>docs/todos.md</c> para los centinelas de este drill-down;
-/// hacerlo arrastra una guarda de nulidad a cada ViewModel que las lee, y eso es un cambio aparte.
+/// compilador pide el perdón explícito. Declararlas <c>CursoSeleccionado?</c> es lo correcto, pero
+/// arrastra una guarda de nulidad a cada ViewModel que las lee, y eso es un cambio aparte.
 /// </para>
 /// </remarks>
 internal interface IEstadoDeSesion

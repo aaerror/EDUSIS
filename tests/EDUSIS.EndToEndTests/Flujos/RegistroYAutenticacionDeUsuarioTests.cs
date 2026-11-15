@@ -14,7 +14,7 @@ using Xunit;
 namespace EDUSIS.EndToEndTests.Flujos;
 
 /// <summary>
-/// Flujo e2e 4 (SC-003 / data-model.md §6): registro de un usuario para un docente
+/// Flujo e2e 4: registro de un usuario para un docente
 /// (<see cref="IServicioUsuario.RegistrarUsuarioAsync"/>) y autenticación posterior
 /// (<see cref="IServicioAutenticacion.Login"/>) con credenciales válidas e inválidas, desde la
 /// fachada hasta SQL Server real con la composición de dependencias de producción (hash/salt

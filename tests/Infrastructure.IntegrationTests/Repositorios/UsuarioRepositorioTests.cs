@@ -93,7 +93,7 @@ public sealed class UsuarioRepositorioTests : BaseIntegracion
 	/// siempre está poblada.
 	/// </para>
 	/// <para>
-	/// Por <c>Id</c> y no por descripción, siguiendo la decisión #6 de <c>plan/rbac-y-seed.md</c>.
+	/// Por <c>Id</c> y no por descripción: la descripción es texto editable y el <c>Id</c> es la identidad estable del rol.
 	/// </para>
 	/// </remarks>
 	[RequiereSqlServerFact]

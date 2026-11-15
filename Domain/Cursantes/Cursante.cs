@@ -44,7 +44,7 @@ public sealed class Cursante : Entity
 
 		DivisionID = unaDivision;
 
-		// Copia propia del ciclo lectivo, NO la instancia que vino del llamador. Cierra INFRA-18.
+		// Copia propia del ciclo lectivo, NO la instancia que vino del llamador.
 		//
 		// CicloLectivo se mapea con OwnsOne (CursantesConfiguration), y una entidad propiedad de EF
 		// pertenece a exactamente UN dueño: si dos Cursante comparten la misma instancia, EF le

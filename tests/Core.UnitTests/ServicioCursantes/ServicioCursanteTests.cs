@@ -23,8 +23,6 @@ namespace Core.UnitTests.ServicioCursantes;
 /// <see cref="IServicioCursante"/>: inscripción, listado de cursantes, calificaciones
 /// (registrar, quitar, modificar observación, listar) e inasistencia a examen, con camino feliz
 /// y de error para cada caso de uso, más una prueba de <see cref="InscripcionDuplicadaException"/>.
-/// Cierra H-017: <c>RegistrarCalificacionAsync_persiste_la_nota_del_cursante_en_la_materia</c> ya
-/// no está <c>Skip</c>.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioCursanteTests
@@ -464,7 +462,7 @@ public class ServicioCursanteTests
 	[Fact]
 	public async Task ConsultarHistorialDeDivisionesAsync_es_una_lectura_y_no_exige_permiso()
 	{
-		// Patrón vigente del repositorio de código (CORE-16): las lecturas quedan abiertas.
+		// Patrón vigente del repositorio de código: las lecturas quedan abiertas.
 		using var host = new HostDeServicios(sesion: SesionDePrueba.SinPermisos());
 
 		var historial = await host.Resolver<IServicioCursante>()
@@ -502,7 +500,7 @@ public class ServicioCursanteTests
 	}
 	#endregion
 
-	#region RegistrarCalificacionAsync (H-017)
+	#region RegistrarCalificacionAsync
 	[Fact]
 	public async Task RegistrarCalificacionAsync_con_una_inscripcion_existente_no_falla()
 	{

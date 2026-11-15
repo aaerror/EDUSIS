@@ -131,16 +131,11 @@ public sealed class Division : Entity
 
 	// Acá vivía ValidarSePuedeEliminar(NivelEducativo, int): una división de Secundaria con
 	// matrícula no se eliminaba nunca y una de Primaria sólo por debajo de MINIMO_MATRICULA_PRIMARIA
-	// (15). La regla se quitó el 2026-11-06 por decisión de negocio, no por limpieza: eliminar una
-	// división pasó a ser borrado físico que cascadea su matrícula —cátedras, planillas, cursantes y
+	// (15). La regla se quitó por decisión de negocio, no por limpieza: eliminar una
+	// división es borrado físico que cascadea su matrícula —cátedras, planillas, cursantes y
 	// sus calificaciones—, informada por el diálogo de confirmación de
-	// ServicioDivision.ConsultarImpactoEliminacionDivisionAsync.
-	//
-	// El requerimiento que la sostenía (RF-02 de docs/uml/requerimientos-funcionales.md, y la regla
-	// de CU-S11 en casos-uso-secretaria.md) se reescribió en la misma pasada. Vale la pena saberlo
-	// antes de "restaurar" la guarda: ese RF ya había sido corregido el 2026-11-03 EN LA DIRECCIÓN
-	// CONTRARIA, para alinearlo con esta invariante, así que el texto que hoy está en docs/ es el
-	// segundo que describe esta operación. DivisionNoEliminableException y
+	// ServicioDivision.ConsultarImpactoEliminacionDivisionAsync. No restaurar la guarda: RF-02 y
+	// CU-02 ya no la exigen. DivisionNoEliminableException y
 	// DivisionConMatriculaSuficienteException se borraron con ella.
 	#endregion
 }

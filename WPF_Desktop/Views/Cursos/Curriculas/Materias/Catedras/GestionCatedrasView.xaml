@@ -16,8 +16,7 @@
 		cuando un encabezado de columna los dice una sola vez. Dejaba los tres números fuera de
 		Celda.Numero, que es la que los pone en cifras tabulares, y son justamente tres números que
 		se comparan entre cátedras. Y era la única lista del sistema sin el estado vacío del tema
-		—lo traía a mano, colgado de su HasItems—, que es lo que docs/ui-ux.md anotaba como
-		pendiente.
+		—lo traía a mano, colgado de su HasItems—.
 
 		EL ALTA SUBIÓ AL ENCABEZADO. Necesita UN dato, la división, así que es el caso de Divisiones
 		—el campo al lado del botón, los dos como un solo grupo de acción— y no el de Horarios, que

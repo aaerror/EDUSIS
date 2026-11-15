@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<!--
-		Poblador de la base con la escuela demo (plan/rbac-y-seed.md, Fase 7).
+		Poblador de la base con la escuela demo.
 
 		FUERA de EDUSIS.sln a propósito, mismo criterio que Tests/WPF_Desktop.UnitTests:
 		es una herramienta de desarrollo, no parte del producto. Así `dotnet build

@@ -10,18 +10,18 @@ namespace EDUSIS.TestSupport.Infraestructura;
 
 /// <summary>
 /// Fixture de SQL Server para las suites de integración y end-to-end
-/// (contracts/test-support-api.md §5.2). Una instancia por <em>collection</em>.
+/// Una instancia por <em>collection</em>.
 ///
 /// <para>
 /// <see cref="InitializeAsync"/>: si no hay motor disponible marca <see cref="Omitir"/> y
 /// retorna; si existe <c>EDUSIS_TEST_SQLSERVER</c> la usa; si no, arranca un contenedor
 /// <c>mcr.microsoft.com/mssql/server:2022-latest</c>. Luego aplica las migraciones EF Core
-/// existentes por código (<c>Database.Migrate()</c>, FR-019) e inicializa <c>Respawner</c>.
+/// existentes por código (<c>Database.Migrate()</c>) e inicializa <c>Respawner</c>.
 /// </para>
 ///
 /// <para>
-/// Cualquier fallo al preparar la base (contenedor que no levanta, migración que no aplica —
-/// FR-019/FR-018) se traduce en <see cref="Omitir"/> = <c>true</c> con <see cref="MotivoOmision"/>
+/// Cualquier fallo al preparar la base (contenedor que no levanta, migración que no aplica)
+/// se traduce en <see cref="Omitir"/> = <c>true</c> con <see cref="MotivoOmision"/>
 /// explicativo: las pruebas se omiten (skip), la ejecución no se marca como fallida.
 /// </para>
 /// </summary>
@@ -32,7 +32,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 	private Respawner? _respawner;
 	private bool _contenedorPropio;
 
-	/// <summary>Cadena a la base de prueba. Nunca es la de <c>InfrastructureDI</c> (FR-016).</summary>
+	/// <summary>Cadena a la base de prueba. Nunca es la de <c>InfrastructureDI</c>.</summary>
 	public string CadenaDeConexion { get; private set; } = string.Empty;
 
 	/// <summary><c>true</c> cuando no hay base disponible o no se pudo preparar el esquema.</summary>
@@ -106,8 +106,8 @@ public sealed class SqlServerFixture : IAsyncLifetime
 	}
 
 	/// <summary>
-	/// Vacía las tablas de datos conservando el esquema y los catálogos de referencia (FR-009;
-	/// ver <see cref="TablasDeReferencia"/>). Se llama en el <c>InitializeAsync</c> de cada clase
+	/// Vacía las tablas de datos conservando el esquema y los catálogos de referencia (ver
+	/// <see cref="TablasDeReferencia"/>). Se llama en el <c>InitializeAsync</c> de cada clase
 	/// de prueba. No-op si la base se omite.
 	/// </summary>
 	public async Task ResetAsync()
@@ -132,10 +132,10 @@ public sealed class SqlServerFixture : IAsyncLifetime
 		if (await FaltaAlgunCatalogoAsync())
 		{
 			// La base ya existía con los catálogos vaciados: el estado que dejaba este mismo
-			// fixture antes de ignorarlos (TEST-09). `Migrate()` no los repone porque el
+			// fixture antes de ignorarlos. `Migrate()` no los repone porque el
 			// historial dice que la migración está aplicada y el `InsertData` no vuelve a
 			// correr, así que la única forma de replicar el `HasData` es recrear el esquema.
-			// Es seguro: `GarantizarQueNoEsProduccion` ya corrió (FR-016) y la base de prueba
+			// Es seguro: `GarantizarQueNoEsProduccion` ya corrió y la base de prueba
 			// es desechable por contrato.
 			await contexto.Database.EnsureDeletedAsync();
 			await contexto.Database.MigrateAsync();
@@ -247,7 +247,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 	}
 
 	/// <summary>
-	/// FR-016: aborta si la cadena de prueba apunta a la base hardcodeada en
+	/// Aborta si la cadena de prueba apunta a la base hardcodeada en
 	/// <c>InfrastructureDI</c> (<c>localhost</c> / <c>EdusisDB</c>).
 	/// </summary>
 	private static void GarantizarQueNoEsProduccion(string cadena)
@@ -262,7 +262,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 		{
 			throw new InvalidOperationException(
 				"La cadena de conexión de prueba apunta a la base de producción (localhost / EdusisDB). " +
-				"Definí EDUSIS_TEST_SQLSERVER con una base vacía y desechable (FR-016).");
+				"Definí EDUSIS_TEST_SQLSERVER con una base vacía y desechable.");
 		}
 	}
 	#endregion

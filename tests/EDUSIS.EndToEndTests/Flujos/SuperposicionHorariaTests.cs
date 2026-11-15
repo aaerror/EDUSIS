@@ -29,8 +29,8 @@ namespace EDUSIS.EndToEndTests.Flujos;
 /// siempre, porque <c>CatedraRepositorioFake</c> devuelve agregados construidos a mano cuyas
 /// colecciones están completas por definición. Contra EF, en cambio, cada colección está cargada o
 /// vacía según lo que la consulta haya pedido, y una colección vacía no hace fallar nada: hace que
-/// el invariante **no encuentre colisiones**. Es la ceguera de INFRA-19 y CORE-23 aplicada a una
-/// regla de autorización de horarios.
+/// el invariante **no encuentre colisiones**. Es la ceguera de los fakes en memoria frente a EF
+/// aplicada a una regla de autorización de horarios.
 /// </para>
 /// <para>
 /// <strong>De qué cuelga el segundo invariante: <c>.Include(x => x.SituacionesRevista)</c> en
@@ -45,8 +45,7 @@ namespace EDUSIS.EndToEndTests.Flujos;
 /// <c>CatedraRepositorioTests.BuscarPorIDAsync_carga_horarios_y_situaciones_revista</c>, y conviene
 /// no sobrevender lo que estas pruebas agregan: borrarlo ya daba rojo antes de que existieran. Lo
 /// que no existía es una prueba de que los dos invariantes <em>se disparen</em> —que la excepción
-/// salga del caso de uso con las cátedras vecinas leídas de la base—, que es lo que <c>TEST-04</c>
-/// pedía. Las que había viven en <c>Core.UnitTests</c> contra <c>CatedraRepositorioFake</c>, y ahí
+/// salga del caso de uso con las cátedras vecinas leídas de la base—. Las que había viven en <c>Core.UnitTests</c> contra <c>CatedraRepositorioFake</c>, y ahí
 /// las colecciones están completas porque el fake las construye así, no porque una consulta las
 /// haya traído.
 /// </para>
@@ -57,11 +56,10 @@ namespace EDUSIS.EndToEndTests.Flujos;
 /// redundante, y borrarlo no rompería ninguna de estas pruebas.
 /// </para>
 /// <para>
-/// Cubre dos de los cuatro invariantes que <c>TEST-04</c> declaraba sin cobertura. Los otros dos
-/// —unicidad de inscripción por <c>(Alumno, CicloLectivo)</c> y preceptor único— ya estaban
+/// Cubre dos de los cuatro invariantes que dependen de consultas a la base. Los otros dos
+/// —unicidad de inscripción por <c>(Alumno, CicloLectivo)</c> y preceptor único— están
 /// cubiertos contra SQL Server en <c>CursanteRepositorioTests</c> y <c>DivisionRepositorioTests</c>,
-/// igual que el nombre de materia único por currícula: la premisa de la fila ("las consultas que
-/// los resuelven todavía no las implementa <c>Core</c>/<c>Infrastructure</c>") había vencido.
+/// igual que el nombre de materia único por currícula.
 /// </para>
 /// </remarks>
 public sealed class SuperposicionHorariaTests : BaseE2E

@@ -9,7 +9,7 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Mapeo;
 
 /// <summary>
-/// US3-1: persistir y releer un <see cref="Usuario"/> con roles. Verifica la relación
+/// Persistir y releer un <see cref="Usuario"/> con roles. Verifica la relación
 /// muchos-a-muchos <c>usuario</c> ↔ <c>roles</c> a través de la tabla puente <c>usuario_rol</c>.
 /// </summary>
 public sealed class MapeoDeUsuarioTests : BaseIntegracion

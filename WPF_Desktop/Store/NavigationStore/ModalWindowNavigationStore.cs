@@ -4,7 +4,7 @@ namespace WPF_Desktop.Store.NavigationStore;
 /// El ViewModel activo de la ventana modal, y si hay una abierta.
 /// </summary>
 /// <remarks>
-/// El mecanismo de reemplazo y la liberación del scope —UI-18 y UI-49— viven en
+/// El mecanismo de reemplazo y la liberación del scope viven en
 /// <see cref="StoreDeNavegacion"/>. Lo propio de este store es que su vacío significa algo: un modal
 /// sin ViewModel es un modal cerrado, que es lo que leen <c>MainViewModel.ModalEstaAbierto</c> y el
 /// barrido de fin de sesión de <c>App</c>.

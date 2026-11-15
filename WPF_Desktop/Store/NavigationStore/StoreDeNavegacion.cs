@@ -5,7 +5,7 @@ using System;
 namespace WPF_Desktop.Store.NavigationStore;
 
 /// <summary>
-/// Base de los tres stores de navegación: guarda el ViewModel activo de una ventana y, desde UI-18,
+/// Base de los tres stores de navegación: guarda el ViewModel activo de una ventana y
 /// también <strong>el <see cref="IServiceScope"/> del que ese ViewModel salió</strong>, para poder
 /// liberarlo cuando se navega a otra pantalla.
 /// </summary>
@@ -24,10 +24,9 @@ namespace WPF_Desktop.Store.NavigationStore;
 /// <c>Core/Shared/CoreDI.cs</c> documenta para <c>ServicioSeguridad</c>.
 /// </para>
 /// <para>
-/// <strong>Cierra UI-49.</strong> Las tres clases derivadas tenían comentada la línea
-/// <c>//_viewModel?.Dispose();</c> en el setter: al navegar, el ViewModel saliente se reemplazaba sin
-/// disposal ni desuscripción. Lo único que impedía la fuga era que <c>WeakReferenceMessenger</c> usa
-/// referencias débiles. Ahora <see cref="Reemplazar"/> libera el ViewModel saliente si es
+/// <strong>Disposal del saliente.</strong> Reemplazar el ViewModel sin disposal ni desuscripción
+/// dejaría fugas: lo único que las impediría es que <c>WeakReferenceMessenger</c> usa referencias
+/// débiles. Por eso <see cref="Reemplazar"/> libera el ViewModel saliente si es
 /// <see cref="IDisposable"/>, y después su scope.
 /// </para>
 /// </remarks>

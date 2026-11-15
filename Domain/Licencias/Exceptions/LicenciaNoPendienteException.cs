@@ -5,10 +5,8 @@ namespace Domain.Licencias.Exceptions;
 /// La encarnan <c>AprobarLicencia</c>, <c>CancelarLicencia</c> y <c>ValidarSePuedeEliminar</c>.
 /// </summary>
 /// <remarks>
-/// Hasta el 2026-11-14 esta regla se señalaba con <c>ArgumentException("La licencia no se encuentra
-/// pendiente.")</c> en los dos primeros métodos, y el tercero no existía: la baja de una licencia
-/// validaba el estado desde <c>ServicioLicencia</c>, leyendo <c>licencia.Estado</c> y decidiendo por su
-/// cuenta con otra excepción del BCL. Era CORE-22.
+/// Es la única excepción de esta regla: ni el servicio ni el agregado la señalan con una excepción
+/// del BCL.
 /// </remarks>
 public class LicenciaNoPendienteException : Exception
 {

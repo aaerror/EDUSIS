@@ -90,8 +90,8 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 	/// <para>
 	/// El cálculo NO vive acá: la edad la da <c>DatosPersonales.Edad(fechaNacimiento)</c> y el
 	/// veredicto <c>EdadEscolar</c>, las dos en <c>Domain</c>. Este ViewModel sólo las compone y
-	/// redacta. Es la diferencia con <c>UI-28</c>, que sí reimplementa una regla en la
-	/// presentación: acá no se deriva ningún umbral ni ninguna edad esperada.
+	/// redacta: acá no se reimplementa ninguna regla en la presentación, ni se deriva ningún
+	/// umbral ni ninguna edad esperada.
 	/// </para>
 	/// <para>
 	/// Se evalúa en la UI y no en <c>Core</c> porque los dos datos ya están en memoria —la fecha de
@@ -362,7 +362,6 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 		// Sexo y Vivienda entran en la guarda aunque salgan de un combo y no de un campo de
 		// texto: arrancan sin selección y más abajo se les llama .ToString(), así que no
 		// elegirlos no daba el aviso de datos incompletos sino un NullReferenceException.
-		// Lo encontró master en UI-33.
 		var faltantes = new List<string>();
 
 		if (string.IsNullOrWhiteSpace(InformacionPersonal.Apellido)) { faltantes.Add("apellido"); }

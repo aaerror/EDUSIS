@@ -167,7 +167,7 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject, IUbicacion
 			return;
 		}
 
-		// UI-34: con PersonaID tipado como Guid no nulable, llegar acá sin alumno elegido mandaba
+		// Con PersonaID tipado como Guid no nulable, llegar acá sin alumno elegido mandaba
 		// Guid.Empty a Core, que lo rechazaba con un mensaje que no explicaba que faltaba el alumno.
 		if (_legajoStore.PersonaID is null)
 		{

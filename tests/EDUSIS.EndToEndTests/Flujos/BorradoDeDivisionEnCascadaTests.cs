@@ -25,17 +25,14 @@ namespace EDUSIS.EndToEndTests.Flujos;
 /// con rollback. Nada de eso lo puede acreditar <c>UnitOfWorkFake</c>: en LINQ to Objects quitar de
 /// una lista siempre "funciona", no hay <c>FK_CURSANTE_DIVISION</c> que rechace un <c>DELETE</c>
 /// prematuro ni <c>Cascade</c> que arrastre un hijo, así que las pruebas de <c>Core</c> pasan
-/// igual con el orden correcto y con cualquier otro. Es la ceguera de CORE-23 e INFRA-19 sobre una
-/// operación de cuatro pasos.
+/// igual con el orden correcto y con cualquier otro. Es la ceguera de los fakes en memoria frente a EF
+/// sobre una operación de cuatro pasos.
 /// </para>
 /// <para>
-/// Reemplaza lo que pedía <c>TEST-14</c>, cuya premisa venció el 2026-11-06: la fila reclamaba una
-/// prueba que afirmara que el <c>DELETE</c> de una división con inscripciones <em>falla</em> en la
-/// base, para justificar la guarda <c>DivisionConInscripcionesException</c>. Esa guarda se borró
-/// ese día junto con la excepción, cuando la política se dio vuelta y eliminar una división pasó a
-/// arrastrar la matrícula entera (ver <c>ServicioDivisionTests</c>, región
-/// <c>EliminarDivisionAsync</c>). Lo que quedó sin verificar no es el rechazo sino la cascada que
-/// lo reemplazó.
+/// No afirma que el <c>DELETE</c> de una división con inscripciones <em>falle</em> en la base:
+/// eliminar una división arrastra la matrícula entera (ver <c>ServicioDivisionTests</c>, región
+/// <c>EliminarDivisionAsync</c>), así que lo que hay que verificar contra la base no es un rechazo
+/// sino la cascada.
 /// </para>
 /// </remarks>
 public sealed class BorradoDeDivisionEnCascadaTests : BaseE2E

@@ -9,7 +9,7 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 mc:Ignorable="d">
 	<!--
-		ÍNDICE + FICHA. Administración de cuentas; cierra UI-46.
+		ÍNDICE + FICHA. Administración de cuentas.
 
 		La disposición anterior ponía el selector de rol y los botones "Asignar" y "Quitar" ARRIBA,
 		en su propia tarjeta, y la cuenta sobre la que actuaban se elegía en una grilla de abajo: la
@@ -345,8 +345,8 @@
 								una barra de arriba que gobernaba tres acciones a distancia.
 
 								Los seis roles salen de Enumeration.GetAll<Rol>() en el ViewModel, no
-								de un x:Array acá: un catálogo literal en el XAML es el defecto que
-								UI-27 registró para las horas cátedra. El combo muestra Descripcion y
+								de un x:Array acá: un catálogo literal en el XAML se desincroniza
+								del dominio. El combo muestra Descripcion y
 								manda el Id.
 							-->
 							<StackPanel Grid.Row="2" Margin="0 24 0 0" VerticalAlignment="Top">
@@ -366,7 +366,7 @@
 
 								<!--
 									QUÉ CONCEDE EL ROL. La atribución rol → permisos sólo estaba escrita
-									en Domain/Usuarios/Rol.cs y en los diagramas de docs/uml/: el
+									en Domain/Usuarios/Rol.cs y en los diagramas de casos de uso: el
 									administrador elegía un rol por su nombre y averiguaba qué había
 									concedido entrando con esa cuenta.
 								-->

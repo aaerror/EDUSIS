@@ -149,8 +149,8 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Es una lectura y no exige permiso, igual que las otras ~30 consultas de <c>Core</c>
-	/// (CORE-16). Las cuatro excepciones declaradas son las consultas de impacto de borrado, que
+	/// Es una lectura y no exige permiso, igual que las otras ~30 consultas de <c>Core</c>.
+	/// Las cuatro excepciones declaradas son las consultas de impacto de borrado, que
 	/// existen sólo para servir a su borrado; esta sirve a una pantalla.
 	/// </para>
 	/// <para>
@@ -513,7 +513,7 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	/// </summary>
 	/// <remarks>
 	/// Es una lectura y lleva guarda, a diferencia del resto de las consultas de <c>Core</c>, que
-	/// quedan abiertas a propósito (CORE-16). Dos razones: existe únicamente para servir a
+	/// quedan abiertas a propósito. Dos razones: existe únicamente para servir a
 	/// <see cref="EliminarAlumnoAsync"/>, que exige <c>GestionarAlumnos</c>, y lo que devuelve es el
 	/// volumen de la trayectoria académica de una persona. Ninguna pantalla la usa para poblar un
 	/// combo, así que no corre el riesgo que motivó dejar las lecturas abiertas.
@@ -580,7 +580,7 @@ internal class ServicioAlumno : IServicio, IServicioAlumno
 	/// El <c>try</c> del rollback arranca <strong>después</strong> de <c>BeginTransactionAsync</c>, por
 	/// lo mismo que documenta <c>ServicioCurricula.RegistrarCurriculaAsync</c>: si la guarda de
 	/// permiso falla, no hay transacción que revertir y el rollback taparía el
-	/// <c>PermisoDenegadoException</c> con un error de transacción. Ver CORE-19.
+	/// <c>PermisoDenegadoException</c> con un error de transacción.
 	/// </para>
 	/// </remarks>
 	public async Task EliminarAlumnoAsync(EliminarAlumnoRequest request)

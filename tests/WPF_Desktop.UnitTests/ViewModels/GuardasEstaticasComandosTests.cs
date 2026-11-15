@@ -14,7 +14,7 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Nace del defecto que TEST-16 encontró el 2026-11-14 en <c>GestionCursosViewModel</c>: las dos propiedades
+/// Nace de un defecto hallado en <c>GestionCursosViewModel</c>: las dos propiedades
 /// de las que dependía el borrado notificaban con <c>[NotifyPropertyChangedFor(nameof(EliminarCommandAsync))]</c>,
 /// que levanta <c>PropertyChanged</c> para la <strong>propiedad</strong> del comando. El binding relee la
 /// propiedad, obtiene la misma instancia de <c>ICommand</c>, la DP no cambia y <c>ButtonBase</c> no vuelve a

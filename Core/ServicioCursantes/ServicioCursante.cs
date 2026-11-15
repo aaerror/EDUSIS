@@ -242,7 +242,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 	/// </summary>
 	/// <remarks>
 	/// Es una lectura, así que no lleva guarda de permiso ni <c>GuardarCambiosAsync</c>: es el
-	/// patrón vigente de este repositorio de código (CORE-16), no un olvido.
+	/// patrón vigente de las consultas de <c>Core</c>, no un olvido.
 	/// </remarks>
 	public async Task<IReadOnlyCollection<InscripcionHistoricaResponse>> ConsultarHistorialDeDivisionesAsync(ConsultarHistorialRequest request)
 	{

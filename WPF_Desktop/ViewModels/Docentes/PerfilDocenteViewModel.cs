@@ -79,7 +79,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 		_dialogService = dialogService;
 		_perfilBuscadoStore = perfilBuscadoStore;
 
-		// UI-34: la guarda cubre las dos propiedades del store porque se escriben juntas. Con
+		// La guarda cubre las dos propiedades del store porque se escriben juntas. Con
 		// PersonaID tipado como Guid no nulable, "nadie buscó un docente" llegaba como Guid.Empty y
 		// el request salía igual hacia Core, que lo rechazaba sin que la pantalla explicara nada.
 		if (_perfilBuscadoStore.PersonaID is null || string.IsNullOrWhiteSpace(_perfilBuscadoStore.Documento))

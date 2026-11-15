@@ -14,7 +14,7 @@ namespace Core.UnitTests.ServicioUsuarios;
 
 /// <summary>
 /// <see cref="IServicioUsuario"/>: los métodos públicos con camino feliz y de error.
-/// <c>ActualizarRol</c> se reemplazó por <c>AsignarRolAsync</c> / <c>QuitarRolAsync</c> (H-015).
+/// <c>ActualizarRol</c> se reemplazó por <c>AsignarRolAsync</c> / <c>QuitarRolAsync</c>.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class ServicioUsuarioTests
@@ -103,8 +103,8 @@ public class ServicioUsuarioTests
 	}
 
 	/// <remarks>
-	/// <strong>La prueba del bug de UI-46(a).</strong> Hasta el 2026-11-06 el caso de uso recibía el
-	/// rol en el request y <strong>no lo usaba</strong>: construía el <c>Usuario</c> con el ctor sin
+	/// <strong>Fija el rol asignado al registrar.</strong> El defecto que previene: el caso de uso recibía el
+	/// rol en el request y <strong>no lo usaba</strong>, construía el <c>Usuario</c> con el ctor sin
 	/// roles, así que toda cuenta creada nacía sin un solo rol y por lo tanto sin un solo permiso —
 	/// entraba al sistema con el menú entero apagado y sin forma de arreglarlo, porque los dos casos
 	/// de uso de roles no tenían pantalla.

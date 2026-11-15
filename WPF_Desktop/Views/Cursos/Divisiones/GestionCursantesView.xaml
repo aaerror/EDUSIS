@@ -36,8 +36,7 @@
 
 		ASISTENCIAS CUENTA Y NO LISTA, y no es una decisión de diseño: ContarFaltasAsync es la
 		única consulta de asistencias que acepta un cursante, porque el agregado es la planilla
-		—división y fecha—. Listar por alumno necesita una consulta nueva en Core; está anotado
-		en docs/ui-ux.md.
+		—división y fecha—. Listar por alumno necesita una consulta nueva en Core.
 	-->
 	<UserControl.Resources>
 		<!--

@@ -10,8 +10,8 @@ namespace WPF_Desktop.Store;
 /// <c>PersonaID</c> es <c>Guid?</c> y no <c>Guid</c>: tipado como <c>Guid</c> nacía en
 /// <c>Guid.Empty</c>, un valor que significa lo mismo que <c>null</c> pero que el compilador no
 /// distingue, así que "nadie eligió una persona" era indistinguible de una persona real y el
-/// request salía igual hacia <c>Core</c>. Es UI-34 de <c>docs/todos.md</c>; la guarda que lo
-/// acompaña vive en cada ViewModel que lee el store.
+/// request salía igual hacia <c>Core</c>. La guarda que lo acompaña vive en cada ViewModel que lee
+/// el store.
 /// </remarks>
 internal class LegajoStore : IEstadoDeSesion
 {

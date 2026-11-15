@@ -21,8 +21,8 @@ using Xunit;
 namespace WPF_Desktop.UnitTests.ViewModels;
 
 /// <summary>
-/// Cubre <c>UI-05</c> (<see cref="InscripcionAlumnoViewModel"/>) y la parte testeable de <c>UI-04</c>
-/// (<see cref="RegistrarAlumnoViewModel"/>): la inscripcion llega a <see cref="IServicioCursante.InscribirCursanteAsync"/>,
+/// Cubre <see cref="InscripcionAlumnoViewModel"/> y la parte testeable de
+/// <see cref="RegistrarAlumnoViewModel"/>: la inscripcion llega a <see cref="IServicioCursante.InscribirCursanteAsync"/>,
 /// el periodo sale de <see cref="CicloLectivoStore"/>, el alumno de <see cref="LegajoStore"/> y la UI no reimplementa la
 /// validacion de cupo (la hace <c>Core</c>: la UI solo muestra la excepcion).
 /// <para>
@@ -31,7 +31,7 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 /// guarda sobre el codigo fuente justamente porque el MessageBox bloqueaba el hilo de la prueba.
 /// </para>
 /// <para>
-/// Por eso la region "UI-33" cubre el alta por <strong>ejecucion</strong> y no solo por guarda sobre el codigo
+/// Por eso la region del alta de alumno cubre el alta por <strong>ejecucion</strong> y no solo por guarda sobre el codigo
 /// fuente. La guarda estatica se conserva para que la migracion no se revierta por descuido.
 /// </para>
 /// </summary>
@@ -79,7 +79,7 @@ public class AlumnosInscripcionViewModelTests
 
 		/// <summary>
 		/// El doble del servicio de alumnos es del contexto y no una instancia anónima dentro de
-		/// <c>CrearRegistro</c>: las pruebas de la región UI-33 necesitan configurarlo antes de
+		/// <c>CrearRegistro</c>: las pruebas del alta de alumno necesitan configurarlo antes de
 		/// construir el ViewModel y leer qué recibió después.
 		/// </summary>
 		public IServicioAlumno ServicioAlumnos { get; } = Substitute.For<IServicioAlumno>();
@@ -90,7 +90,7 @@ public class AlumnosInscripcionViewModelTests
 		}
 	}
 
-	#region UI-05: InscripcionAlumnoViewModel
+	#region InscripcionAlumnoViewModel
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void El_periodo_sale_del_CicloLectivoStore()
@@ -302,7 +302,7 @@ public class AlumnosInscripcionViewModelTests
 	}
 	#endregion
 
-	#region UI-04: RegistrarAlumnoViewModel
+	#region RegistrarAlumnoViewModel
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public void RegistrarAlumno_toma_el_periodo_inicial_del_CicloLectivoStore()
@@ -380,7 +380,7 @@ public class AlumnosInscripcionViewModelTests
 	}
 	#endregion
 
-	#region UI-33: el alta de alumno, ahora ejecutable
+	#region El alta de alumno por ejecución
 	/// <summary>
 	/// Deja los tres sub-ViewModels con datos válidos, que es la precondición de
 	/// <c>ContinuarCommand</c>: sin esto corta en la guarda de campos vacíos.

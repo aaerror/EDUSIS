@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
 # Ejecuta la suite de pruebas de EDUSIS.
-# Contrato: specs/001-automated-test-suite/contracts/test-execution.md (§2, §3).
 #
 # Uso:
 #   ./Tests/run-tests.sh --rapidas     # sólo Categoria=Unidad (dominio + aplicación, sin BD)
@@ -11,7 +10,7 @@
 #
 # - Se puede ejecutar desde cualquier directorio: resuelve la raíz por git.
 # - Propaga tal cual el código de salida de `dotnet test` (0 = ok, 1 = falló algo).
-#   Una prueba `Skip` (incluidas las de FR-018) nunca produce código 1.
+#   Una prueba `Skip` nunca produce código 1.
 # - Cualquier argumento extra se reenvía a `dotnet test` (p. ej. -v n, --filter ...).
 
 set -euo pipefail

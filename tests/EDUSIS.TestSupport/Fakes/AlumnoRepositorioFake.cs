@@ -18,7 +18,7 @@ public sealed class AlumnoRepositorioFake : RepositorioDePersonasEnMemoria<Alumn
 	/// <c>Contains</c> con <c>OrdinalIgnoreCase</c> imita al <c>LIKE '%…%'</c> del repositorio real
 	/// sobre una colación insensible a mayúsculas. Lo que el fake NO puede imitar es la colación
 	/// insensible a <strong>tildes</strong> de SQL Server: acá "perez" no encuentra a "Pérez" y en
-	/// la base sí. Es la misma ceguera de LINQ to Objects que registra CORE-23; la cubre
+	/// la base sí. Es la ceguera propia de LINQ to Objects frente a EF; la cubre
 	/// <c>AlumnoRepositorioTests</c> contra base real.
 	/// </remarks>
 	public Task<IReadOnlyCollection<Alumno>> BuscarSegunNombreCompletoAsync(string termino)

@@ -28,7 +28,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	/// Docente cuyos puestos se gestionan, fijado una sola vez al construir.
 	/// </summary>
 	/// <remarks>
-	/// UI-34: <c>LegajoStore.PersonaID</c> pasó a ser <c>Guid?</c> y la guarda va acá. Llegar a esta
+	/// <c>LegajoStore.PersonaID</c> es <c>Guid?</c> y la guarda va acá. Llegar a esta
 	/// pantalla sin docente elegido es un defecto de navegación y no un estado de la pantalla:
 	/// <c>GestionDocentesViewModel</c> escribe el store antes de navegar.
 	/// </remarks>

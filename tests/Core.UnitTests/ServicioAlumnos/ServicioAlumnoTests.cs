@@ -250,7 +250,7 @@ public class ServicioAlumnoTests
 	{
 		var alumno = SembrarAlumno();
 
-		// US2-2: el servicio hace catch → LogDebug → throw; la excepción de dominio sube tal cual.
+		// El servicio hace catch → LogDebug → throw; la excepción de dominio sube tal cual.
 		var ex = await Should.ThrowAsync<Exception>(
 			() => _servicio.ActualizarContacto(new CambiarContactoRequest(alumno.Id, "3815550000", "esto-no-es-un-email")));
 
@@ -353,15 +353,15 @@ public class ServicioAlumnoTests
 	}
 
 	/// <remarks>
-	/// <strong>Cambio de comportamiento deliberado (2026-11-05).</strong> Antes era un no-op
+	/// <strong>Cambio de comportamiento deliberado.</strong> Antes era un no-op
 	/// silencioso, porque el servicio delegaba directo en <c>EliminarAsync(id)</c>, que no hace nada
 	/// si el Id no existe. Ahora el caso de uso necesita cargar el alumno para recorrer su
 	/// trayectoria, así que un Id inexistente se reporta en lugar de pasar desapercibido: pedir el
 	/// borrado de alguien que no está es un error del llamador, no un éxito.
 	///
 	/// Sigue lanzando <c>NullReferenceException</c> por <c>BuscarAlumnoPorIDAsync</c>, que es el
-	/// helper compartido de los otros siete métodos del servicio. Es CORE-20 y se arregla para los 31
-	/// sitios a la vez, no acá: ser consistente con el resto del archivo vale más que limpiar uno.
+	/// helper compartido de los otros siete métodos del servicio. Se arregla para todos los sitios
+	/// a la vez, no acá: ser consistente con el resto del archivo vale más que limpiar uno.
 	/// </remarks>
 	[Fact]
 	public async Task EliminarAlumnoAsync_con_un_Id_inexistente_falla_y_no_borra_nada()
@@ -900,12 +900,12 @@ public class ServicioAlumnoTests
 
 	/// <remarks>
 	/// Es una lectura y no exige permiso, igual que las otras ~30 consultas de <c>Core</c>
-	/// (CORE-16). Las cuatro excepciones declaradas son las de impacto de borrado.
+	/// por convención del repositorio. Las cuatro excepciones declaradas son las de impacto de borrado.
 	/// </remarks>
 	[Fact]
 	public async Task ConsultarResumenAcademicoAsync_es_una_lectura_y_no_exige_permiso()
 	{
-		// Patrón vigente del repositorio de código (CORE-16): las lecturas quedan abiertas.
+		// Patrón vigente del repositorio de código: las lecturas quedan abiertas.
 		var alumno = new AlumnoBuilder().Build();
 		using var host = new HostDeServicios(sembrar: uow => uow.AlumnosFake.Sembrar(alumno),
 											 sesion: SesionDePrueba.SinPermisos());

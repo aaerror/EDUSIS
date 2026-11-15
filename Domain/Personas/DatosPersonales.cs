@@ -125,8 +125,8 @@ public class DatosPersonales : ValueObject
 	/// </summary>
 	/// <remarks>
 	/// <strong>Es estática y pública para que haya una sola implementación de este cálculo.</strong>
-	/// `DOM-20` corrigió acá un defecto que no se ve a simple vista —`Edad()` era días
-	/// transcurridos / 365, así que la edad se adelantaba alrededor de un día cada cuatro años—, y
+	/// Calcular la edad como días transcurridos / 365 es un defecto que no se ve a simple vista —la
+	/// edad se adelanta alrededor de un día cada cuatro años—, y
 	/// cualquier capa que necesite la edad sin tener el agregado delante tiene que pasar por este
 	/// método en lugar de rehacer la resta. Hoy la necesita la pantalla de alta de alumno, que
 	/// compara la edad contra el grado con `Domain.Cursos.EdadEscolar` mientras el alumno todavía

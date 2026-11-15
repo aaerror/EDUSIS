@@ -141,12 +141,10 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Hasta el 2026-11-06 este caso de uso tenía dos guardas y ninguna cascada: una regla de
-	/// negocio por nivel educativo (<c>Division.ValidarSePuedeEliminar</c>) y una guarda de
-	/// integridad que rechazaba el borrado ante una sola inscripción histórica. Las dos se quitaron
-	/// por decisión de negocio, junto con el requerimiento que las sostenía (RF-02 y CU-S11 en
-	/// <c>docs/uml/</c>), para que <em>eliminar</em> signifique lo mismo en los cinco agregados:
-	/// borrado físico, con un diálogo que informa qué se destruye.
+	/// Este caso de uso no tiene guarda de negocio por nivel educativo ni guarda de integridad que
+	/// rechace el borrado ante una inscripción histórica: se quitaron por decisión de negocio, junto
+	/// con el requerimiento que las sostenía (RF-02 y CU-02), para que <em>eliminar</em> signifique
+	/// lo mismo en los cinco agregados: borrado físico, con un diálogo que informa qué se destruye.
 	/// </para>
 	/// <para>
 	/// <strong>El orden de los cuatro pasos lo impone el grafo de claves ajenas, no el gusto.</strong>
@@ -159,8 +157,8 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	/// <para>
 	/// La guarda de autorización corre <strong>antes</strong> de <c>BeginTransactionAsync</c> y el
 	/// rollback va en un <c>try</c> propio, con el molde de <c>ServicioAlumno.EliminarAlumnoAsync</c>:
-	/// es el tercer caso de uso de <c>Core</c> con transacción explícita y el defecto de CORE-19
-	/// —rollback sobre una transacción que nunca se abrió porque la autorización falló— podía
+	/// es el tercer caso de uso de <c>Core</c> con transacción explícita y el defecto de hacer
+	/// rollback sobre una transacción que nunca se abrió porque la autorización falló podría
 	/// reaparecer igual.
 	/// </para>
 	/// </remarks>
@@ -232,8 +230,8 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	/// Qué destruiría eliminar esta división. Lo consume el diálogo de confirmación.
 	/// </summary>
 	/// <remarks>
-	/// <strong>Es una lectura con guarda de permiso</strong>, contra la decisión de alcance de
-	/// CORE-16 que dejó las ~30 consultas de <c>Core</c> abiertas. La asimetría es deliberada y es la
+	/// <strong>Es una lectura con guarda de permiso</strong>, a diferencia de las
+	/// ~30 consultas de <c>Core</c> que quedan abiertas. La asimetría es deliberada y es la
 	/// misma que ya tiene <c>ServicioAlumno.ConsultarImpactoEliminacionAsync</c>: esta consulta existe
 	/// sólo para servir al borrado, lo que devuelve es el volumen de la trayectoria académica de una
 	/// división entera, y no la consume ninguna pantalla ajena ni ningún combo — así que no corre el
@@ -278,7 +276,7 @@ internal class ServicioDivision : IServicio, IServicioDivision
 	#endregion
 
 	// Las tres operaciones de preceptor exigen GestionarPreceptores y no GestionarCursos: el
-	// diagrama de Secretaría (docs/uml/) le da CU-04/05/06 al Encargado de Secretaría, mientras
+	// diagrama de casos de uso de Secretaría le da CU-04/05/06 al Encargado de Secretaría, mientras
 	// que el alta y la baja de divisiones —acá arriba, con GestionarCursos— son de Secretaría
 	// Académica. Eran el mismo permiso y concedían los dos grupos juntos.
 	#region Preceptor
