@@ -34,7 +34,7 @@ public sealed class Alumno : Persona
 		}
 
 		Legajo = legajo;
-		Periodo = RangoFechas.Create(DateTime.Today.Date);
+		Periodo = RangoFechas.Create(Reloj.Hoy);
 
 		AgregarEvento(new AlumnoInscriptoDomainEvent(Id));
 	}
@@ -72,7 +72,7 @@ public sealed class Alumno : Persona
 			throw new AlumnoInactivoException();
 		}
 
-		Periodo = Periodo.ActualizarFechaFin(DateTime.Today.Date);
+		Periodo = Periodo.ActualizarFechaFin(Reloj.Hoy);
 		AgregarEvento(new AlumnoDesinscriptoDomainEvent(Id));
 	}
 	#endregion

@@ -111,7 +111,7 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 				throw new FechasInconsistentesException();
 			}
 
-			if (request.Desde.Date > DateTime.Today)
+			if (request.Desde.Date > Reloj.Hoy)
 			{
 				throw new PeriodoFuturoException();
 			}
@@ -281,7 +281,7 @@ internal class ServicioDocumento : IServicio, IServicioDocumento
 
 	private MetadatosEmision Emitir(string? finalidad) =>
 		new(Localidad: _institucion.Localidad,
-			Fecha: DateTime.Today,
+			Fecha: Reloj.Hoy,
 			Finalidad: string.IsNullOrWhiteSpace(finalidad) ? null : finalidad.Trim());
 	#endregion
 

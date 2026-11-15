@@ -105,7 +105,7 @@ public sealed class Cursante : Entity
 			throw new FechaBajaAnteriorAlInicioException();
 		}
 
-		if (fechaBaja.Date > DateTime.Today)
+		if (fechaBaja.Date > Reloj.Hoy)
 		{
 			throw new FechaBajaFuturaException();
 		}

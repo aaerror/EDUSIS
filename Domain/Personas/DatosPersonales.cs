@@ -85,7 +85,7 @@ public class DatosPersonales : ValueObject
 
 	private void EstablecerFechaNacimiento(DateTime fechaNacimiento)
 	{
-		if (fechaNacimiento.Date > DateTime.Today.Date)
+		if (fechaNacimiento.Date > Reloj.Hoy)
 		{
 			throw new FechaNacimientoFuturaException(fechaNacimiento.ToString("d"));
 		}
@@ -125,7 +125,7 @@ public class DatosPersonales : ValueObject
 	/// </remarks>
 	public static int Edad(DateTime fechaNacimiento)
 	{
-		var hoy = DateTime.Today;
+		var hoy = Reloj.Hoy;
 		var edad = hoy.Year - fechaNacimiento.Year;
 
 		// Si el cumpleaños de este año todavía no llegó, no cumplió años.

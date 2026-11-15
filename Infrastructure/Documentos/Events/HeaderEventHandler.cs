@@ -1,4 +1,5 @@
-﻿using Infrastructure.Documentos.Content;
+﻿using Domain.Shared;
+using Infrastructure.Documentos.Content;
 using iText.Kernel.Colors;
 using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
@@ -67,7 +68,7 @@ internal class HeaderEventHandler : AbstractPdfDocumentEventHandler
 			.SetBorderBottom(new SolidBorder(LINEA, 0.75f));
 
 		tabla.AddCell(Celda(_institucion, _fuentes.Negrita, TextAlignment.LEFT));
-		tabla.AddCell(Celda($"{ _titulo } · {DateTime.Today:dd/MM/yyyy}", _fuentes.Italica, TextAlignment.RIGHT));
+		tabla.AddCell(Celda($"{ _titulo } · {Reloj.Hoy:dd/MM/yyyy}", _fuentes.Italica, TextAlignment.RIGHT));
 
 		return tabla;
 	}

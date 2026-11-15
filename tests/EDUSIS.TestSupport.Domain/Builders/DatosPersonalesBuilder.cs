@@ -1,4 +1,5 @@
 using Domain.Personas;
+using Domain.Shared;
 
 namespace EDUSIS.TestSupport.Builders;
 
@@ -60,7 +61,7 @@ public sealed class DatosPersonalesBuilder
 	/// <summary>Fija la fecha de nacimiento de modo que <c>DatosPersonales.Edad()</c> devuelva <paramref name="edad"/>.</summary>
 	public DatosPersonalesBuilder ConEdad(int edad)
 	{
-		_fechaNacimiento = DateTime.Today.AddYears(-edad);
+		_fechaNacimiento = Reloj.Hoy.AddYears(-edad);
 		return this;
 	}
 

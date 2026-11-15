@@ -44,7 +44,7 @@ public sealed class Docente : Persona
 			throw new DocenteEnEdadJubilatoriaException();
 		}
 
-		if (fechaAlta.Date > DateTime.Today.Date)
+		if (fechaAlta.Date > Reloj.Hoy)
 		{
 			throw new FechaAltaDocenteFuturaException(fechaAlta.Date.ToString("D"));
 		}
@@ -87,7 +87,7 @@ public sealed class Docente : Persona
 			throw new DocenteInactivoException();
 		}
 
-		Periodo = Periodo.ActualizarFechaFin(DateTime.Today.Date);
+		Periodo = Periodo.ActualizarFechaFin(Reloj.Hoy);
 		Activo = false;
 		AgregarEvento(new DocenteDesafectadoDomainEvent(Id));
 	}

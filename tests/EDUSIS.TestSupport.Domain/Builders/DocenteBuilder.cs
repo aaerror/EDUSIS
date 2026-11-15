@@ -1,4 +1,5 @@
 using Domain.Docentes;
+using Domain.Shared;
 
 namespace EDUSIS.TestSupport.Builders;
 
@@ -15,7 +16,7 @@ public sealed class DocenteBuilder
 		.ConDatosPersonales(new DatosPersonalesBuilder().ConEdad(38));
 	private string _legajo = "100200";
 	private string _cuil = "20301112229";
-	private DateTime _fechaAlta = DateTime.Today.AddYears(-3);
+	private DateTime _fechaAlta = Reloj.Hoy.AddYears(-3);
 	private readonly List<PuestoPendiente> _puestos = new();
 	#endregion
 
@@ -75,7 +76,7 @@ public sealed class DocenteBuilder
 	/// </summary>
 	public DocenteBuilder ConPuesto(string posicion = "Profesor", string estado = "Pendiente", DateTime? fechaInicio = null, DateTime? fechaFin = null)
 	{
-		_puestos.Add(new PuestoPendiente(posicion, estado, fechaInicio ?? DateTime.Today, fechaFin));
+		_puestos.Add(new PuestoPendiente(posicion, estado, fechaInicio ?? Reloj.Hoy, fechaFin));
 		return this;
 	}
 	#endregion

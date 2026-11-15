@@ -51,7 +51,7 @@ public sealed class Calificacion : Entity
 			throw new SinDatosMateriaException();
 		}
 
-		if (fecha.Date > DateTime.Today.Date)
+		if (fecha.Date > Reloj.Hoy)
 		{
 			throw new FechaDeExamenPosteriorAHoyException();
 		}

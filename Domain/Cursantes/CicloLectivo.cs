@@ -31,7 +31,7 @@ public class CicloLectivo : ValueObject
 	}
 	#endregion
 
-	public bool AñoEnCurso() => int.Parse(Periodo) == DateTime.Now.Year;
+	public bool AñoEnCurso() => int.Parse(Periodo) == Reloj.Hoy.Year;
 
 	public override IEnumerable<object> GetEqualityCommponents()
 	{

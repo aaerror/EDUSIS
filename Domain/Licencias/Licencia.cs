@@ -49,7 +49,7 @@ public sealed class Licencia : Entity
 			RangoFechas.Create(fechaInicio),
 			observacion)
 	{
-		if (fechaInicio.Date > DateTime.Today.Date)
+		if (fechaInicio.Date > Reloj.Hoy)
 		{
 			throw new FechaDeInicioDeLicenciaFuturaException();
 		}
@@ -112,7 +112,7 @@ public sealed class Licencia : Entity
 		}
 
 		Estado = Estado.Finalizada;
-		Periodo = Periodo.ActualizarFechaFin(DateTime.Today);
+		Periodo = Periodo.ActualizarFechaFin(Reloj.Hoy);
 
 		AgregarEvento(new LicenciaFinalizadaEvent(Id, DocenteID));
 	}
@@ -147,7 +147,7 @@ public sealed class Licencia : Entity
 
 	public void EstablecerFechaFinalizacion(DateTime fechaFin)
 	{
-		if (fechaFin.Date <= DateTime.Today.Date)
+		if (fechaFin.Date <= Reloj.Hoy)
 		{
 			throw new FechaDeFinalizacionNoPosteriorAHoyException();
 		}

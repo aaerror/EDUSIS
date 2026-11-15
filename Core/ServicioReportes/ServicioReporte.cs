@@ -371,7 +371,7 @@ internal class ServicioReporte : IServicio, IServicioReporte
 	}
 
 	private MetadatosEmision Emitir() =>
-		new(Localidad: _institucion.Localidad, Fecha: DateTime.Today, Finalidad: null);
+		new(Localidad: _institucion.Localidad, Fecha: Reloj.Hoy, Finalidad: null);
 	#endregion
 
 	#region Resolución

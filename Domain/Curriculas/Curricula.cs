@@ -34,7 +34,7 @@ public sealed class Curricula : Entity
 		Periodo.EstaVigente();
 
 	public void Desafectar() =>
-		EstablecerFechaFinalizacion(DateTime.Today);
+		EstablecerFechaFinalizacion(Reloj.Hoy);
 
 	public void EstablecerFechaFinalizacion(DateTime fechaFin)
 	{

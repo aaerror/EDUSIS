@@ -38,7 +38,7 @@ public sealed class PlanillaAsistencia : Entity
 			throw new SinDatosPreceptorException();
 		}
 
-		if (fecha.Date > DateTime.Today)
+		if (fecha.Date > Reloj.Hoy)
 		{
 			throw new FechaPlanillaFuturaException();
 		}

@@ -124,7 +124,7 @@ public sealed class SituacionRevista : Entity
 			throw new CargoConFechaFinalizacionException();
 		}
 
-		if (fechaFin.Date <= DateTime.Today.Date)
+		if (fechaFin.Date <= Reloj.Hoy)
 		{
 			var msg = "La fecha de finalización debe ser posterior al día de hoy.";
 			throw new ArgumentException(msg);
@@ -146,7 +146,7 @@ public sealed class SituacionRevista : Entity
 			throw new CargoNoVigenteException();
 		}
 
-		Periodo = Periodo.ActualizarFechaFin(DateTime.Today);
+		Periodo = Periodo.ActualizarFechaFin(Reloj.Hoy);
 		Estado = EstadoSituacionRevista.Finalizado;
 	}
 }

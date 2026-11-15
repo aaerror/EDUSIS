@@ -74,7 +74,7 @@ public sealed class Puesto : Entity
 	/// </summary>
 	private void EstablecerPeriodo(DateTime desde, DateTime? hasta)
 	{
-		if (DateTime.Today.Date > desde.Date)
+		if (Reloj.Hoy > desde.Date)
 		{
 			throw new InicioPuestoPasadoException(nameof(desde));
 		}
@@ -146,7 +146,7 @@ public sealed class Puesto : Entity
 		}
 
 		Estado = EstadoPuesto.Inactivo;
-		Periodo = Periodo.ActualizarFechaFin(fechaFin ?? DateTime.Today.Date);
+		Periodo = Periodo.ActualizarFechaFin(fechaFin ?? Reloj.Hoy);
 	}
 
 	public bool EstaActivo() =>

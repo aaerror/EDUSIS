@@ -34,10 +34,10 @@ public class RangoFechas : ValueObject
 		new(FechaInicio, fechaFin);
 
 	public bool HaIniciado() =>
-		FechaInicio <= DateTime.Today.Date;
+		FechaInicio <= Reloj.Hoy;
 
 	public bool HaFinalizado() =>
-		(FechaFin.HasValue && FechaFin.Value.Date < DateTime.Today.Date);
+		(FechaFin.HasValue && FechaFin.Value.Date < Reloj.Hoy);
 
 	public bool EstaVigente() =>
 		HaIniciado() && !HaFinalizado();
@@ -55,9 +55,9 @@ public class RangoFechas : ValueObject
 
 	public double TiempoTranscrurrido(Tiempo tiempo) => tiempo switch
 	{
-		Tiempo.Dia => HaFinalizado() ? (DateTime.Today - FechaInicio).TotalDays : (FechaFin.Value - FechaInicio).TotalDays,
-		Tiempo.Mes => HaFinalizado() ? ((DateTime.Today - FechaInicio).TotalDays)/12 : ((FechaFin.Value - FechaInicio).TotalDays)/12,
-		Tiempo.Año => HaFinalizado() ? ((DateTime.Today - FechaInicio).TotalDays)/365 : ((FechaFin.Value - FechaInicio).TotalDays)/365,
+		Tiempo.Dia => HaFinalizado() ? (Reloj.Hoy - FechaInicio).TotalDays : (FechaFin.Value - FechaInicio).TotalDays,
+		Tiempo.Mes => HaFinalizado() ? ((Reloj.Hoy - FechaInicio).TotalDays)/12 : ((FechaFin.Value - FechaInicio).TotalDays)/12,
+		Tiempo.Año => HaFinalizado() ? ((Reloj.Hoy - FechaInicio).TotalDays)/365 : ((FechaFin.Value - FechaInicio).TotalDays)/365,
 		_ => throw new ArgumentException("Error al calcular el tiempo transcurrido.")
 	};
 
