@@ -294,13 +294,14 @@ public class CursanteTests
 	}
 
 	[Fact]
-	public void ModificarObservacionCalificacion_con_mas_de_140_caracteres_lanza_ArgumentException()
+	public void ModificarObservacionCalificacion_con_mas_de_140_caracteres_lanza_ExcesoCaracteresException()
 	{
 		var cursante = new CursanteBuilder().Build();
 		var id = cursante.RegistrarCalificacion(Guid.NewGuid(), DateTime.Today, Periodo.PrimerCuatrimestre, false, 8, "Original");
 
-		Should.Throw<ArgumentException>(() => cursante.ModificarObservacionCalificacion(id, new string('a', 141)));
+		var ex = Should.Throw<Exception>(() => cursante.ModificarObservacionCalificacion(id, new string('a', 141)));
 
+		ex.GetType().Name.ShouldBe("ExcesoCaracteresException");
 		cursante.Calificaciones.ShouldHaveSingleItem().Observacion.ShouldBe("Original");
 	}
 

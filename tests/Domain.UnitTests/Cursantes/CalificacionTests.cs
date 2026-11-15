@@ -80,15 +80,19 @@ public class CalificacionTests
 
 	#region Invariantes
 	[Fact]
-	public void Una_fecha_de_examen_futura_lanza_ArgumentException()
+	public void Una_fecha_de_examen_futura_lanza_FechaDeExamenPosteriorAHoyException()
 	{
-		Should.Throw<ArgumentException>(() => Registrar(8, fecha: DateTime.Today.AddDays(1)));
+		var ex = Should.Throw<Exception>(() => Registrar(8, fecha: DateTime.Today.AddDays(1)));
+
+		ex.GetType().Name.ShouldBe("FechaDeExamenPosteriorAHoyException");
 	}
 
 	[Fact]
-	public void Registrar_asistencia_sin_nota_lanza_ArgumentNullException()
+	public void Registrar_asistencia_sin_nota_lanza_NotaRequeridaException()
 	{
-		Should.Throw<ArgumentNullException>(() => Registrar(null));
+		var ex = Should.Throw<Exception>(() => Registrar(null));
+
+		ex.GetType().Name.ShouldBe("NotaRequeridaException");
 	}
 
 	[Theory]
@@ -111,9 +115,11 @@ public class CalificacionTests
 	}
 
 	[Fact]
-	public void Una_observacion_de_mas_de_140_caracteres_lanza_ArgumentException()
+	public void Una_observacion_de_mas_de_140_caracteres_lanza_ExcesoCaracteresException()
 	{
-		Should.Throw<ArgumentException>(() => Registrar(8, new string('á', 141)));
+		var ex = Should.Throw<Exception>(() => Registrar(8, new string('á', 141)));
+
+		ex.GetType().Name.ShouldBe("ExcesoCaracteresException");
 	}
 
 	/// <remarks>

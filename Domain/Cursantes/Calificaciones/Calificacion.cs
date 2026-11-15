@@ -1,5 +1,6 @@
 using Domain.Cursantes.Calificaciones.Exceptions;
 using Domain.Shared;
+using Domain.Shared.Exceptions;
 
 namespace Domain.Cursantes.Calificaciones;
 
@@ -52,7 +53,7 @@ public sealed class Calificacion : Entity
 
 		if (fecha.Date > DateTime.Today.Date)
 		{
-			throw new ArgumentException("La fecha del exámen no puede ser posterior a la fecha de registro en sistema.", nameof(fecha.Date));
+			throw new FechaDeExamenPosteriorAHoyException();
 		}
 
 		if (esRecuperatorio && periodo is Periodo.Final)
@@ -64,7 +65,7 @@ public sealed class Calificacion : Entity
 		{
 			if (nota is null)
 			{
-				throw new ArgumentNullException(nameof(nota), "Debe especificar la nota del alumno para registrar una calificación.");
+				throw new NotaRequeridaException();
 			}
 
 			if (nota < 1 || nota > 10)
@@ -104,7 +105,7 @@ public sealed class Calificacion : Entity
 	{
 		if (observacion?.Length > MAX_OBSERVACION)
 		{
-			throw new ArgumentException("El detalle de observación es demasiado largo.");
+			throw new ExcesoCaracteresException($"La observación de una calificación no puede superar los {MAX_OBSERVACION} caracteres.");
 		}
 	}
 	#endregion

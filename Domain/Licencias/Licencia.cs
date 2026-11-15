@@ -51,7 +51,7 @@ public sealed class Licencia : Entity
 	{
 		if (fechaInicio.Date > DateTime.Today.Date)
 		{
-			throw new ArgumentException($"La fecha de inicio no debe mayor a la fecha de hoy ({DateTime.Today.Date.ToString("D")})");
+			throw new FechaDeInicioDeLicenciaFuturaException();
 		}
 	}
 	
@@ -153,8 +153,7 @@ public sealed class Licencia : Entity
 	{
 		if (fechaFin.Date <= DateTime.Today.Date)
 		{
-			var msg = "La fecha de finalización debe ser posterior al día de hoy.";
-			throw new ArgumentException(msg);
+			throw new FechaDeFinalizacionNoPosteriorAHoyException();
 		}
 
 		if (!EstaActiva())
@@ -164,8 +163,7 @@ public sealed class Licencia : Entity
 
 		if (!EsIndefinida())
 		{
-			var msg = "La licencia ya posee una fecha de finalizacion.";
-			throw new ArgumentException(msg);
+			throw new LicenciaConFechaDeFinalizacionException();
 		}
 
 		Periodo = Periodo.ActualizarFechaFin(fechaFin);
@@ -200,8 +198,7 @@ public sealed class Licencia : Entity
 	{
 		if (cantidadDias <= 0)
 		{
-			var msg = "Se debe especificar la cantidad de días que quiere extender la licencia.";
-			throw new ArgumentException(msg);
+			throw new ExtensionSinDiasException();
 		}
 
 		if (!EstaActiva())
