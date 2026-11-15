@@ -32,9 +32,14 @@ public sealed class Cursante : Entity
 			throw new SinDatosDivisionException();
 		}
 
-		if (Guid.Empty.Equals(unAlumno) || cicloLectivo is null)
+		if (Guid.Empty.Equals(unAlumno))
 		{
 			throw new SinDatosAlumnoException();
+		}
+
+		if (cicloLectivo is null)
+		{
+			throw new SinDatosCicloLectivoException();
 		}
 
 		DivisionID = unaDivision;

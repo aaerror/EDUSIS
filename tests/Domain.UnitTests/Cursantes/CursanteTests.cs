@@ -12,7 +12,7 @@ namespace Domain.UnitTests.Cursantes;
 /// recursante, baja de la inscripción y registro de calificaciones con métodos para crear,
 /// eliminar y modificar observaciones. <c>CalificacionNoEncontradaException</c>,
 /// <c>SinDatosDivisionException</c>, <c>SinDatosAlumnoException</c>,
-/// <c>InscripcionCerradaException</c>, <c>FechaBajaAnteriorAlInicioException</c> y
+/// <c>SinDatosCicloLectivoException</c>, <c>InscripcionCerradaException</c>, <c>FechaBajaAnteriorAlInicioException</c> y
 /// <c>FechaBajaFuturaException</c> son <c>internal</c>: se verifican por el nombre del tipo.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
@@ -76,13 +76,22 @@ public class CursanteTests
 	}
 
 	[Fact]
-	public void Un_cursante_sin_ciclo_lectivo_lanza_SinDatosAlumnoException_por_un_guard_compartido()
+	public void Un_cursante_sin_ciclo_lectivo_lanza_SinDatosCicloLectivoException()
 	{
-		// HD-003 (docs/plan/hallazgos-tests-dominio.md): el guard del ctor funde dos
-		// precondiciones distintas bajo una sola excepción. Un ciclo lectivo nulo debería
-		// reportarse con una excepción propia (o al menos un guard separado), no como "sin
-		// datos de alumno". Este test nombra la conducta actual, no la consagra como correcta.
+		// El guard del ctor fundía "sin alumno" con "sin ciclo lectivo" y un ciclo nulo se reportaba
+		// como "sin datos de alumno", que es información incorrecta sobre cuál es el dato que falta.
+		// Con un alumno válido, lo que falta es el ciclo, y así se informa.
 		var ex = Should.Throw<Exception>(() => new Cursante(Guid.NewGuid(), Guid.NewGuid(), null!, DateTime.Today));
+
+		ex.GetType().Name.ShouldBe("SinDatosCicloLectivoException");
+	}
+
+	[Fact]
+	public void Un_cursante_sin_alumno_y_sin_ciclo_lectivo_informa_primero_al_alumno()
+	{
+		// El orden de los guards no cambió al separarlos: con las dos precondiciones violadas sigue
+		// ganando el alumno, que era lo que ya reportaba el guard fundido.
+		var ex = Should.Throw<Exception>(() => new Cursante(Guid.NewGuid(), Guid.Empty, null!, DateTime.Today));
 
 		ex.GetType().Name.ShouldBe("SinDatosAlumnoException");
 	}
