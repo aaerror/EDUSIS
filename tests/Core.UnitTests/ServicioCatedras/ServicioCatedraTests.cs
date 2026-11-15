@@ -4,6 +4,7 @@ using Core.ServicioCatedras.DTOs.Requests;
 using Core.ServicioCatedras.Exceptions;
 using Core.ServicioDocentes.Exceptions;
 using Core.ServicioMaterias.Exceptions;
+using Core.Shared.Seguridad;
 using Core.UnitTests.Infraestructura;
 using Domain.Catedras;
 using Domain.Catedras.Exceptions;
@@ -15,6 +16,7 @@ using Domain.Docentes;
 using Domain.Materias;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
+using EDUSIS.TestSupport.Fakes;
 using Shouldly;
 using Xunit;
 
@@ -180,6 +182,56 @@ public class ServicioCatedraTests
 
 		await Should.ThrowAsync<CargoInexistenteException>(() => _servicio.DesignarDocenteAsync(
 			new DesignarDocenteRequest(catedra.Id, docente.Id, "Bedel", DateTime.Today, null, null)));
+	}
+	#endregion
+
+	#region DesignarYPonerEnFuncionesAsync
+	[Fact]
+	public async Task DesignarYPonerEnFuncionesAsync_designa_pone_en_funciones_y_confirma_la_transaccion()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		var docente = SembrarDocente();
+
+		var situacionID = await _servicio.DesignarYPonerEnFuncionesAsync(
+			new DesignarDocenteRequest(catedra.Id, docente.Id, "Titular", DateTime.Today, null, null));
+
+		catedra.SituacionEnFuncionesID.ShouldBe(situacionID);
+		catedra.DocenteEnFunciones().ShouldBe(docente.Id);
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(2);
+		_host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBe(new[] { "BeginTransactionAsync", "CommitTransactionAsync" });
+	}
+
+	/// <remarks>
+	/// El caso que motiva el caso de uso: designar sale bien y poner en funciones no (una
+	/// designación que todavía no inició no puede estar en el aula). Antes eran dos llamadas y la
+	/// designación quedaba guardada. El fake no deshace el estado en memoria; que la base no
+	/// conserve la designación lo verifica <c>DesignacionEnFuncionesTests</c> en E2E.
+	/// </remarks>
+	[Fact]
+	public async Task DesignarYPonerEnFuncionesAsync_si_poner_en_funciones_falla_revierte_la_transaccion()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		var docente = SembrarDocente();
+
+		await Should.ThrowAsync<CargoNoVigenteException>(() => _servicio.DesignarYPonerEnFuncionesAsync(
+			new DesignarDocenteRequest(catedra.Id, docente.Id, "Titular", DateTime.Today.AddDays(5), null, null)));
+
+		_host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBe(new[] { "BeginTransactionAsync", "RollbackTransactionAsync" });
+	}
+
+	/// <remarks>
+	/// La guarda va antes de abrir la transacción: si quedara dentro, el rollback sin transacción
+	/// iniciada taparía el <c>PermisoDenegadoException</c>.
+	/// </remarks>
+	[Fact]
+	public async Task DesignarYPonerEnFuncionesAsync_sin_GestionarCatedras_lanza_PermisoDenegado_sin_abrir_transaccion()
+	{
+		using var host = new HostDeServicios(sesion: SesionDePrueba.SinPermisos());
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioCatedra>().DesignarYPonerEnFuncionesAsync(null!));
+
+		host.UnidadDeTrabajo.LlamadasDeTransaccion.ShouldBeEmpty();
 	}
 	#endregion
 

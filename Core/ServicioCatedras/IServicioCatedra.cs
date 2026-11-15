@@ -8,6 +8,11 @@ public interface IServicioCatedra
 	Task<Guid> CrearCatedraAsync(CrearCatedraRequest request);
 
 	Task<Guid> DesignarDocenteAsync(DesignarDocenteRequest request);
+	/// <summary>
+	/// Designa y pone en funciones de forma atómica: si poner en funciones falla, la designación
+	/// no queda persistida.
+	/// </summary>
+	Task<Guid> DesignarYPonerEnFuncionesAsync(DesignarDocenteRequest request);
 
 	Task PonerEnFuncionesAsync(PonerEnFuncionesRequest request);
 	Task RelevarDeFuncionesAsync(RelevarDeFuncionesRequest request);

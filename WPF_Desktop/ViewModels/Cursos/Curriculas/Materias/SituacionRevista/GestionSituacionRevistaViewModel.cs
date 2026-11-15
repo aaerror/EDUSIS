@@ -752,12 +752,15 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 																 FechaInicio: SituacionRevistaINSERT.FechaInicio,
 																 FechaFin: terminoDelAlta,
 																 ReemplazaA: HabilitarReemplazaA ? SituacionRevistaINSERT.ReemplazaA : null);
-						var situacionRevistaID = await _servicioCatedra.DesignarDocenteAsync(request);
-
+						// Designar y poner en funciones es un solo caso de uso atómico: con dos llamadas,
+						// si fallaba la segunda la designación quedaba guardada sin el docente en el aula.
 						if (SituacionRevistaINSERT.EnFunciones)
 						{
-							await _servicioCatedra.PonerEnFuncionesAsync(new PonerEnFuncionesRequest(CatedraID: _catedraStore.Catedra,
-																									 SituacionRevistaID: situacionRevistaID));
+							await _servicioCatedra.DesignarYPonerEnFuncionesAsync(request);
+						}
+						else
+						{
+							await _servicioCatedra.DesignarDocenteAsync(request);
 						}
 
 						_dialogService.MostrarInformacion($"{ SituacionRevistaINSERT.Docente } como { SituacionRevistaINSERT.Cargo.ToLower() }.", "Docente designado");

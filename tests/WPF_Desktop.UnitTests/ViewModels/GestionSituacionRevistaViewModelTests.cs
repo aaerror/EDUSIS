@@ -636,27 +636,35 @@ public class GestionSituacionRevistaViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Designar_con_EnFunciones_pone_en_funciones_la_situacion_devuelta_por_el_servicio()
+	/// <remarks>
+	/// Antes eran dos llamadas (designar y después poner en funciones) y, si fallaba la segunda,
+	/// la designación quedaba guardada sin el docente en el aula. Ahora es un solo caso de uso atómico.
+	/// </remarks>
+	public async Task Designar_con_EnFunciones_usa_el_caso_de_uso_atomico_y_no_encadena_dos_llamadas()
 	{
 		var contexto = new Contexto();
 		contexto.PrepararAlta("Titular", enFunciones: true);
 
 		await contexto.ViewModel.GuardarCommand.ExecuteAsync("Insert");
 
-		await contexto.ServicioCatedra.Received(1).PonerEnFuncionesAsync(Arg.Is<PonerEnFuncionesRequest>(r =>
+		await contexto.ServicioCatedra.Received(1).DesignarYPonerEnFuncionesAsync(Arg.Is<DesignarDocenteRequest>(r =>
 			r.CatedraID == contexto.CatedraID &&
-			r.SituacionRevistaID == contexto.SituacionCreadaID));
+			r.Cargo == "Titular"));
+		await contexto.ServicioCatedra.DidNotReceive().DesignarDocenteAsync(Arg.Any<DesignarDocenteRequest>());
+		await contexto.ServicioCatedra.DidNotReceive().PonerEnFuncionesAsync(Arg.Any<PonerEnFuncionesRequest>());
 	}
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Designar_sin_EnFunciones_no_llama_a_PonerEnFunciones()
+	public async Task Designar_sin_EnFunciones_sólo_designa()
 	{
 		var contexto = new Contexto();
 		contexto.PrepararAlta("Titular", enFunciones: false);
 
 		await contexto.ViewModel.GuardarCommand.ExecuteAsync("Insert");
 
+		await contexto.ServicioCatedra.Received(1).DesignarDocenteAsync(Arg.Any<DesignarDocenteRequest>());
+		await contexto.ServicioCatedra.DidNotReceive().DesignarYPonerEnFuncionesAsync(Arg.Any<DesignarDocenteRequest>());
 		await contexto.ServicioCatedra.DidNotReceive().PonerEnFuncionesAsync(Arg.Any<PonerEnFuncionesRequest>());
 	}
 

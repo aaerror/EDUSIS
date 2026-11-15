@@ -498,13 +498,13 @@ public class GuardasEstaticasW6Tests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void GestionSituacionRevista_los_seis_casos_de_uso_pegan_en_IServicioCatedra()
+	public void GestionSituacionRevista_los_siete_casos_de_uso_pegan_en_IServicioCatedra()
 	{
 		var codigo = CodigoVivo(GestionSituacionRevistaCs);
 
 		foreach (var metodo in new[]
 		{
-			"ListarSituacionesRevistaAsync", "DesignarDocenteAsync", "PonerEnFuncionesAsync",
+			"ListarSituacionesRevistaAsync", "DesignarDocenteAsync", "DesignarYPonerEnFuncionesAsync", "PonerEnFuncionesAsync",
 			"RelevarDeFuncionesAsync", "PasarAInterinoAsync", "FinalizarDesignacionAsync"
 		})
 		{

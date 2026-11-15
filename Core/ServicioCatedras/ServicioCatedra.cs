@@ -114,15 +114,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		{
 			_sesion.Exigir(Permiso.GestionarCatedras);
 
-			var catedra = await BuscarCatedraAsync(request.CatedraID);
-
-			var existeDocente = await _unitOfWork.Docentes.ExisteIDAsync(request.DocenteID);
-			if (!existeDocente)
-			{
-				throw new DocenteNoEncontradoException(nameof(request.DocenteID));
-			}
-
-			var situacionRevistaID = catedra.Designar(request.DocenteID, request.Cargo, request.FechaInicio, request.FechaFin, request.ReemplazaA);
+			var (catedra, situacionRevistaID) = await DesignarAsync(request);
 
 			_unitOfWork.Catedras.Modificar(catedra);
 			var result = await _unitOfWork.GuardarCambiosAsync();
@@ -136,6 +128,70 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
 			throw;
 		}
+	}
+
+	/// <remarks>
+	/// Dos <c>SaveChanges</c> dentro de una transacción, no uno: insertar la situación de revista y
+	/// escribir <c>situacion_en_funciones_id</c> en el mismo guardado choca con el ciclo
+	/// <c>FK_CATEDRA_SITUACION_REVISTA</c> ↔ <c>FK_SITUACION_REVISTA_CATEDRA</c> (EF aborta con
+	/// "circular dependency"). La transacción es lo que vuelve atómico el par: antes eran dos casos
+	/// de uso y, si fallaba el segundo, la designación quedaba guardada sin el docente en el aula.
+	/// <para>
+	/// El rollback va en un try propio que arranca después de <c>BeginTransactionAsync</c>, como en
+	/// <c>ServicioCurricula.RegistrarCurriculaAsync</c>: si la guarda de permiso cayera dentro,
+	/// el rollback sin transacción iniciada taparía el <c>PermisoDenegadoException</c>.
+	/// </para>
+	/// </remarks>
+	public async Task<Guid> DesignarYPonerEnFuncionesAsync(DesignarDocenteRequest request)
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GestionarCatedras);
+
+			await _unitOfWork.BeginTransactionAsync();
+
+			try
+			{
+				var (catedra, situacionRevistaID) = await DesignarAsync(request);
+
+				_unitOfWork.Catedras.Modificar(catedra);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				catedra.PonerEnFunciones(situacionRevistaID);
+				await _unitOfWork.GuardarCambiosAsync();
+
+				await _unitOfWork.CommitTransactionAsync();
+
+				_logger.LogInformation("Docente designado y puesto en funciones correctamente.");
+
+				return situacionRevistaID;
+			}
+			catch
+			{
+				await _unitOfWork.RollbackTransactionAsync();
+				throw;
+			}
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	private async Task<(Catedra Catedra, Guid SituacionRevistaID)> DesignarAsync(DesignarDocenteRequest request)
+	{
+		var catedra = await BuscarCatedraAsync(request.CatedraID);
+
+		var existeDocente = await _unitOfWork.Docentes.ExisteIDAsync(request.DocenteID);
+		if (!existeDocente)
+		{
+			throw new DocenteNoEncontradoException(nameof(request.DocenteID));
+		}
+
+		var situacionRevistaID = catedra.Designar(request.DocenteID, request.Cargo, request.FechaInicio, request.FechaFin, request.ReemplazaA);
+
+		return (catedra, situacionRevistaID);
 	}
 	#endregion
 
