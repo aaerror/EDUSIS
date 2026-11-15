@@ -7,8 +7,8 @@ using Xunit;
 namespace Domain.UnitTests.Usuarios;
 
 /// <summary>
-/// Fija la atribución rol → permisos contra los tres diagramas de casos de uso de
-/// <c>docs/uml/</c>: cada actor puede lo suyo y nada más. La excepción es
+/// Fija la atribución rol → permisos contra los tres diagramas de casos de uso:
+/// cada actor puede lo suyo y nada más. La excepción es
 /// <see cref="Permiso.CargarCalificaciones"/>, que ningún diagrama respalda y se fija como
 /// decisión de negocio.
 /// </summary>
@@ -116,12 +116,12 @@ public class AtribucionDeRolesTests
 	}
 
 	/// <remarks>
-	/// La única atribución de la tabla que NO se deriva de un diagrama: ningún caso de uso modela
-	/// registrar una nota —CU-33 y CU-36 sólo las leen—, así que no hay actor del que derivarla.
-	/// Es una decisión de negocio: la planilla la confecciona el docente y la transcribe
-	/// Preceptoría. Se fija acá para que revertirla sea deliberado y no un efecto colateral de
-	/// "realinear con los diagramas", que es justamente lo que diría de ella una lectura literal
-	/// de <c>docs/uml/</c>.
+	/// Ninguno de los tres diagramas dibuja registrar una nota —CU-33 y CU-36 sólo las leen—.
+	/// <c>CU-39</c> / <c>RF-39</c> la modelan en los diagramas de casos de uso, pero el óvalo
+	/// todavía no está en el diagrama de Preceptoría. Que la cargue Preceptoría es una decisión de
+	/// negocio: la planilla la confecciona el docente y la transcribe Preceptoría. Se fija acá
+	/// para que revertirla sea deliberado y no un efecto colateral de "realinear con los
+	/// diagramas", que es justamente lo que diría de ella una lectura literal de los dibujos.
 	/// </remarks>
 	[Fact]
 	public void Preceptoria_carga_calificaciones_aunque_ningun_caso_de_uso_lo_modele()

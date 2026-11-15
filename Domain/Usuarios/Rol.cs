@@ -5,8 +5,7 @@ namespace Domain.Usuarios;
 /// <summary>
 /// Rol con el que un usuario entra al sistema. Los cuatro primeros son una jerarquía
 /// administrativa; <see cref="Preceptoria"/> y <see cref="SecretariaAcademica"/> son los dos
-/// actores que faltaban para que el catálogo se corresponda con los diagramas de casos de uso de
-/// <c>docs/uml/</c>.
+/// actores que faltaban para que el catálogo se corresponda con los diagramas de casos de uso.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -100,16 +99,18 @@ public class Rol : Enumeration
 			Permiso.GenerarReportes
 		},
 		// Encargado de Preceptoría: CU-12 a CU-16 (planillas y toma de asistencia), CU-30
-		// (certificado de asistencia) y CU-35/36 (reportes de cursada). CU-26 —consultar
-		// horarios, el único caso compartido con Secretaría Académica— es una consulta y no
-		// exige permiso.
+		// (certificado de asistencia), CU-35/36 (reportes de cursada) y CU-39 (registrar
+		// calificación). CU-26 —consultar horarios, compartido con Secretaría Académica— es una
+		// consulta y no exige permiso. CU-29 (constancia de escolaridad) lo comparte con
+		// Secretaría según el diagrama, pero este rol no tiene GenerarDocumentos y hoy no
+		// podría emitirla.
 		//
-		// CargarCalificaciones es la única atribución de esta tabla que NO sale de los diagramas:
-		// ningún caso de uso modela registrar una nota —los tres diagramas sólo las leen, en CU-33
-		// (boletín) y CU-36 (reporte)—, así que no hay actor del que derivarla. Es una decisión de
-		// negocio: la planilla de notas la confecciona el docente y la transcribe Preceptoría, que
-		// es quien tiene el curso a cargo. Docente la conserva, de modo que el permiso queda
-		// compartido y no movido.
+		// CargarCalificaciones realiza CU-39 / RF-39. Ninguno de los tres diagramas modelaba
+		// registrar una nota —sólo la leen, en CU-33 (boletín) y CU-36 (reporte)— y el óvalo de
+		// CU-39 todavía no está dibujado en el diagrama de Preceptoría. Que la cargue Preceptoría es una decisión de
+		// negocio: la planilla de notas la confecciona el docente y la transcribe Preceptoría,
+		// que es quien tiene el curso a cargo. Docente la conserva, de modo que el permiso
+		// queda compartido y no movido.
 		[Preceptoria.Id] = new[]
 		{
 			Permiso.TomarAsistencia,
@@ -119,8 +120,7 @@ public class Rol : Enumeration
 		},
 		// Docente tiene CRUD total sobre lo académico: los 15 permisos MENOS AdministrarUsuarios y
 		// AsignarRoles. Es una decisión de negocio y NO sale de los diagramas —Docente no es actor
-		// de ninguno de los tres—, así que es la segunda atribución de esta tabla que no se deriva
-		// de docs/uml/, junto con su CargarCalificaciones.
+		// de ninguno de los tres—, así que ninguna de sus atribuciones se deriva de los diagramas de casos de uso.
 		//
 		// Las dos que NO tiene son el límite deliberado: sin AdministrarUsuarios no crea cuentas y
 		// sin AsignarRoles no puede ampliarse sus propios permisos ni los de nadie. Eso es lo que
