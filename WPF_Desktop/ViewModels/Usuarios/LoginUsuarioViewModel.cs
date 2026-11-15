@@ -6,7 +6,6 @@ using Core.ServicioAutenticaciones;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Net;
 using System.Security;
 using System.Threading.Tasks;
 using System.Threading;
@@ -169,11 +168,7 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 				{
 					Clave.MakeReadOnly();
 
-					var credentials = new NetworkCredential();
-					credentials.UserName = Usuario;
-					credentials.SecurePassword = Clave;
-
-					var request = new LoginRequest(credentials);
+					var request = new LoginRequest(Usuario, Clave);
 					var response = await _servicioAutenticacion.Login(request);
 
 

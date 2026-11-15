@@ -1,5 +1,5 @@
 using Core.ServicioAutenticaciones.Exceptions;
-using System.Net;
+using EDUSIS.TestSupport.Fakes;
 using Core.ServicioAutenticaciones;
 using Core.ServicioAutenticaciones.DTOs.Requests;
 using Core.ServicioUsuarios;
@@ -39,7 +39,7 @@ public sealed class RegistroYAutenticacionDeUsuarioTests : BaseE2E
 			new RegistrarUsuarioRequest(docente.Id, Rol.Docente.Id)));
 
 		var perfil = await EnUnScope(sp => sp.GetRequiredService<IServicioAutenticacion>().Login(
-			new LoginRequest(new NetworkCredential(usuario, clave))));
+			new LoginRequest(usuario, ClaveDePrueba.De(clave))));
 
 		perfil.DocenteID.ShouldBe(docente.Id);
 		perfil.Usuario.ShouldBe(usuario);
@@ -56,7 +56,7 @@ public sealed class RegistroYAutenticacionDeUsuarioTests : BaseE2E
 
 		await Should.ThrowAsync<CredencialesInvalidasException>(() => EnUnScope(sp =>
 			sp.GetRequiredService<IServicioAutenticacion>().Login(
-				new LoginRequest(new NetworkCredential(docente.Email, "clave-incorrecta")))));
+				new LoginRequest(docente.Email, ClaveDePrueba.De("clave-incorrecta")))));
 	}
 
 	[RequiereSqlServerFact]
@@ -64,6 +64,6 @@ public sealed class RegistroYAutenticacionDeUsuarioTests : BaseE2E
 	{
 		await Should.ThrowAsync<CredencialesInvalidasException>(() => EnUnScope(sp =>
 			sp.GetRequiredService<IServicioAutenticacion>().Login(
-				new LoginRequest(new NetworkCredential("no.existe@correo.com", "cualquiera")))));
+				new LoginRequest("no.existe@correo.com", ClaveDePrueba.De("cualquiera")))));
 	}
 }

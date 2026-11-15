@@ -1,5 +1,6 @@
 ﻿using Core.Shared;
 using Microsoft.Extensions.Logging;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security;
 
@@ -47,11 +48,29 @@ internal class ServicioSeguridad : IServicio, IServicioSeguridad
         byte[] salt = Convert.FromBase64String(storedSalt);
         byte[] hash = Convert.FromBase64String(storedHash);
         
-        var pass = new System.Net.NetworkCredential(string.Empty, password).Password;
+        var pass = Desenvolver(password);
         byte[] testHash = PBKDF2(pass, salt);
         _logger.LogInformation("Contraseña validada...");
 
         return SlowEquals(hash, testHash);
+    }
+
+    /// <summary>
+    /// Copia la clave a un buffer no administrado, la lee y lo pone en cero antes de liberarlo.
+    /// Antes se usaba <c>System.Net.NetworkCredential</c> sólo para esta conversión.
+    /// </summary>
+    private static string Desenvolver(SecureString clave)
+    {
+        var puntero = IntPtr.Zero;
+        try
+        {
+            puntero = Marshal.SecureStringToGlobalAllocUnicode(clave);
+            return Marshal.PtrToStringUni(puntero) ?? string.Empty;
+        }
+        finally
+        {
+            Marshal.ZeroFreeGlobalAllocUnicode(puntero);
+        }
     }
 
     private byte[] PBKDF2(string password, byte[] salt, int iterations = 1000, int outputBytes = 24)

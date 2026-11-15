@@ -40,14 +40,14 @@ internal class ServicioAutenticacion : IServicio, IServicioAutenticacion
 		{
 			_logger.LogInformation($"Realizando ingreso al sistema del usuario...");
 
-			var usuario = await _unitOfWork.Usuarios.BuscarPorUsernameAsync(request.credential.UserName);
+			var usuario = await _unitOfWork.Usuarios.BuscarPorUsernameAsync(request.Usuario);
 			if (usuario is null)
 			{
 				throw new CredencialesInvalidasException();
 			}
 
 			//_unitOfWork.Usuarios.RecuperarDatosAcceso(request.Email, out salt, out hash);
-			var esAccesoValido = _servicioSeguridad.ValidatePassword(request.credential.SecurePassword, usuario.PasswordSalt, usuario.PasswordHash);
+			var esAccesoValido = _servicioSeguridad.ValidatePassword(request.Clave, usuario.PasswordSalt, usuario.PasswordHash);
 			if (!esAccesoValido)
 			{
 				throw new CredencialesInvalidasException();

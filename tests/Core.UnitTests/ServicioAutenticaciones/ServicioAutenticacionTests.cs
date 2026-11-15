@@ -1,5 +1,5 @@
 using Core.ServicioAutenticaciones.Exceptions;
-using System.Net;
+using EDUSIS.TestSupport.Fakes;
 using Core.ServicioAutenticaciones;
 using Core.ServicioAutenticaciones.DTOs.Requests;
 using Core.UnitTests.Infraestructura;
@@ -49,7 +49,7 @@ public class ServicioAutenticacionTests
 	{
 		var usuario = SembrarUsuarioConClave("maria.gonzalez", "Secreta-123");
 
-		var response = await _servicio.Login(new LoginRequest(new NetworkCredential("maria.gonzalez", "Secreta-123")));
+		var response = await _servicio.Login(new LoginRequest("maria.gonzalez", ClaveDePrueba.De("Secreta-123")));
 
 		response.UsuarioID.ShouldBe(usuario.Id);
 		response.DocenteID.ShouldBe(usuario.DocenteID);
@@ -60,7 +60,7 @@ public class ServicioAutenticacionTests
 	public async Task Login_con_un_usuario_inexistente_lanza_CredencialesInvalidas()
 	{
 		await Should.ThrowAsync<CredencialesInvalidasException>(
-			() => _servicio.Login(new LoginRequest(new NetworkCredential("no.existe", "cualquiera"))));
+			() => _servicio.Login(new LoginRequest("no.existe", ClaveDePrueba.De("cualquiera"))));
 	}
 
 	[Fact]
@@ -69,7 +69,7 @@ public class ServicioAutenticacionTests
 		SembrarUsuarioConClave("maria.gonzalez", "clave-correcta");
 
 		await Should.ThrowAsync<CredencialesInvalidasException>(
-			() => _servicio.Login(new LoginRequest(new NetworkCredential("maria.gonzalez", "clave-incorrecta"))));
+			() => _servicio.Login(new LoginRequest("maria.gonzalez", ClaveDePrueba.De("clave-incorrecta"))));
 	}
 	#endregion
 }
