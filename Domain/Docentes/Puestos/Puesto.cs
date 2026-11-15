@@ -26,6 +26,12 @@ public sealed class Puesto : Entity
 			throw new ArgumentException("Se ingresó un estado de puesto docente incorrecto.", nameof(estado));
 		}
 
+		// Inactivo sólo se alcanza rescindiendo; un alta que naciera inactiva o en suspenso
+		// saltearía las guardas de Rescindir.
+		if (estadoPuesto is not (EstadoPuesto.Pendiente or EstadoPuesto.Activo))
+		{
+			throw new EstadoInicialPuestoInvalidoException(estado);
+		}
 
 		DocenteID = docenteID;
 		Estado = estadoPuesto;
@@ -100,19 +106,7 @@ public sealed class Puesto : Entity
 	{
 		if (!EstaActivo())
 		{
-			// El motivo se discrimina en lugar de leer FechaFin a ciegas, y no es cosmético: hasta
-			// interpolar `Periodo.FechaFin.Value` daría por hecho que un
-			// puesto no activo es un puesto finalizado. Es al revés. `EstablecerPeriodo` rechaza
-			// toda fecha de inicio anterior a hoy y `RangoFechas` exige fin >= inicio, así que
-			// FechaFin nunca queda antes de hoy y `HaFinalizado()` no puede ser cierto para un
-			// puesto recién construido: el único camino a `!EstaActivo()` es un puesto que todavía
-			// no inició. Y si ese puesto es por tiempo indeterminado, FechaFin es nulo y la guarda
-			// moría con InvalidOperationException en vez de con su propia excepción.
-			var motivo = Periodo.HaFinalizado()
-				? $"finalizó el { Periodo.FechaFin!.Value.ToString("D") }"
-				: $"todavía no inició, comienza el { Periodo.FechaInicio.ToString("D") }";
-
-			throw new PuestoDocenteInactivoException(motivo);
+			throw new PuestoDocenteInactivoException(MotivoInactivo());
 		}
 
 		if (!EsEventual)
@@ -126,21 +120,46 @@ public sealed class Puesto : Entity
 		AsignarPeriodo(Periodo.FechaInicio, null);
 	}
 
-	internal void Rescindir()
+	/// <summary>
+	/// Transición Activo → Inactivo. Sin fecha, el puesto se cierra hoy.
+	/// </summary>
+	/// <remarks>
+	/// Antes, sin fecha y con el período fuera de vigencia, no hacía nada en silencio; y con fecha
+	/// no miraba el estado. Rescindir un eventual ya vencido sin fecha le habría corrido el fin a
+	/// hoy, extendiéndolo. Una fecha de fin anterior al inicio la rechaza <see cref="RangoFechas"/>.
+	/// </remarks>
+	internal void Rescindir(DateTime? fechaFin)
 	{
-		if (EstaActivo())
+		if (Estado == EstadoPuesto.Inactivo)
 		{
-			Estado = EstadoPuesto.Inactivo;
-			Periodo = Periodo.ActualizarFechaFin(DateTime.Today.Date);
+			throw new PuestoDocenteSinAsignarException();
 		}
-	}
 
-	internal void Rescindir(DateTime fechaFin)
-	{
+		if (Estado != EstadoPuesto.Activo)
+		{
+			throw new RescisionPuestoNoActivoException(Estado.ToString());
+		}
+
+		if (!EstaActivo())
+		{
+			throw new PuestoDocenteInactivoException(MotivoInactivo());
+		}
+
 		Estado = EstadoPuesto.Inactivo;
-		Periodo = Periodo.ActualizarFechaFin(fechaFin);
+		Periodo = Periodo.ActualizarFechaFin(fechaFin ?? DateTime.Today.Date);
 	}
 
 	public bool EstaActivo() =>
 		Periodo.EstaVigente();
+
+	/// <summary>
+	/// Por qué un puesto está fuera de vigencia. Se discrimina en lugar de leer FechaFin a ciegas:
+	/// interpolar <c>Periodo.FechaFin.Value</c> daría por hecho que un puesto no vigente es un
+	/// puesto finalizado, y uno por tiempo indeterminado que todavía no inició tiene FechaFin nulo
+	/// (la guarda moría con InvalidOperationException en vez de con su propia excepción).
+	/// </summary>
+	private string MotivoInactivo() =>
+		Periodo.HaFinalizado()
+			? $"finalizó el { Periodo.FechaFin!.Value.ToString("D") }"
+			: $"todavía no inició, comienza el { Periodo.FechaInicio.ToString("D") }";
 }

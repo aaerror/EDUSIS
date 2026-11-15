@@ -183,19 +183,7 @@ public sealed class Docente : Persona
 			throw new PuestoDocenteNoEncontradoException();
 		}
 
-		if (puestoDocente.Estado.Equals(EstadoPuesto.Inactivo))
-		{
-			throw new PuestoDocenteSinAsignarException();
-		}
-
-		if (fechaFinalizacion.HasValue)
-		{
-			puestoDocente.Rescindir(fechaFinalizacion.Value);
-		}
-		else
-		{
-			puestoDocente.Rescindir();
-		}
+		puestoDocente.Rescindir(fechaFinalizacion);
 	}
 
 	public void EliminarCargoDocente(Guid puestoID)

@@ -2,6 +2,7 @@ using Domain.Docentes.Exceptions;
 using System.Reflection;
 using Domain.Docentes.Puestos;
 using Domain.Shared;
+using Domain.Shared.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -60,6 +61,20 @@ public class PuestoTests
 		Should.Throw<ArgumentException>(() => builder.Build());
 	}
 
+	/// <remarks>
+	/// Inactivo sólo se alcanza rescindiendo: un alta que naciera inactiva o en suspenso salteaba
+	/// las guardas de la rescisión.
+	/// </remarks>
+	[Theory]
+	[InlineData(nameof(EstadoPuesto.Inactivo))]
+	[InlineData(nameof(EstadoPuesto.EnSupenso))]
+	public void Un_alta_con_estado_distinto_de_pendiente_o_activo_lanza_EstadoInicialPuestoInvalidoException(string estado)
+	{
+		var builder = new PuestoBuilder().ConEstado(estado);
+
+		Should.Throw<EstadoInicialPuestoInvalidoException>(() => builder.Build());
+	}
+
 	[Fact]
 	public void Una_posicion_fuera_del_enum_lanza_ArgumentException()
 	{
@@ -74,7 +89,7 @@ public class PuestoTests
 	[Fact]
 	public void Rescindir_sin_fecha_pasa_el_puesto_a_inactivo_y_lo_cierra_hoy()
 	{
-		var docente = new PuestoBuilder().BuildDocente();
+		var docente = new PuestoBuilder().ConEstado(nameof(EstadoPuesto.Activo)).BuildDocente();
 		var puesto = docente.Puestos.Single();
 
 		docente.RescindirCargoDocente(puesto.Id, null);
@@ -86,7 +101,7 @@ public class PuestoTests
 	[Fact]
 	public void Rescindir_con_fecha_cierra_el_puesto_en_esa_fecha()
 	{
-		var docente = new PuestoBuilder().BuildDocente();
+		var docente = new PuestoBuilder().ConEstado(nameof(EstadoPuesto.Activo)).BuildDocente();
 		var puesto = docente.Puestos.Single();
 		var fin = DateTime.Today.AddDays(10);
 
@@ -94,6 +109,49 @@ public class PuestoTests
 
 		puesto.Estado.ShouldBe(EstadoPuesto.Inactivo);
 		puesto.Periodo.FechaFin.ShouldBe(fin);
+	}
+
+	[Theory]
+	[InlineData(false)]
+	[InlineData(true)]
+	public void Rescindir_un_puesto_pendiente_lanza_RescisionPuestoNoActivoException_y_no_lo_toca(bool conFecha)
+	{
+		var docente = new PuestoBuilder().ConEstado(nameof(EstadoPuesto.Pendiente)).BuildDocente();
+		var puesto = docente.Puestos.Single();
+		DateTime? fin = conFecha ? DateTime.Today.AddDays(10) : null;
+
+		Should.Throw<RescisionPuestoNoActivoException>(() => docente.RescindirCargoDocente(puesto.Id, fin));
+
+		puesto.Estado.ShouldBe(EstadoPuesto.Pendiente);
+		puesto.Periodo.FechaFin.ShouldBeNull();
+	}
+
+	/// <remarks>
+	/// Antes, sin fecha, esta rescisión no hacía nada y no avisaba.
+	/// </remarks>
+	[Fact]
+	public void Rescindir_un_puesto_activo_que_todavia_no_inicio_lanza_PuestoDocenteInactivoException()
+	{
+		var docente = new PuestoBuilder()
+			.ConEstado(nameof(EstadoPuesto.Activo))
+			.ConDesde(DateTime.Today.AddDays(5))
+			.BuildDocente();
+		var puesto = docente.Puestos.Single();
+
+		Should.Throw<PuestoDocenteInactivoException>(() => docente.RescindirCargoDocente(puesto.Id, null));
+
+		puesto.Estado.ShouldBe(EstadoPuesto.Activo);
+	}
+
+	[Fact]
+	public void Rescindir_con_una_fecha_anterior_al_inicio_lanza_FechasInconsistentesException()
+	{
+		var docente = new PuestoBuilder()
+			.ConEstado(nameof(EstadoPuesto.Activo))
+			.BuildDocente();
+		var puesto = docente.Puestos.Single();
+
+		Should.Throw<FechasInconsistentesException>(() => docente.RescindirCargoDocente(puesto.Id, DateTime.Today.AddDays(-1)));
 	}
 
 	[Fact]

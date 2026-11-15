@@ -4,6 +4,7 @@ using Core.ServicioDocentes.DTOs.Requests;
 using Core.Shared.DTOs.Personas.Requests;
 using Core.UnitTests.Infraestructura;
 using Domain.Catedras.SituacionesRevista;
+using Domain.Docentes.Exceptions;
 using Domain.Docentes.Puestos;
 using Domain.Usuarios;
 using EDUSIS.TestSupport;
@@ -31,12 +32,12 @@ public class ServicioDocenteTests
 		_servicio = _host.Resolver<IServicioDocente>();
 	}
 
-	private Domain.Docentes.Docente SembrarDocente(bool conPuesto = false)
+	private Domain.Docentes.Docente SembrarDocente(bool conPuesto = false, string estadoPuesto = nameof(EstadoPuesto.Pendiente))
 	{
 		var builder = new DocenteBuilder();
 		if (conPuesto)
 		{
-			builder.ConPuesto();
+			builder.ConPuesto(estado: estadoPuesto);
 		}
 
 		var docente = builder.Build();
@@ -486,13 +487,25 @@ public class ServicioDocenteTests
 	[Fact]
 	public async Task RevocarPuestoDocenteAsync_rescinde_el_cargo_y_guarda()
 	{
-		var docente = SembrarDocente(conPuesto: true);
+		var docente = SembrarDocente(conPuesto: true, estadoPuesto: nameof(EstadoPuesto.Activo));
 		var puestoID = docente.Puestos.First().Id;
 
 		await _servicio.RevocarPuestoDocenteAsync(new RevocarPuestoDocenteRequest(docente.Id, puestoID, DateTime.Today));
 
 		docente.Puestos.First().Estado.ShouldBe(EstadoPuesto.Inactivo);
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task RevocarPuestoDocenteAsync_sobre_un_puesto_pendiente_propaga_la_excepcion_del_dominio_y_no_guarda()
+	{
+		var docente = SembrarDocente(conPuesto: true);
+		var puestoID = docente.Puestos.First().Id;
+
+		await Should.ThrowAsync<RescisionPuestoNoActivoException>(() =>
+			_servicio.RevocarPuestoDocenteAsync(new RevocarPuestoDocenteRequest(docente.Id, puestoID, DateTime.Today)));
+
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
 	}
 
 	[Fact]
