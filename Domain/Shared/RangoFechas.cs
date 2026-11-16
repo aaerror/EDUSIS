@@ -45,21 +45,62 @@ public class RangoFechas : ValueObject
 	public bool EsIndeterminado() =>
 		!FechaFin.HasValue;
 
-	public double Duracion(Tiempo tiempo) => tiempo switch
+	/// <summary>
+	/// Extensión total del rango. Un rango indeterminado no tiene duración y devuelve 0.
+	/// </summary>
+	public double Duracion(Tiempo tiempo) =>
+		EsIndeterminado() ? 0 : Medir(FechaInicio, FechaFin!.Value.Date, tiempo);
+
+	/// <summary>
+	/// Lo recorrido del rango hasta hoy: 0 si no inició, hasta <see cref="FechaFin"/> si ya
+	/// finalizó y hasta hoy si sigue en curso (también cuando es indeterminado).
+	/// </summary>
+	public double TiempoTranscurrido(Tiempo tiempo)
 	{
-		Tiempo.Dia => EsIndeterminado() ? 0 : (FechaFin.Value - FechaInicio).TotalDays,
-		Tiempo.Mes => EsIndeterminado() ? 0 : ((FechaFin.Value - FechaInicio).TotalDays) / 12,
-		Tiempo.Año => EsIndeterminado() ? 0 : ((FechaFin.Value - FechaInicio).TotalDays) / 365,
-		_ => throw new ArgumentException("Error al calcular la duración.")
+		if (!HaIniciado())
+		{
+			return 0;
+		}
+
+		var hasta = HaFinalizado() ? FechaFin!.Value.Date : Reloj.Hoy;
+
+		return Medir(FechaInicio, hasta, tiempo);
+	}
+
+	/// <summary>
+	/// Única fuente de la conversión de un intervalo a días, meses o años; <paramref name="desde"/>
+	/// nunca es posterior a <paramref name="hasta"/> (lo garantizan el constructor y los llamadores).
+	/// </summary>
+	/// <remarks>
+	/// Los días son la diferencia (el día de fin no se suma), como se medía antes. Meses y años son
+	/// calendario: del 15/01 al 15/03 son 2 meses exactos, y el resto se expresa como fracción del
+	/// mes en que cae. Dividir días por 30 o por 365 desplaza el resultado según los meses y los
+	/// años bisiestos que atraviese el rango.
+	/// </remarks>
+	private static double Medir(DateTime desde, DateTime hasta, Tiempo tiempo) => tiempo switch
+	{
+		Tiempo.Dia => (hasta - desde).TotalDays,
+		Tiempo.Mes => MesesCalendario(desde, hasta),
+		Tiempo.Año => MesesCalendario(desde, hasta) / 12,
+		_ => throw new ArgumentOutOfRangeException(nameof(tiempo), "La unidad de tiempo indicada no existe.")
 	};
 
-	public double TiempoTranscrurrido(Tiempo tiempo) => tiempo switch
+	private static double MesesCalendario(DateTime desde, DateTime hasta)
 	{
-		Tiempo.Dia => HaFinalizado() ? (Reloj.Hoy - FechaInicio).TotalDays : (FechaFin.Value - FechaInicio).TotalDays,
-		Tiempo.Mes => HaFinalizado() ? ((Reloj.Hoy - FechaInicio).TotalDays)/12 : ((FechaFin.Value - FechaInicio).TotalDays)/12,
-		Tiempo.Año => HaFinalizado() ? ((Reloj.Hoy - FechaInicio).TotalDays)/365 : ((FechaFin.Value - FechaInicio).TotalDays)/365,
-		_ => throw new ArgumentException("Error al calcular el tiempo transcurrido.")
-	};
+		var completos = (hasta.Year - desde.Year) * 12 + hasta.Month - desde.Month;
+
+		// AddMonths ajusta al último día del mes cuando el día no existe (31/01 + 1 mes = 28/02),
+		// así que el corte se compara contra la fecha, no contra el número de día.
+		if (desde.AddMonths(completos) > hasta)
+		{
+			completos--;
+		}
+
+		var corte = desde.AddMonths(completos);
+		var siguiente = desde.AddMonths(completos + 1);
+
+		return completos + (hasta - corte).TotalDays / (siguiente - corte).TotalDays;
+	}
 
 	public override IEnumerable<object> GetEqualityCommponents()
 	{
