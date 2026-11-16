@@ -72,12 +72,6 @@ public class EdusisDBContext : DbContext
 		modelBuilder.ApplyConfigurationsFromAssembly(typeof(EdusisDBContext).Assembly);
 	}
 
-	protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-	{
-		configurationBuilder.Properties<string>()
-							.HaveMaxLength(50);
-	}
-
 	/// <summary>
 	/// <c>rol</c> son <strong>datos de referencia</strong>: existen desde la migración y nunca se
 	/// insertan en tiempo de ejecución. Antes de guardar, cualquier <see cref="Rol"/> que el

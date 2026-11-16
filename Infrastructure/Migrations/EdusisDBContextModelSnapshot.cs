@@ -25,7 +25,6 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("CicloLectivoCatalogo", b =>
                 {
                     b.Property<short>("periodo")
-                        .HasMaxLength(50)
                         .HasColumnType("smallint")
                         .HasColumnName("periodo");
 
@@ -894,7 +893,6 @@ namespace Infrastructure.Migrations
                                 .HasColumnType("uniqueidentifier");
 
                             b1.Property<short>("Periodo")
-                                .HasMaxLength(50)
                                 .HasColumnType("smallint")
                                 .HasColumnName("ciclo_lectivo");
 
@@ -1028,7 +1026,6 @@ namespace Infrastructure.Migrations
                                 .HasColumnName("apellido");
 
                             b1.Property<int>("Documento")
-                                .HasMaxLength(50)
                                 .HasColumnType("int")
                                 .HasColumnName("documento");
 
