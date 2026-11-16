@@ -17,6 +17,10 @@ namespace Core.ServicioCatedras.DTOs.Responses;
 /// <see cref="ReemplazaADocenteID"/> resuelve ese salto, porque mostrar "suple a" pide un nombre y
 /// hacer el salto en la vista obligaría a tener el listado entero a mano para recorrerlo.
 /// </para>
+/// <para>
+/// <see cref="AdmitePasarAInterino"/> sale de <c>SituacionRevista.AdmitePasarAInterino()</c>: la
+/// pantalla lo deducía de <c>Vigente</c> y de que <see cref="FechaFin"/> fuera nula.
+/// </para>
 /// </remarks>
 public record SituacionRevistaResponse(
 	Guid SituacionRevistaID,
@@ -31,4 +35,5 @@ public record SituacionRevistaResponse(
 	bool Vigente,
 	bool EsOcupante,
 	Guid? ReemplazaADocenteID,
-	bool TieneSuplenteVigente);
+	bool TieneSuplenteVigente,
+	bool AdmitePasarAInterino);

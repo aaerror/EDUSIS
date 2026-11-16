@@ -73,6 +73,14 @@ public sealed class SituacionRevista : Entity
 		!Periodo.EsIndeterminado();
 
 	/// <summary>
+	/// Si la designación puede ponerse a término con <see cref="PasarAInterinoHasta"/>: vigente y
+	/// por tiempo indeterminado (en los hechos, un titular). Lo consulta la pantalla para ofrecer la
+	/// acción; la regla vive acá para que no se deduzca de que <c>FechaFin</c> sea nula.
+	/// </summary>
+	public bool AdmitePasarAInterino() =>
+		EsCargoVigente() && !EsTemporal();
+
+	/// <summary>
 	/// Titular e interino son dos formas de ocupar el mismo puesto; el suplente no lo ocupa, reemplaza
 	/// a quien corresponda mientras dura la ausencia.
 	/// </summary>

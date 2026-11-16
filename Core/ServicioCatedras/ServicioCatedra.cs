@@ -430,7 +430,8 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 						// El salto de designación reemplazada a docente reemplazado. Se resuelve contra
 						// la misma colección ya cargada, así que no cuesta una consulta más.
 						ReemplazaADocenteID: situacion.ReemplazaA.HasValue ? catedra.DocenteDe(situacion.ReemplazaA.Value) : null,
-						TieneSuplenteVigente: catedra.TieneSuplenteVigente(situacion.Id)))
+						TieneSuplenteVigente: catedra.TieneSuplenteVigente(situacion.Id),
+						AdmitePasarAInterino: situacion.AdmitePasarAInterino()))
 				.ToList();
 		}
 		catch (Exception ex)

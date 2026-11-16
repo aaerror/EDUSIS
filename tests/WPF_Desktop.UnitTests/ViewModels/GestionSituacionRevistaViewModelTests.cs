@@ -98,6 +98,11 @@ public class GestionSituacionRevistaViewModelTests
 												Guid? reemplazaADocenteID = null,
 												bool tieneSuplenteVigente = false)
 		{
+			// Misma cuenta que RangoFechas.EstaVigente: ya empezó y todavía no terminó.
+			var esVigente = vigente ?? (!string.Equals(estado, "Finalizado")
+										&& (inicio ?? DateTime.Today.AddDays(-30)) <= DateTime.Today
+										&& (fin is null || fin >= DateTime.Today));
+
 			var situacion = new SituacionRevistaResponse(Guid.NewGuid(),
 														 CatedraID,
 														 docenteID ?? Guid.NewGuid(),
@@ -107,13 +112,12 @@ public class GestionSituacionRevistaViewModelTests
 														 fin,
 														 reemplazaA,
 														 enFunciones,
-														 // Misma cuenta que RangoFechas.EstaVigente: ya empezó y todavía no terminó.
-													 Vigente: vigente ?? (!string.Equals(estado, "Finalizado")
-																		  && (inicio ?? DateTime.Today.AddDays(-30)) <= DateTime.Today
-																		  && (fin is null || fin >= DateTime.Today)),
+														 Vigente: esVigente,
 														 EsOcupante: string.Equals(cargo, "Titular") || string.Equals(cargo, "Interino"),
 														 ReemplazaADocenteID: reemplazaADocenteID,
-														 TieneSuplenteVigente: tieneSuplenteVigente);
+														 TieneSuplenteVigente: tieneSuplenteVigente,
+														 // Misma cuenta que SituacionRevista.AdmitePasarAInterino.
+														 AdmitePasarAInterino: esVigente && fin is null);
 			Situaciones.Add(situacion);
 
 			return situacion;

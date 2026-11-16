@@ -73,6 +73,17 @@ internal partial class SituacionRevistaViewModel : ObservableValidator
 	/// </remarks>
 	[ObservableProperty]
 	private bool _tieneSuplenteVigente;
+
+	/// <summary>
+	/// La designación puede ponerse a término, según <c>SituacionRevista.AdmitePasarAInterino()</c>.
+	/// </summary>
+	/// <remarks>
+	/// Antes la pantalla lo deducía de <see cref="Vigente"/> y de <c>FechaFin is null</c>; además
+	/// <see cref="FechaFin"/> es editable en este ViewModel, así que la deducción podía cambiar
+	/// con el formulario sin que cambiara la designación.
+	/// </remarks>
+	[ObservableProperty]
+	private bool _admitePasarAInterino;
 	#endregion
 
 
@@ -95,6 +106,7 @@ internal partial class SituacionRevistaViewModel : ObservableValidator
 			EsOcupante = _situacionRevista.EsOcupante;
 			ReemplazaADocenteID = _situacionRevista.ReemplazaADocenteID;
 			TieneSuplenteVigente = _situacionRevista.TieneSuplenteVigente;
+			AdmitePasarAInterino = _situacionRevista.AdmitePasarAInterino;
 		}
 	}
 

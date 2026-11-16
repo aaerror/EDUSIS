@@ -28,7 +28,8 @@ public class SituacionRevistaViewModelTests
 			// Un suplente no ocupa el puesto: cubre una ausencia.
 			EsOcupante: false,
 			ReemplazaADocenteID: Guid.NewGuid(),
-			TieneSuplenteVigente: false);
+			TieneSuplenteVigente: false,
+			AdmitePasarAInterino: false);
 	}
 
 	[Fact]
@@ -69,7 +70,8 @@ public class SituacionRevistaViewModelTests
 	public void Un_titular_sin_reemplazo_ni_fecha_de_fin_deja_ambos_en_nulo()
 	{
 		var response = new SituacionRevistaResponse(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Vigente", "Titular", _inicio, null, null, false,
-													Vigente: true, EsOcupante: true, ReemplazaADocenteID: null, TieneSuplenteVigente: false);
+													Vigente: true, EsOcupante: true, ReemplazaADocenteID: null, TieneSuplenteVigente: false,
+													AdmitePasarAInterino: true);
 
 		var viewModel = new SituacionRevistaViewModel(response);
 

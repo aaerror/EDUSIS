@@ -189,6 +189,33 @@ public class SituacionRevistaTests
 
 		Should.Throw<ArgumentException>(() => catedra.PasarAInterinoHasta(designacion, DateTime.Today.AddDays(dias)));
 	}
+
+	[Fact]
+	public void AdmitePasarAInterino_es_verdadero_para_un_titular_vigente()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+
+		catedra.SituacionesRevista.Single(x => x.Id == designacion).AdmitePasarAInterino().ShouldBeTrue();
+	}
+
+	[Fact]
+	public void AdmitePasarAInterino_es_falso_para_una_designacion_con_termino()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Interino, DateTime.Today, DateTime.Today.AddMonths(3));
+
+		catedra.SituacionesRevista.Single(x => x.Id == designacion).AdmitePasarAInterino().ShouldBeFalse();
+	}
+
+	[Fact]
+	public void AdmitePasarAInterino_es_falso_para_un_titular_que_todavia_no_inicio()
+	{
+		var catedra = new CatedraBuilder().Build();
+		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddDays(10), null);
+
+		catedra.SituacionesRevista.Single(x => x.Id == designacion).AdmitePasarAInterino().ShouldBeFalse();
+	}
 	#endregion
 
 	#region Finalización

@@ -336,13 +336,18 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region Carga
-	/// <summary>Obtiene la currícula vigente del curso (la que no tiene fecha de fin) y sus materias.</summary>
+	/// <summary>Obtiene la currícula vigente del curso y sus materias.</summary>
+	/// <remarks>
+	/// La vigencia la decide el dominio (<c>CurriculaResponse.Vigente</c>). Deducirla de
+	/// <c>FechaFin is null</c> tomaba por cerrada una currícula con fin futuro y por vigente una
+	/// que todavía no inició.
+	/// </remarks>
 	private async Task CargarAsync()
 	{
 		try
 		{
 			var curriculas = await _servicioCurricula.ListarCurriculasSegunCursoAsync(new CursoRequest(_cursoStore.Curso.CursoID));
-			var vigente = curriculas.FirstOrDefault(x => x.FechaFin is null);
+			var vigente = curriculas.FirstOrDefault(x => x.Vigente);
 
 			if (vigente is null)
 			{

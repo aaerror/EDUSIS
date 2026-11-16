@@ -169,7 +169,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	/// <c>CargoConFechaFinalizacionException</c>.
 	/// </remarks>
 	public bool PuedePasarAInterino =>
-		SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.Vigente && SituacionRevistaUPDATE.FechaFin is null;
+		SituacionRevistaUPDATE is not null && SituacionRevistaUPDATE.AdmitePasarAInterino;
 	#endregion
 
 	#region Commands
