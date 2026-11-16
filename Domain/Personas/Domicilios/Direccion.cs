@@ -16,7 +16,7 @@ public class Direccion : ValueObject
 	{
 		if (string.IsNullOrWhiteSpace(calle))
 		{
-			throw new ArgumentNullException(nameof(calle), $"La dirección posee datos incompletos.");
+			throw new CalleRequeridaException();
 		}
 
 		if (!string.IsNullOrWhiteSpace(observacion))

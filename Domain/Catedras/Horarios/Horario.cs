@@ -20,7 +20,7 @@ public class Horario : ValueObject
 	{
 		if (diaSemana.Equals(Dia.Sabado) || diaSemana.Equals(Dia.Domingo))
 		{
-			throw new ArgumentException(nameof(diaSemana));
+			throw new DiaNoHabilException();
 		}
 
 		DiaSemana = diaSemana;
@@ -28,7 +28,7 @@ public class Horario : ValueObject
 		EstablecerLimitesHorario();
 		if (horaInicio < _limiteHorarioInicio || horaInicio > _limiteHorarioFin)
 		{
-			throw new ArgumentException($"El horario de inicio corresponde a otro turno ({Turno}).", nameof(horaInicio));
+			throw new HoraInicioFueraDeTurnoException();
 		}
 
 		if (duracionHoraCatedra % 5 != 0)
@@ -38,7 +38,7 @@ public class Horario : ValueObject
 
 		if (duracionHoraCatedra < 30)
 		{
-			throw new ArgumentException($"La duración de la hora cátedra no puede ser menor a 30 minutos.", nameof(duracionHoraCatedra));
+			throw new DuracionHoraCatedraMinimaException();
 		}
 
 		HoraInicio = horaInicio;
@@ -85,7 +85,7 @@ public class Horario : ValueObject
 				_limiteHorarioFin = new TimeOnly(23, 00);
 				break;
 			default:
-				throw new ArgumentException("Error al establecer los límites del horario para el turno seleccionado.", nameof(Turno));
+				throw new TurnoInexistenteException();
 		}
 	}
 

@@ -1,4 +1,5 @@
 using Domain.Catedras.Horarios;
+using Domain.Catedras.Horarios.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -53,7 +54,7 @@ public class HorarioTests
 	{
 		var builder = new HorarioBuilder().ConTurno(Turno.Noche).ConHoraInicio(new TimeOnly(23, 30));
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		Should.Throw<HoraInicioFueraDeTurnoException>(() => builder.Build());
 	}
 	#endregion
 
@@ -61,19 +62,19 @@ public class HorarioTests
 	[Theory]
 	[InlineData(Dia.Sabado)]
 	[InlineData(Dia.Domingo)]
-	public void Un_horario_en_fin_de_semana_lanza_ArgumentException(Dia dia)
+	public void Un_horario_en_fin_de_semana_lanza_DiaNoHabilException(Dia dia)
 	{
 		var builder = new HorarioBuilder().ConDia(dia);
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		Should.Throw<DiaNoHabilException>(() => builder.Build());
 	}
 
 	[Fact]
-	public void Una_hora_de_inicio_fuera_de_la_franja_del_turno_lanza_ArgumentException()
+	public void Una_hora_de_inicio_fuera_de_la_franja_del_turno_lanza_HoraInicioFueraDeTurnoException()
 	{
 		var builder = new HorarioBuilder().ConTurno(Turno.Mañana).ConHoraInicio(new TimeOnly(15, 0));
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		Should.Throw<HoraInicioFueraDeTurnoException>(() => builder.Build());
 	}
 
 	[Fact]
@@ -87,11 +88,11 @@ public class HorarioTests
 	}
 
 	[Fact]
-	public void Una_duracion_menor_a_30_minutos_lanza_ArgumentException()
+	public void Una_duracion_menor_a_30_minutos_lanza_DuracionHoraCatedraMinimaException()
 	{
 		var builder = new HorarioBuilder().ConDuracionHoraCatedra(25);
 
-		Should.Throw<ArgumentException>(() => builder.Build());
+		Should.Throw<DuracionHoraCatedraMinimaException>(() => builder.Build());
 	}
 	#endregion
 

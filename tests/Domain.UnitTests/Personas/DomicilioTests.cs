@@ -69,9 +69,9 @@ public class DomicilioTests
 	[Theory]
 	[InlineData("")]
 	[InlineData("   ")]
-	public void Direccion_sin_calle_lanza_ArgumentNullException(string calle)
+	public void Direccion_sin_calle_lanza_CalleRequeridaException(string calle)
 	{
-		Should.Throw<ArgumentNullException>(() =>
+		Should.Throw<CalleRequeridaException>(() =>
 			Direccion.Crear(calle, "1234", nameof(Vivienda.Casa), string.Empty));
 	}
 
