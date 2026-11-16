@@ -5,7 +5,6 @@ using EDUSIS.Seed;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 // Semilla fija y GLOBAL de Bogus: el dataset tiene que ser reproducible. Si cada corrida
@@ -24,14 +23,13 @@ servicios.AddLogging(configuracion =>
 		configuracion.SetMinimumLevel(LogLevel.Information);
 
 		// EF loguea cada comando SQL en Information: sembrando miles de filas tapa el informe
-		// de la corrida. Este filtro sí tiene efecto porque RedirigirElDbContextSinRuido() ya
-		// quitó el `.LogTo(Console.WriteLine, ...)` de InfrastructureDI, que escribía a la
-		// consola por fuera del ILoggerFactory y era por lo tanto insilenciable.
+		// de la corrida. El filtro alcanza porque InfrastructureDI ya no cablea un LogTo a la
+		// consola por fuera del ILoggerFactory; si alguien lo vuelve a poner, este filtro deja de
+		// tener efecto sin ningún error.
 		configuracion.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
 	});
 
 servicios.AddInfrastructure();
-RedirigirElDbContextSinRuido(servicios);
 
 // La sesión del seeder, registrada por SU composition root y no por CoreDI (ver
 // SesionDeSistema y la decisión de la Fase 5). AddServices() se llama sólo para que
@@ -104,56 +102,6 @@ catch (Exception excepcion)
 {
 	registrador.LogError(excepcion, "La siembra falló y se interrumpió.");
 	return 1;
-}
-
-/// <summary>
-/// Vuelve a registrar el <see cref="EdusisDBContext"/> contra la misma base pero sin el
-/// <c>.LogTo(Console.WriteLine, LogLevel.Debug)</c> que <c>InfrastructureDI</c> tiene cableado.
-/// </summary>
-/// <remarks>
-/// Ese <c>LogTo</c> escribe directo a <see cref="Console"/> sin pasar por el
-/// <c>ILoggerFactory</c>, así que <strong>ningún consumidor puede silenciarlo</strong> con
-/// <c>AddFilter</c>. Sembrando miles de filas emite decenas de miles de líneas de SQL y tapa por
-/// completo el informe de la corrida.
-/// <para>
-/// La cadena no se duplica acá: se lee del contexto que <c>AddInfrastructure</c> acaba de
-/// configurar, con un proveedor temporal que no ejecuta ningún comando. Así sigue habiendo una
-/// sola fuente de verdad para la cadena de conexión, que además es provisoria.
-/// </para>
-/// <para>
-/// Es el mismo patrón de <c>ComposicionDePruebaE2E.RedirigirElDbContext</c>: quitar los
-/// descriptores y volver a registrarlos.
-/// </para>
-/// </remarks>
-static void RedirigirElDbContextSinRuido(IServiceCollection servicios)
-{
-	var cadenaDeConexion = LeerCadenaDeConexion();
-
-	servicios.RemoveAll<DbContextOptions<EdusisDBContext>>();
-	servicios.RemoveAll<DbContextOptions>();
-	servicios.RemoveAll<EdusisDBContext>();
-
-	servicios.AddDbContext<EdusisDBContext>(
-		opciones => opciones.UseSqlServer(cadenaDeConexion).EnableDetailedErrors(true),
-		ServiceLifetime.Scoped);
-
-	static string LeerCadenaDeConexion()
-	{
-		var temporales = new ServiceCollection();
-		temporales.AddLogging();
-		temporales.AddInfrastructure();
-
-		using var proveedorTemporal = temporales.BuildServiceProvider();
-		using var ambitoTemporal = proveedorTemporal.CreateScope();
-
-		// GetConnectionString no abre conexión ni ejecuta comandos, así que el LogTo no llega
-		// a emitir nada.
-		return ambitoTemporal.ServiceProvider
-			.GetRequiredService<EdusisDBContext>()
-			.Database
-			.GetConnectionString()
-			?? throw new InvalidOperationException("InfrastructureDI no dejó cadena de conexión en el contexto.");
-	}
 }
 
 /// <summary>

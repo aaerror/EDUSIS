@@ -5,7 +5,6 @@ using Domain.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Infrastructure;
 
@@ -14,10 +13,13 @@ public static class InfrastructureDI
 	public static IServiceCollection AddInfrastructure(this IServiceCollection services)
 	{
 		// DBContext
+		// Sin LogTo: EF toma el ILoggerFactory del contenedor, así que cada composition root decide
+		// nivel y destino con AddFilter. El LogTo(Console.WriteLine, Debug) que había escribía por
+		// fuera de ese factory y nadie podía silenciarlo (el seeder tenía que re-registrar el
+		// contexto sólo para esquivarlo).
 		services.AddDbContext<EdusisDBContext>(options =>
 			{
 				options.UseSqlServer("Data Source=localhost;Initial Catalog=EdusisDB;Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=True;Application Name='Edusis';Command Timeout=0")
-					   .LogTo(Console.WriteLine, LogLevel.Debug)
 					   .EnableDetailedErrors(true);
 			},
 			ServiceLifetime.Scoped);
