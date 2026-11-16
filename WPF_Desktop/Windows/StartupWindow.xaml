@@ -70,13 +70,8 @@
 												Height="38"
 												Margin="0 0 14 0"
 												VerticalAlignment="Center"/>
-					<TextBlock FontFamily="{ StaticResource ResourceKey=Fuente.Display }"
-							   FontSize="34"
-							   FontStretch="SemiCondensed"
-							   FontWeight="Bold"
-							   Foreground="{ StaticResource ResourceKey=Tinta }"
-							   Text="EDUSIS"
-							   VerticalAlignment="Center"/>
+					<TextBlock Style="{ StaticResource ResourceKey=Txt.Marca }"
+							   Text="EDUSIS"/>
 				</StackPanel>
 				<!-- 38 del timbre + 14 de separación: la bajada arranca donde arranca el wordmark. -->
 				<TextBlock Margin="52 4 0 0"

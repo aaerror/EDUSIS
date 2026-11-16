@@ -81,6 +81,20 @@
 		<Setter Property="Margin" Value="7 0"/>
 	</Style>
 
+	<!--
+		Wordmark "EDUSIS". Es la única línea en Bold de la familia Display: no es un título de
+		pantalla sino la marca, y por eso no comparte escala con Txt.Display. Tamaño de la ventana
+		de acceso; el rail usa la variante sobre pizarra, más chica.
+	-->
+	<Style x:Key="Txt.Marca" TargetType="{ x:Type TextBlock }">
+		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Display }"/>
+		<Setter Property="FontStretch" Value="SemiCondensed"/>
+		<Setter Property="FontSize" Value="34"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
 	<!--#region SOBRE PIZARRA — el rail oscuro
 		El rail es el único campo oscuro de la aplicación y no tenía estilos propios: la ficha de
 		sesión fijaba familia, tamaño, peso y color a mano, cuatro atributos por TextBlock, y era
@@ -107,6 +121,16 @@
 		<Setter Property="Foreground" Value="#FFFFFF"/>
 		<Setter Property="HorizontalAlignment" Value="Center"/>
 		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<Style x:Key="Txt.SobrePizarra.Marca" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Marca }">
+		<Setter Property="FontSize" Value="25"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarra }"/>
+	</Style>
+
+	<!-- Rótulo de sección del rail: la voz de Txt.Seccion con el blanco que cumple contraste. -->
+	<Style x:Key="Txt.SobrePizarra.Seccion" TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Seccion }">
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarraRotulo }"/>
 	</Style>
 	<!--#endregion-->
 

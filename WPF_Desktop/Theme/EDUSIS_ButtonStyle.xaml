@@ -216,7 +216,10 @@
 	-->
 	<Style x:Key="Btn.Terciario.Claro" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Terciario }">
 		<Setter Property="FocusVisualStyle" Value="{ StaticResource ResourceKey=Foco.Visual.Claro }"/>
+		<!-- Más compacto que el terciario: vive en el pie del rail, donde dos botones comparten fila. -->
+		<Setter Property="FontSize" Value="12"/>
 		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=SobrePizarraMedia }"/>
+		<Setter Property="Height" Value="30"/>
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="{ x:Type Button }">

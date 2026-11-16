@@ -83,6 +83,13 @@
 	<!-- Texto sobre campo oscuro: blanco a tres niveles de énfasis. -->
 	<SolidColorBrush x:Key="SobrePizarra" Color="#FFFFFF" Opacity=".95"/>
 	<SolidColorBrush x:Key="SobrePizarraMedia" Color="#FFFFFF" Opacity=".66"/>
+	<!--
+		Rótulos de sección del rail. Estaban en SobrePizarraTenue: blanco al 34 % sobre Pizarra da
+		2,8:1, debajo del 4,5:1 de WCAG AA para texto. Al 55 % da 5,0:1 y queda por debajo de
+		SobrePizarraMedia (6,5:1), así que el rótulo sigue leyéndose más apagado que las entradas.
+	-->
+	<SolidColorBrush x:Key="SobrePizarraRotulo" Color="#FFFFFF" Opacity=".55"/>
+	<!-- Sólo para controles inactivos, que WCAG exime del mínimo de contraste. Nunca texto activo. -->
 	<SolidColorBrush x:Key="SobrePizarraTenue" Color="#FFFFFF" Opacity=".34"/>
 
 	<!--
