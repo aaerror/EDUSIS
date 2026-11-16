@@ -210,11 +210,20 @@
 					</HeaderedContentControl.Header>
 
 					<!-- "Editar" abre el formulario: mismo peso que en los perfiles y en licencias. -->
-					<Button Command="{ Binding Path=EditarCommandAsync, IsAsync=True }"
-							Content="Editar"
-							Style="{ StaticResource ResourceKey=Btn.Secundario }"
-							ToolTip="Editar el puesto seleccionado"
-							Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+					<StackPanel Orientation="Horizontal">
+						<Button Command="{ Binding Path=EditarCommandAsync, IsAsync=True }"
+								Content="Editar"
+								Margin="0 0 8 0"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
+								ToolTip="Editar el puesto seleccionado"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						<!-- Activar es lo que hace avanzar a un puesto pendiente: va como primaria. -->
+						<Button Command="{ Binding Path=ActivarCommandAsync, IsAsync=True }"
+								Content="Activar"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Registrar la toma de posesión del puesto seleccionado"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+					</StackPanel>
 				</HeaderedContentControl>
 			</Grid>
 		</Border>

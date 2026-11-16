@@ -34,6 +34,7 @@ public interface IServicioDocente
 	Task<IReadOnlyCollection<PuestoResponse>> ListarPuestosDocentesAsync(DocenteIDRequest request);
 	Task AgregarPuestoDocenteAsync(RegistrarPuestoDocenteRequest request);
 	Task EditarPuestoDocenteAsync(EditarPuestoDocenteRequest request);
+	Task ActivarPuestoDocenteAsync(ActivarPuestoDocenteRequest request);
 	Task RevocarPuestoDocenteAsync(RevocarPuestoDocenteRequest request);
 	Task EliminarPuestoDocenteAsync(EliminarPuestoDocenteRequest request);
 	#endregion

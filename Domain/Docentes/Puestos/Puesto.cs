@@ -34,6 +34,13 @@ public sealed class Puesto : Entity
 
 		EstablecerPosicion(posicion);
 		EstablecerPeriodo(desde, hasta);
+
+		// Un alta activa con inicio futuro quedaba trabada: no se podía rescindir (no inició) ni
+		// eliminar (no está pendiente). Lo que empieza después de hoy pasa por Activar.
+		if (Estado == EstadoPuesto.Activo && !Periodo.HaIniciado())
+		{
+			throw new AltaActivaConInicioFuturoException();
+		}
 	}
 
 	internal Puesto(Guid docenteID, string estado, string posicion, DateTime desde, DateTime? hasta)
@@ -109,6 +116,28 @@ public sealed class Puesto : Entity
 		// y la regla "no se carga un período que ya empezó" rechazaría toda confirmación posterior
 		// al primer día. Confirmar conserva el inicio y sólo quita la fecha de fin.
 		AsignarPeriodo(Periodo.FechaInicio, null);
+	}
+
+	/// <summary>
+	/// Transición Pendiente → Activo: la toma de posesión del cargo.
+	/// </summary>
+	/// <remarks>
+	/// Sólo dentro del período: antes del inicio el docente todavía no puede asumir, y un eventual
+	/// vencido sin haberse activado ya no tiene cargo que tomar (se elimina, sigue pendiente).
+	/// </remarks>
+	internal void Activar()
+	{
+		if (Estado != EstadoPuesto.Pendiente)
+		{
+			throw new PuestoDocenteNoPendienteException();
+		}
+
+		if (!EstaActivo())
+		{
+			throw new PuestoDocenteInactivoException(MotivoInactivo());
+		}
+
+		Estado = EstadoPuesto.Activo;
 	}
 
 	/// <summary>

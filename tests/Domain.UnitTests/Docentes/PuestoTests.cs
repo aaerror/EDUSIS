@@ -127,20 +127,69 @@ public class PuestoTests
 	}
 
 	/// <remarks>
-	/// Antes, sin fecha, esta rescisión no hacía nada y no avisaba.
+	/// Antes este puesto se creaba y quedaba trabado: no se podía rescindir (no inició) ni eliminar
+	/// (no está pendiente). Lo que inicia después de hoy entra pendiente y se activa.
 	/// </remarks>
 	[Fact]
-	public void Rescindir_un_puesto_activo_que_todavia_no_inicio_lanza_PuestoDocenteInactivoException()
+	public void Un_alta_activa_con_inicio_futuro_lanza_AltaActivaConInicioFuturoException()
+	{
+		var builder = new PuestoBuilder()
+			.ConEstado(nameof(EstadoPuesto.Activo))
+			.ConDesde(DateTime.Today.AddDays(5));
+
+		Should.Throw<AltaActivaConInicioFuturoException>(() => builder.Build());
+	}
+
+	[Fact]
+	public void Activar_un_puesto_pendiente_ya_iniciado_lo_pasa_a_activo()
+	{
+		var docente = new PuestoBuilder().ConEstado(nameof(EstadoPuesto.Pendiente)).BuildDocente();
+		var puesto = docente.Puestos.Single();
+
+		docente.ActivarCargoDocente(puesto.Id);
+
+		puesto.Estado.ShouldBe(EstadoPuesto.Activo);
+	}
+
+	[Fact]
+	public void Activar_un_puesto_pendiente_que_todavia_no_inicio_lanza_PuestoDocenteInactivoException()
 	{
 		var docente = new PuestoBuilder()
-			.ConEstado(nameof(EstadoPuesto.Activo))
+			.ConEstado(nameof(EstadoPuesto.Pendiente))
 			.ConDesde(DateTime.Today.AddDays(5))
 			.BuildDocente();
 		var puesto = docente.Puestos.Single();
 
-		Should.Throw<PuestoDocenteInactivoException>(() => docente.RescindirCargoDocente(puesto.Id, null));
+		Should.Throw<PuestoDocenteInactivoException>(() => docente.ActivarCargoDocente(puesto.Id));
 
-		puesto.Estado.ShouldBe(EstadoPuesto.Activo);
+		puesto.Estado.ShouldBe(EstadoPuesto.Pendiente);
+	}
+
+	[Fact]
+	public void Activar_un_puesto_que_no_esta_pendiente_lanza_PuestoDocenteNoPendienteException()
+	{
+		var docente = new PuestoBuilder().ConEstado(nameof(EstadoPuesto.Activo)).BuildDocente();
+		var puesto = docente.Puestos.Single();
+
+		Should.Throw<PuestoDocenteNoPendienteException>(() => docente.ActivarCargoDocente(puesto.Id));
+	}
+
+	/// <remarks>
+	/// El alta impide dos puestos activos de la misma posición, pero no un pendiente junto a un
+	/// activo: la guarda tiene que volver a mirar al activar.
+	/// </remarks>
+	[Fact]
+	public void Activar_un_puesto_cuya_posicion_ya_tiene_un_activo_lanza_PuestoDocenteAsignadoException()
+	{
+		var docente = new DocenteBuilder()
+			.ConPuesto(nameof(Posicion.Profesor), nameof(EstadoPuesto.Pendiente))
+			.Build();
+		var pendiente = docente.Puestos.Single();
+		docente.AsignarCargoDocente(nameof(Posicion.Profesor), nameof(EstadoPuesto.Activo), DateTime.Today, null);
+
+		Should.Throw<PuestoDocenteAsignadoException>(() => docente.ActivarCargoDocente(pendiente.Id));
+
+		pendiente.Estado.ShouldBe(EstadoPuesto.Pendiente);
 	}
 
 	[Fact]
@@ -224,7 +273,7 @@ public class PuestoTests
 
 		tipo.GetConstructors(publicos).ShouldBeEmpty();
 		tipo.GetMethod(nameof(Puesto.EstaActivo), publicos).ShouldNotBeNull();
-		new[] { "ActualizarPuestoDocente", "EstablecerComoPuestoFijo", "Rescindir" }
+		new[] { "ActualizarPuestoDocente", "EstablecerComoPuestoFijo", "Activar", "Rescindir" }
 			.ShouldAllBe(nombre => tipo.GetMethod(nombre, publicos) == null);
 	}
 	#endregion

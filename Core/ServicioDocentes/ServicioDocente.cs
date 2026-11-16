@@ -780,6 +780,30 @@ internal class ServicioDocente : IServicio, IServicioDocente
 		}
 	}*/
 
+	public async Task ActivarPuestoDocenteAsync(ActivarPuestoDocenteRequest request)
+	{
+		try
+		{
+			_sesion.Exigir(Permiso.GestionarDocentes);
+
+			var unDocente = await _unitOfWork.Docentes
+				.BuscarPorIDAsync(request.DocenteID);
+			unDocente.ActivarCargoDocente(request.PuestoID);
+
+			_logger.LogInformation($"\nActivando puesto docente...\nPuestoID: {request.PuestoID}");
+
+			_unitOfWork.Docentes.Modificar(unDocente);
+			var result = await _unitOfWork.GuardarCambiosAsync();
+
+			_logger.LogInformation($"{ result } registro modificado correctamente en el docente.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
 	public async Task RevocarPuestoDocenteAsync(RevocarPuestoDocenteRequest request)
 	{
 		try

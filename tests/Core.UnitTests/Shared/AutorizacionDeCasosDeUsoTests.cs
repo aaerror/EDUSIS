@@ -516,6 +516,15 @@ public class AutorizacionDeCasosDeUsoTests
 		await Should.ThrowAsync<PermisoDenegadoException>(
 			() => host.Resolver<IServicioDocente>().DesafectarDocenteAsync(null!));
 	}
+
+	[Fact]
+	public async Task ActivarPuestoDocenteAsync_sin_GestionarDocentes_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioDocente>().ActivarPuestoDocenteAsync(null!));
+	}
 	#endregion
 
 	#region Las lecturas de impacto de borrado, que SÍ exigen permiso

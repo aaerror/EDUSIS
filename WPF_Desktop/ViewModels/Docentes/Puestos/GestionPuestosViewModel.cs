@@ -49,6 +49,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	[ObservableProperty]
 	[NotifyCanExecuteChangedFor(nameof(EditarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(ActivarCommandAsync))]
 	private bool _habilitarListadoPuestos;
 
 	[ObservableProperty]
@@ -63,6 +64,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(CancelarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(GuardarCommandAsync))]
+	[NotifyCanExecuteChangedFor(nameof(ActivarCommandAsync))]
 	private PuestoDocenteViewModel _puestoDocente;
 
 	#region Response
@@ -73,6 +75,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	private ListCollectionView _puestosDocente;
 
 	#region Commands
+	public IAsyncRelayCommand ActivarCommandAsync { get; }
 	public IAsyncRelayCommand CargarPuestosCommandAsync { get; }
 	public IAsyncRelayCommand CancelarCommandAsync { get; }
 	public IRelayCommand EditarCommandAsync { get; }
@@ -104,6 +107,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 			Migaja.Actual("PUESTOS")
 		};
 
+		ActivarCommandAsync = new AsyncRelayCommand(ExecuteActivarCommandAsync, CanExecuteActivarCommand);
 		CargarPuestosCommandAsync = new AsyncRelayCommand(ExecuteCargarPuestosDocentesAsync);
 		CancelarCommandAsync = new AsyncRelayCommand<string>(ExecuteCancelarCommandAsync, CanExecuteCancelarCommand);
 		EditarCommandAsync = new RelayCommand(ExecuteEditarCommand, CanExecuteEditarCommand);
@@ -160,6 +164,44 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 			_dialogService.MostrarError(ex.Message, "No se pudieron cargar los puestos");
 		}
 	}
+
+	#region ActivarCommandAsync
+	private bool CanExecuteActivarCommand() =>
+		HabilitarListadoPuestos && PuestoDocente is not null && PuestoDocente.Estado.Equals(Enum.GetName(EstadoPuesto.Pendiente));
+
+	/// <summary>
+	/// Toma de posesión: pasa el puesto pendiente a activo.
+	/// </summary>
+	/// <remarks>
+	/// Se confirma porque no tiene vuelta atrás: un puesto activo ya no se edita ni se elimina,
+	/// sólo se revoca. Que el período haya iniciado lo decide el dominio, no el botón.
+	/// </remarks>
+	private async Task ExecuteActivarCommandAsync()
+	{
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+				titulo: $"Activar el puesto { PuestoDocente.Posicion } de { NombreCompleto }",
+				mensaje: "El docente toma posesión del puesto. A partir de ahora el puesto ya no se puede editar ni eliminar; sólo revocar.",
+				verbo: "Activar puesto")))
+		{
+			return;
+		}
+
+		try
+		{
+			var request = new ActivarPuestoDocenteRequest(DocenteID: _legajoDocenteResponse.DocenteID,
+														  PuestoID: PuestoDocente.PuestoID);
+			await _servicioDocentes.ActivarPuestoDocenteAsync(request);
+
+			_dialogService.MostrarInformacion($"{ PuestoDocente.Posicion } de { NombreCompleto }.", "Puesto activado");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo activar el puesto");
+		}
+
+		await ExecuteCargarPuestosDocentesAsync();
+	}
+	#endregion
 
 	#region CancelarCommandAsync
 	private bool CanExecuteCancelarCommand(object? obj)

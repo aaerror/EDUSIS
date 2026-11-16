@@ -170,6 +170,37 @@ public sealed class Docente : Persona
 		puesto.EstablecerComoPuestoFijo();
 	}
 
+	/// <summary>
+	/// Toma de posesión de un puesto pendiente. La posición no puede estar ocupada por otro puesto
+	/// activo del mismo docente: el alta lo controla, pero entre el alta y la activación pudo
+	/// activarse otro de la misma posición.
+	/// </summary>
+	public void ActivarCargoDocente(Guid puestoID)
+	{
+		if (!Activo)
+		{
+			throw new DocenteInactivoException();
+		}
+
+		var puestoDocente = BuscarPuestoDocente(puestoID);
+		if (puestoDocente is null)
+		{
+			throw new PuestoDocenteNoEncontradoException();
+		}
+
+		// Se excluye el propio puesto: si ya estuviera activo, la guarda de posición lo encontraría
+		// a él y taparía la regla que corresponde (no está pendiente), que valida Activar.
+		var posicionOcupada = _puestos.Any(x => x.Id != puestoDocente.Id
+											 && x.Posicion.Equals(puestoDocente.Posicion)
+											 && x.Estado.Equals(EstadoPuesto.Activo));
+		if (posicionOcupada)
+		{
+			throw new PuestoDocenteAsignadoException();
+		}
+
+		puestoDocente.Activar();
+	}
+
 	public void RescindirCargoDocente(Guid puestoID, DateTime? fechaFinalizacion)
 	{
 		if (!Activo)

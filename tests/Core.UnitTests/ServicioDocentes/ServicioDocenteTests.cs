@@ -485,6 +485,30 @@ public class ServicioDocenteTests
 	}
 
 	[Fact]
+	public async Task ActivarPuestoDocenteAsync_pasa_el_puesto_pendiente_a_activo_y_guarda()
+	{
+		var docente = SembrarDocente(conPuesto: true);
+		var puestoID = docente.Puestos.First().Id;
+
+		await _servicio.ActivarPuestoDocenteAsync(new ActivarPuestoDocenteRequest(docente.Id, puestoID));
+
+		docente.Puestos.First().Estado.ShouldBe(EstadoPuesto.Activo);
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ActivarPuestoDocenteAsync_sobre_un_puesto_activo_propaga_la_excepcion_del_dominio_y_no_guarda()
+	{
+		var docente = SembrarDocente(conPuesto: true, estadoPuesto: nameof(EstadoPuesto.Activo));
+		var puestoID = docente.Puestos.First().Id;
+
+		await Should.ThrowAsync<PuestoDocenteNoPendienteException>(() =>
+			_servicio.ActivarPuestoDocenteAsync(new ActivarPuestoDocenteRequest(docente.Id, puestoID)));
+
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
+	}
+
+	[Fact]
 	public async Task RevocarPuestoDocenteAsync_rescinde_el_cargo_y_guarda()
 	{
 		var docente = SembrarDocente(conPuesto: true, estadoPuesto: nameof(EstadoPuesto.Activo));
