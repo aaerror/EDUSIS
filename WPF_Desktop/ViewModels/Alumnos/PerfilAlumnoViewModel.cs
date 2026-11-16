@@ -89,9 +89,6 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 			throw new ArgumentNullException(nameof(perfilBuscadoStore), "Error al ver el perfil del alumno. Primero debe buscar un alumno antes de continuar.");
 		}
 
-		// _persona = new NotifyTaskCompletion<PersonaConDetallesResponse>(_servicioAlumno.BuscarPorIDAsync(perfilBuscadoStore.Documento));
-		// _alumno = _persona.Result;
-
 		CargarPerfilCommandAsync = new AsyncRelayCommand(CargarPerfilAsync);
 		VolverCommand = new RelayCommand(gestionAlumnosNavigationService.Navigate);
 

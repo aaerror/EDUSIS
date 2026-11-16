@@ -34,12 +34,6 @@ internal partial class UsuarioViewModel : ObservableObject
 	[ObservableProperty]
 	private IReadOnlyList<int> _rolesIDs = Array.Empty<int>();
 
-	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(Estado))]
-	private bool _estaConectado = false;
-
-	public string Estado => EstaConectado ? "Conectado" : "Sin conexión";
-
 	/// <summary>
 	/// Iniciales para la credencial del rail. Dos letras como máximo: con tres o más deja de
 	/// leerse como una inicial y pasa a parecer una sigla.
@@ -83,7 +77,6 @@ internal partial class UsuarioViewModel : ObservableObject
 	{
 		if (!_sesion.EstaAutenticado)
 		{
-			EstaConectado = false;
 			return;
 		}
 
@@ -92,6 +85,5 @@ internal partial class UsuarioViewModel : ObservableObject
 		Username = usuario.Usuario;
 		NombreCompleto = usuario.NombreCompleto;
 		RolesIDs = usuario.RolesIDs;
-		EstaConectado = true;
 	}
 }
