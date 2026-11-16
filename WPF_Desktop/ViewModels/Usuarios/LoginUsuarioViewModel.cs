@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioAutenticaciones.DTOs.Requests;
 using Core.ServicioAutenticaciones;
 using System.Collections.Generic;
@@ -14,7 +13,6 @@ using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Security;
 using WPF_Desktop.Shared;
-using WPF_Desktop.ViewModels.Shared.Messages;
 
 namespace WPF_Desktop.ViewModels.Usuarios;
 
@@ -178,7 +176,9 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 					// autorización del RBAC no puede depender de eso (ver SesionUsuario).
 					_sesion.Iniciar(response.UsuarioID, response.RolesIDs);
 
-					WeakReferenceMessenger.Default.Send(new UsuarioLogeadoMessage(response.UsuarioID));
+					// Sin mensaje de "usuario logueado": el único receptor era MainViewModel, que se
+					// construye DESPUÉS del login y nunca lo recibía. Quien necesita al usuario lo
+					// lee de la sesión.
 					Application.Current.MainWindow.Close();
 				}
 				catch (Exception ex)

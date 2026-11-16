@@ -5,7 +5,6 @@ using Core.ServicioUsuarios;
 using Domain.Usuarios;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Security;
 using WPF_Desktop.Shared;
@@ -15,7 +14,7 @@ using WPF_Desktop.ViewModels.Shared.Messages;
 
 namespace WPF_Desktop.ViewModels;
 
-internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLogeadoMessage>
+internal partial class MainViewModel : ObservableRecipient
 {
 	private readonly IServicioUsuario _servicioUsuario;
 	private readonly ISesionUsuario _sesion;
@@ -150,8 +149,6 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		_navigationStore.ViewModelChanged += OnViewModelChanged;
 		_modalNavigationStore.ViewModelChanged += OnModalViewModelChanged;
 		_sesion.Cambio += OnSesionCambio;
-
-		Messenger.Register<UsuarioLogeadoMessage>(this);
 	}
 
 	private async Task CargarUsuarioAsync()
@@ -291,21 +288,4 @@ internal partial class MainViewModel : ObservableRecipient, IRecipient<UsuarioLo
 		OnPropertyChanged(nameof(ModalViewModelActual));
 		OnPropertyChanged(nameof(ModalEstaAbierto));
 	}
-
-	#region Message
-	//protected override void OnActivated()
-	//{
-	//	WeakReferenceMessenger.Default.Register<UsuarioLogeadoMessage>(this);
-	//}
-
-	//protected override void OnDeactivated()
-	//{
-	//	WeakReferenceMessenger.Default.UnregisterAll(this);
-	//}
-
-	public void Receive(UsuarioLogeadoMessage message)
-	{
-		Console.WriteLine(message);
-	}
-	#endregion
 }

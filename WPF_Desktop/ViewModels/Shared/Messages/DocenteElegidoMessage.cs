@@ -8,7 +8,7 @@ namespace WPF_Desktop.ViewModels.Shared.Messages;
 /// <remarks>
 /// El modal no conoce a sus llamadores. <c>ModalNavigationService</c> construye el ViewModel con una
 /// fábrica sin parámetros, así que no hay por dónde pasarle una devolución de llamada: el resultado
-/// viaja por el mensajero, que es el mismo camino que ya usa <c>UsuarioLogeadoMessage</c>.
+/// viaja por el mensajero, y el que lo abrió ya existe cuando se envía.
 ///
 /// Lleva el ViewModel entero y no sólo el identificador porque las dos pantallas que lo reciben
 /// necesitan además el nombre para confirmar la operación, y <c>LegajoDocenteViewModel</c> sólo se

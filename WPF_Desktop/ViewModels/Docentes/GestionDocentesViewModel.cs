@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioDocentes.DTOs.Responses;
 using Core.ServicioDocentes;
@@ -14,7 +13,6 @@ using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
-using WPF_Desktop.ViewModels.Shared.Messages;
 
 namespace WPF_Desktop.ViewModels.Docentes;
 
@@ -411,9 +409,9 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 				_gestionLicenciasNavigationService.Navigate();
 				break;
 			case "Perfil":
-				// El ID sale del elegido y no del store: acá ya está garantizado no nulo por la
-				// guarda de arriba, y el store lo expone como Guid?.
-				WeakReferenceMessenger.Default.Send(new DocenteSeleccionadoMessage(LegajoDocenteSeleccionado.DocenteID));
+				// El perfil lee al docente de LegajoStore, escrito arriba. Acá se mandaba además un
+				// DocenteSeleccionadoMessage que nadie recibía: el perfil nace después del Send y el
+				// mensajero no tiene replay, que es justamente el caso del store.
 				_perfilDocenteNavigationService.Navigate();
 				break;
 			case "Puesto":
