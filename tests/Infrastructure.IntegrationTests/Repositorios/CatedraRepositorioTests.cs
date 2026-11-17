@@ -51,8 +51,8 @@ public sealed class CatedraRepositorioTests : BaseIntegracion
 	public async Task CatedrasSegunMateriaAsync_devuelve_todas_las_catedras_de_esa_materia()
 	{
 		var (cursoID, curriculaID, divisionID) = await ArmarCursoConCurriculaYDivisionAsync();
-		var division1ID = await SembrarDivisionAsync(cursoID, "A");
-		var division2ID = await SembrarDivisionAsync(cursoID, "B");
+		var division1ID = await SembrarDivisionAsync(cursoID, "B");
+		var division2ID = await SembrarDivisionAsync(cursoID, "C");
 		var materia1ID = await SembrarMateriaAsync(curriculaID, "Matemática");
 		var materia2ID = await SembrarMateriaAsync(curriculaID, "Historia");
 
@@ -80,8 +80,8 @@ public sealed class CatedraRepositorioTests : BaseIntegracion
 	public async Task CatedrasSegunDivisionAsync_devuelve_todas_las_catedras_de_esa_division()
 	{
 		var (cursoID, curriculaID, _) = await ArmarCursoConCurriculaYDivisionAsync();
-		var division1ID = await SembrarDivisionAsync(cursoID, "A");
-		var division2ID = await SembrarDivisionAsync(cursoID, "B");
+		var division1ID = await SembrarDivisionAsync(cursoID, "B");
+		var division2ID = await SembrarDivisionAsync(cursoID, "C");
 		var materia1ID = await SembrarMateriaAsync(curriculaID, "Matemática");
 		var materia2ID = await SembrarMateriaAsync(curriculaID, "Historia");
 

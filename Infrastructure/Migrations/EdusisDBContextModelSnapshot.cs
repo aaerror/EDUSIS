@@ -400,9 +400,10 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("PK_DIVISION");
 
-                    b.HasIndex("CursoID");
-
                     b.HasIndex("Preceptor");
+
+                    b.HasIndex("CursoID", "Descripcion")
+                        .IsUnique();
 
                     b.ToTable("division", (string)null);
                 });

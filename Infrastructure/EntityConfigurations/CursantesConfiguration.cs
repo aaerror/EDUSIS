@@ -63,6 +63,13 @@ internal class CursantesConfiguration : IEntityTypeConfiguration<Cursante>
 
 		// CicloLectivo es VO: se mapea con OwnsOne, y su Periodo dobla como columna propia
 		// y como FK hacia el catálogo ciclo_lectivo (ver CicloLectivoConfiguration).
+		//
+		// UNA INSCRIPCIÓN ACTIVA POR ALUMNO Y CICLO: índice único filtrado
+		// UQ_CURSANTE_ALUMNO_CICLO_ACTIVA (alumno_id, ciclo_lectivo) WHERE fecha_fin IS NULL. No se
+		// declara acá porque EF Core no admite un HasIndex que mezcle una propiedad del dueño
+		// (AlumnoID) con una del tipo poseído (CicloLectivo.Periodo): vive como SQL en la migración
+		// AgregarIndicesUnicosDeDivisionYCursante. El filtro es obligatorio: el traslado de división
+		// cierra una inscripción y abre otra del mismo alumno en el mismo ciclo.
 		builder.OwnsOne(x => x.CicloLectivo, ciclo =>
 		{
 			ciclo.Property(x => x.Periodo)

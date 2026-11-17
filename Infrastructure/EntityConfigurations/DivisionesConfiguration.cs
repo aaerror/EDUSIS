@@ -36,6 +36,11 @@ internal class DivisionesConfiguration : IEntityTypeConfiguration<Division>
 			   .IsUnicode(false)
 			   .IsRequired();
 
+		// Una letra por curso. ServicioDivision ya lo valida con ExisteDivisionConDescripcionAsync;
+		// el índice cierra la carrera entre dos altas simultáneas, que la consulta previa no ve.
+		builder.HasIndex(x => new { x.CursoID, x.Descripcion })
+			   .IsUnique();
+
 		builder.Property(x => x.Preceptor)
 			   .HasColumnName("preceptor_id")
 			   .IsRequired(false);
