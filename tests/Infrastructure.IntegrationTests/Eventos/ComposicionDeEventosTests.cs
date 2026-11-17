@@ -24,9 +24,9 @@ public sealed class ComposicionDeEventosTests
 	/// <summary>
 	/// <c>AddInfrastructure</c> registra los handlers escaneando dos assemblies:
 	/// <c>Infrastructure</c> y <c>Core</c>. El segundo se identifica con
-	/// <c>typeof(IGeneradorDocumentos)</c>, un tipo que no es un marcador pensado para eso: si
-	/// ese puerto se mueve o se elimina, los handlers de <c>Core</c> dejan de registrarse sin
-	/// un solo error de compilación. Esta prueba es la que lo detecta.
+	/// <c>typeof(MarcadorDeCore)</c>; si alguien vuelve a usar como testigo un tipo que se
+	/// puede mover de assembly, los handlers de <c>Core</c> dejan de registrarse sin un solo
+	/// error de compilación. Esta prueba es la que lo detecta.
 	/// </summary>
 	[Fact]
 	public void La_composicion_real_registra_los_handlers_de_eventos_definidos_en_Core()
