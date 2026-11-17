@@ -170,6 +170,17 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 	[ObservableProperty]
 	private int _tardanzas;
+
+	/// <summary>
+	/// Extremos del período de las faltas (RF-16), ambos incluidos. Un extremo vacío deja el
+	/// período abierto de ese lado; los dos vacíos cuentan todas las planillas del alumno. El
+	/// período invertido lo rechaza Core con <c>FechasInconsistentesException</c>.
+	/// </summary>
+	[ObservableProperty]
+	private DateTime? _asistenciasDesde;
+
+	[ObservableProperty]
+	private DateTime? _asistenciasHasta;
 	#endregion
 	#endregion
 
@@ -600,14 +611,22 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 		try
 		{
 			var cursanteID = Cursante.CursanteID;
+			var desde = AsistenciasDesde;
+			var hasta = AsistenciasHasta;
 
-			Presentes = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Presente));
-			Ausencias = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Ausencia));
-			Inasistencias = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Inasistencia));
-			Tardanzas = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Tardanza));
+			Presentes = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Presente, desde, hasta));
+			Ausencias = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Ausencia, desde, hasta));
+			Inasistencias = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Inasistencia, desde, hasta));
+			Tardanzas = await _servicioAsistencia.ContarFaltasAsync(new ContarFaltasRequest(cursanteID, TipoAsistencia.Tardanza, desde, hasta));
 		}
 		catch (Exception ex)
 		{
+			// Los contadores anteriores son de otro período: dejarlos a la vista los haría pasar
+			// por el resultado del período que se acaba de rechazar.
+			Presentes = 0;
+			Ausencias = 0;
+			Inasistencias = 0;
+			Tardanzas = 0;
 			_dialogService.MostrarError(ex.Message, "Error al cargar las asistencias");
 		}
 	}

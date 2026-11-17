@@ -1029,6 +1029,50 @@ public class GestionCursantesViewModelTests
 	}
 
 	/// <summary>
+	/// RF-16: el período elegido viaja en las cuatro consultas. Core ya lo aceptaba; la pantalla
+	/// consultaba siempre sin período.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Contar_con_un_periodo_lo_envia_en_las_cuatro_consultas()
+	{
+		var contexto = new Contexto();
+		var cursante = await contexto.BuscarYSeleccionarAsync();
+		var desde = new DateTime(2026, 3, 1);
+		var hasta = new DateTime(2026, 6, 30);
+		contexto.ViewModel.AsistenciasDesde = desde;
+		contexto.ViewModel.AsistenciasHasta = hasta;
+
+		await contexto.ViewModel.CargarAsistenciasCommandAsync.ExecuteAsync(null);
+
+		foreach (var tipo in new[] { TipoAsistencia.Presente, TipoAsistencia.Ausencia, TipoAsistencia.Inasistencia, TipoAsistencia.Tardanza })
+		{
+			_ = contexto.ServicioAsistencia.Received(1).ContarFaltasAsync(new ContarFaltasRequest(cursante.CursanteID, tipo, desde, hasta));
+		}
+	}
+
+	/// <summary>
+	/// Un período rechazado (invertido) no deja a la vista los contadores del período anterior.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Un_periodo_rechazado_pone_los_contadores_en_cero_y_muestra_el_error()
+	{
+		var contexto = new Contexto();
+		await contexto.BuscarYSeleccionarAsync();
+		contexto.DevolverConteo(TipoAsistencia.Presente, 142);
+		await contexto.ViewModel.CargarAsistenciasCommandAsync.ExecuteAsync(null);
+		contexto.ViewModel.Presentes.ShouldBe(142);
+
+		contexto.ServicioAsistencia.ContarFaltasAsync(Arg.Any<ContarFaltasRequest>())
+								   .Returns<Task<int>>(_ => throw new InvalidOperationException("período invertido"));
+		await contexto.ViewModel.CargarAsistenciasCommandAsync.ExecuteAsync(null);
+
+		contexto.ViewModel.Presentes.ShouldBe(0);
+		contexto.Dialogos.Errores.Single().Mensaje.ShouldBe("período invertido");
+	}
+
+	/// <summary>
 	/// Si cambiar de alumno dejara abierta la vista de asistencias, los contadores recién
 	/// puestos en cero se leerían como los del alumno nuevo.
 	/// </summary>

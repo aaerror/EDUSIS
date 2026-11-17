@@ -356,10 +356,56 @@
 							<Grid.RowDefinitions>
 								<RowDefinition Height="Auto"/>
 								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
 								<RowDefinition Height="*"/>
 							</Grid.RowDefinitions>
 
-							<Grid Grid.Row="0">
+							<!--
+								PERÍODO DE LAS FALTAS (RF-16). Los dos extremos son opcionales y
+								se incluyen: vacíos, cuenta todas las planillas del alumno. Cambiar
+								una fecha no recuenta solo; lo hace "Contar", igual que el ciclo
+								lectivo del índice se aplica con "Buscar".
+							-->
+							<Grid Grid.Row="0" Margin="0 0 0 8">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+
+								<HeaderedContentControl Grid.Column="0"
+														Header="Desde"
+														Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+									<DatePicker SelectedDate="{ Binding Path=AsistenciasDesde, Mode=TwoWay }"
+												Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+								</HeaderedContentControl>
+
+								<HeaderedContentControl Grid.Column="1"
+														Header="Hasta"
+														Margin="10 0 0 0"
+														Style="{ StaticResource ResourceKey=Campo }">
+									<DatePicker SelectedDate="{ Binding Path=AsistenciasHasta, Mode=TwoWay }"
+												Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+								</HeaderedContentControl>
+
+								<Button Grid.Column="2"
+										Command="{ Binding Path=CargarAsistenciasCommandAsync }"
+										Margin="10 0 0 16"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Contar las asistencias del alumno en el período elegido"
+										VerticalAlignment="Bottom">
+									<StackPanel Orientation="Horizontal">
+										<fa:IconBlock FontSize="11"
+													  Icon="MagnifyingGlass"
+													  Margin="0 0 8 0"
+													  VerticalAlignment="Center"/>
+										<TextBlock Text="Contar" VerticalAlignment="Center"/>
+									</StackPanel>
+								</Button>
+							</Grid>
+
+							<Grid Grid.Row="1">
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*"/>
 									<ColumnDefinition Width="*"/>
@@ -404,16 +450,16 @@
 								El aviso dice QUÉ es este número y DÓNDE está el detalle, porque
 								un contador sin período se lee como "este ciclo" y no lo es.
 							-->
-							<Border Grid.Row="1"
+							<Border Grid.Row="2"
 									Margin="0 24 0 0"
 									Style="{ StaticResource ResourceKey=Superficie.Aviso }">
 								<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-										   Text="Es el total del alumno en todas sus planillas, sin separar por ciclo lectivo. El detalle por fecha se toma y se consulta en la planilla de asistencia de la división."
+										   Text="Sin fechas es el total del alumno en todas sus planillas, sin separar por ciclo lectivo. Para acotarlo, elegí el período y tocá Contar. El detalle por fecha se toma y se consulta en la planilla de asistencia de la división."
 										   TextWrapping="Wrap"/>
 							</Border>
 
 							<components:CargandoComponent Grid.Row="0"
-														  Grid.RowSpan="3"
+														  Grid.RowSpan="4"
 														  EstaCargando="{ Binding Path=CargarAsistenciasCommandAsync.IsRunning }"
 														  Leyenda="CONTANDO LAS ASISTENCIAS"/>
 						</Grid>
