@@ -66,14 +66,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	private SituacionRevistaViewModel _situacionRevistaUPDATE;
 	#endregion
 
-	#region NOTIFICATIONs
-	[ObservableProperty]
-	private bool _habilitarNotificacion;
-
-	[ObservableProperty]
-	private string _mensaje = string.Empty;
-	#endregion
-
 	[ObservableProperty]
 	private bool _habilitarDocenteEnFunciones = false;
 
@@ -359,7 +351,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 			HabilitarDocenteEnFunciones = SituacionRevistaEnFunciones is not null;
 			SituacionRevistaUPDATE = SituacionRevistaEnFunciones;
 
-			HabilitarNotificacion = false;
 			HabilitarGestionSituacionRevista = true;
 			HabilitarInfoSituacionRevista = true;
 		}
@@ -369,7 +360,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 			// grilla está vacía.
 			_dialogService.MostrarError($"No se pudieron traer los docentes de la cátedra. { ex.Message }", "Docentes de la cátedra");
 
-			HabilitarNotificacion = false;
 			HabilitarGestionSituacionRevista = true;
 			HabilitarInfoSituacionRevista = true;
 		}
@@ -812,7 +802,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 		switch (obj)
 		{
 			case "SituacionRevista":
-				HabilitarNotificacion = false;
 				HabilitarGestionSituacionRevista = true;
 				HabilitarInfoSituacionRevista = false;
 				HabilitarInsert = true;

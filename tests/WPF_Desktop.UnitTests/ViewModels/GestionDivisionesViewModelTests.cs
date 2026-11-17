@@ -147,26 +147,31 @@ public class GestionDivisionesViewModelTests
 		contexto.ViewModel.TotalDivisiones.ShouldBe(2);
 		contexto.ViewModel.ListCollectionDocentes.Count.ShouldBe(2);
 		contexto.ViewModel.HabilitarDivisiones.ShouldBeTrue();
-		contexto.ViewModel.HabilitarNotificacion.ShouldBeFalse();
+		contexto.Dialogos.Errores.ShouldBeEmpty();
 	}
 
+	/// <summary>
+	/// El curso sin divisiones es el caso normal de un curso recién creado: la grilla queda a la
+	/// vista con su estado vacío, que apunta a "Nueva división", sin cartel aparte.
+	/// </summary>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Cargar_sin_divisiones_avisa_en_pantalla_y_no_habilita_la_grilla()
+	public async Task Cargar_sin_divisiones_deja_la_grilla_vacia_y_a_la_vista()
 	{
 		var contexto = new Contexto();
 
 		await contexto.ViewModel.CargarDivisionesCommandAsync.ExecuteAsync(null);
 
 		contexto.ViewModel.TotalDivisiones.ShouldBe(0);
-		contexto.ViewModel.HabilitarDivisiones.ShouldBeFalse();
-		contexto.ViewModel.HabilitarNotificacion.ShouldBeTrue();
-		contexto.ViewModel.Message.ShouldNotBeNullOrWhiteSpace();
+		contexto.ViewModel.ListCollectionDocentes.Count.ShouldBe(0);
+		contexto.ViewModel.HabilitarDivisiones.ShouldBeTrue();
+		contexto.Dialogos.Advertencias.ShouldBeEmpty();
+		contexto.Dialogos.Errores.ShouldBeEmpty();
 	}
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Un_error_del_servicio_al_cargar_se_informa_en_pantalla_y_no_se_propaga()
+	public async Task Un_error_del_servicio_al_cargar_se_informa_por_dialogo_y_no_se_propaga()
 	{
 		var contexto = new Contexto();
 		contexto.ServicioDivision.ListarDivisionesAsync(Arg.Any<ListarDivisionesRequest>())
@@ -174,8 +179,8 @@ public class GestionDivisionesViewModelTests
 
 		await contexto.ViewModel.CargarDivisionesCommandAsync.ExecuteAsync(null);
 
-		contexto.ViewModel.HabilitarNotificacion.ShouldBeTrue();
-		contexto.ViewModel.Message.ShouldContain("sin conexion");
+		contexto.Dialogos.Errores.Single().Mensaje.ShouldContain("sin conexion");
+		contexto.ViewModel.ListCollectionDocentes.Count.ShouldBe(0);
 	}
 	#endregion
 
@@ -312,8 +317,7 @@ public class GestionDivisionesViewModelTests
 	[Trait("Categoria", "Unidad")]
 	public async Task Cargar_sin_divisiones_tambien_precarga_la_letra()
 	{
-		// El curso vacío es justamente donde más sirve la propuesta ("A"), y es el camino que corta
-		// con un return temprano: si la precarga quedara después, acá llegaría vacía.
+		// El curso vacío es justamente donde más sirve la propuesta ("A").
 		var contexto = new Contexto();
 		contexto.DevolverDivisiones();
 		contexto.ServicioDivision
@@ -322,7 +326,7 @@ public class GestionDivisionesViewModelTests
 
 		await contexto.ViewModel.CargarDivisionesCommandAsync.ExecuteAsync(null);
 
-		contexto.ViewModel.HabilitarDivisiones.ShouldBeFalse();
+		contexto.ViewModel.HabilitarDivisiones.ShouldBeTrue();
 		contexto.ViewModel.Descripcion.ShouldBe("A");
 	}
 

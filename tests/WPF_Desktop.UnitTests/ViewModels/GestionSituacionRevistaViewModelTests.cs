@@ -197,7 +197,6 @@ public class GestionSituacionRevistaViewModelTests
 		contexto.ViewModel.DocentesEnMateria.ShouldBeEmpty();
 		contexto.ViewModel.HabilitarGestionSituacionRevista.ShouldBeTrue();
 		contexto.ViewModel.HabilitarInfoSituacionRevista.ShouldBeTrue();
-		contexto.ViewModel.HabilitarNotificacion.ShouldBeFalse();
 		contexto.Dialogos.Advertencias.ShouldBeEmpty();
 	}
 	#endregion

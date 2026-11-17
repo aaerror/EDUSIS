@@ -78,13 +78,6 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	private bool _habilitarDivisiones;
 	#endregion
 
-	#region Notificaciones
-	[ObservableProperty]
-	private string _message = string.Empty;
-	[ObservableProperty]
-	private bool _habilitarNotificacion;
-	#endregion
-
 	[NotifyCanExecuteChangedFor(nameof(EliminarCommandAsync))]
 	[NotifyCanExecuteChangedFor(nameof(NavigationCommand))]
 	[NotifyCanExecuteChangedFor(nameof(RegistrarCommandAsync))]
@@ -191,34 +184,26 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 			var divisiones = await _servicioDivision.ListarDivisionesAsync(new ListarDivisionesRequest(_cursoStore.Curso.CursoID, _cicloLectivoStore.CicloLectivo));
 			TotalDivisiones = divisiones.Count;
 
-			// La propuesta va antes del corte por lista vacía: el curso sin divisiones es justamente
-			// el caso donde más sirve tener la letra precargada ("A"), y después del return no se
-			// ejecutaría nada.
+			// El curso sin divisiones es justamente el caso donde más sirve tener la letra
+			// precargada ("A").
 			await ProponerDescripcionAsync();
 
-			if (divisiones.Count is 0)
-			{
-				HabilitarDivisiones = false;
-				HabilitarNotificacion = true;
-
-				Message = "No existen divisiones agregadas en el curso hasta el momento. Debe registrar al menos una división en el curso para poder trabajar.";
-
-				return;
-			}
-
+			// SIN CORTE POR LISTA VACÍA. Un curso sin divisiones apagaba la tarjeta y lo decía en un
+			// panel de aviso aparte, así que el estado vacío de la grilla —que ya trae su frase y
+			// apunta a "Nueva división"— no se veía nunca. Es el caso normal de un curso recién creado.
 			_divisiones = new ObservableCollection<DivisionViewModel>(divisiones.Select(x => new DivisionViewModel(x)));
 			ListCollectionDocentes = new ListCollectionView(_divisiones);
-
-			HabilitarDivisiones = true;
-			HabilitarNotificacion = false;
 		}
 		catch (Exception ex)
 		{
-			HabilitarDivisiones = false;
-			HabilitarNotificacion = true;
-
-			Message = $"Error al cargar las materias del curso.\nError: { ex.Message }";
+			// Un fallo de carga es un error y no un aviso en la página: es la única pista de por qué
+			// la grilla está vacía. El panel de aviso además decía "materias" donde eran divisiones.
+			_divisiones = new ObservableCollection<DivisionViewModel>();
+			ListCollectionDocentes = new ListCollectionView(_divisiones);
+			_dialogService.MostrarError($"No se pudieron traer las divisiones del curso. { ex.Message }", "Divisiones del curso");
 		}
+
+		HabilitarDivisiones = true;
 	}
 
 	/// <summary>

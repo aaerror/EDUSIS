@@ -102,18 +102,6 @@
 		</components:PaginaComponent>
 		<!--#endregion-->
 
-		<!--#region AVISO-->
-		<Border Grid.Row="1"
-				IsEnabled="{ Binding Path=HabilitarNotificacion, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Margin="0 0 0 16"
-				Style="{ StaticResource ResourceKey=Superficie.Aviso }"
-				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-			<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-					   Text="{ Binding Path=Message, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-					   TextWrapping="Wrap"/>
-		</Border>
-		<!--#endregion-->
-
 		<!--#region DIVISIONES-->
 		<Border Grid.Row="2"
 				IsEnabled="{ Binding Path=HabilitarDivisiones, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"

@@ -518,7 +518,7 @@ public class GestionCurriculasViewModelTests
 
 		contexto.ViewModel.Curriculas.ShouldBeEmpty();
 		contexto.ViewModel.HabilitarCurriculas.ShouldBeTrue();
-		contexto.ViewModel.HabilitarNotificacion.ShouldBeFalse();
+		contexto.Dialogos.Advertencias.ShouldBeEmpty();
 		_ = contexto.ServicioMateria.DidNotReceiveWithAnyArgs().ListarMateriasSegunCurriculaAsync(default!);
 	}
 

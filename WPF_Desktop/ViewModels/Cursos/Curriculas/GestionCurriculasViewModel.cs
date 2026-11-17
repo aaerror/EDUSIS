@@ -125,13 +125,6 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	private int _cargaHoraria = 1;
 	#endregion
 
-	#region Notifications
-	[ObservableProperty]
-	private string _mensaje = string.Empty;
-
-	[ObservableProperty]
-	private bool _habilitarNotificacion;
-	#endregion
 
 	/// <remarks>
 	/// Se fue <c>HabilitarMaterias</c>: se escribía en tres lugares y no estaba enlazada desde ningún
@@ -267,7 +260,6 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 		EditarCommand = new RelayCommand<string>(ExecuteEditarCommand, CanExecuteEditarCommand);
 		RegistrarCommand = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, CanExecuteRegistrarCommand);
 
-		HabilitarNotificacion = false;
 		HabilitarEditarMateria = false;
 
 		VolverCommand = new RelayCommand(gestionCursosNavigationService.Navigate);
@@ -303,7 +295,6 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 			// frase y dice qué hacer. Antes se colapsaba la tarjeta entera y se la reemplazaba por un
 			// aviso, de modo que el estado vacío de la grilla era código inalcanzable.
 			HabilitarCurriculas = true;
-			HabilitarNotificacion = false;
 		}
 		catch (Exception ex)
 		{
@@ -312,7 +303,6 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 			_dialogService.MostrarError($"No se pudieron traer los diseños curriculares del curso. { ex.Message }", "Diseño curricular");
 
 			HabilitarCurriculas = true;
-			HabilitarNotificacion = false;
 		}
 	}
 
@@ -398,13 +388,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 				// hasta que alguien cargara una. La lista vacía la explica el estado vacío de la lista.
 				Materias = new ObservableCollection<MateriaViewModel>(response.Select(x => new MateriaViewModel(x)));
 
-				HabilitarNotificacion = false;
 			}
 			catch (Exception ex)
 			{
 				_dialogService.MostrarError($"No se pudieron traer las materias de la currícula. { ex.Message }", "Diseño curricular");
 
-				HabilitarNotificacion = false;
 			}
 		}
 
@@ -621,7 +609,6 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 				break;
 
 			case "Materia":
-				HabilitarNotificacion = false;
 
 				// La tarjeta de currículas y materias se oculta mientras dura el alta, para que el
 				// formulario quede solo en pantalla. CerrarAltaDeMateria es el único camino de vuelta
