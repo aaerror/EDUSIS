@@ -1,5 +1,6 @@
 using System.Reflection;
 using Domain.Catedras;
+using Domain.Catedras.Exceptions;
 using Domain.Catedras.SituacionesRevista;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
@@ -182,12 +183,12 @@ public class SituacionRevistaTests
 	[Theory]
 	[InlineData(0)]
 	[InlineData(-1)]
-	public void PasarAInterinoHasta_con_un_termino_que_no_es_posterior_a_hoy_lanza_ArgumentException(int dias)
+	public void PasarAInterinoHasta_con_un_termino_que_no_es_posterior_a_hoy_lanza_TerminoDeCargoNoPosteriorAHoyException(int dias)
 	{
 		var catedra = new CatedraBuilder().Build();
 		var designacion = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
 
-		Should.Throw<ArgumentException>(() => catedra.PasarAInterinoHasta(designacion, DateTime.Today.AddDays(dias)));
+		Should.Throw<TerminoDeCargoNoPosteriorAHoyException>(() => catedra.PasarAInterinoHasta(designacion, DateTime.Today.AddDays(dias)));
 	}
 
 	[Fact]

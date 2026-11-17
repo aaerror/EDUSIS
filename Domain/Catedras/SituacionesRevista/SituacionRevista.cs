@@ -124,8 +124,7 @@ public sealed class SituacionRevista : Entity
 
 		if (fechaFin.Date <= Reloj.Hoy)
 		{
-			var msg = "La fecha de finalización debe ser posterior al día de hoy.";
-			throw new ArgumentException(msg);
+			throw new TerminoDeCargoNoPosteriorAHoyException();
 		}
 
 		Cargo = Cargo.Interino;
