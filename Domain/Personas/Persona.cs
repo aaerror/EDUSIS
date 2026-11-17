@@ -45,12 +45,12 @@ public abstract class Persona : Entity
 
 		if (string.IsNullOrWhiteSpace(email))
 		{
-			throw new ArgumentNullException(nameof(email), "Email inexistente.");
+			throw new EmailRequeridoException();
 		}
 
 		if (string.IsNullOrWhiteSpace(telefono))
 		{
-			throw new ArgumentNullException(nameof(telefono), "Telefono inexistente.");
+			throw new TelefonoRequeridoException();
 		}
 	}
 	#endregion
@@ -153,4 +153,4 @@ public abstract class Persona : Entity
 
 	public void CambiarTelefono(string unTelefono) => RegistrarTelefono(unTelefono);
 	#endregion
-}
+}

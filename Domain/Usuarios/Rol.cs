@@ -1,4 +1,5 @@
 using Domain.Shared;
+using Domain.Usuarios.Exceptions;
 
 namespace Domain.Usuarios;
 
@@ -33,6 +34,21 @@ public class Rol : Enumeration
 	public static readonly Rol Secretaria = new(4, "Secretaria");
 	public static readonly Rol Preceptoria = new(5, "Preceptoría");
 	public static readonly Rol SecretariaAcademica = new(6, "Secretaría Académica");
+
+	/// <summary>Resuelve el rol del catálogo por su <see cref="Enumeration.Id"/>.</summary>
+	/// <remarks>
+	/// No se delega en <c>Enumeration.FromValue</c>: su <c>InvalidOperationException</c> lleva un
+	/// mensaje en inglés que la UI mostraría tal cual, y un Id fuera del catálogo es una regla del
+	/// dominio —sin esto daría un usuario con cero permisos—, no un error de programación.
+	/// </remarks>
+	public static Rol DesdeId(int rolID) =>
+		GetAll<Rol>().FirstOrDefault(rol => rol.Id == rolID)
+			?? throw new RolInexistenteException(rolID.ToString());
+
+	/// <summary>Resuelve el rol del catálogo por su descripción. Ver <see cref="DesdeId"/>.</summary>
+	public static Rol DesdeDescripcion(string descripcion) =>
+		GetAll<Rol>().FirstOrDefault(rol => rol.Descripcion == descripcion)
+			?? throw new RolInexistenteException(descripcion);
 
 	/// <summary>
 	/// Atribución rol → permisos, indexada por <see cref="Enumeration.Id"/> y NO por instancia.

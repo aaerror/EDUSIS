@@ -28,8 +28,7 @@ public sealed class SituacionRevista : Entity
 	{
 		if (Guid.Empty.Equals(unDocente))
 		{
-			var msg = "Se deben especificar los datos del docente.";
-			throw new ArgumentNullException(nameof(unDocente), msg);
+			throw new SinDatosDocenteException();
 		}
 
 		// EL INVARIANTE VA EN LAS DOS DIRECCIONES. "El cargo a término es interino o suplente" es una

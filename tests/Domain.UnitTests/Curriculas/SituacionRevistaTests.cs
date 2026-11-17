@@ -24,9 +24,9 @@ public class SituacionRevistaTests
 {
 	#region Alta
 	[Fact]
-	public void El_constructor_sin_docente_lanza_ArgumentNullException()
+	public void El_constructor_sin_docente_lanza_SinDatosDocenteException()
 	{
-		Should.Throw<ArgumentNullException>(() => new SituacionRevistaBuilder().ConDocente(Guid.Empty).Build());
+		Should.Throw<SinDatosDocenteException>(() => new SituacionRevistaBuilder().ConDocente(Guid.Empty).Build());
 	}
 
 	[Fact]

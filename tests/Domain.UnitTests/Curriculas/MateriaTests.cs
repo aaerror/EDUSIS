@@ -36,9 +36,9 @@ public class MateriaTests
 	[Theory]
 	[InlineData("")]
 	[InlineData("   ")]
-	public void Una_materia_sin_descripcion_lanza_ArgumentNullException(string descripcion)
+	public void Una_materia_sin_descripcion_lanza_NombreMateriaRequeridoException(string descripcion)
 	{
-		Should.Throw<ArgumentNullException>(() => new Materia(Guid.NewGuid(), descripcion, 4));
+		Should.Throw<NombreMateriaRequeridoException>(() => new Materia(Guid.NewGuid(), descripcion, 4));
 	}
 
 	[Fact]

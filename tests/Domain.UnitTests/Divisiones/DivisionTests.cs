@@ -1,4 +1,5 @@
 using Domain.Divisiones;
+using Domain.Divisiones.Exceptions;
 using Domain.Shared;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
@@ -29,18 +30,18 @@ public class DivisionTests
 	[Theory]
 	[InlineData("")]
 	[InlineData("   ")]
-	public void El_constructor_sin_descripcion_lanza_ArgumentNullException(string descripcion)
+	public void El_constructor_sin_descripcion_lanza_DescripcionDivisionRequeridaException(string descripcion)
 	{
-		Should.Throw<ArgumentNullException>(() => new DivisionBuilder().ConDescripcion(descripcion).Build());
+		Should.Throw<DescripcionDivisionRequeridaException>(() => new DivisionBuilder().ConDescripcion(descripcion).Build());
 	}
 
 	[Theory]
 	[InlineData("AB")]
 	[InlineData("1")]
 	[InlineData("%")]
-	public void El_constructor_con_una_descripcion_que_no_es_una_unica_letra_lanza_ArgumentException(string descripcion)
+	public void El_constructor_con_una_descripcion_que_no_es_una_unica_letra_lanza_DescripcionDivisionInvalidaException(string descripcion)
 	{
-		Should.Throw<ArgumentException>(() => new DivisionBuilder().ConDescripcion(descripcion).Build());
+		Should.Throw<DescripcionDivisionInvalidaException>(() => new DivisionBuilder().ConDescripcion(descripcion).Build());
 	}
 
 	[Fact]

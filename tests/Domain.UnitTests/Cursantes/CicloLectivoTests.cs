@@ -39,9 +39,9 @@ public class CicloLectivoTests
 	[Theory]
 	[InlineData("")]
 	[InlineData("   ")]
-	public void Crear_sin_periodo_lanza_ArgumentNullException(string periodo)
+	public void Crear_sin_periodo_lanza_SinDatosCicloLectivoException(string periodo)
 	{
-		Should.Throw<ArgumentNullException>(() => CicloLectivo.Crear(periodo));
+		Should.Throw<SinDatosCicloLectivoException>(() => CicloLectivo.Crear(periodo));
 	}
 
 	[Theory]

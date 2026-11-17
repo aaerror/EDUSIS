@@ -32,8 +32,7 @@ public sealed class Materia : Entity
 
 		if (string.IsNullOrWhiteSpace(descripcion))
 		{
-			var msg = "Se debe especificar el nombre de la materia.";
-			throw new ArgumentNullException(nameof(descripcion), msg);
+			throw new NombreMateriaRequeridoException();
 		}
 
 		if (horasCatedra < 1)
@@ -59,8 +58,7 @@ public sealed class Materia : Entity
 	{
 		if (string.IsNullOrWhiteSpace(descripcion))
 		{
-			var msg = "Se debe especificar el nombre de la materia.";
-			throw new ArgumentNullException(nameof(descripcion), msg);
+			throw new NombreMateriaRequeridoException();
 		}
 
 		Descripcion = descripcion;

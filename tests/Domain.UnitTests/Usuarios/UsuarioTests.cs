@@ -1,4 +1,5 @@
 using Domain.Usuarios;
+using Domain.Usuarios.Exceptions;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
 using Shouldly;
@@ -8,8 +9,9 @@ namespace Domain.UnitTests.Usuarios;
 
 /// <summary>
 /// Agregado <see cref="Usuario"/>: alta con validación de docente, usuario y credenciales, y
-/// gestión de <see cref="Rol"/> (alta/baja y unicidad). El módulo no define excepciones
-/// propias: usa <see cref="ArgumentException"/> / <see cref="ArgumentNullException"/>.
+/// gestión de <see cref="Rol"/> (alta/baja y unicidad). Cada regla tiene su excepción en
+/// <c>Domain/Usuarios/Exceptions/</c>; sólo la falta de credenciales, que calcula el llamador, es
+/// <see cref="ArgumentNullException"/>.
 /// </summary>
 [Trait("Categoria", Categorias.Unidad)]
 public class UsuarioTests
@@ -30,17 +32,17 @@ public class UsuarioTests
 	}
 
 	[Fact]
-	public void Un_usuario_sin_docente_lanza_ArgumentNullException()
+	public void Un_usuario_sin_docente_lanza_UsuarioSinDocenteException()
 	{
-		Should.Throw<ArgumentNullException>(() => new Usuario(Guid.Empty, "maria.gonzalez", "salt", "hash"));
+		Should.Throw<UsuarioSinDocenteException>(() => new Usuario(Guid.Empty, "maria.gonzalez", "salt", "hash"));
 	}
 
 	[Theory]
 	[InlineData("")]
 	[InlineData("   ")]
-	public void Un_usuario_sin_nombre_lanza_ArgumentNullException(string username)
+	public void Un_usuario_sin_nombre_lanza_NombreUsuarioRequeridoException(string username)
 	{
-		Should.Throw<ArgumentNullException>(() => new Usuario(Guid.NewGuid(), username, "salt", "hash"));
+		Should.Throw<NombreUsuarioRequeridoException>(() => new Usuario(Guid.NewGuid(), username, "salt", "hash"));
 	}
 
 	[Fact]
@@ -63,19 +65,19 @@ public class UsuarioTests
 	}
 
 	[Fact]
-	public void AgregarRol_dos_veces_el_mismo_rol_lanza_ArgumentException()
+	public void AgregarRol_dos_veces_el_mismo_rol_lanza_RolYaAsignadoException()
 	{
 		var usuario = new UsuarioBuilder().ConRol("Docente").Build();
 
-		Should.Throw<ArgumentException>(() => usuario.AgregarRol("Docente"));
+		Should.Throw<RolYaAsignadoException>(() => usuario.AgregarRol("Docente"));
 	}
 
 	[Fact]
-	public void AgregarRol_con_una_descripcion_desconocida_lanza_InvalidOperationException()
+	public void AgregarRol_con_una_descripcion_desconocida_lanza_RolInexistenteException()
 	{
 		var usuario = new UsuarioBuilder().Build();
 
-		Should.Throw<InvalidOperationException>(() => usuario.AgregarRol("Bedel"));
+		Should.Throw<RolInexistenteException>(() => usuario.AgregarRol("Bedel"));
 	}
 
 	[Fact]
@@ -89,11 +91,11 @@ public class UsuarioTests
 	}
 
 	[Fact]
-	public void QuitarRol_de_un_rol_no_asignado_lanza_ArgumentException()
+	public void QuitarRol_de_un_rol_no_asignado_lanza_RolNoAsignadoException()
 	{
 		var usuario = new UsuarioBuilder().Build();
 
-		Should.Throw<ArgumentException>(() => usuario.QuitarRol("Dirección"));
+		Should.Throw<RolNoAsignadoException>(() => usuario.QuitarRol("Dirección"));
 	}
 	#endregion
 
@@ -127,12 +129,12 @@ public class UsuarioTests
 	}
 
 	[Fact]
-	public void AgregarRol_por_Id_dos_veces_lanza_ArgumentException()
+	public void AgregarRol_por_Id_dos_veces_lanza_RolYaAsignadoException()
 	{
 		var usuario = new UsuarioBuilder().Build();
 		usuario.AgregarRol(Rol.Admin.Id);
 
-		Should.Throw<ArgumentException>(() => usuario.AgregarRol(Rol.Admin.Id));
+		Should.Throw<RolYaAsignadoException>(() => usuario.AgregarRol(Rol.Admin.Id));
 	}
 
 	[Fact]
@@ -142,7 +144,7 @@ public class UsuarioTests
 		// por Id, así que un Id desconocido daría un usuario con cero permisos en silencio.
 		var usuario = new UsuarioBuilder().Build();
 
-		Should.Throw<InvalidOperationException>(() => usuario.AgregarRol(99));
+		Should.Throw<RolInexistenteException>(() => usuario.AgregarRol(99));
 	}
 
 	[Fact]
@@ -157,11 +159,11 @@ public class UsuarioTests
 	}
 
 	[Fact]
-	public void QuitarRol_por_Id_de_un_rol_que_no_tiene_lanza_ArgumentException()
+	public void QuitarRol_por_Id_de_un_rol_que_no_tiene_lanza_RolNoAsignadoException()
 	{
 		var usuario = new UsuarioBuilder().Build();
 
-		Should.Throw<ArgumentException>(() => usuario.QuitarRol(Rol.Direccion.Id));
+		Should.Throw<RolNoAsignadoException>(() => usuario.QuitarRol(Rol.Direccion.Id));
 	}
 
 	[Fact]

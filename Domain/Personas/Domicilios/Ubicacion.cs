@@ -1,3 +1,4 @@
+using Domain.Personas.Exceptions;
 using Domain.Shared;
 
 namespace Domain.Personas.Domicilios;
@@ -15,12 +16,12 @@ public class Ubicacion : ValueObject
 		// Comprobamos datos nulos o incompletos
 		if (string.IsNullOrWhiteSpace(localidad))
 		{
-			throw new ArgumentNullException(nameof(localidad), "La ubicación posee datos incompletos.");
+			throw new UbicacionIncompletaException(nameof(Localidad));
 		}
 
 		if (string.IsNullOrWhiteSpace(provincia))
 		{
-			throw new ArgumentNullException(nameof(provincia), "La ubicación posee datos incompletos.");
+			throw new UbicacionIncompletaException(nameof(Provincia));
 		}
 
 	 /*   if (string.IsNullOrWhiteSpace(codigoPostal))
@@ -30,7 +31,7 @@ public class Ubicacion : ValueObject
 
 		if (string.IsNullOrWhiteSpace(pais))
 		{
-			throw new ArgumentNullException(nameof(pais), "La ubicación posee datos incompletos.");
+			throw new UbicacionIncompletaException(nameof(Pais));
 		}
 
 		// Validamos que se ingresen letras y no números
@@ -73,4 +74,4 @@ public class Ubicacion : ValueObject
 		yield return Provincia;
 		yield return Pais;
 	}
-}
+}

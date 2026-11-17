@@ -166,7 +166,7 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			// Se usa el constructor con roles y no AgregarRol() después, por el mismo motivo que el
 			// seeder: AgregarRol resolvía por descripción, y además así el usuario nunca existe en un
 			// estado intermedio sin rol.
-			var rol = Enumeration.FromValue<Rol>(request.RolID);
+			var rol = Rol.DesdeId(request.RolID);
 			var usuario = new Usuario(request.DocenteID, email, salt, hash, new List<Rol> { rol });
 
 			await _unitOfWork.Usuarios.AgregarAsync(usuario);

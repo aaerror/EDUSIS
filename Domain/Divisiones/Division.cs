@@ -30,12 +30,12 @@ public sealed class Division : Entity
 
 		if (string.IsNullOrWhiteSpace(descripcion))
 		{
-			throw new ArgumentNullException(nameof(descripcion), "Datos incompletos del nombre de la división.");
+			throw new DescripcionDivisionRequeridaException();
 		}
 
 		if (!Regex.IsMatch(descripcion.Trim(), @"^([a-zA-Z]){1}$", RegexOptions.None))
 		{
-			throw new ArgumentException("La división del curso debe ser una letra.", nameof(descripcion));
+			throw new DescripcionDivisionInvalidaException(descripcion);
 		}
 
 		CursoID = unCurso;
@@ -138,4 +138,4 @@ public sealed class Division : Entity
 	// CU-02 ya no la exigen. DivisionNoEliminableException y
 	// DivisionConMatriculaSuficienteException se borraron con ella.
 	#endregion
-}
+}

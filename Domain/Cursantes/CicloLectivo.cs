@@ -14,7 +14,7 @@ public class CicloLectivo : ValueObject
 	{
 		if (string.IsNullOrWhiteSpace(periodo))
 		{
-			throw new ArgumentNullException(nameof(periodo), "Se debe especificar el ciclo lectivo.");
+			throw new SinDatosCicloLectivoException();
 		}
 
 		if (!Regex.IsMatch(periodo, @"^(\d){4}$", RegexOptions.None))
@@ -37,4 +37,4 @@ public class CicloLectivo : ValueObject
 	{
 		yield return Periodo;
 	}
-}
+}

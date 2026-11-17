@@ -157,11 +157,11 @@ public class ServicioDivisionTests
 	}
 
 	[Fact]
-	public async Task AgregarDivisionAsync_con_una_descripcion_que_no_es_una_letra_lanza_ArgumentException()
+	public async Task AgregarDivisionAsync_con_una_descripcion_que_no_es_una_letra_lanza_DescripcionDivisionInvalidaException()
 	{
 		var curso = SembrarCurso();
 
-		await Should.ThrowAsync<ArgumentException>(() =>
+		await Should.ThrowAsync<Domain.Divisiones.Exceptions.DescripcionDivisionInvalidaException>(() =>
 			_servicio.AgregarDivisionAsync(new AgregarDivisionRequest(curso.Id, "AB")));
 	}
 

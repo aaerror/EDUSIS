@@ -107,9 +107,9 @@ public class DomicilioTests
 	[InlineData("", "Tucumán", "Argentina")]
 	[InlineData("Yerba Buena", "   ", "Argentina")]
 	[InlineData("Yerba Buena", "Tucumán", "")]
-	public void Ubicacion_con_un_campo_vacio_lanza_ArgumentNullException(string localidad, string provincia, string pais)
+	public void Ubicacion_con_un_campo_vacio_lanza_UbicacionIncompletaException(string localidad, string provincia, string pais)
 	{
-		Should.Throw<ArgumentNullException>(() => Ubicacion.Crear(localidad, provincia, pais));
+		Should.Throw<UbicacionIncompletaException>(() => Ubicacion.Crear(localidad, provincia, pais));
 	}
 
 	[Fact]

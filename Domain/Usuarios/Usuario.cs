@@ -1,4 +1,5 @@
 using Domain.Shared;
+using Domain.Usuarios.Exceptions;
 
 namespace Domain.Usuarios;
 
@@ -24,17 +25,17 @@ public class Usuario : Entity
 	{
 		if (Guid.Empty.Equals(docenteID))
 		{
-			throw new ArgumentNullException(nameof(docenteID), "Se debe asignar un docente.");
+			throw new UsuarioSinDocenteException();
 		}
 
 		if (string.IsNullOrWhiteSpace(username))
 		{
-			throw new ArgumentNullException(nameof(username), "Se debe asignar un nombre de usuario.");
+			throw new NombreUsuarioRequeridoException();
 		}
 
 		if (passwordSalt is null || passwordHash is null)
 		{
-			throw new ArgumentNullException("Error en la contraseña.");
+			throw new ArgumentNullException(passwordSalt is null ? nameof(passwordSalt) : nameof(passwordHash), "Error en la contraseña.");
 		}
 
 		/*if (!Regex.IsMatch(username, @"^[a-zA-Z0-9](_(?!(\.|_))|\.(?!(_|\.))|[a-zA-Z0-9]){6,18}[a-zA-Z0-9]$", RegexOptions.None))
@@ -72,11 +73,11 @@ public class Usuario : Entity
 	/// de <c>string</c> falla en ejecución; acá no hay literal que escribir mal.
 	/// </remarks>
 	public void AgregarRol(int rolID) =>
-		AgregarRol(Enumeration.FromValue<Rol>(rolID));
+		AgregarRol(Rol.DesdeId(rolID));
 
 	/// <summary>Quita el rol por su <see cref="Enumeration.Id"/>. Ver <see cref="AgregarRol(int)"/>.</summary>
 	public void QuitarRol(int rolID) =>
-		QuitarRol(Enumeration.FromValue<Rol>(rolID));
+		QuitarRol(Rol.DesdeId(rolID));
 
 	/// <remarks>
 	/// Resuelve el rol por <strong>descripción</strong>. Se conserva porque la usan
@@ -84,17 +85,17 @@ public class Usuario : Entity
 	/// escribe; para los casos de uso está <see cref="AgregarRol(int)"/>, que no depende del texto.
 	/// </remarks>
 	public void AgregarRol(string unRol) =>
-		AgregarRol(Enumeration.FromDescripcion<Rol>(unRol));
+		AgregarRol(Rol.DesdeDescripcion(unRol));
 
 	/// <remarks>Ver <see cref="AgregarRol(string)"/>: resuelve por descripción.</remarks>
 	public void QuitarRol(string unRol) =>
-		QuitarRol(Enumeration.FromDescripcion<Rol>(unRol));
+		QuitarRol(Rol.DesdeDescripcion(unRol));
 
 	private void AgregarRol(Rol rol)
 	{
 		if (_roles.Contains(rol))
 		{
-			throw new ArgumentException("El rol ya se encuentra asignado al usuario.", nameof(rol));
+			throw new RolYaAsignadoException();
 		}
 
 		_roles.Add(rol);
@@ -104,7 +105,7 @@ public class Usuario : Entity
 	{
 		if (!_roles.Contains(rol))
 		{
-			throw new ArgumentException("El rol no se encuentra asignado al usuario.", nameof(rol));
+			throw new RolNoAsignadoException();
 		}
 
 		_roles.Remove(rol);
@@ -123,4 +124,4 @@ public class Usuario : Entity
 		PasswordSalt = passwordSalt;
 		PasswordHash = passwordHash;
 	}
-}
+}
