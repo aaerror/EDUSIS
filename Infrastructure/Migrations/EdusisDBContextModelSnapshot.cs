@@ -122,6 +122,12 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("preceptor_id");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("PK_PLANILLA_ASISTENCIA");
 
@@ -193,6 +199,12 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("situacion_en_funciones_id");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("PK_CATEDRA");
 
@@ -258,6 +270,12 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("CursoID")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("curso_id");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
 
                     b.HasKey("Id")
                         .HasName("PK_DISENO_CURRICULAR");
@@ -344,6 +362,12 @@ namespace Infrastructure.Migrations
                         .HasColumnType("date")
                         .HasColumnName("fecha_inicio");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("PK_CURSANTE");
 
@@ -369,6 +393,12 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("varchar(15)")
                         .HasColumnName("nivel_educativo");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
 
                     b.HasKey("Id")
                         .HasName("PK_CURSO");
@@ -396,6 +426,12 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("Preceptor")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("preceptor_id");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
 
                     b.HasKey("Id")
                         .HasName("PK_DIVISION");
@@ -466,6 +502,12 @@ namespace Infrastructure.Migrations
                         .HasColumnType("varchar(250)")
                         .HasColumnName("observacion");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("PK_LICENCIA");
 
@@ -495,6 +537,12 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("horas_catedra");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("PK_MATERIA");
 
@@ -523,6 +571,12 @@ namespace Infrastructure.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(15)")
                         .HasColumnName("telefono");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
 
                     b.HasKey("Id");
 
@@ -615,6 +669,12 @@ namespace Infrastructure.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)")
                         .HasColumnName("usuario");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("version");
 
                     b.HasKey("Id")
                         .HasName("PK_USUARIO");

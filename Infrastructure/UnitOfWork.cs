@@ -13,7 +13,11 @@ using Infrastructure.Extensions;
 using Infrastructure.Repository;
 using Domain.Shared;
 using MediatR;
+using Domain.Shared.Exceptions;
+using Infrastructure.EntityConfigurations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Infrastructure;
@@ -141,6 +145,93 @@ public class UnitOfWork : IUnitOfWork
 	{
 		await MediatrExtension.DispatchDomainEventsAsync(_mediator, _context);
 
-		return await _context.SaveChangesAsync();
+		// Después del despacho: los handlers también agregan y modifican entidades internas.
+		MarcarRaicesConCambiosInternos();
+
+		try
+		{
+			return await _context.SaveChangesAsync();
+		}
+		catch (DbUpdateConcurrencyException ex)
+		{
+			// El tipo de EF no sale de Infrastructure: la UI muestra ex.Message, y el de EF está en
+			// inglés y habla de filas afectadas.
+			var agregados = string.Join(", ", ex.Entries.Select(x => x.Metadata.ClrType.Name).Distinct());
+			throw new ConflictoDeConcurrenciaException(agregados, ex);
+		}
 	}
+
+	#region Concurrencia del agregado
+	/// <summary>
+	/// Marca como modificada la raíz de cada entidad interna que cambió, para que su UPDATE
+	/// verifique y avance la versión del agregado entero.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// La columna <c>version</c> sólo vive en la raíz. Sin esto, agregar una calificación a un
+	/// cursante —un INSERT en <c>calificacion</c>— no toca la fila de <c>cursante</c>, y dos
+	/// estaciones que editan el mismo agregado por sus partes internas no se enteran una de la otra:
+	/// la concurrencia quedaría limitada a los campos propios de la raíz.
+	/// </para>
+	/// <para>
+	/// Sólo cuenta la relación de PERTENENCIA: la raíz navega hacia la entidad interna
+	/// (<c>Cursante.Calificaciones</c>, <c>Catedra.Horarios</c>) o la entidad es la tabla de unión de
+	/// una colección de la raíz (<c>usuario_rol</c>). Una clave ajena hacia otro agregado
+	/// (<c>Calificacion → Materia</c>) no marca a ese otro agregado.
+	/// </para>
+	/// </remarks>
+	private void MarcarRaicesConCambiosInternos()
+	{
+		_context.ChangeTracker.DetectChanges();
+
+		var internasConCambios = _context.ChangeTracker.Entries()
+			.Where(x => x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted
+					 && !TieneVersion(x.Metadata))
+			.ToList();
+
+		foreach (var interna in internasConCambios)
+		{
+			foreach (var claveAjena in interna.Metadata.GetForeignKeys())
+			{
+				var esPertenencia = claveAjena.PrincipalToDependent is not null || interna.Metadata.IsPropertyBag;
+				if (!esPertenencia || !TieneVersion(claveAjena.PrincipalEntityType))
+				{
+					continue;
+				}
+
+				var raiz = BuscarPrincipal(interna, claveAjena);
+				if (raiz is { State: EntityState.Unchanged })
+				{
+					raiz.State = EntityState.Modified;
+				}
+			}
+		}
+	}
+
+	private static bool TieneVersion(IEntityType tipo) =>
+		tipo.FindProperty(ConfiguracionVersionExtensions.PROPIEDAD) is not null;
+
+	/// <summary>La entrada rastreada de la raíz a la que apunta la clave ajena, o <c>null</c> si no se cargó.</summary>
+	private EntityEntry? BuscarPrincipal(EntityEntry interna, IForeignKey claveAjena)
+	{
+		// Una entidad borrada ya no tiene valor actual confiable en la clave ajena: se usa el original.
+		var valores = claveAjena.Properties
+			.Select(propiedad => interna.State == EntityState.Deleted
+				? interna.OriginalValues[propiedad]
+				: interna.CurrentValues[propiedad])
+			.ToArray();
+
+		if (valores.Any(valor => valor is null))
+		{
+			return null;
+		}
+
+		return _context.ChangeTracker.Entries()
+			.FirstOrDefault(candidata =>
+				claveAjena.PrincipalEntityType.IsAssignableFrom(candidata.Metadata)
+			 && claveAjena.PrincipalKey.Properties
+					.Select(propiedad => candidata.Property(propiedad.Name).CurrentValue)
+					.SequenceEqual(valores));
+	}
+	#endregion
 }

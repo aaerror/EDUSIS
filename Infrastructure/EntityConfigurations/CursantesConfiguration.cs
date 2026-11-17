@@ -17,6 +17,9 @@ internal class CursantesConfiguration : IEntityTypeConfiguration<Cursante>
 	{
 		builder.ToTable("cursante");
 
+		// Concurrencia optimista de la raíz (ver ConfiguracionVersionExtensions).
+		builder.ConfigurarVersion();
+
 		builder.HasKey(x => x.Id)
 			   .HasName("PK_CURSANTE");
 

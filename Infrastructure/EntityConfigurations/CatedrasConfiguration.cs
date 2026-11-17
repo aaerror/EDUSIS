@@ -20,6 +20,9 @@ internal class CatedrasConfiguration : IEntityTypeConfiguration<Catedra>
 	{
 		builder.ToTable("catedra");
 
+		// Concurrencia optimista de la raíz (ver ConfiguracionVersionExtensions).
+		builder.ConfigurarVersion();
+
 		builder.Property(x => x.Id)
 			   .HasColumnName("catedra_id")
 			   .ValueGeneratedNever();

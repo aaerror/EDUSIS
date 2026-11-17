@@ -11,6 +11,9 @@ internal class LicenciasConfiguration : IEntityTypeConfiguration<Licencia>
 	{
 		builder.ToTable("licencia");
 
+		// Concurrencia optimista de la raíz (ver ConfiguracionVersionExtensions).
+		builder.ConfigurarVersion();
+
 		builder.Property(x => x.Id)
 			   .HasColumnName("licencia_id")
 			   .ValueGeneratedNever();

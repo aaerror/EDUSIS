@@ -19,6 +19,9 @@ internal class MateriasConfiguration : IEntityTypeConfiguration<Materia>
 	{
 		builder.ToTable("materia");
 
+		// Concurrencia optimista de la raíz (ver ConfiguracionVersionExtensions).
+		builder.ConfigurarVersion();
+
 		builder.Property(x => x.Id)
 			   .HasColumnName("materia_id")
 			   .ValueGeneratedNever();

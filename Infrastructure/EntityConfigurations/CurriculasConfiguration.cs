@@ -17,6 +17,9 @@ internal class CurriculasConfiguration : IEntityTypeConfiguration<Curricula>
 	{
 		builder.ToTable("diseno_curricular");
 
+		// Concurrencia optimista de la raíz (ver ConfiguracionVersionExtensions).
+		builder.ConfigurarVersion();
+
 		//builder.HasKey(x => new { x.CursoID, x.Id });
 		builder.HasKey(x => x.Id)
 			   .HasName("PK_DISENO_CURRICULAR");

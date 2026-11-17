@@ -12,6 +12,9 @@ internal class DivisionesConfiguration : IEntityTypeConfiguration<Division>
 	{
 		builder.ToTable("division");
 
+		// Concurrencia optimista de la raíz (ver ConfiguracionVersionExtensions).
+		builder.ConfigurarVersion();
+
 		builder.Property(x => x.Id)
 			   .HasColumnName("division_id")
 			   .ValueGeneratedNever();

@@ -11,6 +11,9 @@ internal class PlanillasAsistenciaConfiguration : IEntityTypeConfiguration<Plani
 	{
 		builder.ToTable("planilla_asistencia");
 
+		// Concurrencia optimista de la raíz (ver ConfiguracionVersionExtensions).
+		builder.ConfigurarVersion();
+
 		builder.HasKey(x => x.Id)
 			   .HasName("PK_PLANILLA_ASISTENCIA");
 

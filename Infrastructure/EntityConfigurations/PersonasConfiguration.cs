@@ -17,6 +17,9 @@ internal class PersonasConfiguration : IEntityTypeConfiguration<Persona>
 	{
 		builder.ToTable("persona");
 
+		// Concurrencia optimista de la raíz (ver ConfiguracionVersionExtensions).
+		builder.ConfigurarVersion();
+
 		// PK_PERSONA
 		// NOTA (ronda 2): EF Core 7.0.9 no permite nombrar la PK por tabla en una
 		// jerarquía TPT (HasKey/HasName sólo puede llamarse una vez, en la raíz, y
