@@ -423,6 +423,38 @@
 										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
 										   Text="{ Binding Path=EstadoDeLosRoles, Mode=OneWay }"
 										   TextWrapping="Wrap"/>
+
+								<!--#region ACCESO
+									El restablecimiento lo hace un administrador desde acá y no el
+									docente desde el login: el caso de uso exige AdministrarUsuarios.
+									Btn.Secundario y no Peligro: no borra nada, y el diálogo dice la
+									consecuencia —la clave actual deja de servir—.
+								-->
+								<Rectangle Margin="0 24 0 20" Style="{ StaticResource ResourceKey=Regla }"/>
+
+								<TextBlock Margin="0 0 0 4"
+										   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+										   Text="ACCESO"/>
+								<TextBlock HorizontalAlignment="Left"
+										   Margin="0 0 0 12"
+										   MaxWidth="520"
+										   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+										   Text="Si el docente olvidó su clave, vuelve a la inicial: su número de documento."
+										   TextWrapping="Wrap"/>
+
+								<Button Command="{ Binding Path=RestablecerAccesoCommand }"
+										HorizontalAlignment="Left"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Volver la clave de esta cuenta al número de documento del docente">
+									<StackPanel Orientation="Horizontal">
+										<fa:IconBlock FontSize="11"
+													  Icon="Key"
+													  Margin="0 0 8 0"
+													  VerticalAlignment="Center"/>
+										<TextBlock Text="Restablecer clave" VerticalAlignment="Center"/>
+									</StackPanel>
+								</Button>
+								<!--#endregion-->
 							</StackPanel>
 							<!--#endregion-->
 						</Grid>

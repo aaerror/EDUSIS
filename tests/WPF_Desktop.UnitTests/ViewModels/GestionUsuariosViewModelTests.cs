@@ -298,4 +298,65 @@ public class GestionUsuariosViewModelTests
 		contexto.ViewModel.Roles.ShouldContain(Rol.SecretariaAcademica);
 	}
 	#endregion
+	#region RestablecerAccesoCommand
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Restablecer_la_clave_exige_una_cuenta_elegida()
+	{
+		var contexto = new Contexto();
+
+		contexto.ViewModel.RestablecerAccesoCommand.CanExecute(null).ShouldBeFalse();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Restablecer_la_clave_confirma_y_pide_al_servicio_la_cuenta_elegida()
+	{
+		var contexto = new Contexto();
+		var usuario = CrearUsuario(roles: Rol.Docente.Id);
+		contexto.DevolverUsuarios(usuario);
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+		contexto.ViewModel.UsuarioSeleccionado = contexto.ViewModel.Usuarios.Single();
+
+		contexto.ViewModel.RestablecerAccesoCommand.CanExecute(null).ShouldBeTrue();
+		await contexto.ViewModel.RestablecerAccesoCommand.ExecuteAsync(null);
+
+		contexto.Dialogos.Confirmaciones.Count.ShouldBe(1);
+		_ = contexto.ServicioUsuario.Received(1).RestablecerAccesoAsync(new RestablecerAccesoRequest(usuario.UsuarioID));
+		contexto.Dialogos.Informaciones.Count.ShouldBe(1);
+	}
+
+	/// <summary>La clave actual deja de servir en el acto: sin confirmación no se toca nada.</summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Restablecer_la_clave_sin_confirmar_no_llega_al_servicio()
+	{
+		var contexto = new Contexto();
+		contexto.Dialogos.RespuestaDeConfirmacion = false;
+		contexto.DevolverUsuarios(CrearUsuario(roles: Rol.Docente.Id));
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+		contexto.ViewModel.UsuarioSeleccionado = contexto.ViewModel.Usuarios.Single();
+
+		await contexto.ViewModel.RestablecerAccesoCommand.ExecuteAsync(null);
+
+		_ = contexto.ServicioUsuario.DidNotReceive().RestablecerAccesoAsync(Arg.Any<RestablecerAccesoRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Un_error_al_restablecer_se_informa_y_no_se_propaga()
+	{
+		var contexto = new Contexto();
+		contexto.DevolverUsuarios(CrearUsuario(roles: Rol.Docente.Id));
+		contexto.ServicioUsuario.RestablecerAccesoAsync(Arg.Any<RestablecerAccesoRequest>())
+								.Returns(Task.FromException(new InvalidOperationException("sin conexion")));
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+		contexto.ViewModel.UsuarioSeleccionado = contexto.ViewModel.Usuarios.Single();
+
+		await contexto.ViewModel.RestablecerAccesoCommand.ExecuteAsync(null);
+
+		contexto.Dialogos.Errores.Single().Mensaje.ShouldBe("sin conexion");
+		contexto.Dialogos.Informaciones.ShouldBeEmpty();
+	}
+	#endregion
 }

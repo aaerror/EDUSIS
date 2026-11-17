@@ -1,5 +1,6 @@
 ﻿using Core.ServicioAutenticaciones.DTOs.Responses;
 using Core.ServicioAutenticaciones.Exceptions;
+using Core.ServicioDocentes.Exceptions;
 using Core.ServicioUsuarios.Exceptions;
 using Core.ServicioSeguridad;
 using Core.ServicioUsuarios.DTOs.Requests;
@@ -242,17 +243,27 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 
 		try
 		{
-			_logger.LogInformation($"Recuperando acceso del usuario...");
-			var usuario = await _unitOfWork.Usuarios.BuscarPorUsernameAsync(request.Email);
+			_logger.LogInformation($"Restableciendo el acceso del usuario {request.UsuarioID}...");
+
+			// UsuarioNoEncontrado y no CredencialesInvalidas: quien pide es un administrador desde la
+			// pantalla de Usuarios, no alguien sin sesión tanteando cuentas desde el login, así que
+			// nombrar el caso no permite enumerar usuarios.
+			var usuario = await _unitOfWork.Usuarios.BuscarPorIDAsync(request.UsuarioID);
 			if (usuario is null)
 			{
-				throw new CredencialesInvalidasException();
+				throw new UsuarioNoEncontradoException();
 			}
 
 			var docente = await _unitOfWork.Docentes.BuscarPorIDAsync(usuario.DocenteID);
+			if (docente is null)
+			{
+				throw new DocenteNoEncontradoException();
+			}
 
-			var legajo = docente.Legajo;
-			var passwordHashed = _servicioSeguridad.HashPassword(legajo);
+			// La misma clave con la que nace la cuenta (RegistrarUsuarioAsync) y con la que la
+			// recrea SolicitarAccesoAsync: el documento. Restablecer al legajo dejaba tres caminos
+			// con dos claves iniciales distintas.
+			var passwordHashed = _servicioSeguridad.HashPassword(docente.DatosPersonales.Documento);
 
 			var salt = passwordHashed.GetValueOrDefault("salt");
 			var hash = passwordHashed.GetValueOrDefault("hash");

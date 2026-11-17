@@ -104,6 +104,7 @@ internal partial class GestionUsuariosViewModel : ObservableObject
 	[ObservableProperty]
 	[NotifyCanExecuteChangedFor(nameof(AsignarRolCommand))]
 	[NotifyCanExecuteChangedFor(nameof(QuitarRolCommand))]
+	[NotifyCanExecuteChangedFor(nameof(RestablecerAccesoCommand))]
 	private UsuarioResponse? _usuarioSeleccionado;
 
 	[ObservableProperty]
@@ -125,6 +126,7 @@ internal partial class GestionUsuariosViewModel : ObservableObject
 	public IAsyncRelayCommand CrearUsuarioCommand { get; }
 	public IAsyncRelayCommand AsignarRolCommand { get; }
 	public IAsyncRelayCommand QuitarRolCommand { get; }
+	public IAsyncRelayCommand RestablecerAccesoCommand { get; }
 
 	/// <summary>Abre una de las dos listas del índice. El parámetro es una de las constantes PANEL_.</summary>
 	public IRelayCommand<string> VerCommand { get; }
@@ -149,6 +151,7 @@ internal partial class GestionUsuariosViewModel : ObservableObject
 		CrearUsuarioCommand = new AsyncRelayCommand(ExecuteCrearUsuarioCommandAsync, CanExecuteCrearUsuarioCommand);
 		AsignarRolCommand = new AsyncRelayCommand(ExecuteAsignarRolCommandAsync, CanExecuteAsignarRolCommand);
 		QuitarRolCommand = new AsyncRelayCommand(ExecuteQuitarRolCommandAsync, CanExecuteQuitarRolCommand);
+		RestablecerAccesoCommand = new AsyncRelayCommand(ExecuteRestablecerAccesoCommandAsync, CanExecuteRestablecerAccesoCommand);
 		VerCommand = new RelayCommand<string>(ExecuteVer);
 	}
 
@@ -533,6 +536,48 @@ internal partial class GestionUsuariosViewModel : ObservableObject
 		catch (Exception ex)
 		{
 			_dialogService.MostrarError(ex.Message, "No se pudo quitar el rol");
+		}
+	}
+	#endregion
+
+	#region RestablecerAccesoCommand
+	private bool CanExecuteRestablecerAccesoCommand() =>
+		UsuarioSeleccionado is not null;
+
+	/// <remarks>
+	/// Lo opera un administrador y no el propio docente desde el login: el caso de uso exige
+	/// <c>AdministrarUsuarios</c>, y una recuperación sin sesión necesitaría un segundo factor que el
+	/// sistema no tiene. La clave vuelve a la inicial —el documento—, la misma con la que nace la
+	/// cuenta, así que el administrador puede decírsela al docente sin haberla visto nunca.
+	/// </remarks>
+	private async Task ExecuteRestablecerAccesoCommandAsync()
+	{
+		if (UsuarioSeleccionado is null)
+		{
+			return;
+		}
+
+		var cuenta = UsuarioSeleccionado;
+
+		if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
+				titulo: $"Restablecer la clave de { cuenta.NombreCompleto }",
+				consecuencia: "La clave actual deja de funcionar en el acto y la cuenta vuelve a la clave "
+							+ "inicial: el número de documento del docente. Los roles no cambian.",
+				verbo: "Restablecer clave")))
+		{
+			return;
+		}
+
+		try
+		{
+			await _servicioUsuario.RestablecerAccesoAsync(new RestablecerAccesoRequest(cuenta.UsuarioID));
+
+			_dialogService.MostrarInformacion($"{ cuenta.NombreCompleto } ya puede ingresar con su número de documento como clave.",
+											  "Clave restablecida");
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, "No se pudo restablecer la clave");
 		}
 	}
 	#endregion

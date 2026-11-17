@@ -179,24 +179,31 @@ public class ServicioUsuarioTests
 
 	#region RestablecerAccesoAsync
 	[Fact]
-	public async Task RestablecerAccesoAsync_cambia_salt_y_hash_del_usuario_y_guarda()
+	public async Task RestablecerAccesoAsync_vuelve_la_clave_al_documento_del_docente_y_guarda()
 	{
-		var (_, usuario) = SembrarDocenteConUsuario("maria.gonzalez");
+		var (docente, usuario) = SembrarDocenteConUsuario("maria.gonzalez");
 		var saltPrevio = usuario.PasswordSalt;
 		var hashPrevio = usuario.PasswordHash;
 
-		await _servicio.RestablecerAccesoAsync(new RestablecerAccesoRequest("maria.gonzalez"));
+		await _servicio.RestablecerAccesoAsync(new RestablecerAccesoRequest(usuario.Id));
 
 		usuario.PasswordSalt.ShouldNotBe(saltPrevio);
 		usuario.PasswordHash.ShouldNotBe(hashPrevio);
+		var seguridad = _host.Resolver<Core.ServicioSeguridad.IServicioSeguridad>();
+		var documento = new System.Security.SecureString();
+		foreach (var caracter in docente.DatosPersonales.Documento)
+		{
+			documento.AppendChar(caracter);
+		}
+		seguridad.ValidatePassword(documento, usuario.PasswordSalt, usuario.PasswordHash).ShouldBeTrue();
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
 	}
 
 	[Fact]
-	public async Task RestablecerAccesoAsync_con_un_email_sin_usuario_lanza_CredencialesInvalidas()
+	public async Task RestablecerAccesoAsync_de_una_cuenta_inexistente_lanza_UsuarioNoEncontrado()
 	{
-		await Should.ThrowAsync<CredencialesInvalidasException>(
-			() => _servicio.RestablecerAccesoAsync(new RestablecerAccesoRequest("desconocido@correo.com")));
+		await Should.ThrowAsync<UsuarioNoEncontradoException>(
+			() => _servicio.RestablecerAccesoAsync(new RestablecerAccesoRequest(Guid.NewGuid())));
 	}
 	#endregion
 
