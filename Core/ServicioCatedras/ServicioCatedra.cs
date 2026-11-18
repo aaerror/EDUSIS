@@ -43,18 +43,44 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		return catedra;
 	}
 
-	private static CatedraResponse MapearCatedra(Catedra catedra) =>
-		new(
-			CatedraID: catedra.Id,
-			MateriaID: catedra.MateriaID,
-			DivisionID: catedra.DivisionID,
-			CargaHoraria: catedra.CargaHoraria,
-			HorasAsignadas: catedra.HorasAsignadas,
-			HorasSinAsignar: catedra.HorasSinAsignar,
-			DocenteEnFuncionesID: catedra.DocenteEnFunciones());
+	/// <summary>
+	/// Proyecta las cátedras con los NOMBRES de lo que referencian (materia, división y docente en
+	/// funciones), resueltos en tres consultas para todo el listado.
+	/// </summary>
+	/// <remarks>
+	/// <c>Catedra</c> referencia a los otros agregados sólo por identificador, y antes el response
+	/// llevaba nada más que esos identificadores: la pantalla tenía que pedir los listados de
+	/// divisiones y docentes y cruzarlos en memoria. El cruce es un modelo de lectura y vive acá.
+	/// </remarks>
+	private async Task<IReadOnlyCollection<CatedraResponse>> MapearCatedrasAsync(IReadOnlyCollection<Catedra> catedras)
+	{
+		var materias = await _unitOfWork.Materias.DescripcionesAsync(catedras.Select(x => x.MateriaID));
+		var divisiones = await _unitOfWork.Divisiones.DescripcionesAsync(catedras.Select(x => x.DivisionID));
+		var docentes = await _unitOfWork.Docentes.NombresAsync(
+			catedras.Select(x => x.DocenteEnFunciones()).OfType<Guid>());
 
-	private static IReadOnlyCollection<CatedraResponse> MapearCatedras(IEnumerable<Catedra> catedras) =>
-		catedras.Select(MapearCatedra).ToList();
+		return catedras.Select(catedra =>
+		{
+			var docenteEnFunciones = catedra.DocenteEnFunciones();
+
+			return new CatedraResponse(
+				CatedraID: catedra.Id,
+				MateriaID: catedra.MateriaID,
+				DivisionID: catedra.DivisionID,
+				CargaHoraria: catedra.CargaHoraria,
+				HorasAsignadas: catedra.HorasAsignadas,
+				HorasSinAsignar: catedra.HorasSinAsignar,
+				DocenteEnFuncionesID: docenteEnFunciones,
+				Materia: materias.GetValueOrDefault(catedra.MateriaID, string.Empty),
+				Division: divisiones.GetValueOrDefault(catedra.DivisionID, string.Empty),
+				DocenteEnFunciones: docenteEnFunciones.HasValue
+					? docentes.GetValueOrDefault(docenteEnFunciones.Value, DOCENTE_SIN_LEGAJO)
+					: null);
+		}).ToList();
+	}
+
+	/// <summary>Texto para una referencia a un docente cuyo legajo ya no existe.</summary>
+	private const string DOCENTE_SIN_LEGAJO = "Docente sin legajo";
 	#endregion
 
 	#region Crear cátedra
@@ -365,7 +391,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		try
 		{
 			var catedras = await _unitOfWork.Catedras.CatedrasSegunMateriaAsync(request.MateriaID);
-			return MapearCatedras(catedras);
+			return await MapearCatedrasAsync(catedras);
 		}
 		catch (Exception ex)
 		{
@@ -379,7 +405,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		try
 		{
 			var catedras = await _unitOfWork.Catedras.CatedrasSegunDivisionAsync(request.DivisionID);
-			return MapearCatedras(catedras);
+			return await MapearCatedrasAsync(catedras);
 		}
 		catch (Exception ex)
 		{
@@ -393,7 +419,7 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		try
 		{
 			var catedras = await _unitOfWork.Catedras.CatedrasSegunDocenteAsync(request.DocenteID);
-			return MapearCatedras(catedras);
+			return await MapearCatedrasAsync(catedras);
 		}
 		catch (Exception ex)
 		{
@@ -410,12 +436,19 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 		{
 			var catedra = await BuscarCatedraAsync(request.CatedraID);
 
+			// Una sola consulta para todos los nombres, incluidos los de docentes dados de baja: el
+			// historial existe justamente para mostrarlos.
+			var nombres = await _unitOfWork.Docentes.NombresAsync(catedra.SituacionesRevista.Select(x => x.DocenteID));
+
 			// De la más reciente a la más vieja: la grilla es también el historial de la cátedra, y lo
 			// que se busca en un historial es lo último que pasó.
 			return catedra.SituacionesRevista
 				.OrderByDescending(situacion => situacion.Periodo.FechaInicio)
 				.Select(situacion =>
-					new SituacionRevistaResponse(
+				{
+					var reemplazaADocenteID = situacion.ReemplazaA.HasValue ? catedra.DocenteDe(situacion.ReemplazaA.Value) : null;
+
+					return new SituacionRevistaResponse(
 						SituacionRevistaID: situacion.Id,
 						CatedraID: catedra.Id,
 						DocenteID: situacion.DocenteID,
@@ -429,9 +462,14 @@ internal class ServicioCatedra : IServicio, IServicioCatedra
 						EsOcupante: situacion.EsOcupante(),
 						// El salto de designación reemplazada a docente reemplazado. Se resuelve contra
 						// la misma colección ya cargada, así que no cuesta una consulta más.
-						ReemplazaADocenteID: situacion.ReemplazaA.HasValue ? catedra.DocenteDe(situacion.ReemplazaA.Value) : null,
+						ReemplazaADocenteID: reemplazaADocenteID,
 						TieneSuplenteVigente: catedra.TieneSuplenteVigente(situacion.Id),
-						AdmitePasarAInterino: situacion.AdmitePasarAInterino()))
+						AdmitePasarAInterino: situacion.AdmitePasarAInterino(),
+						Docente: nombres.GetValueOrDefault(situacion.DocenteID, DOCENTE_SIN_LEGAJO),
+						ReemplazaADocente: reemplazaADocenteID.HasValue
+							? nombres.GetValueOrDefault(reemplazaADocenteID.Value, DOCENTE_SIN_LEGAJO)
+							: null);
+				})
 				.ToList();
 		}
 		catch (Exception ex)

@@ -18,6 +18,9 @@ public interface IDivisionRepository : IRepository<Division>
 	/// </remarks>
 	Task<IReadOnlyCollection<Division>> BuscarPorPreceptorAsync(Guid docenteID);
 	Task<IReadOnlyCollection<string>> DescripcionesDelCursoAsync(Guid cursoID);
+
+	/// <summary>Letra de cada división pedida. Un identificador que no existe no aparece en el resultado.</summary>
+	Task<IReadOnlyDictionary<Guid, string>> DescripcionesAsync(IEnumerable<Guid> divisionesID);
 	Task<IReadOnlyCollection<Division>> DivisionesDelCursoAsync(Guid cursoID);
 	Task<Division?> BuscarPorCursoYDescripcionAsync(Guid cursoID, string descripcion);
 }

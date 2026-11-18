@@ -37,4 +37,18 @@ internal class DocenteRepository : PersonaRepository<Docente>, IDocenteRepositor
 
 	public async Task<bool> ExisteLegajoAsync(string legajo) =>
 		await _context.Docentes.AnyAsync(x => EF.Functions.Like(x.Legajo, legajo));
+
+	// Sin Include de puestos: sólo hace falta el nombre. El formato lo da el dominio
+	// (DatosPersonales.NombreCompleto), así que se arma en memoria sobre lo leído.
+	public async Task<IReadOnlyDictionary<Guid, string>> NombresAsync(IEnumerable<Guid> docentesID)
+	{
+		var buscados = docentesID.Distinct().ToList();
+
+		var docentes = await _context.Docentes
+			.AsNoTracking()
+			.Where(x => buscados.Contains(x.Id))
+			.ToListAsync();
+
+		return docentes.ToDictionary(x => x.Id, x => x.DatosPersonales.NombreCompleto());
+	}
 }

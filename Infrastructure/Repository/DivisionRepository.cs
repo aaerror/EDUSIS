@@ -37,4 +37,13 @@ internal class DivisionRepository : Repository<Division>, IDivisionRepository
 	public async Task<Division?> BuscarPorCursoYDescripcionAsync(Guid cursoID, string descripcion) =>
 		await Consulta()
 			.FirstOrDefaultAsync(x => x.CursoID == cursoID && x.Descripcion == descripcion);
+
+	public async Task<IReadOnlyDictionary<Guid, string>> DescripcionesAsync(IEnumerable<Guid> divisionesID)
+	{
+		var buscadas = divisionesID.Distinct().ToList();
+
+		return await _context.Divisiones
+			.Where(x => buscadas.Contains(x.Id))
+			.ToDictionaryAsync(x => x.Id, x => x.Descripcion);
+	}
 }

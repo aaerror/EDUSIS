@@ -24,7 +24,7 @@ namespace WPF_Desktop.UnitTests.ViewModels;
 /// Cubre <see cref="GestionSituacionRevistaViewModel"/> (W6.A): los seis casos de uso remapeados a
 /// <see cref="IServicioCatedra"/> con el <c>CatedraID</c> de <see cref="CatedraStore"/>, la cadena de suplencias
 /// (un suplente sin <c>ReemplazaA</c> no llega al servicio; titular e interino nunca envian <c>ReemplazaA</c>, porque el
-/// dominio lanza <c>OcupanteConReemplazoException</c>), una sola llamada a <c>ListarDocentesActivosAsync</c> por carga y
+/// dominio lanza <c>OcupanteConReemplazoException</c>), los nombres que trae el response y
 /// el bloque "Docente en Funciones", que sigue a <c>SituacionRevistaEnFunciones</c> y no a la fila seleccionada.
 /// </summary>
 public class GestionSituacionRevistaViewModelTests
@@ -32,7 +32,6 @@ public class GestionSituacionRevistaViewModelTests
 	private sealed class Contexto
 	{
 		public IServicioCatedra ServicioCatedra { get; } = Substitute.For<IServicioCatedra>();
-		public IServicioDocente ServicioDocente { get; } = Substitute.For<IServicioDocente>();
 		public NavegacionFalsa<GestionCatedrasViewModel> NavegarAMaterias { get; } = new();
 
 		/// <summary>
@@ -53,7 +52,7 @@ public class GestionSituacionRevistaViewModelTests
 		/// <summary>Lo que devuelve <c>ListarSituacionesRevistaAsync</c>; se puede mutar entre cargas.</summary>
 		public List<SituacionRevistaResponse> Situaciones { get; } = new();
 
-		/// <summary>Lo que devuelve <c>ListarDocentesActivosAsync</c>.</summary>
+		/// <summary>Docentes cuyo nombre resuelve el servicio falso en <see cref="ConNombres"/>.</summary>
 		public List<LegajoDocenteResponse> Docentes { get; } = new();
 
 		public GestionSituacionRevistaViewModel ViewModel { get; }
@@ -64,15 +63,12 @@ public class GestionSituacionRevistaViewModelTests
 			CatedraStore.Catedra = CatedraID;
 
 			ServicioCatedra.ListarSituacionesRevistaAsync(Arg.Any<ListarSituacionesRevistaRequest>())
-						   .Returns(_ => Task.FromResult<IReadOnlyCollection<SituacionRevistaResponse>>(Situaciones.ToList()));
+						   .Returns(_ => Task.FromResult<IReadOnlyCollection<SituacionRevistaResponse>>(ConNombres()));
 			ServicioCatedra.DesignarDocenteAsync(Arg.Any<DesignarDocenteRequest>())
 						   .Returns(Task.FromResult(SituacionCreadaID));
-			ServicioDocente.ListarDocentesActivosAsync()
-						   .Returns(_ => Task.FromResult<IReadOnlyCollection<LegajoDocenteResponse>>(Docentes.ToList()));
 
 			ViewModel = new GestionSituacionRevistaViewModel(NavegarAMaterias,
 															 NavegarAlBuscador,
-															 ServicioDocente,
 															 ServicioCatedra,
 															 Dialogos,
 															 CursoStore,
@@ -119,10 +115,29 @@ public class GestionSituacionRevistaViewModelTests
 														 ReemplazaADocenteID: reemplazaADocenteID,
 														 TieneSuplenteVigente: tieneSuplenteVigente,
 														 // Misma cuenta que SituacionRevista.AdmitePasarAInterino.
-														 AdmitePasarAInterino: esVigente && fin is null);
+														 AdmitePasarAInterino: esVigente && fin is null,
+														 Docente: string.Empty,
+														 ReemplazaADocente: null);
 			Situaciones.Add(situacion);
 
 			return situacion;
+		}
+
+		/// <summary>
+		/// Los nombres los resuelve Core en el response (con "Docente sin legajo" si no hay legajo). El
+		/// servicio falso hace lo mismo con los docentes cargados por <see cref="AgregarDocente"/>.
+		/// </summary>
+		private List<SituacionRevistaResponse> ConNombres()
+		{
+			string Nombre(Guid id) => Docentes.FirstOrDefault(d => d.DocenteID == id)?.NombreCompleto ?? "Docente sin legajo";
+
+			return Situaciones
+				.Select(s => s with
+				{
+					Docente = Nombre(s.DocenteID),
+					ReemplazaADocente = s.ReemplazaADocenteID.HasValue ? Nombre(s.ReemplazaADocenteID.Value) : null
+				})
+				.ToList();
 		}
 
 		public LegajoDocenteResponse AgregarDocente(Guid docenteID, string nombre)
@@ -203,53 +218,14 @@ public class GestionSituacionRevistaViewModelTests
 	}
 	#endregion
 
-	#region ListarDocentesActivosAsync: exactamente una vez por carga
+	#region Nombres de los docentes
+	/// <summary>
+	/// Los nombres llegan en el response: Core los resuelve (también los de docentes dados de baja,
+	/// que el listado de activos no traía) y la pantalla ya no consulta docentes para cruzarlos.
+	/// </summary>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task ListarDocentesActivos_se_llama_exactamente_una_vez_aunque_haya_muchas_filas()
-	{
-		var contexto = new Contexto();
-		for (var i = 0; i < 5; i++)
-		{
-			var docenteID = Guid.NewGuid();
-			contexto.AgregarDocente(docenteID, $"Docente {i}");
-			contexto.Agregar(cargo: i == 0 ? "Titular" : "Suplente", docenteID: docenteID, reemplazaA: i == 0 ? null : Guid.NewGuid());
-		}
-
-		await contexto.ViewModel.CargarSituacionRevistasAsync();
-
-		await contexto.ServicioDocente.Received(1).ListarDocentesActivosAsync();
-		contexto.ViewModel.DocentesEnMateria.Count.ShouldBe(5);
-	}
-
-	[Fact]
-	[Trait("Categoria", "Unidad")]
-	public async Task ListarDocentesActivos_se_llama_una_vez_por_cada_carga()
-	{
-		var contexto = new Contexto();
-		contexto.Agregar();
-		contexto.Agregar(cargo: "Interino");
-
-		await contexto.ViewModel.CargarSituacionRevistasAsync();
-		await contexto.ViewModel.CargarSituacionRevistasAsync();
-
-		await contexto.ServicioDocente.Received(2).ListarDocentesActivosAsync();
-	}
-
-	[Fact]
-	[Trait("Categoria", "Unidad")]
-	public async Task Sin_situaciones_no_se_consulta_el_listado_de_docentes()
-	{
-		var contexto = new Contexto();
-
-		await contexto.ViewModel.CargarSituacionRevistasAsync();
-
-		await contexto.ServicioDocente.DidNotReceive().ListarDocentesActivosAsync();
-	}
-
-	[Fact]
-	[Trait("Categoria", "Unidad")]
-	public async Task El_nombre_del_docente_se_cruza_en_memoria_por_DocenteID()
+	public async Task El_nombre_del_docente_viene_del_response()
 	{
 		var contexto = new Contexto();
 		var conocido = Guid.NewGuid();
@@ -263,29 +239,21 @@ public class GestionSituacionRevistaViewModelTests
 		contexto.Fila(situacionDesconocida.SituacionRevistaID).Docente.ShouldBe("Docente sin legajo");
 	}
 
-	/// <summary>
-	/// El docente DADO DE BAJA conserva su nombre en el historial.
-	/// </summary>
-	/// <remarks>
-	/// Es el caso que el cruce contra <c>ListarDocentesActivosAsync</c> perdía: el listado de activos
-	/// no lo trae, así que una designación de alguien que ya no trabaja en la escuela aparecía sin
-	/// nombre —y el historial existe justamente para mostrar por quién pasó la cátedra—. Se lo busca
-	/// de a uno y sólo cuando falta, así que el caso normal sigue costando una sola consulta.
-	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Un_docente_dado_de_baja_conserva_su_nombre_en_el_historial()
+	public async Task El_suplente_muestra_el_nombre_de_a_quien_reemplaza()
 	{
 		var contexto = new Contexto();
-		var deBaja = Guid.NewGuid();
-		var situacion = contexto.Agregar(docenteID: deBaja, estado: "Finalizado");
-		contexto.ServicioDocente.MostrarLegajoDocenteAsync(Arg.Is<DocenteIDRequest>(r => r.DocenteID == deBaja))
-								.Returns(Task.FromResult(new LegajoDocenteResponse(deBaja, "Ruiz Carlos", "28999111", "20289991113", "L-9", DateTime.Today.AddYears(-10), DateTime.Today.AddMonths(-2), false)));
+		var titular = Guid.NewGuid();
+		contexto.AgregarDocente(titular, "Ruiz Carlos");
+		var designacionTitular = contexto.Agregar(docenteID: titular);
+		var suplencia = contexto.Agregar(cargo: "Suplente", reemplazaA: designacionTitular.SituacionRevistaID, reemplazaADocenteID: titular);
 
 		await contexto.ViewModel.CargarSituacionRevistasAsync();
 
-		contexto.Fila(situacion.SituacionRevistaID).Docente.ShouldBe("Ruiz Carlos");
+		contexto.Fila(suplencia.SituacionRevistaID).ReemplazaADocente.ShouldBe("Ruiz Carlos");
 	}
+	#endregion
 
 	/// <summary>
 	/// El combo de reemplazo no ofrece a quien ya tiene un suplente vigente.
@@ -309,7 +277,6 @@ public class GestionSituacionRevistaViewModelTests
 		reemplazables.ShouldNotContain(yaReemplazado.SituacionRevistaID);
 		reemplazables.ShouldContain(libre.SituacionRevistaID);
 	}
-	#endregion
 
 	#region Bloque "Docente en Funciones"
 	[Fact]

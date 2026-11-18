@@ -39,4 +39,9 @@ public sealed class DivisionRepositorioFake : RepositorioEnMemoria<Division>, ID
 
 	public Task<Division?> BuscarPorCursoYDescripcionAsync(Guid cursoID, string descripcion) =>
 		Task.FromResult(_entidades.FirstOrDefault(x => x.CursoID.Equals(cursoID) && x.Descripcion == descripcion));
+
+	public Task<IReadOnlyDictionary<Guid, string>> DescripcionesAsync(IEnumerable<Guid> divisionesID) =>
+		Task.FromResult((IReadOnlyDictionary<Guid, string>)_entidades
+			.Where(x => divisionesID.Contains(x.Id))
+			.ToDictionary(x => x.Id, x => x.Descripcion));
 }

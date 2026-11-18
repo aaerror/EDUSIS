@@ -34,7 +34,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	#region Services
 	private readonly INavigationService _gestionCatedrasNavigationService;
 	private readonly INavigationService _buscarDocenteModalNavigationService;
-	private readonly IServicioDocente _servicioDocente;
 	private readonly IServicioCatedra _servicioCatedra;
 	private readonly IDialogService _dialogService;
 	#endregion
@@ -186,7 +185,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 
 	public GestionSituacionRevistaViewModel(INavigationService<GestionCatedrasViewModel> gestionCatedrasNavigationService,
 											INavigationService<BuscarViewModel> buscarDocenteModalNavigationService,
-											IServicioDocente servicioDocente,
 											IServicioCatedra servicioCatedra,
 											IDialogService dialogService,
 											CursoStore cursoStore,
@@ -198,7 +196,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 		_sesion = sesion;
 		_gestionCatedrasNavigationService = gestionCatedrasNavigationService;
 		_buscarDocenteModalNavigationService = buscarDocenteModalNavigationService;
-		_servicioDocente = servicioDocente;
 		_servicioCatedra = servicioCatedra;
 		_dialogService = dialogService;
 		_messenger = messenger;
@@ -334,12 +331,12 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 			// avisaba con un cartel interruptor, de modo que el estado vacío de la grilla —que ya
 			// trae su frase y dice qué hacer— era código inalcanzable. Es el caso normal de una
 			// cátedra recién creada, no un problema que merezca interrumpir.
-			var nombresPorDocente = await NombresDeLosDocentesAsync(situaciones.Select(x => x.DocenteID));
-
+			// Los nombres los trae Core en el response, también los de docentes dados de baja. Antes se
+			// cruzaban acá con el listado de activos y se pedían de a uno los que faltaban.
 			var items = situaciones.Select(x => new SituacionRevistaViewModel(x)
 			{
-				Docente = Nombrar(nombresPorDocente, x.DocenteID),
-				ReemplazaADocente = x.ReemplazaADocenteID.HasValue ? Nombrar(nombresPorDocente, x.ReemplazaADocenteID.Value) : string.Empty
+				Docente = x.Docente,
+				ReemplazaADocente = x.ReemplazaADocente ?? string.Empty
 			});
 			DocentesEnMateria = new ObservableCollection<SituacionRevistaViewModel>(items);
 
@@ -372,62 +369,6 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 			HabilitarInfoSituacionRevista = true;
 		}
 	}
-
-	#region Nombres de los docentes
-	/// <summary>
-	/// Resuelve los nombres de los docentes que aparecen en el listado.
-	/// </summary>
-	/// <remarks>
-	/// <c>SituacionRevistaResponse</c> identifica a cada docente por su identificador, así que el
-	/// nombre se cruza acá. Arranca por el listado de activos —una sola consulta para todos— y recién
-	/// después pide de a uno los que falten.
-	///
-	/// Esos que faltan son los docentes DADOS DE BAJA, y son justamente los que el historial existe
-	/// para mostrar: antes salían como "Docente no disponible", así que la designación de alguien que
-	/// ya no trabaja en la escuela perdía el nombre de la persona. Son pocos y sólo se los pide cuando
-	/// aparecen, de modo que el caso normal sigue costando una consulta.
-	/// </remarks>
-	private async Task<Dictionary<Guid, string>> NombresDeLosDocentesAsync(IEnumerable<Guid> docentesID)
-	{
-		var nombres = new Dictionary<Guid, string>();
-
-		var buscados = docentesID.Distinct().ToList();
-
-		// Una cátedra sin designaciones no tiene nombres que resolver: no se consulta el listado.
-		if (buscados.Count is 0)
-		{
-			return nombres;
-		}
-
-		var activos = await _servicioDocente.ListarDocentesActivosAsync();
-		foreach (var docente in activos)
-		{
-			nombres.TryAdd(docente.DocenteID, docente.NombreCompleto);
-		}
-
-		foreach (var docenteID in buscados.Where(id => !nombres.ContainsKey(id)))
-		{
-			try
-			{
-				var legajo = await _servicioDocente.MostrarLegajoDocenteAsync(new DocenteIDRequest(docenteID));
-				if (legajo is not null)
-				{
-					nombres.TryAdd(docenteID, legajo.NombreCompleto);
-				}
-			}
-			catch (Exception)
-			{
-				// Un legajo que no se puede traer no invalida el resto del listado: esa fila cae en
-				// el texto de reemplazo y las demás se muestran igual.
-			}
-		}
-
-		return nombres;
-	}
-
-	private static string Nombrar(Dictionary<Guid, string> nombres, Guid docenteID) =>
-		nombres.TryGetValue(docenteID, out var nombre) ? nombre : "Docente sin legajo";
-	#endregion
 
 	#region Suplencia
 

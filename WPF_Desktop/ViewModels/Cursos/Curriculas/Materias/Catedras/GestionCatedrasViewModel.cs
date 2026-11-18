@@ -160,14 +160,10 @@ internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 		var divisiones = await _servicioDivision.ListarDivisionesAsync(new ListarDivisionesRequest(CursoID: Materia.CursoID,
 																								   CicloLectivo: _cicloLectivoStore.CicloLectivo));
 
-		Dictionary<Guid, string> letras = divisiones.ToDictionary(d => d.DivisionID, d => d.Descripcion);
-
 		Catedras.Clear();
 		foreach (var catedra in catedras)
 		{
-			var viewModel = new CatedraViewModel(catedra);
-			viewModel.Division = letras.TryGetValue(catedra.DivisionID, out var letra) ? letra : string.Empty;
-			Catedras.Add(viewModel);
+			Catedras.Add(new CatedraViewModel(catedra));
 		}
 
 		HorasSinAsignar = Catedras.Sum(catedra => catedra.HorasSinAsignar);

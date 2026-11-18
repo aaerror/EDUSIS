@@ -30,4 +30,13 @@ internal class MateriaRepository : Repository<Materia>, IMateriaRepository
 
 	public async Task<int> TotalEspaciosSegunCurriculaAsync(Guid unaCurricula) =>
 		await _context.Materias.CountAsync(x => x.CurriculaID == unaCurricula);
+
+	public async Task<IReadOnlyDictionary<Guid, string>> DescripcionesAsync(IEnumerable<Guid> materiasID)
+	{
+		var buscadas = materiasID.Distinct().ToList();
+
+		return await _context.Materias
+			.Where(x => buscadas.Contains(x.Id))
+			.ToDictionaryAsync(x => x.Id, x => x.Descripcion);
+	}
 }

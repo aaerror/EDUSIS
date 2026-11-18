@@ -49,4 +49,9 @@ public sealed class DocenteRepositorioFake : RepositorioDePersonasEnMemoria<Doce
 
 	public Task<bool> ExisteLegajoAsync(string legajo) =>
 		Task.FromResult(LegajosInvalidos.Contains(legajo) || _entidades.Any(x => x.Legajo == legajo));
+
+	public Task<IReadOnlyDictionary<Guid, string>> NombresAsync(IEnumerable<Guid> docentesID) =>
+		Task.FromResult((IReadOnlyDictionary<Guid, string>)_entidades
+			.Where(x => docentesID.Contains(x.Id))
+			.ToDictionary(x => x.Id, x => x.DatosPersonales.NombreCompleto()));
 }

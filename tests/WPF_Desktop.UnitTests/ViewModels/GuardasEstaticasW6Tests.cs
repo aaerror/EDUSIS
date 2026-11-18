@@ -483,17 +483,14 @@ public class GuardasEstaticasW6Tests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void GestionSituacionRevista_llama_a_ListarDocentesActivosAsync_una_sola_vez_en_codigo_vivo_y_fuera_de_todo_bucle()
+	public void GestionSituacionRevista_no_consulta_docentes_para_nombrar_las_designaciones()
 	{
+		// Los nombres los trae Core en SituacionRevistaResponse. Antes la pantalla los cruzaba con
+		// ListarDocentesActivosAsync y pedía de a uno los legajos faltantes.
 		var codigo = CodigoVivo(GestionSituacionRevistaCs);
 
-		Regex.Matches(codigo, @"ListarDocentesActivosAsync\(").Count.ShouldBe(1);
-
-		// Ninguna llamada dentro de un foreach/for/while: se mira el texto entre el bucle y su llave de cierre mas proxima.
-		foreach (Match bucle in Regex.Matches(codigo, @"\b(foreach|for|while)\s*\([^)]*\)\s*\{[^{}]*\}"))
-		{
-			bucle.Value.ShouldNotContain("ListarDocentesActivosAsync");
-		}
+		codigo.ShouldNotContain("ListarDocentesActivosAsync");
+		codigo.ShouldNotContain("MostrarLegajoDocenteAsync");
 	}
 
 	[Fact]

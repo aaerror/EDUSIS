@@ -415,6 +415,30 @@ public class ServicioCatedraTests
 	#endregion
 
 	#region Listar cátedras
+	/// <summary>
+	/// DDD-13: los nombres de lo que la cátedra referencia por identificador los resuelve Core; la
+	/// pantalla los cruzaba en memoria con otros listados.
+	/// </summary>
+	[Fact]
+	public async Task ListarCatedrasSegunMateriaAsync_trae_los_nombres_de_materia_division_y_docente_en_funciones()
+	{
+		var materia = SembrarMateria(Guid.NewGuid());
+		var division = SembrarDivision();
+		var docente = SembrarDocente();
+		var catedra = SembrarCatedra(materia.Id, division.Id);
+		var designacion = catedra.Designar(docente.Id, Cargo.Titular, DateTime.Today.AddYears(-1), null);
+		catedra.PonerEnFunciones(designacion);
+		var sinNadie = SembrarCatedra(materia.Id, SembrarDivision().Id);
+
+		var catedras = await _servicio.ListarCatedrasSegunMateriaAsync(new ListarCatedrasSegunMateriaRequest(materia.Id));
+
+		var conDocente = catedras.Single(x => x.CatedraID.Equals(catedra.Id));
+		conDocente.Materia.ShouldBe(materia.Descripcion);
+		conDocente.Division.ShouldBe(division.Descripcion);
+		conDocente.DocenteEnFunciones.ShouldBe(docente.DatosPersonales.NombreCompleto());
+		catedras.Single(x => x.CatedraID.Equals(sinNadie.Id)).DocenteEnFunciones.ShouldBeNull();
+	}
+
 	[Fact]
 	public async Task ListarCatedrasSegunMateriaAsync_devuelve_las_catedras_de_la_materia()
 	{
@@ -458,6 +482,39 @@ public class ServicioCatedraTests
 	#endregion
 
 	#region ListarSituacionesRevistaAsync / ListarHorariosSegunCatedraAsync
+	/// <summary>
+	/// El historial nombra también a quien ya no trabaja en la escuela: el listado de activos con el
+	/// que la pantalla cruzaba los nombres no traía a los docentes dados de baja.
+	/// </summary>
+	[Fact]
+	public async Task ListarSituacionesRevistaAsync_trae_los_nombres_incluso_de_un_docente_dado_de_baja()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		var ausente = SembrarDocente();
+		var suplente = SembrarDocente();
+		var titular = catedra.Designar(ausente.Id, Cargo.Titular, DateTime.Today.AddYears(-1), null);
+		var suplencia = catedra.Designar(suplente.Id, Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddMonths(1), titular);
+		ausente.Desafectar();
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		var designacionSuplente = situaciones.Single(x => x.SituacionRevistaID.Equals(suplencia));
+		designacionSuplente.Docente.ShouldBe(suplente.DatosPersonales.NombreCompleto());
+		designacionSuplente.ReemplazaADocente.ShouldBe(ausente.DatosPersonales.NombreCompleto());
+		situaciones.Single(x => x.SituacionRevistaID.Equals(titular)).Docente.ShouldBe(ausente.DatosPersonales.NombreCompleto());
+	}
+
+	[Fact]
+	public async Task ListarSituacionesRevistaAsync_nombra_Docente_sin_legajo_a_un_docente_inexistente()
+	{
+		var catedra = SembrarCatedra(Guid.NewGuid(), Guid.NewGuid());
+		catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddYears(-1), null);
+
+		var situaciones = await _servicio.ListarSituacionesRevistaAsync(new ListarSituacionesRevistaRequest(catedra.Id));
+
+		situaciones.Single().Docente.ShouldBe("Docente sin legajo");
+	}
+
 	[Fact]
 	public async Task ListarSituacionesRevistaAsync_devuelve_las_situaciones_marcando_la_que_esta_en_funciones()
 	{

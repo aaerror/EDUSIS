@@ -72,7 +72,7 @@ public class GestionHorariosViewModelTests
 			ServicioCatedra.ListarCatedrasSegunMateriaAsync(Arg.Any<ListarCatedrasSegunMateriaRequest>())
 						   .Returns(Task.FromResult<IReadOnlyCollection<CatedraResponse>>(new[]
 						   {
-							   new CatedraResponse(CatedraID, MateriaID, Guid.NewGuid(), cargaHoraria, 0, 0, null)
+							   new CatedraResponse(CatedraID, MateriaID, Guid.NewGuid(), cargaHoraria, 0, 0, null, "Matematica", "A", null)
 						   }));
 		}
 	}

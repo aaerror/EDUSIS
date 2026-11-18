@@ -77,9 +77,9 @@ public class GestionCatedrasViewModelTests
 		return new DivisionResponse(Guid.NewGuid(), letra, null, null, 0);
 	}
 
-	private static CatedraResponse CrearCatedra(Guid materiaID, Guid divisionID)
+	private static CatedraResponse CrearCatedra(Guid materiaID, Guid divisionID, string division = "")
 	{
-		return new CatedraResponse(Guid.NewGuid(), materiaID, divisionID, 4, 1, 3, null);
+		return new CatedraResponse(Guid.NewGuid(), materiaID, divisionID, 4, 1, 3, null, "Matematica", division, null);
 	}
 
 	#region Carga
@@ -122,13 +122,13 @@ public class GestionCatedrasViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public async Task Cargar_resuelve_la_letra_de_cada_catedra_y_deja_vacia_la_de_una_division_desconocida()
+	public async Task Cargar_muestra_la_letra_que_trae_el_response_de_cada_catedra()
 	{
 		var contexto = new Contexto();
 		var divisionA = CrearDivision("A");
 		var divisionB = CrearDivision("B");
-		var catedraA = CrearCatedra(contexto.MateriaID, divisionA.DivisionID);
-		var catedraB = CrearCatedra(contexto.MateriaID, divisionB.DivisionID);
+		var catedraA = CrearCatedra(contexto.MateriaID, divisionA.DivisionID, "A");
+		var catedraB = CrearCatedra(contexto.MateriaID, divisionB.DivisionID, "B");
 		var catedraHuerfana = CrearCatedra(contexto.MateriaID, Guid.NewGuid());
 		contexto.Devolver(new List<CatedraResponse> { catedraA, catedraB, catedraHuerfana },
 						  new List<DivisionResponse> { divisionA, divisionB });

@@ -25,4 +25,9 @@ public sealed class MateriaRepositorioFake : RepositorioEnMemoria<Materia>, IMat
 	public Task<int> TotalEspaciosSegunCurriculaAsync(Guid unaCurricula) =>
 		Task.FromResult(_entidades
 			.Count(x => x.CurriculaID.Equals(unaCurricula)));
+
+	public Task<IReadOnlyDictionary<Guid, string>> DescripcionesAsync(IEnumerable<Guid> materiasID) =>
+		Task.FromResult((IReadOnlyDictionary<Guid, string>)_entidades
+			.Where(x => materiasID.Contains(x.Id))
+			.ToDictionary(x => x.Id, x => x.Descripcion));
 }

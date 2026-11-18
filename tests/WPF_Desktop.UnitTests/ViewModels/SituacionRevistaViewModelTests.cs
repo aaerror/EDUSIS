@@ -29,7 +29,9 @@ public class SituacionRevistaViewModelTests
 			EsOcupante: false,
 			ReemplazaADocenteID: Guid.NewGuid(),
 			TieneSuplenteVigente: false,
-			AdmitePasarAInterino: false);
+			AdmitePasarAInterino: false,
+			Docente: "Perez Juan",
+			ReemplazaADocente: "Ruiz Carlos");
 	}
 
 	[Fact]
@@ -71,7 +73,7 @@ public class SituacionRevistaViewModelTests
 	{
 		var response = new SituacionRevistaResponse(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Vigente", "Titular", _inicio, null, null, false,
 													Vigente: true, EsOcupante: true, ReemplazaADocenteID: null, TieneSuplenteVigente: false,
-													AdmitePasarAInterino: true);
+													AdmitePasarAInterino: true, Docente: "Perez Juan", ReemplazaADocente: null);
 
 		var viewModel = new SituacionRevistaViewModel(response);
 

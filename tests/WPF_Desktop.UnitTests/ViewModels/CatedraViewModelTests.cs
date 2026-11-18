@@ -16,7 +16,10 @@ public class CatedraViewModelTests
 			CargaHoraria: 6,
 			HorasAsignadas: 4,
 			HorasSinAsignar: 2,
-			DocenteEnFuncionesID: docenteEnFuncionesID);
+			DocenteEnFuncionesID: docenteEnFuncionesID,
+			Materia: "Matematica",
+			Division: "A",
+			DocenteEnFunciones: docenteEnFuncionesID.HasValue ? "Gomez Maria" : null);
 	}
 
 	[Fact]
@@ -93,11 +96,13 @@ public class CatedraViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void Division_queda_vacia_hasta_que_la_completa_el_contenedor()
+	public void Los_nombres_salen_del_response()
 	{
-		var viewModel = new CatedraViewModel(CrearResponse(null));
+		var viewModel = new CatedraViewModel(CrearResponse(Guid.NewGuid()));
 
-		viewModel.Division.ShouldBe(string.Empty);
+		viewModel.Materia.ShouldBe("Matematica");
+		viewModel.Division.ShouldBe("A");
+		viewModel.DocenteEnFunciones.ShouldBe("Gomez Maria");
 	}
 
 	[Fact]

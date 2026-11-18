@@ -21,6 +21,11 @@ namespace Core.ServicioCatedras.DTOs.Responses;
 /// <see cref="AdmitePasarAInterino"/> sale de <c>SituacionRevista.AdmitePasarAInterino()</c>: la
 /// pantalla lo deducía de <c>Vigente</c> y de que <see cref="FechaFin"/> fuera nula.
 /// </para>
+/// <para>
+/// <see cref="Docente"/> y <see cref="ReemplazaADocente"/> son los nombres, resueltos por <c>Core</c>
+/// también para docentes dados de baja: la pantalla los cruzaba en memoria con el listado de activos y
+/// pedía de a uno los que faltaban.
+/// </para>
 /// </remarks>
 public record SituacionRevistaResponse(
 	Guid SituacionRevistaID,
@@ -36,4 +41,6 @@ public record SituacionRevistaResponse(
 	bool EsOcupante,
 	Guid? ReemplazaADocenteID,
 	bool TieneSuplenteVigente,
-	bool AdmitePasarAInterino);
+	bool AdmitePasarAInterino,
+	string Docente,
+	string? ReemplazaADocente);
