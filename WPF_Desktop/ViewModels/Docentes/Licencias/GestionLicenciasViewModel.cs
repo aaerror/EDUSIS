@@ -13,6 +13,7 @@ using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using Microsoft.IdentityModel.Tokens;
+using WPF_Desktop.ViewModels.Docentes;
 
 namespace WPF_Desktop.ViewModels.Docentes.Licencias;
 
@@ -88,7 +89,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 
 	public GestionLicenciasViewModel(IServicioLicencia servicioLicencia,
 									 IDialogService dialogService,
-									 INavigationService gestionDocentesNavigationService,
+									 INavigationService<GestionDocentesViewModel> gestionDocentesNavigationService,
 									 LegajoStore perfilBuscadoStore)
 	{
 		_servicioLicencia = servicioLicencia;

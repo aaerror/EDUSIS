@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using WPF_Desktop.Navigation;
 
 namespace WPF_Desktop.UnitTests.Dobles;
@@ -19,4 +20,14 @@ internal class NavegacionFalsa : INavigationService
 		AlNavegar?.Invoke();
 		Llamadas++;
 	}
+}
+
+/// <summary>
+/// La misma doble, tipada por destino: los constructores de los ViewModels piden
+/// <see cref="INavigationService{TViewModel}"/>, así que una prueba que invierta dos destinos
+/// tampoco compila.
+/// </summary>
+internal sealed class NavegacionFalsa<TViewModel> : NavegacionFalsa, INavigationService<TViewModel>
+	where TViewModel : ObservableObject
+{
 }

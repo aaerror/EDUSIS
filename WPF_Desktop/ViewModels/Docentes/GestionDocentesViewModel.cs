@@ -13,6 +13,8 @@ using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
+using WPF_Desktop.ViewModels.Docentes.Licencias;
+using WPF_Desktop.ViewModels.Docentes.Puestos;
 
 namespace WPF_Desktop.ViewModels.Docentes;
 
@@ -97,10 +99,10 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 
 	public GestionDocentesViewModel(IServicioDocente servicioDocentes,
 									IDialogService dialogService,
-									INavigationService registrarDocenteNavigationService,
-									INavigationService perfilDocenteNavigationService,
-									INavigationService gestionPuestoNavigationService,
-									INavigationService gestionLicenciasNavigationService,
+									INavigationService<RegistrarDocenteViewModel> registrarDocenteNavigationService,
+									INavigationService<PerfilDocenteViewModel> perfilDocenteNavigationService,
+									INavigationService<GestionPuestosViewModel> gestionPuestoNavigationService,
+									INavigationService<GestionLicenciasViewModel> gestionLicenciasNavigationService,
 									LegajoStore perfilBuscadoStore)
 	{
 		_servicioDocentes = servicioDocentes;

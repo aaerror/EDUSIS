@@ -14,6 +14,8 @@ using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 using WPF_Desktop.ViewModels.Docentes;
 using WPF_Desktop.ViewModels.Shared.Messages;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
+using WPF_Desktop.ViewModels.Shared.Modal;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.ViewModels;
@@ -31,13 +33,13 @@ public class GestionSituacionRevistaViewModelTests
 	{
 		public IServicioCatedra ServicioCatedra { get; } = Substitute.For<IServicioCatedra>();
 		public IServicioDocente ServicioDocente { get; } = Substitute.For<IServicioDocente>();
-		public NavegacionFalsa NavegarAMaterias { get; } = new();
+		public NavegacionFalsa<GestionCatedrasViewModel> NavegarAMaterias { get; } = new();
 
 		/// <summary>
 		/// El buscador de docentes vive en el modal: la pantalla ya no busca, sólo lo abre. Esta
 		/// navegación falsa es la que registra esa apertura.
 		/// </summary>
-		public NavegacionFalsa NavegarAlBuscador { get; } = new();
+		public NavegacionFalsa<BuscarViewModel> NavegarAlBuscador { get; } = new();
 		public IMessenger Mensajero { get; } = new WeakReferenceMessenger();
 		public DialogServiceFalso Dialogos { get; } = new();
 		public CursoStore CursoStore { get; } = new();

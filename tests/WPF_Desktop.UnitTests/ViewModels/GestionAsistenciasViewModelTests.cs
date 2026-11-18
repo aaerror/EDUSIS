@@ -34,7 +34,7 @@ public class GestionAsistenciasViewModelTests
 		public IServicioAsistencia ServicioAsistencia { get; } = Substitute.For<IServicioAsistencia>();
 		public IServicioCursante ServicioCursante { get; } = Substitute.For<IServicioCursante>();
 		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
-		public NavegacionFalsa NavegarADivisiones { get; } = new();
+		public NavegacionFalsa<GestionDivisionesViewModel> NavegarADivisiones { get; } = new();
 		public CursoStore CursoStore { get; } = new();
 		public DivisionStore DivisionStore { get; } = new();
 		public CicloLectivoStore CicloLectivoStore { get; } = new();

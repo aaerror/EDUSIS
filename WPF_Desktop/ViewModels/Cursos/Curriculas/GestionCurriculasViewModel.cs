@@ -16,6 +16,8 @@ using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 using WPF_Desktop.ViewModels.Docentes;
+using WPF_Desktop.ViewModels.Cursos;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas;
 
@@ -233,8 +235,8 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	#endregion
 
 
-	public GestionCurriculasViewModel(INavigationService gestionCursosNavigationService,
-									  INavigationService gestionCatedrasNavigationService,
+	public GestionCurriculasViewModel(INavigationService<GestionCursosViewModel> gestionCursosNavigationService,
+									  INavigationService<GestionCatedrasViewModel> gestionCatedrasNavigationService,
 									  IServicioCurricula servicioCurricula,
 									  IServicioMateria servicioMateria,
 									  IDialogService dialogService,

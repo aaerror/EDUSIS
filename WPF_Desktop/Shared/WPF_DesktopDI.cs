@@ -177,10 +177,9 @@ internal static class WPF_DesktopDI
 									   provider.GetRequiredService<IDialogService>(),
 									   Navegacion<GestionDocentesViewModel, MainWindowNavigationStore>(provider),
 									   provider.GetRequiredService<LegajoStore>()));
-		// Las dos se registran con fábrica y no por reflexión: ahora reciben un
-		// INavigationService, y la resolución automática le pasaría el único INavigationService
-		// registrado —el de la ventana principal—, con lo cual "volver a Docentes" llevaría a
-		// cualquier otra parte sin un solo error de compilación.
+		// Las dos se registran con fábrica y no por reflexión: reciben un
+		// INavigationService<GestionDocentesViewModel>, que no está registrado en el contenedor —cada
+		// destino se arma con Navegacion<,>—, así que la resolución automática fallaría al navegar.
 		services.AddTransient<GestionPuestosViewModel>(provider =>
 			new GestionPuestosViewModel(provider.GetRequiredService<IServicioDocente>(),
 										provider.GetRequiredService<IDialogService>(),
@@ -248,11 +247,8 @@ internal static class WPF_DesktopDI
 									   Navegacion<GestionDivisionesViewModel, MainWindowNavigationStore>(provider),
 									   Navegacion<GestionCurriculasViewModel, MainWindowNavigationStore>(provider),
 									   provider.GetRequiredService<CursoStore>()));
-		// Los CUATRO INavigationService de esta pantalla son del mismo tipo y acá se distinguen
-		// SÓLO por posición: cursos (volver), cursantes, asistencias y el modal de búsqueda de
-		// docentes, en ese orden. Invertir dos compila y aterriza en la pantalla equivocada sin un
-		// solo error. El <remarks> del constructor de GestionDivisionesViewModel es la otra mitad
-		// de esta advertencia.
+		// Cuatro destinos: cursos (volver), cursantes, asistencias y el modal de búsqueda de
+		// docentes. Van tipados, así que invertir dos no compila.
 		services.AddTransient<GestionDivisionesViewModel>(provider =>
 			new GestionDivisionesViewModel(provider.GetRequiredService<IServicioDivision>(),
 										   Navegacion<GestionCursosViewModel, MainWindowNavigationStore>(provider),
@@ -301,9 +297,8 @@ internal static class WPF_DesktopDI
 		#endregion
 
 		#region Catedras
-		// Los TRES INavigationService de esta pantalla son del mismo tipo y acá se distinguen SÓLO
-		// por posición: diseño curricular (volver), situación de revista y horarios, en ese orden.
-		// Ver el <remarks> del constructor de GestionCatedrasViewModel.
+		// Tres destinos: diseño curricular (volver), situación de revista y horarios. Van tipados,
+		// así que invertir dos no compila.
 		services.AddTransient<GestionCatedrasViewModel>(provider =>
 			new GestionCatedrasViewModel(Navegacion<GestionCurriculasViewModel, MainWindowNavigationStore>(provider),
 										 Navegacion<GestionSituacionRevistaViewModel, MainWindowNavigationStore>(provider),
@@ -405,7 +400,7 @@ internal static class WPF_DesktopDI
 	/// vez desde una pantalla daría <c>ObjectDisposedException</c>.
 	/// </para>
 	/// </remarks>
-	private static INavigationService Navegacion<TViewModel, TStore>(IServiceProvider provider)
+	private static INavigationService<TViewModel> Navegacion<TViewModel, TStore>(IServiceProvider provider)
 		where TViewModel : ObservableObject
 		where TStore : StoreDeNavegacion =>
 		new NavigationService<TViewModel, TStore>(provider.GetRequiredService<IServiceScopeFactory>(),

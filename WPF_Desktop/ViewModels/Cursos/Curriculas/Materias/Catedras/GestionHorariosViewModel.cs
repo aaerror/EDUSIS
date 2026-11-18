@@ -147,7 +147,7 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 	#endregion
 
 
-	public GestionHorariosViewModel(INavigationService gestionCatedrasNavigationService,
+	public GestionHorariosViewModel(INavigationService<GestionCatedrasViewModel> gestionCatedrasNavigationService,
 									IServicioCatedra servicioCatedra,
 									MateriaStore materiaStore,
 									CatedraStore catedraStore,

@@ -19,6 +19,8 @@ using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Docentes;
 using WPF_Desktop.ViewModels.Shared.Messages;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
+using WPF_Desktop.ViewModels.Shared.Modal;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
@@ -177,8 +179,8 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	#endregion
 
 
-	public GestionSituacionRevistaViewModel(INavigationService gestionCatedrasNavigationService,
-											INavigationService buscarDocenteModalNavigationService,
+	public GestionSituacionRevistaViewModel(INavigationService<GestionCatedrasViewModel> gestionCatedrasNavigationService,
+											INavigationService<BuscarViewModel> buscarDocenteModalNavigationService,
 											IServicioDocente servicioDocente,
 											IServicioCatedra servicioCatedra,
 											IDialogService dialogService,

@@ -15,6 +15,7 @@ using WPF_Desktop.UnitTests.Dobles;
 using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.ViewModels.Cursos.Curriculas;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.ViewModels;
@@ -34,8 +35,8 @@ public class GestionCurriculasViewModelTests
 	{
 		public IServicioCurricula ServicioCurricula { get; } = Substitute.For<IServicioCurricula>();
 		public IServicioMateria ServicioMateria { get; } = Substitute.For<IServicioMateria>();
-		public NavegacionFalsa NavegarACursos { get; } = new();
-		public NavegacionFalsa NavegarACatedras { get; } = new();
+		public NavegacionFalsa<GestionCursosViewModel> NavegarACursos { get; } = new();
+		public NavegacionFalsa<GestionCatedrasViewModel> NavegarACatedras { get; } = new();
 		public CursoStore CursoStore { get; } = new();
 		public MateriaStore MateriaStore { get; } = new();
 		public DialogServiceFalso Dialogos { get; } = new();

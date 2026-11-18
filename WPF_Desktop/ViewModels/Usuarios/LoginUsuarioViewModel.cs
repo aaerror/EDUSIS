@@ -13,6 +13,7 @@ using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Security;
 using WPF_Desktop.Shared;
+using WPF_Desktop.ViewModels;
 
 namespace WPF_Desktop.ViewModels.Usuarios;
 
@@ -59,7 +60,7 @@ internal partial class LoginUsuarioViewModel : ObservableValidator
 	#endregion
 
 
-	public LoginUsuarioViewModel(INavigationService navigationService,
+	public LoginUsuarioViewModel(INavigationService<MainViewModel> navigationService,
 								 IServicioAutenticacion servicioAutenticacion,
 								 IDialogService dialogService,
 								 ISesionUsuario sesion)

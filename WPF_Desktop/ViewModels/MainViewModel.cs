@@ -11,6 +11,12 @@ using WPF_Desktop.Shared;
 using WPF_Desktop.Store.NavigationStore;
 using WPF_Desktop.ViewModels.Usuarios;
 using WPF_Desktop.ViewModels.Shared.Messages;
+using WPF_Desktop.ViewModels.Alumnos;
+using WPF_Desktop.ViewModels.Asistencias;
+using WPF_Desktop.ViewModels.Cursos;
+using WPF_Desktop.ViewModels.Docentes;
+using WPF_Desktop.ViewModels.Documentacion;
+using WPF_Desktop.ViewModels.Reportes;
 
 namespace WPF_Desktop.ViewModels;
 
@@ -71,13 +77,13 @@ internal partial class MainViewModel : ObservableRecipient
 	public MainViewModel(MainWindowNavigationStore navigationStore,
 						 ModalWindowNavigationStore modalNavigationStore,
 						 IServicioUsuario servicioUsuario,
-						 INavigationService docentesNavigationService,
-						 INavigationService alumnosNavigationService,
-						 INavigationService cursosNavigationService,
-						 INavigationService asistenciasNavigationService,
-						 INavigationService usuariosNavigationService,
-						 INavigationService documentacionNavigationService,
-						 INavigationService reportesNavigationService,
+						 INavigationService<GestionDocentesViewModel> docentesNavigationService,
+						 INavigationService<GestionAlumnosViewModel> alumnosNavigationService,
+						 INavigationService<GestionCursosViewModel> cursosNavigationService,
+						 INavigationService<AsistenciasViewModel> asistenciasNavigationService,
+						 INavigationService<GestionUsuariosViewModel> usuariosNavigationService,
+						 INavigationService<GestionDocumentacionViewModel> documentacionNavigationService,
+						 INavigationService<GestionReportesViewModel> reportesNavigationService,
 						 ISesionUsuario sesion,
 						 IDialogService dialogos,
 						 AvisoStore avisos,

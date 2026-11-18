@@ -390,7 +390,7 @@ internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacio
 	#endregion
 
 
-	public GestionAsistenciasViewModel(INavigationService gestionDivisionesNavigationService,
+	public GestionAsistenciasViewModel(INavigationService<GestionDivisionesViewModel> gestionDivisionesNavigationService,
 									   IServicioAsistencia servicioAsistencia,
 									   IServicioCursante servicioCursante,
 									   IServicioDivision servicioDivision,

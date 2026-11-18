@@ -176,7 +176,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 									IServicioCurso servicioCursos,
 									IServicioDivision servicioDivisiones,
 									IDialogService dialogService,
-									INavigationService gestionAlumnosNavigationService,
+									INavigationService<GestionAlumnosViewModel> gestionAlumnosNavigationService,
 									CicloLectivoStore cicloLectivoStore)
 	{
 		_servicioAlumnos = servicioAlumnos;

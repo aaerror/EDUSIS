@@ -11,6 +11,8 @@ using WPF_Desktop.Store;
 using WPF_Desktop.UnitTests.Dobles;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias;
 using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
+using WPF_Desktop.ViewModels.Cursos.Curriculas;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.ViewModels;
@@ -28,9 +30,9 @@ public class GestionCatedrasViewModelTests
 	{
 		public IServicioCatedra ServicioCatedra { get; } = Substitute.For<IServicioCatedra>();
 		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
-		public NavegacionFalsa NavegarAMaterias { get; } = new();
-		public NavegacionFalsa NavegarASituacionRevista { get; } = new();
-		public NavegacionFalsa NavegarAHorarios { get; } = new();
+		public NavegacionFalsa<GestionCurriculasViewModel> NavegarAMaterias { get; } = new();
+		public NavegacionFalsa<GestionSituacionRevistaViewModel> NavegarASituacionRevista { get; } = new();
+		public NavegacionFalsa<GestionHorariosViewModel> NavegarAHorarios { get; } = new();
 		public MateriaStore MateriaStore { get; } = new();
 		public CatedraStore CatedraStore { get; } = new();
 		public CicloLectivoStore CicloLectivoStore { get; } = new();

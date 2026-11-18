@@ -86,7 +86,7 @@ internal partial class AsistenciasViewModel : ObservableObject
 	public AsistenciasViewModel(IServicioCurso servicioCurso,
 								IServicioDivision servicioDivision,
 								IDialogService dialogos,
-								INavigationService gestionAsistenciasNavigationService,
+								INavigationService<GestionAsistenciasViewModel> gestionAsistenciasNavigationService,
 								CursoStore cursoStore,
 								DivisionStore divisionStore,
 								CicloLectivoStore cicloLectivoStore)

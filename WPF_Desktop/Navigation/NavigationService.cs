@@ -14,9 +14,8 @@ namespace WPF_Desktop.Navigation;
 /// <strong>Reemplaza a las 26 clases de navegación que tenían este mismo cuerpo</strong>
 /// (<c>GestionDocentesNavigationService</c>, <c>RegistrarCursoNavigationService</c>, …), que se
 /// distinguían sólo por el nombre y por cuál de los tres stores recibían. Lo que antes era el nombre
-/// de la clase ahora son los dos parámetros de tipo. <strong>Queda pendiente</strong> tipar la interfaz por
-/// destino: como todos se inyectan en los ViewModels con el tipo <see cref="INavigationService"/>,
-/// invertir dos parámetros de un constructor sigue compilando y sigue navegando a otro lado.
+/// de la clase ahora son los dos parámetros de tipo, y el destino viaja también en la interfaz
+/// (<see cref="INavigationService{TViewModel}"/>): invertir dos parámetros de un constructor no compila.
 /// </para>
 /// <para>
 /// <strong>Por qué un scope por pantalla.</strong> Los servicios de <c>Core</c> están
@@ -36,7 +35,7 @@ namespace WPF_Desktop.Navigation;
 /// <see cref="Navigate"/> y no se guarda: cada navegación estrena uno.
 /// </para>
 /// </remarks>
-internal sealed class NavigationService<TViewModel, TStore> : INavigationService
+internal sealed class NavigationService<TViewModel, TStore> : INavigationService<TViewModel>
 	where TViewModel : ObservableObject
 	where TStore : StoreDeNavegacion
 {

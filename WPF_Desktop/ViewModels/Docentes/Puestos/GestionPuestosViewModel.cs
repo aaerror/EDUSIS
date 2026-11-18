@@ -14,6 +14,7 @@ using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
+using WPF_Desktop.ViewModels.Docentes;
 
 namespace WPF_Desktop.ViewModels.Docentes.Puestos;
 
@@ -91,7 +92,7 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 
 	public GestionPuestosViewModel(IServicioDocente servicioDocentes,
 								   IDialogService dialogService,
-								   INavigationService gestionDocentesNavigationService,
+								   INavigationService<GestionDocentesViewModel> gestionDocentesNavigationService,
 								   LegajoStore perfilBuscadoStore)
 	{
 		_servicioDocentes = servicioDocentes;

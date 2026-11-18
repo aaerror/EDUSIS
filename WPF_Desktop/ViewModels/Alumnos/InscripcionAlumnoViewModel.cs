@@ -74,7 +74,7 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject, IUbicacion
 									  IServicioCursante servicioCursantes,
 									  IServicioDivision servicioDivisiones,
 									  IDialogService dialogService,
-									  INavigationService gestionAlumnosNavigationService,
+									  INavigationService<GestionAlumnosViewModel> gestionAlumnosNavigationService,
 									  LegajoStore legajoStore,
 									  CicloLectivoStore cicloLectivoStore)
 	{

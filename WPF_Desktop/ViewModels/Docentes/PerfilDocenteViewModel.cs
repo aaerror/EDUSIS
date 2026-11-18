@@ -72,7 +72,7 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 
 	public PerfilDocenteViewModel(IServicioDocente servicioDocentes,
 								  IDialogService dialogService,
-								  INavigationService gestionDocentesNavigationService,
+								  INavigationService<GestionDocentesViewModel> gestionDocentesNavigationService,
 								  LegajoStore perfilBuscadoStore)
 	{
 		_servicioDocentes = servicioDocentes;

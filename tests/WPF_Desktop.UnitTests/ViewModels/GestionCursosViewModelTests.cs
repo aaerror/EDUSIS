@@ -8,6 +8,8 @@ using Shouldly;
 using WPF_Desktop.Store;
 using WPF_Desktop.UnitTests.Dobles;
 using WPF_Desktop.ViewModels.Cursos;
+using WPF_Desktop.ViewModels.Cursos.Divisiones;
+using WPF_Desktop.ViewModels.Cursos.Curriculas;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.ViewModels;
@@ -37,9 +39,9 @@ public class GestionCursosViewModelTests
 	private sealed class Contexto
 	{
 		public IServicioCurso ServicioCursos { get; } = Substitute.For<IServicioCurso>();
-		public NavegacionFalsa NavegarARegistrarCurso { get; } = new();
-		public NavegacionFalsa NavegarADivisiones { get; } = new();
-		public NavegacionFalsa NavegarARegistrarMateria { get; } = new();
+		public NavegacionFalsa<RegistrarCursosViewModel> NavegarARegistrarCurso { get; } = new();
+		public NavegacionFalsa<GestionDivisionesViewModel> NavegarADivisiones { get; } = new();
+		public NavegacionFalsa<GestionCurriculasViewModel> NavegarARegistrarMateria { get; } = new();
 		public CursoStore CursoStore { get; } = new();
 		public DialogServiceFalso Dialogos { get; } = new();
 		public GestionCursosViewModel ViewModel { get; }

@@ -17,6 +17,8 @@ using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Docentes;
 using WPF_Desktop.ViewModels.Shared.Messages;
+using WPF_Desktop.ViewModels.Cursos;
+using WPF_Desktop.ViewModels.Shared.Modal;
 
 namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
@@ -115,20 +117,17 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 
 	/// <remarks>
-	/// ORDEN DE LOS CUATRO <see cref="INavigationService"/>: los cuatro son del mismo tipo y la factory
-	/// lambda de <c>WPF_DesktopDI</c> los distingue SÓLO por posición. Invertirlos compila y rompe la
-	/// navegación en silencio. Orden obligatorio: 1) <paramref name="gestionCursosNavigationService"/>
-	/// (volver a cursos), 2) <paramref name="gestionCursantesNavigationService"/> (ir a los alumnos de
-	/// la división), 3) <paramref name="gestionAsistenciasNavigationService"/> (ir a la asistencia de
-	/// la división), 4) <paramref name="buscarDocenteModalNavigationService"/> (abrir el buscador de
-	/// docentes en el modal). Los tres primeros son los destinos del drill-down y van agrupados; el del
-	/// modal queda último porque no es una pantalla de este recorrido.
+	/// Los cuatro destinos van tipados (<see cref="INavigationService{TViewModel}"/>): antes eran del
+	/// mismo tipo y <c>WPF_DesktopDI</c> los distinguía sólo por posición, así que invertir dos
+	/// compilaba y rompía la navegación en silencio. Orden: los tres del drill-down (cursos, alumnos
+	/// y asistencia de la división) y al final el buscador del modal, que no es una pantalla de este
+	/// recorrido.
 	/// </remarks>
 	public GestionDivisionesViewModel(IServicioDivision servicioDivisiones,
-									  INavigationService gestionCursosNavigationService,
-									  INavigationService gestionCursantesNavigationService,
-									  INavigationService gestionAsistenciasNavigationService,
-									  INavigationService buscarDocenteModalNavigationService,
+									  INavigationService<GestionCursosViewModel> gestionCursosNavigationService,
+									  INavigationService<GestionCursantesViewModel> gestionCursantesNavigationService,
+									  INavigationService<GestionAsistenciasViewModel> gestionAsistenciasNavigationService,
+									  INavigationService<BuscarViewModel> buscarDocenteModalNavigationService,
 									  CursoStore cursoStore,
 									  DivisionStore divisionStore,
 									  CicloLectivoStore cicloLectivoStore,

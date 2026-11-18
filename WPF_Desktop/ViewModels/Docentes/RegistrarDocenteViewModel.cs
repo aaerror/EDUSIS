@@ -51,7 +51,7 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicaci
 
 	public RegistrarDocenteViewModel(IServicioDocente servicioDocentes,
 									 IDialogService dialogService,
-									 INavigationService gestionDocentesNavigationService)
+									 INavigationService<GestionDocentesViewModel> gestionDocentesNavigationService)
 	{
 		_servicioDocentes = servicioDocentes;
 		_dialogService = dialogService;

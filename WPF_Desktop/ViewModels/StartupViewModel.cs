@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Store.NavigationStore;
+using WPF_Desktop.ViewModels.Usuarios;
 
 namespace WPF_Desktop.ViewModels;
 
@@ -35,7 +36,7 @@ internal class StartupViewModel : ObservableObject
 	public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
 
-	public StartupViewModel(StartupWindowNavigationStore navigationStore, INavigationService loginUsuarioNavigationService, INavigationService registrarUsuarioNavigationService)
+	public StartupViewModel(StartupWindowNavigationStore navigationStore, INavigationService<LoginUsuarioViewModel> loginUsuarioNavigationService, INavigationService<RegistrarUsuarioViewModel> registrarUsuarioNavigationService)
 	{
 		_loginUsuarioNavigationService = loginUsuarioNavigationService;
 		_registrarUsuarioNavigationService = registrarUsuarioNavigationService;

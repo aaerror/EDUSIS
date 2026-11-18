@@ -32,7 +32,7 @@ internal partial class RegistrarCursosViewModel : ObservableValidator, IUbicacio
 
 	public RegistrarCursosViewModel(IServicioCurso servicioCursos,
 									IDialogService dialogService,
-									INavigationService gestionCursosNavigationService)
+									INavigationService<GestionCursosViewModel> gestionCursosNavigationService)
 	{
 		_servicioCursos = servicioCursos;
 		_dialogService = dialogService;

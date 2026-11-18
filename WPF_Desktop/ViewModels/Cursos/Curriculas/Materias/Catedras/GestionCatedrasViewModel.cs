@@ -13,6 +13,8 @@ using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
+using WPF_Desktop.ViewModels.Cursos.Curriculas;
+using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.SituacionRevista;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 
@@ -75,15 +77,14 @@ internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 
 
 	/// <remarks>
-	/// ORDEN DE LOS TRES <see cref="INavigationService"/> (violación #7 del plan, no corregida): los tres son del mismo
-	/// tipo y la factory lambda de <c>WPF_DesktopDI</c> los distingue SÓLO por posición. Invertirlos compila y rompe la
-	/// navegación en silencio. Orden obligatorio: 1) <paramref name="gestionMateriasNavigationService"/> (volver a materias),
-	/// 2) <paramref name="gestionSituacionRevistaNavigationService"/> (ir a situación de revista),
-	/// 3) <paramref name="gestionHorariosNavigationService"/> (ir a los horarios de la cátedra).
+	/// Los tres destinos van tipados (<see cref="INavigationService{TViewModel}"/>): antes eran del mismo
+	/// tipo y <c>WPF_DesktopDI</c> los distinguía sólo por posición, así que invertir dos compilaba y
+	/// rompía la navegación en silencio. <paramref name="gestionMateriasNavigationService"/> vuelve al
+	/// diseño curricular; los otros dos bajan a situación de revista y a horarios.
 	/// </remarks>
-	public GestionCatedrasViewModel(INavigationService gestionMateriasNavigationService,
-									INavigationService gestionSituacionRevistaNavigationService,
-									INavigationService gestionHorariosNavigationService,
+	public GestionCatedrasViewModel(INavigationService<GestionCurriculasViewModel> gestionMateriasNavigationService,
+									INavigationService<GestionSituacionRevistaViewModel> gestionSituacionRevistaNavigationService,
+									INavigationService<GestionHorariosViewModel> gestionHorariosNavigationService,
 									IServicioCatedra servicioCatedra,
 									IServicioDivision servicioDivision,
 									MateriaStore materiaStore,

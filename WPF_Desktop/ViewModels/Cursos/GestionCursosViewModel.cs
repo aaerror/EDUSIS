@@ -12,6 +12,8 @@ using System;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
+using WPF_Desktop.ViewModels.Cursos.Curriculas;
+using WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 namespace WPF_Desktop.ViewModels.Cursos;
 
@@ -74,9 +76,9 @@ internal partial class GestionCursosViewModel : ObservableObject
 
 	public GestionCursosViewModel(IServicioCurso servicioCursos,
 								  IDialogService dialogService,
-								  INavigationService registrarCursoNavigationService,
-								  INavigationService gestionDivisionesNavigationService,
-								  INavigationService registrarMateriaNavigationService,
+								  INavigationService<RegistrarCursosViewModel> registrarCursoNavigationService,
+								  INavigationService<GestionDivisionesViewModel> gestionDivisionesNavigationService,
+								  INavigationService<GestionCurriculasViewModel> registrarMateriaNavigationService,
 								  CursoStore cursoStore)
 	{
 		_servicioCursos = servicioCursos;

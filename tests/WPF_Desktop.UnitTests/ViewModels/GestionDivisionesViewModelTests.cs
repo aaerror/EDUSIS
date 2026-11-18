@@ -15,6 +15,7 @@ using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Docentes;
 using WPF_Desktop.ViewModels.Shared.Messages;
+using WPF_Desktop.ViewModels.Shared.Modal;
 using Xunit;
 
 namespace WPF_Desktop.UnitTests.ViewModels;
@@ -31,20 +32,20 @@ public class GestionDivisionesViewModelTests
 	private sealed class Contexto
 	{
 		public IServicioDivision ServicioDivision { get; } = Substitute.For<IServicioDivision>();
-		public NavegacionFalsa NavegarACursos { get; } = new();
-		public NavegacionFalsa NavegarACursantes { get; } = new();
+		public NavegacionFalsa<GestionCursosViewModel> NavegarACursos { get; } = new();
+		public NavegacionFalsa<GestionCursantesViewModel> NavegarACursantes { get; } = new();
 
 		/// <summary>
 		/// La asistencia de la división es el tercer destino del drill-down: su servicio de navegación
 		/// es el tercero de los cuatro <c>INavigationService</c> del constructor.
 		/// </summary>
-		public NavegacionFalsa NavegarAAsistencias { get; } = new();
+		public NavegacionFalsa<GestionAsistenciasViewModel> NavegarAAsistencias { get; } = new();
 
 		/// <summary>
 		/// El buscador de docentes vive en el modal: la pantalla ya no busca, sólo lo abre. Por eso
 		/// acá no hay más <c>IServicioDocente</c>, y en su lugar se espía la navegación al modal.
 		/// </summary>
-		public NavegacionFalsa NavegarAlBuscador { get; } = new();
+		public NavegacionFalsa<BuscarViewModel> NavegarAlBuscador { get; } = new();
 		public IMessenger Mensajero { get; } = new WeakReferenceMessenger();
 		public CursoStore CursoStore { get; } = new();
 		public DivisionStore DivisionStore { get; } = new();

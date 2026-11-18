@@ -26,7 +26,7 @@ public class GestionHorariosViewModelTests
 	private sealed class Contexto
 	{
 		public IServicioCatedra ServicioCatedra { get; } = Substitute.For<IServicioCatedra>();
-		public NavegacionFalsa NavegarACatedras { get; } = new();
+		public NavegacionFalsa<GestionCatedrasViewModel> NavegarACatedras { get; } = new();
 		public MateriaStore MateriaStore { get; } = new();
 		public CatedraStore CatedraStore { get; } = new();
 		public DialogServiceFalso Dialogos { get; } = new();

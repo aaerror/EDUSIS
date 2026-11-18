@@ -216,7 +216,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 									 IServicioDivision servicioDivision,
 									 IServicioAsistencia servicioAsistencia,
 									 IDialogService dialogService,
-									 INavigationService gestionDivisionesNavigationService,
+									 INavigationService<GestionDivisionesViewModel> gestionDivisionesNavigationService,
 									 CursoStore cursoStore,
 									 DivisionStore divisionStore,
 									 CicloLectivoStore cicloLectivoStore)

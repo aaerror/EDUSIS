@@ -110,9 +110,9 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 
 	public GestionAlumnosViewModel(IServicioAlumno servicioAlumnos,
 								   IDialogService dialogService,
-								   INavigationService registrarAlumnoNavigationService,
-								   INavigationService inscripcionAlumnoNavigationService,
-								   INavigationService verPerfilNavigationService,
+								   INavigationService<RegistrarAlumnoViewModel> registrarAlumnoNavigationService,
+								   INavigationService<InscripcionAlumnoViewModel> inscripcionAlumnoNavigationService,
+								   INavigationService<PerfilAlumnoViewModel> verPerfilNavigationService,
 								   LegajoStore perfilBuscadoStore)
 	{
 		_servicioAlumnos = servicioAlumnos;

@@ -4,6 +4,7 @@ using Shouldly;
 using WPF_Desktop.Navigation;
 using WPF_Desktop.Security;
 using WPF_Desktop.UnitTests.Dobles;
+using WPF_Desktop.ViewModels;
 using WPF_Desktop.ViewModels.Usuarios;
 using Xunit;
 
@@ -115,7 +116,7 @@ public class LoginUsuarioViewModelTests
 	}
 
 	private static LoginUsuarioViewModel ArmarViewModel() =>
-		new(Substitute.For<INavigationService>(),
+		new(Substitute.For<INavigationService<MainViewModel>>(),
 			Substitute.For<IServicioAutenticacion>(),
 			new DialogServiceFalso(),
 			Substitute.For<ISesionUsuario>());

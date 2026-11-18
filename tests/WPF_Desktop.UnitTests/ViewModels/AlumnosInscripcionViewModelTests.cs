@@ -53,7 +53,7 @@ public class AlumnosInscripcionViewModelTests
 		/// </summary>
 		public DialogServiceFalso Dialogos { get; } = new();
 
-		public NavegacionFalsa NavegarAAlumnos { get; } = new();
+		public NavegacionFalsa<GestionAlumnosViewModel> NavegarAAlumnos { get; } = new();
 
 		public Guid AlumnoID { get; } = Guid.NewGuid();
 		public CursoResponse Primero { get; } = new(Guid.NewGuid(), Grado.Primero, NivelEducativo.Secundaria);
