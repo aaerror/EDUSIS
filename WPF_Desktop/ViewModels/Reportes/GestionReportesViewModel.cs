@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCursos;
@@ -39,6 +42,8 @@ namespace WPF_Desktop.ViewModels.Reportes;
 /// </remarks>
 internal partial class GestionReportesViewModel : ObservableValidator
 {
+	private readonly ISesionActual _sesion;
+
 	#region Servicios
 	private readonly IServicioReporte _servicioReporte;
 	private readonly IServicioCurso _servicioCurso;
@@ -159,8 +164,9 @@ internal partial class GestionReportesViewModel : ObservableValidator
 									IServicioDivision servicioDivision,
 									IArchivoService archivos,
 									IDialogService dialogos,
-									CicloLectivoStore cicloLectivoStore)
+									CicloLectivoStore cicloLectivoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioReporte = servicioReporte;
 		_servicioCurso = servicioCurso;
 		_servicioDivision = servicioDivision;
@@ -172,15 +178,15 @@ internal partial class GestionReportesViewModel : ObservableValidator
 		CargarDivisionesCommandAsync = new AsyncRelayCommand(CargarDivisionesAsync);
 
 		MatriculasCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioReporte.GenerarReporteMatriculasAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioReporte.GenerarReporteMatriculasAsync(request)), _sesion.Permite(Permiso.GenerarReportes, CanExecuteEmitir));
 		CalificacionesCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioReporte.GenerarReporteCalificacionesAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioReporte.GenerarReporteCalificacionesAsync(request)), _sesion.Permite(Permiso.GenerarReportesDeCursada, CanExecuteEmitir));
 		MateriasPendientesCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioReporte.GenerarReporteMateriasPendientesAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioReporte.GenerarReporteMateriasPendientesAsync(request)), _sesion.Permite(Permiso.GenerarReportes, CanExecuteEmitir));
 		TrayectoriasCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioReporte.GenerarReporteTrayectoriasAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioReporte.GenerarReporteTrayectoriasAsync(request)), _sesion.Permite(Permiso.GenerarReportes, CanExecuteEmitir));
 
-		AsistenciasCommandAsync = new AsyncRelayCommand(EmitirAsistenciasAsync, CanExecuteEmitir);
+		AsistenciasCommandAsync = new AsyncRelayCommand(EmitirAsistenciasAsync, _sesion.Permite(Permiso.GenerarReportesDeCursada, CanExecuteEmitir));
 
 		QuitarFiltroCommand = new RelayCommand(QuitarFiltro, () => HayFiltro);
 

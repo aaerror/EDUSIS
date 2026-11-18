@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCatedras;
@@ -20,6 +23,8 @@ namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 
 internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	#region Services
 	private readonly IServicioCatedra _servicioCatedra;
 	private readonly IServicioDivision _servicioDivision;
@@ -90,8 +95,9 @@ internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 									MateriaStore materiaStore,
 									CatedraStore catedraStore,
 									CicloLectivoStore cicloLectivoStore,
-									IDialogService dialogService)
+									IDialogService dialogService, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_gestionMateriasNavigationService = gestionMateriasNavigationService;
 		_gestionSituacionRevistaNavigationService = gestionSituacionRevistaNavigationService;
 		_gestionHorariosNavigationService = gestionHorariosNavigationService;
@@ -106,7 +112,7 @@ internal partial class GestionCatedrasViewModel : ObservableObject, IUbicacion
 		Materia = _materiaStore.Materia;
 
 		CargarCommand = new AsyncRelayCommand(ExecuteCargarCommand, CanExecuteCargarCommand);
-		CrearCatedraCommand = new AsyncRelayCommand(ExecuteCrearCatedraCommand, CanExecuteCrearCatedraCommand);
+		CrearCatedraCommand = new AsyncRelayCommand(ExecuteCrearCatedraCommand, _sesion.Permite(Permiso.GestionarCatedras, CanExecuteCrearCatedraCommand));
 		SeleccionarCatedraCommand = new RelayCommand<CatedraViewModel>(ExecuteSeleccionarCatedraCommand, CanExecuteSeleccionarCatedraCommand);
 		VerHorariosCommand = new RelayCommand<CatedraViewModel>(ExecuteVerHorariosCommand, CanExecuteVerHorariosCommand);
 		VolverCommand = new RelayCommand(ExecuteVolverCommand, CanExecuteVolverCommand);

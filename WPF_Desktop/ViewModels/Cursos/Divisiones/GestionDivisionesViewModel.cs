@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -24,6 +27,8 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	#region Service
 	private readonly IServicioDivision _servicioDivision;
 	private readonly INavigationService _gestionCursosNavigationService;
@@ -133,8 +138,9 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 									  CicloLectivoStore cicloLectivoStore,
 									  BuscarContextoStore buscarContextoStore,
 									  IDialogService dialogService,
-									  IMessenger messenger)
+									  IMessenger messenger, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioDivision = servicioDivisiones;
 		_gestionCursosNavigationService = gestionCursosNavigationService;
 		_gestionCursantesNavigationService = gestionCursantesNavigationService;
@@ -154,9 +160,9 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 		CargarDivisionesCommandAsync = new AsyncRelayCommand(CargarDivisionesAsync);
 		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
-		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, CanExecuteRegistrarCommand);
+		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, _sesion.Permite<string>(Permiso.GestionarCursos, CanExecuteRegistrarCommand));
 
-		AsignarPreceptorCommand = new RelayCommand(ExecuteAsignarPreceptorCommand, CanExecuteAsignarPreceptorCommand);
+		AsignarPreceptorCommand = new RelayCommand(ExecuteAsignarPreceptorCommand, _sesion.Permite(Permiso.GestionarPreceptores, CanExecuteAsignarPreceptorCommand));
 		PreceptorElegidoCommandAsync = new AsyncRelayCommand<LegajoDocenteViewModel>(ExecutePreceptorElegidoCommandAsync);
 
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
@@ -283,8 +289,10 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	#region EliminarCommandAsync
 	private bool CanExecuteEliminarCommand(object? obj) => obj switch
 	{
-		"Division" => Division is not null,
-		"Preceptor" => Division is not null && Division.PreceptorID is not null,
+		// Cada rama exige el permiso de su caso de uso: EliminarDivisionAsync pide GestionarCursos y
+		// QuitarPreceptorAsync, GestionarPreceptores.
+		"Division" => Division is not null && _sesion.TienePermiso(Permiso.GestionarCursos),
+		"Preceptor" => Division is not null && Division.PreceptorID is not null && _sesion.TienePermiso(Permiso.GestionarPreceptores),
 		_ => false
 	};
 

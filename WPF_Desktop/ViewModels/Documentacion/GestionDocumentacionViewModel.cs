@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAlumnos;
@@ -37,6 +40,8 @@ namespace WPF_Desktop.ViewModels.Documentacion;
 /// </remarks>
 internal partial class GestionDocumentacionViewModel : ObservableValidator
 {
+	private readonly ISesionActual _sesion;
+
 	#region Servicios
 	private readonly IServicioAlumno _servicioAlumno;
 	private readonly IServicioDocumento _servicioDocumento;
@@ -150,8 +155,9 @@ internal partial class GestionDocumentacionViewModel : ObservableValidator
 										 IServicioDocumento servicioDocumento,
 										 IArchivoService archivos,
 										 IDialogService dialogos,
-										 CicloLectivoStore cicloLectivoStore)
+										 CicloLectivoStore cicloLectivoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioAlumno = servicioAlumno;
 		_servicioDocumento = servicioDocumento;
 		_archivos = archivos;
@@ -163,17 +169,17 @@ internal partial class GestionDocumentacionViewModel : ObservableValidator
 		BuscarAlumnoCommandAsync = new AsyncRelayCommand(BuscarAlumnoAsync, CanExecuteBuscarAlumno);
 
 		CertificadoAlumnoRegularCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioDocumento.GenerarCertificadoAlumnoRegularAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioDocumento.GenerarCertificadoAlumnoRegularAsync(request)), _sesion.Permite(Permiso.GenerarDocumentos, CanExecuteEmitir));
 		ConstanciaEscolaridadCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioDocumento.GenerarConstanciaEscolaridadAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioDocumento.GenerarConstanciaEscolaridadAsync(request)), _sesion.Permite(Permiso.GenerarDocumentos, CanExecuteEmitir));
 		MateriasAprobadasCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioDocumento.GenerarConstanciaMateriasAprobadasAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioDocumento.GenerarConstanciaMateriasAprobadasAsync(request)), _sesion.Permite(Permiso.GenerarDocumentos, CanExecuteEmitir));
 		MateriasPendientesCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioDocumento.GenerarConstanciaMateriasPendientesAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioDocumento.GenerarConstanciaMateriasPendientesAsync(request)), _sesion.Permite(Permiso.GenerarDocumentos, CanExecuteEmitir));
 		BoletinCommandAsync = new AsyncRelayCommand(
-			() => EmitirAsync(request => _servicioDocumento.GenerarBoletinCalificacionesAsync(request)), CanExecuteEmitir);
+			() => EmitirAsync(request => _servicioDocumento.GenerarBoletinCalificacionesAsync(request)), _sesion.Permite(Permiso.GenerarDocumentos, CanExecuteEmitir));
 
-		CertificadoAsistenciaCommandAsync = new AsyncRelayCommand(EmitirCertificadoAsistenciaAsync, CanExecuteEmitir);
+		CertificadoAsistenciaCommandAsync = new AsyncRelayCommand(EmitirCertificadoAsistenciaAsync, _sesion.Permite(Permiso.GenerarDocumentosAsistencia, CanExecuteEmitir));
 
 		// El ciclo lectivo NO se asigna acá: el valor del store se elige recién cuando llegó el
 		// catálogo, en CargarCiclosLectivosAsync. Un SelectedItem que no está en ItemsSource lo

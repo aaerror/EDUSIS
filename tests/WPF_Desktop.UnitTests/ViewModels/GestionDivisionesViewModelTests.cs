@@ -60,7 +60,7 @@ public class GestionDivisionesViewModelTests
 		public Guid CursoID { get; } = Guid.NewGuid();
 		public GestionDivisionesViewModel ViewModel { get; }
 
-		public Contexto()
+		public Contexto(Core.Shared.Seguridad.ISesionActual? sesion = null)
 		{
 			CursoStore.Curso = new CursoSeleccionado(CursoID, Grado.Primero.ToString(), NivelEducativo.Secundaria.ToString());
 			CicloLectivoStore.CicloLectivo = CicloDelStore;
@@ -78,7 +78,7 @@ public class GestionDivisionesViewModelTests
 													   CicloLectivoStore,
 													   BuscarContextoStore,
 													   Dialogos,
-													   Mensajero);
+													   Mensajero, sesion ?? new SesionFalsa());
 		}
 
 		public void DevolverDivisiones(params DivisionResponse[] divisiones)
@@ -688,6 +688,34 @@ public class GestionDivisionesViewModelTests
 
 		navegacion.ShouldBeGreaterThan(0);
 		baja.ShouldBeGreaterThan(0);
+	}
+	#endregion
+	#region Permisos (UI-54)
+	/// <summary>
+	/// Cada rama de Eliminar exige el permiso de su caso de uso: la división, GestionarCursos; el
+	/// preceptor, GestionarPreceptores. Un rol con uno solo no ve habilitado el otro.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Eliminar_exige_el_permiso_de_cada_caso_de_uso()
+	{
+		var contexto = new Contexto(new SesionFalsa(Domain.Usuarios.Permiso.GestionarPreceptores));
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", Guid.NewGuid(), "Perez, Ana"));
+
+		contexto.ViewModel.EliminarCommandAsync.CanExecute("Preceptor").ShouldBeTrue();
+		contexto.ViewModel.EliminarCommandAsync.CanExecute("Division").ShouldBeFalse();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Sin_GestionarPreceptores_no_se_puede_quitar_ni_asignar_preceptor()
+	{
+		var contexto = new Contexto(new SesionFalsa(Domain.Usuarios.Permiso.GestionarCursos));
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A", Guid.NewGuid(), "Perez, Ana"));
+
+		contexto.ViewModel.EliminarCommandAsync.CanExecute("Division").ShouldBeTrue();
+		contexto.ViewModel.EliminarCommandAsync.CanExecute("Preceptor").ShouldBeFalse();
+		contexto.ViewModel.AsignarPreceptorCommand.CanExecute(null).ShouldBeFalse();
 	}
 	#endregion
 }

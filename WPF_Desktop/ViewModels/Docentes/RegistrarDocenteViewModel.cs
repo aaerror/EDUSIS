@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioDocentes.DTOs.Requests;
@@ -16,6 +19,8 @@ namespace WPF_Desktop.ViewModels.Docentes;
 
 internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	private readonly IServicioDocente _servicioDocentes;
 	private readonly IDialogService _dialogService;
 
@@ -51,8 +56,9 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicaci
 
 	public RegistrarDocenteViewModel(IServicioDocente servicioDocentes,
 									 IDialogService dialogService,
-									 INavigationService<GestionDocentesViewModel> gestionDocentesNavigationService)
+									 INavigationService<GestionDocentesViewModel> gestionDocentesNavigationService, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioDocentes = servicioDocentes;
 		_dialogService = dialogService;
 
@@ -86,7 +92,7 @@ internal partial class RegistrarDocenteViewModel : ObservableValidator, IUbicaci
 		*/
 		AtrasCommand = new RelayCommand(ExecuteAtrasCommand);
 		ContinuarCommand = new RelayCommand(ExecuteContinuarCommand);
-		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommand);
+		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommand, _sesion.Permite(Permiso.GestionarDocentes));
 	}
 
 	#region GuardarCommand

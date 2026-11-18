@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCurriculas.DTOs.Requests;
@@ -23,6 +26,8 @@ namespace WPF_Desktop.ViewModels.Cursos.Curriculas;
 
 internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	#region Services
 	private readonly INavigationService _gestionCursosNavigationService;
 	private readonly INavigationService _gestionCatedrasNavigationService;
@@ -241,8 +246,9 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 									  IServicioMateria servicioMateria,
 									  IDialogService dialogService,
 									  CursoStore cursoStore,
-									  MateriaStore materiaStore)
+									  MateriaStore materiaStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_gestionCursosNavigationService = gestionCursosNavigationService;
 		_gestionCatedrasNavigationService = gestionCatedrasNavigationService;
 		_servicioCurricula = servicioCurricula;
@@ -255,12 +261,12 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 		CargarMateriasCommandAsync = new AsyncRelayCommand(CargarMateriasAsync);
 
 		CancelarCommand = new AsyncRelayCommand<string>(ExecuteCancelarCommandAsync, CanExecuteCancelarCommand);
-		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
-		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
+		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, _sesion.Permite<string>(Permiso.GestionarCurriculas, CanExecuteEliminarCommand));
+		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, _sesion.Permite<string>(Permiso.GestionarCurriculas, CanExecuteGuardarCommand));
 
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
-		EditarCommand = new RelayCommand<string>(ExecuteEditarCommand, CanExecuteEditarCommand);
-		RegistrarCommand = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, CanExecuteRegistrarCommand);
+		EditarCommand = new RelayCommand<string>(ExecuteEditarCommand, _sesion.Permite<string>(Permiso.GestionarCurriculas, CanExecuteEditarCommand));
+		RegistrarCommand = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, _sesion.Permite<string>(Permiso.GestionarCurriculas, CanExecuteRegistrarCommand));
 
 		HabilitarEditarMateria = false;
 

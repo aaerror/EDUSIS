@@ -1,3 +1,5 @@
+using WPF_Desktop.Security;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAutenticaciones.DTOs.Responses;
@@ -44,6 +46,8 @@ namespace WPF_Desktop.ViewModels.Usuarios;
 /// </remarks>
 internal partial class GestionUsuariosViewModel : ObservableObject
 {
+	private readonly ISesionActual _sesion;
+
 	#region Paneles del índice
 	/// <remarks>
 	/// El índice muestra una de las dos listas a la vez y el conmutador de arriba enlaza su
@@ -135,8 +139,9 @@ internal partial class GestionUsuariosViewModel : ObservableObject
 
 	public GestionUsuariosViewModel(IServicioUsuario servicioUsuario,
 									IServicioDocente servicioDocente,
-									IDialogService dialogService)
+									IDialogService dialogService, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioUsuario = servicioUsuario;
 		_servicioDocente = servicioDocente;
 		_dialogService = dialogService;
@@ -148,10 +153,10 @@ internal partial class GestionUsuariosViewModel : ObservableObject
 		DocentesFiltrados.Filter = CoincideElDocente;
 
 		CargarCommand = new AsyncRelayCommand(ExecuteCargarCommandAsync);
-		CrearUsuarioCommand = new AsyncRelayCommand(ExecuteCrearUsuarioCommandAsync, CanExecuteCrearUsuarioCommand);
-		AsignarRolCommand = new AsyncRelayCommand(ExecuteAsignarRolCommandAsync, CanExecuteAsignarRolCommand);
-		QuitarRolCommand = new AsyncRelayCommand(ExecuteQuitarRolCommandAsync, CanExecuteQuitarRolCommand);
-		RestablecerAccesoCommand = new AsyncRelayCommand(ExecuteRestablecerAccesoCommandAsync, CanExecuteRestablecerAccesoCommand);
+		CrearUsuarioCommand = new AsyncRelayCommand(ExecuteCrearUsuarioCommandAsync, _sesion.Permite(Permiso.AdministrarUsuarios, CanExecuteCrearUsuarioCommand));
+		AsignarRolCommand = new AsyncRelayCommand(ExecuteAsignarRolCommandAsync, _sesion.Permite(Permiso.AsignarRoles, CanExecuteAsignarRolCommand));
+		QuitarRolCommand = new AsyncRelayCommand(ExecuteQuitarRolCommandAsync, _sesion.Permite(Permiso.AsignarRoles, CanExecuteQuitarRolCommand));
+		RestablecerAccesoCommand = new AsyncRelayCommand(ExecuteRestablecerAccesoCommandAsync, _sesion.Permite(Permiso.AdministrarUsuarios, CanExecuteRestablecerAccesoCommand));
 		VerCommand = new RelayCommand<string>(ExecuteVer);
 	}
 

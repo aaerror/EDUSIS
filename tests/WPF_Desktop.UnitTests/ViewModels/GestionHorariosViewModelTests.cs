@@ -50,7 +50,7 @@ public class GestionHorariosViewModelTests
 													 ServicioCatedra,
 													 MateriaStore,
 													 CatedraStore,
-													 Dialogos);
+													 Dialogos, new SesionFalsa());
 		}
 
 		public void Devolver(params HorarioResponse[] horarios)

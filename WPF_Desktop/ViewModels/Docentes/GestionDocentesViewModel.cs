@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioDocentes.DTOs.Requests;
@@ -20,6 +23,8 @@ namespace WPF_Desktop.ViewModels.Docentes;
 
 internal partial class GestionDocentesViewModel : ObservableValidator
 {
+	private readonly ISesionActual _sesion;
+
 	#region Servicios
 	private readonly IServicioDocente _servicioDocentes;
 	private readonly IDialogService _dialogService;
@@ -103,8 +108,9 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 									INavigationService<PerfilDocenteViewModel> perfilDocenteNavigationService,
 									INavigationService<GestionPuestosViewModel> gestionPuestoNavigationService,
 									INavigationService<GestionLicenciasViewModel> gestionLicenciasNavigationService,
-									LegajoStore perfilBuscadoStore)
+									LegajoStore perfilBuscadoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioDocentes = servicioDocentes;
 		_dialogService = dialogService;
 		_registrarDocenteNavigationService = registrarDocenteNavigationService;
@@ -116,10 +122,10 @@ internal partial class GestionDocentesViewModel : ObservableValidator
 		DocentesFiltrados = CollectionViewSource.GetDefaultView(LegajosDocentes);
 		DocentesFiltrados.Filter = CoincideConFiltro;
 
-		RegistrarCommand = new RelayCommand<string>(_ => _registrarDocenteNavigationService.Navigate());
+		RegistrarCommand = new RelayCommand<string>(_ => _registrarDocenteNavigationService.Navigate(), _sesion.Permite<string>(Permiso.GestionarDocentes));
 		CargarCommandAsync = new AsyncRelayCommand(ExecuteCargarCommandAsync);
-		DesafectarCommand = new AsyncRelayCommand(ExecuteDesafectarCommandAsync, CanExecuteDesafectarCommand);
-		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
+		DesafectarCommand = new AsyncRelayCommand(ExecuteDesafectarCommandAsync, _sesion.Permite(Permiso.GestionarDocentes, CanExecuteDesafectarCommand));
+		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommandAsync, _sesion.Permite(Permiso.GestionarDocentes, CanExecuteEliminarCommand));
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 	}
 

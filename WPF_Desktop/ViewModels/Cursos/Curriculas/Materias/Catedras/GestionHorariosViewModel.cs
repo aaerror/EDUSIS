@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCatedras;
@@ -37,6 +40,8 @@ namespace WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 /// </remarks>
 internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	/// <summary>Título de todos los avisos de error de la pantalla.</summary>
 	private const string TituloDeLaPantalla = "Horarios";
 
@@ -151,8 +156,9 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 									IServicioCatedra servicioCatedra,
 									MateriaStore materiaStore,
 									CatedraStore catedraStore,
-									IDialogService dialogService)
+									IDialogService dialogService, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_gestionCatedrasNavigationService = gestionCatedrasNavigationService;
 		_servicioCatedra = servicioCatedra;
 
@@ -173,8 +179,8 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 		}
 
 		CargarCommand = new AsyncRelayCommand(ExecuteCargarCommand, CanExecuteCargarCommand);
-		AgregarHorarioCommand = new AsyncRelayCommand(ExecuteAgregarHorarioCommand, CanExecuteAgregarHorarioCommand);
-		QuitarHorarioCommand = new AsyncRelayCommand(ExecuteQuitarHorarioCommand, CanExecuteQuitarHorarioCommand);
+		AgregarHorarioCommand = new AsyncRelayCommand(ExecuteAgregarHorarioCommand, _sesion.Permite(Permiso.GestionarCatedras, CanExecuteAgregarHorarioCommand));
+		QuitarHorarioCommand = new AsyncRelayCommand(ExecuteQuitarHorarioCommand, _sesion.Permite(Permiso.GestionarCatedras, CanExecuteQuitarHorarioCommand));
 		VolverCommand = new RelayCommand(ExecuteVolverCommand, CanExecuteVolverCommand);
 
 		Ruta = new[]

@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAlumnos.DTOs.Requests;
@@ -27,6 +30,8 @@ namespace WPF_Desktop.ViewModels.Alumnos;
 
 internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	private readonly IServicioAlumno _servicioAlumnos;
 	private readonly IServicioCurso _servicioCursos;
 	private readonly IServicioDivision _servicioDivisiones;
@@ -177,8 +182,9 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 									IServicioDivision servicioDivisiones,
 									IDialogService dialogService,
 									INavigationService<GestionAlumnosViewModel> gestionAlumnosNavigationService,
-									CicloLectivoStore cicloLectivoStore)
+									CicloLectivoStore cicloLectivoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioAlumnos = servicioAlumnos;
 		_dialogService = dialogService;
 		_servicioCursos = servicioCursos;
@@ -199,7 +205,7 @@ internal partial class RegistrarAlumnoViewModel : ObservableValidator, IUbicacio
 
 		AtrasCommand = new RelayCommand(ExecuteAtrasCommand, CanExecuteAtrasCommand);
 		ContinuarCommand = new AsyncRelayCommand(ExecuteContinuarCommand, CanExecuteContinuarCommand);
-		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
+		GuardarCommand = new AsyncRelayCommand(ExecuteGuardarCommandAsync, _sesion.Permite(Permiso.GestionarAlumnos, _sesion.Permite(Permiso.InscribirCursantes, CanExecuteGuardarCommand)));
 
 		ActualizarCursosAsyncCommand = new AsyncRelayCommand(ActualizarCursos);
 

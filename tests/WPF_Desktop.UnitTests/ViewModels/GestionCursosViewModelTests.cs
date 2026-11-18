@@ -55,7 +55,7 @@ public class GestionCursosViewModelTests
 												   NavegarARegistrarCurso,
 												   NavegarADivisiones,
 												   NavegarARegistrarMateria,
-												   CursoStore);
+												   CursoStore, new SesionFalsa());
 		}
 
 		/// <summary>

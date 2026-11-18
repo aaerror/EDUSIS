@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAlumnos.DTOs.Requests;
@@ -41,6 +44,8 @@ namespace WPF_Desktop.ViewModels.Alumnos;
 /// </remarks>
 internal partial class GestionAlumnosViewModel : ObservableValidator
 {
+	private readonly ISesionActual _sesion;
+
 	#region Servicio
 	private readonly IServicioAlumno _servicioAlumnos;
 	private readonly IDialogService _dialogService;
@@ -113,8 +118,9 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 								   INavigationService<RegistrarAlumnoViewModel> registrarAlumnoNavigationService,
 								   INavigationService<InscripcionAlumnoViewModel> inscripcionAlumnoNavigationService,
 								   INavigationService<PerfilAlumnoViewModel> verPerfilNavigationService,
-								   LegajoStore perfilBuscadoStore)
+								   LegajoStore perfilBuscadoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioAlumnos = servicioAlumnos;
 		_dialogService = dialogService;
 		_registrarAlumnoNavigationService = registrarAlumnoNavigationService;
@@ -125,7 +131,7 @@ internal partial class GestionAlumnosViewModel : ObservableValidator
 
 		BuscarCommand = new AsyncRelayCommand(ExecuteBuscarCommand, CanExecuteBuscarCommand);
 		CargarResumenCommandAsync = new AsyncRelayCommand(CargarResumenAsync);
-		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommand, CanExecuteEliminarCommand);
+		EliminarCommand = new AsyncRelayCommand(ExecuteEliminarCommand, _sesion.Permite(Permiso.GestionarAlumnos, CanExecuteEliminarCommand));
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 
 		Message = "Buscá un alumno por su documento, su nombre o su apellido para ver su perfil, inscribirlo o quitarlo. Si todavía no está cargado, usá «Registrar alumno».";

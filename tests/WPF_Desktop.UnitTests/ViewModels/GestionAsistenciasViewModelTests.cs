@@ -64,7 +64,7 @@ public class GestionAsistenciasViewModelTests
 														CursoStore,
 														DivisionStore,
 														CicloLectivoStore,
-														Dialogos);
+														Dialogos, new SesionFalsa());
 		}
 
 		/// <summary>La división del drill-down con preceptor asignado: el caso normal.</summary>

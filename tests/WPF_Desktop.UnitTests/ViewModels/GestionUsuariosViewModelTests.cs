@@ -35,7 +35,7 @@ public class GestionUsuariosViewModelTests
 			DevolverUsuarios();
 			DevolverDocentes();
 
-			ViewModel = new GestionUsuariosViewModel(ServicioUsuario, ServicioDocente, Dialogos);
+			ViewModel = new GestionUsuariosViewModel(ServicioUsuario, ServicioDocente, Dialogos, new SesionFalsa());
 		}
 
 		public void DevolverUsuarios(params UsuarioResponse[] usuarios) =>

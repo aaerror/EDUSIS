@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCursantes.DTOs.Requests;
@@ -19,6 +22,8 @@ namespace WPF_Desktop.ViewModels.Alumnos;
 
 internal partial class InscripcionAlumnoViewModel : ObservableObject, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	#region Servicios
 	private readonly IServicioCurso _servicioCursos;
 	private readonly IServicioCursante _servicioCursantes;
@@ -76,8 +81,9 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject, IUbicacion
 									  IDialogService dialogService,
 									  INavigationService<GestionAlumnosViewModel> gestionAlumnosNavigationService,
 									  LegajoStore legajoStore,
-									  CicloLectivoStore cicloLectivoStore)
+									  CicloLectivoStore cicloLectivoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioCursos = servicioCursos;
 		_servicioCursantes = servicioCursantes;
 		_servicioDivisiones = servicioDivisiones;
@@ -93,7 +99,7 @@ internal partial class InscripcionAlumnoViewModel : ObservableObject, IUbicacion
 			Migaja.Actual("INSCRIPCIÓN")
 		};
 
-		InscribirCommand = new AsyncRelayCommand(ExecuteInscribirCommandAsync, CanExecuteInscribirCommand);
+		InscribirCommand = new AsyncRelayCommand(ExecuteInscribirCommandAsync, _sesion.Permite(Permiso.InscribirCursantes, CanExecuteInscribirCommand));
 
 		// Las asignaciones a propiedades con [NotifyCanExecuteChangedFor] van DESPUÉS de crear el comando.
 		HabilitarMessage = false;

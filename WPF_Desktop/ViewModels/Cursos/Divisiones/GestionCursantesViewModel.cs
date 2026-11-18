@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAsistencias.DTOs.Requests;
@@ -28,6 +31,8 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 internal partial class GestionCursantesViewModel : ObservableValidator, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	// El tramo con el que se abre el formulario: el ciclo arranca por el primer cuatrimestre.
 	private const string PERIODO_POR_DEFECTO = nameof(Periodo.PrimerCuatrimestre);
 
@@ -219,8 +224,9 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 									 INavigationService<GestionDivisionesViewModel> gestionDivisionesNavigationService,
 									 CursoStore cursoStore,
 									 DivisionStore divisionStore,
-									 CicloLectivoStore cicloLectivoStore)
+									 CicloLectivoStore cicloLectivoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioCursante = servicioCursante;
 		_servicioMateria = servicioMateria;
 		_servicioCurricula = servicioCurricula;
@@ -234,20 +240,20 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 		CargarCommandAsync = new AsyncRelayCommand(CargarAsync);
 		BuscarCommandAsync = new AsyncRelayCommand(BuscarCursantesAsync, CanExecuteBuscar);
 		CargarCalificacionesCommandAsync = new AsyncRelayCommand(CargarCalificacionesAsync);
-		GuardarCalificacionCommandAsync = new AsyncRelayCommand(GuardarCalificacionAsync, CanExecuteGuardarCalificacion);
-		RegistrarInasistenciaCommandAsync = new AsyncRelayCommand(RegistrarInasistenciaAsync, CanExecuteGuardarCalificacion);
-		QuitarCalificacionCommandAsync = new AsyncRelayCommand(QuitarCalificacionAsync, CanExecuteCalificacionSeleccionada);
-		ModificarObservacionCommandAsync = new AsyncRelayCommand(ModificarObservacionAsync, CanExecuteCalificacionSeleccionada);
+		GuardarCalificacionCommandAsync = new AsyncRelayCommand(GuardarCalificacionAsync, _sesion.Permite(Permiso.CargarCalificaciones, CanExecuteGuardarCalificacion));
+		RegistrarInasistenciaCommandAsync = new AsyncRelayCommand(RegistrarInasistenciaAsync, _sesion.Permite(Permiso.CargarCalificaciones, CanExecuteGuardarCalificacion));
+		QuitarCalificacionCommandAsync = new AsyncRelayCommand(QuitarCalificacionAsync, _sesion.Permite(Permiso.CargarCalificaciones, CanExecuteCalificacionSeleccionada));
+		ModificarObservacionCommandAsync = new AsyncRelayCommand(ModificarObservacionAsync, _sesion.Permite(Permiso.CargarCalificaciones, CanExecuteCalificacionSeleccionada));
 
-		ModificarRecursanteCommandAsync = new AsyncRelayCommand(ModificarRecursanteAsync, CanExecuteCursanteSeleccionado);
-		RegistrarBajaCommandAsync = new AsyncRelayCommand(RegistrarBajaAsync, CanExecuteCursanteSeleccionado);
-		CambiarDivisionCommandAsync = new AsyncRelayCommand(CambiarDivisionAsync, CanExecuteCambiarDivision);
+		ModificarRecursanteCommandAsync = new AsyncRelayCommand(ModificarRecursanteAsync, _sesion.Permite(Permiso.InscribirCursantes, CanExecuteCursanteSeleccionado));
+		RegistrarBajaCommandAsync = new AsyncRelayCommand(RegistrarBajaAsync, _sesion.Permite(Permiso.InscribirCursantes, CanExecuteCursanteSeleccionado));
+		CambiarDivisionCommandAsync = new AsyncRelayCommand(CambiarDivisionAsync, _sesion.Permite(Permiso.InscribirCursantes, CanExecuteCambiarDivision));
 		CargarHistorialCommandAsync = new AsyncRelayCommand(CargarHistorialAsync, CanExecuteCursanteSeleccionado);
 		CargarAsistenciasCommandAsync = new AsyncRelayCommand(CargarAsistenciasAsync, CanExecuteCursanteSeleccionado);
 
 		VerCommand = new RelayCommand<string>(ExecuteVer, _ => CanExecuteCursanteSeleccionado());
 
-		NuevaCalificacionCommand = new RelayCommand(ExecuteNuevaCalificacion, CanExecuteNuevaCalificacion);
+		NuevaCalificacionCommand = new RelayCommand(ExecuteNuevaCalificacion, _sesion.Permite(Permiso.CargarCalificaciones, CanExecuteNuevaCalificacion));
 		CancelarCalificacionCommand = new RelayCommand(ExecuteCancelarCalificacion, CanExecuteCancelarCalificacion);
 
 		// Va después de crear los comandos: el setter de CicloLectivo notifica a BuscarCommandAsync (NotifyCanExecuteChangedFor)

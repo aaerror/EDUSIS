@@ -150,7 +150,7 @@ internal static class WPF_DesktopDI
 		services.AddTransient<GestionUsuariosViewModel>(provider =>
 			new GestionUsuariosViewModel(provider.GetRequiredService<IServicioUsuario>(),
 										 provider.GetRequiredService<IServicioDocente>(),
-										 provider.GetRequiredService<IDialogService>()));
+										 provider.GetRequiredService<IDialogService>(), provider.GetRequiredService<ISesionActual>()));
 
 	services.AddTransient<BuscarViewModel>(provider =>
 			new BuscarViewModel(provider.GetRequiredService<IServicioDocente>(),
@@ -167,11 +167,11 @@ internal static class WPF_DesktopDI
 										 Navegacion<PerfilDocenteViewModel, MainWindowNavigationStore>(provider),
 										 Navegacion<GestionPuestosViewModel, MainWindowNavigationStore>(provider),
 										 Navegacion<GestionLicenciasViewModel, MainWindowNavigationStore>(provider),
-										 provider.GetRequiredService<LegajoStore>()));
+										 provider.GetRequiredService<LegajoStore>(), provider.GetRequiredService<ISesionActual>()));
 		services.AddTransient<RegistrarDocenteViewModel>(provider =>
 			new RegistrarDocenteViewModel(provider.GetRequiredService<IServicioDocente>(),
 										  provider.GetRequiredService<IDialogService>(),
-										  Navegacion<GestionDocentesViewModel, MainWindowNavigationStore>(provider)));
+										  Navegacion<GestionDocentesViewModel, MainWindowNavigationStore>(provider), provider.GetRequiredService<ISesionActual>()));
 		services.AddTransient<PerfilDocenteViewModel>(provider =>
 			new PerfilDocenteViewModel(provider.GetRequiredService<IServicioDocente>(),
 									   provider.GetRequiredService<IDialogService>(),
@@ -184,7 +184,7 @@ internal static class WPF_DesktopDI
 			new GestionPuestosViewModel(provider.GetRequiredService<IServicioDocente>(),
 										provider.GetRequiredService<IDialogService>(),
 										Navegacion<GestionDocentesViewModel, MainWindowNavigationStore>(provider),
-										provider.GetRequiredService<LegajoStore>()));
+										provider.GetRequiredService<LegajoStore>(), provider.GetRequiredService<ISesionActual>()));
 		services.AddTransient<GestionLicenciasViewModel>(provider =>
 			new GestionLicenciasViewModel(provider.GetRequiredService<IServicioLicencia>(),
 										  provider.GetRequiredService<IDialogService>(),
@@ -199,7 +199,7 @@ internal static class WPF_DesktopDI
 										Navegacion<RegistrarAlumnoViewModel, MainWindowNavigationStore>(provider),
 										Navegacion<InscripcionAlumnoViewModel, MainWindowNavigationStore>(provider),
 										Navegacion<PerfilAlumnoViewModel, MainWindowNavigationStore>(provider),
-										provider.GetRequiredService<LegajoStore>()));
+										provider.GetRequiredService<LegajoStore>(), provider.GetRequiredService<ISesionActual>()));
 
 		services.AddTransient<PerfilAlumnoViewModel>(provider =>
 			new PerfilAlumnoViewModel(provider.GetRequiredService<IServicioAlumno>(),
@@ -212,7 +212,7 @@ internal static class WPF_DesktopDI
 										 provider.GetRequiredService<IServicioDivision>(),
 										 provider.GetRequiredService<IDialogService>(),
 										 Navegacion<GestionAlumnosViewModel, MainWindowNavigationStore>(provider),
-										 provider.GetRequiredService<CicloLectivoStore>()));
+										 provider.GetRequiredService<CicloLectivoStore>(), provider.GetRequiredService<ISesionActual>()));
 		services.AddTransient<InscripcionAlumnoViewModel>(provider =>
 			new InscripcionAlumnoViewModel(provider.GetRequiredService<IServicioCurso>(),
 										   provider.GetRequiredService<IServicioCursante>(),
@@ -220,7 +220,7 @@ internal static class WPF_DesktopDI
 										   provider.GetRequiredService<IDialogService>(),
 										   Navegacion<GestionAlumnosViewModel, MainWindowNavigationStore>(provider),
 										   provider.GetRequiredService<LegajoStore>(),
-										   provider.GetRequiredService<CicloLectivoStore>()));
+										   provider.GetRequiredService<CicloLectivoStore>(), provider.GetRequiredService<ISesionActual>()));
 		#endregion
 
 		#region Cursos
@@ -239,14 +239,14 @@ internal static class WPF_DesktopDI
 										  Navegacion<GestionDivisionesViewModel, MainWindowNavigationStore>(provider),
 										  provider.GetRequiredService<CursoStore>(),
 										  provider.GetRequiredService<DivisionStore>(),
-										  provider.GetRequiredService<CicloLectivoStore>()));
+										  provider.GetRequiredService<CicloLectivoStore>(), provider.GetRequiredService<ISesionActual>()));
 		services.AddTransient<GestionCursosViewModel>(provider =>
 			new GestionCursosViewModel(provider.GetRequiredService<IServicioCurso>(),
 									   provider.GetRequiredService<IDialogService>(),
 									   Navegacion<RegistrarCursosViewModel, MainWindowNavigationStore>(provider),
 									   Navegacion<GestionDivisionesViewModel, MainWindowNavigationStore>(provider),
 									   Navegacion<GestionCurriculasViewModel, MainWindowNavigationStore>(provider),
-									   provider.GetRequiredService<CursoStore>()));
+									   provider.GetRequiredService<CursoStore>(), provider.GetRequiredService<ISesionActual>()));
 		// Cuatro destinos: cursos (volver), cursantes, asistencias y el modal de búsqueda de
 		// docentes. Van tipados, así que invertir dos no compila.
 		services.AddTransient<GestionDivisionesViewModel>(provider =>
@@ -260,7 +260,7 @@ internal static class WPF_DesktopDI
 										   provider.GetRequiredService<CicloLectivoStore>(),
 										   provider.GetRequiredService<BuscarContextoStore>(),
 										   provider.GetRequiredService<IDialogService>(),
-										   provider.GetRequiredService<IMessenger>()));
+										   provider.GetRequiredService<IMessenger>(), provider.GetRequiredService<ISesionActual>()));
 
 		// La raíz de la sección. Depende de GestionAsistenciasNavigationService y no al revés:
 		// escribe CursoStore y DivisionStore y recién después navega a la planilla, que los lee
@@ -282,7 +282,7 @@ internal static class WPF_DesktopDI
 											provider.GetRequiredService<CursoStore>(),
 											provider.GetRequiredService<DivisionStore>(),
 											provider.GetRequiredService<CicloLectivoStore>(),
-											provider.GetRequiredService<IDialogService>()));
+											provider.GetRequiredService<IDialogService>(), provider.GetRequiredService<ISesionActual>()));
 		#endregion
 
 		#region Materias
@@ -293,7 +293,7 @@ internal static class WPF_DesktopDI
 										 provider.GetRequiredService<IServicioMateria>(),
 										 provider.GetRequiredService<IDialogService>(),
 										 provider.GetRequiredService<CursoStore>(),
-										 provider.GetRequiredService<MateriaStore>()));
+										 provider.GetRequiredService<MateriaStore>(), provider.GetRequiredService<ISesionActual>()));
 		#endregion
 
 		#region Catedras
@@ -308,14 +308,14 @@ internal static class WPF_DesktopDI
 										 provider.GetRequiredService<MateriaStore>(),
 										 provider.GetRequiredService<CatedraStore>(),
 										 provider.GetRequiredService<CicloLectivoStore>(),
-										 provider.GetRequiredService<IDialogService>()));
+										 provider.GetRequiredService<IDialogService>(), provider.GetRequiredService<ISesionActual>()));
 
 		services.AddTransient<GestionHorariosViewModel>(provider =>
 			new GestionHorariosViewModel(Navegacion<GestionCatedrasViewModel, MainWindowNavigationStore>(provider),
 										 provider.GetRequiredService<IServicioCatedra>(),
 										 provider.GetRequiredService<MateriaStore>(),
 										 provider.GetRequiredService<CatedraStore>(),
-										 provider.GetRequiredService<IDialogService>()));
+										 provider.GetRequiredService<IDialogService>(), provider.GetRequiredService<ISesionActual>()));
 		#endregion
 
 		#region SituaciónRevista
@@ -329,7 +329,7 @@ internal static class WPF_DesktopDI
 												 provider.GetRequiredService<MateriaStore>(),
 												 provider.GetRequiredService<CatedraStore>(),
 												 provider.GetRequiredService<BuscarContextoStore>(),
-												 provider.GetRequiredService<IMessenger>()));
+												 provider.GetRequiredService<IMessenger>(), provider.GetRequiredService<ISesionActual>()));
 		#endregion
 
 		#region Documentación y reportes
@@ -338,7 +338,7 @@ internal static class WPF_DesktopDI
 											  provider.GetRequiredService<IServicioDocumento>(),
 											  provider.GetRequiredService<IArchivoService>(),
 											  provider.GetRequiredService<IDialogService>(),
-											  provider.GetRequiredService<CicloLectivoStore>()));
+											  provider.GetRequiredService<CicloLectivoStore>(), provider.GetRequiredService<ISesionActual>()));
 
 		services.AddTransient<GestionReportesViewModel>(provider =>
 			new GestionReportesViewModel(provider.GetRequiredService<IServicioReporte>(),
@@ -346,7 +346,7 @@ internal static class WPF_DesktopDI
 										 provider.GetRequiredService<IServicioDivision>(),
 										 provider.GetRequiredService<IArchivoService>(),
 										 provider.GetRequiredService<IDialogService>(),
-										 provider.GetRequiredService<CicloLectivoStore>()));
+										 provider.GetRequiredService<CicloLectivoStore>(), provider.GetRequiredService<ISesionActual>()));
 		#endregion
 
 		#region Usuarios

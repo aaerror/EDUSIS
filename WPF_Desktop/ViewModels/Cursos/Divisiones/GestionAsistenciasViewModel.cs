@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioAsistencias;
@@ -21,6 +24,8 @@ namespace WPF_Desktop.ViewModels.Cursos.Divisiones;
 
 internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	/// <summary>Título único de todos los diálogos de la pantalla.</summary>
 	private const string TITULO = "Asistencia";
 
@@ -397,8 +402,9 @@ internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacio
 									   CursoStore cursoStore,
 									   DivisionStore divisionStore,
 									   CicloLectivoStore cicloLectivoStore,
-									   IDialogService dialogService)
+									   IDialogService dialogService, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_gestionDivisionesNavigationService = gestionDivisionesNavigationService;
 		_servicioAsistencia = servicioAsistencia;
 		_servicioCursante = servicioCursante;
@@ -410,15 +416,15 @@ internal partial class GestionAsistenciasViewModel : ObservableObject, IUbicacio
 		_dialogService = dialogService;
 
 		CargarCommand = new AsyncRelayCommand(ExecuteCargarCommand, CanExecuteCargarCommand);
-		AbrirPlanillaCommand = new AsyncRelayCommand(ExecuteAbrirPlanillaCommand, CanExecuteAbrirPlanillaCommand);
-		MarcarPresenteCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarPresenteCommand, PuedeMarcar);
-		MarcarAusenciaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarAusenciaCommand, PuedeMarcar);
-		MarcarInasistenciaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarInasistenciaCommand, PuedeMarcar);
-		MarcarTardanzaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarTardanzaCommand, PuedeMarcarTardanza);
-		IncorporarCursanteCommand = new AsyncRelayCommand(ExecuteIncorporarCursanteCommand, CanExecuteIncorporarCursanteCommand);
-		CerrarPlanillaCommand = new AsyncRelayCommand(ExecuteCerrarPlanillaCommand, CanExecuteCerrarPlanillaCommand);
-		ReabrirPlanillaCommand = new AsyncRelayCommand(ExecuteReabrirPlanillaCommand, CanExecuteReabrirPlanillaCommand);
-		EliminarPlanillaCommand = new AsyncRelayCommand(ExecuteEliminarPlanillaCommand, CanExecuteEliminarPlanillaCommand);
+		AbrirPlanillaCommand = new AsyncRelayCommand(ExecuteAbrirPlanillaCommand, _sesion.Permite(Permiso.TomarAsistencia, CanExecuteAbrirPlanillaCommand));
+		MarcarPresenteCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarPresenteCommand, _sesion.Permite<RegistroAsistenciaViewModel>(Permiso.TomarAsistencia, PuedeMarcar));
+		MarcarAusenciaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarAusenciaCommand, _sesion.Permite<RegistroAsistenciaViewModel>(Permiso.TomarAsistencia, PuedeMarcar));
+		MarcarInasistenciaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarInasistenciaCommand, _sesion.Permite<RegistroAsistenciaViewModel>(Permiso.TomarAsistencia, PuedeMarcar));
+		MarcarTardanzaCommand = new AsyncRelayCommand<RegistroAsistenciaViewModel>(ExecuteMarcarTardanzaCommand, _sesion.Permite<RegistroAsistenciaViewModel>(Permiso.TomarAsistencia, PuedeMarcarTardanza));
+		IncorporarCursanteCommand = new AsyncRelayCommand(ExecuteIncorporarCursanteCommand, _sesion.Permite(Permiso.TomarAsistencia, CanExecuteIncorporarCursanteCommand));
+		CerrarPlanillaCommand = new AsyncRelayCommand(ExecuteCerrarPlanillaCommand, _sesion.Permite(Permiso.TomarAsistencia, CanExecuteCerrarPlanillaCommand));
+		ReabrirPlanillaCommand = new AsyncRelayCommand(ExecuteReabrirPlanillaCommand, _sesion.Permite(Permiso.TomarAsistencia, CanExecuteReabrirPlanillaCommand));
+		EliminarPlanillaCommand = new AsyncRelayCommand(ExecuteEliminarPlanillaCommand, _sesion.Permite(Permiso.TomarAsistencia, CanExecuteEliminarPlanillaCommand));
 		VerCommand = new RelayCommand<string>(ExecuteVerCommand);
 		ListarPlanillasCommand = new AsyncRelayCommand(ExecuteListarPlanillasCommand, CanExecuteConsultarPeriodoCommand);
 		ConsultarResumenCommand = new AsyncRelayCommand(ExecuteConsultarResumenCommand, CanExecuteConsultarPeriodoCommand);

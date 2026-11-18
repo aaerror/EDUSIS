@@ -61,7 +61,7 @@ public class GestionCurriculasViewModelTests
 													   ServicioMateria,
 													   Dialogos,
 													   CursoStore,
-													   MateriaStore);
+													   MateriaStore, new SesionFalsa());
 		}
 
 		public void DevolverCurriculas(params CurriculaResponse[] curriculas)

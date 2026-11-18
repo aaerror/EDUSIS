@@ -70,7 +70,7 @@ public class GestionCursantesViewModelTests
 		public Guid CurriculaCerradaID { get; } = Guid.NewGuid();
 		public GestionCursantesViewModel ViewModel { get; }
 
-		public Contexto(bool conDivision = true)
+		public Contexto(bool conDivision = true, Core.Shared.Seguridad.ISesionActual? sesion = null)
 		{
 			CursoStore.Curso = new CursoSeleccionado(CursoID, Grado.Primero.ToString(), NivelEducativo.Secundaria.ToString());
 			CicloLectivoStore.CicloLectivo = CicloDelStore;
@@ -97,7 +97,7 @@ public class GestionCursantesViewModelTests
 													  NavegarADivisiones,
 													  CursoStore,
 													  DivisionStore,
-													  CicloLectivoStore);
+													  CicloLectivoStore, sesion ?? new SesionFalsa());
 		}
 
 		public void DevolverDivisiones(params DivisionResponse[] divisiones)
@@ -1122,6 +1122,36 @@ public class GestionCursantesViewModelTests
 		var contexto = new Contexto();
 
 		contexto.ViewModel.VerCommand.CanExecute(GestionCursantesViewModel.VISTA_ASISTENCIAS).ShouldBeFalse();
+	}
+	#endregion
+	#region Permisos (UI-54)
+	/// <summary>
+	/// El caso que motivó UI-54: Preceptoría llega a esta pantalla sólo para cargar calificaciones.
+	/// Con CargarCalificaciones y sin InscribirCursantes, la nota se puede cargar y la baja, el
+	/// traslado y la condición de recursante nacen grises en vez de fallar con PermisoDenegado.
+	/// </summary>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Con_solo_CargarCalificaciones_las_operaciones_de_inscripcion_nacen_grises()
+	{
+		var contexto = new Contexto(sesion: new SesionFalsa(Domain.Usuarios.Permiso.CargarCalificaciones));
+		await contexto.BuscarYSeleccionarAsync();
+
+		contexto.ViewModel.NuevaCalificacionCommand.CanExecute(null).ShouldBeTrue();
+		contexto.ViewModel.RegistrarBajaCommandAsync.CanExecute(null).ShouldBeFalse();
+		contexto.ViewModel.ModificarRecursanteCommandAsync.CanExecute(null).ShouldBeFalse();
+		contexto.ViewModel.CambiarDivisionCommandAsync.CanExecute(null).ShouldBeFalse();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Sin_CargarCalificaciones_no_se_puede_cargar_una_nota()
+	{
+		var contexto = new Contexto(sesion: new SesionFalsa(Domain.Usuarios.Permiso.InscribirCursantes));
+		await contexto.BuscarYSeleccionarAsync();
+
+		contexto.ViewModel.NuevaCalificacionCommand.CanExecute(null).ShouldBeFalse();
+		contexto.ViewModel.RegistrarBajaCommandAsync.CanExecute(null).ShouldBeTrue();
 	}
 	#endregion
 }

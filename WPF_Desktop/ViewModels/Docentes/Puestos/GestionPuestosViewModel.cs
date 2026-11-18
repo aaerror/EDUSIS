@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioDocentes.DTOs.Requests;
@@ -20,6 +23,8 @@ namespace WPF_Desktop.ViewModels.Docentes.Puestos;
 
 internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 {
+	private readonly ISesionActual _sesion;
+
 	#region Servicios
 	private readonly IServicioDocente _servicioDocentes;
 	private readonly IDialogService _dialogService;
@@ -93,8 +98,9 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 	public GestionPuestosViewModel(IServicioDocente servicioDocentes,
 								   IDialogService dialogService,
 								   INavigationService<GestionDocentesViewModel> gestionDocentesNavigationService,
-								   LegajoStore perfilBuscadoStore)
+								   LegajoStore perfilBuscadoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioDocentes = servicioDocentes;
 		_dialogService = dialogService;
 		_docenteID = perfilBuscadoStore.PersonaID
@@ -108,14 +114,14 @@ internal partial class GestionPuestosViewModel : ObservableObject, IUbicacion
 			Migaja.Actual("PUESTOS")
 		};
 
-		ActivarCommandAsync = new AsyncRelayCommand(ExecuteActivarCommandAsync, CanExecuteActivarCommand);
+		ActivarCommandAsync = new AsyncRelayCommand(ExecuteActivarCommandAsync, _sesion.Permite(Permiso.GestionarDocentes, CanExecuteActivarCommand));
 		CargarPuestosCommandAsync = new AsyncRelayCommand(ExecuteCargarPuestosDocentesAsync);
 		CancelarCommandAsync = new AsyncRelayCommand<string>(ExecuteCancelarCommandAsync, CanExecuteCancelarCommand);
-		EditarCommandAsync = new RelayCommand(ExecuteEditarCommand, CanExecuteEditarCommand);
-		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
-		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
+		EditarCommandAsync = new RelayCommand(ExecuteEditarCommand, _sesion.Permite(Permiso.GestionarDocentes, CanExecuteEditarCommand));
+		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, _sesion.Permite<string>(Permiso.GestionarDocentes, CanExecuteEliminarCommand));
+		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, _sesion.Permite<string>(Permiso.GestionarDocentes, CanExecuteGuardarCommand));
 
-		RegistrarCommand = new RelayCommand(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
+		RegistrarCommand = new RelayCommand(ExecuteRegistrarCommand, _sesion.Permite(Permiso.GestionarDocentes, CanExecuteRegistrarCommand));
 
 		HabilitarListadoPuestos = false;
 		HabilitarRegistro = false;

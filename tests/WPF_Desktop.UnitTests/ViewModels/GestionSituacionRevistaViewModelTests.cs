@@ -79,7 +79,7 @@ public class GestionSituacionRevistaViewModelTests
 															 MateriaStore,
 															 CatedraStore,
 															 BuscarContextoStore,
-															 Mensajero);
+															 Mensajero, new SesionFalsa());
 		}
 
 		/// <remarks>

@@ -60,7 +60,7 @@ public class GestionCatedrasViewModelTests
 													 MateriaStore,
 													 CatedraStore,
 													 CicloLectivoStore,
-													 Dialogos);
+													 Dialogos, new SesionFalsa());
 		}
 
 		public void Devolver(List<CatedraResponse> catedras, List<DivisionResponse> divisiones)

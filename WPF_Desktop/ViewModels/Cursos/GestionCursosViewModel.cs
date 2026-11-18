@@ -1,3 +1,6 @@
+using WPF_Desktop.Security;
+using Domain.Usuarios;
+using Core.Shared.Seguridad;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.ServicioCursos.DTOs.Requests;
@@ -19,6 +22,8 @@ namespace WPF_Desktop.ViewModels.Cursos;
 
 internal partial class GestionCursosViewModel : ObservableObject
 {
+	private readonly ISesionActual _sesion;
+
 	#region Servicios
 	private readonly IServicioCurso _servicioCursos;
 	private readonly IDialogService _dialogService;
@@ -79,8 +84,9 @@ internal partial class GestionCursosViewModel : ObservableObject
 								  INavigationService<RegistrarCursosViewModel> registrarCursoNavigationService,
 								  INavigationService<GestionDivisionesViewModel> gestionDivisionesNavigationService,
 								  INavigationService<GestionCurriculasViewModel> registrarMateriaNavigationService,
-								  CursoStore cursoStore)
+								  CursoStore cursoStore, ISesionActual sesion)
 	{
+		_sesion = sesion;
 		_servicioCursos = servicioCursos;
 		_dialogService = dialogService;
 		_registrarCursoNavigationService = registrarCursoNavigationService;
@@ -92,7 +98,7 @@ internal partial class GestionCursosViewModel : ObservableObject
 
 
 		CargarCursosCommandAsync = new AsyncRelayCommand(ExecuteCargarCursosCommandAsync);
-		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommandAsync);
+		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, _sesion.Permite<string>(Permiso.GestionarCursos, CanExecuteEliminarCommandAsync));
 		//NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand, CanExecuteNavigationCommand);
 		NavigationCommand = new RelayCommand<string>(ExecuteNavigationCommand);
 

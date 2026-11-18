@@ -74,7 +74,7 @@ public class AlumnosInscripcionViewModelTests
 
 		public InscripcionAlumnoViewModel CrearInscripcion()
 		{
-			return new InscripcionAlumnoViewModel(ServicioCursos, ServicioCursantes, ServicioDivisiones, Dialogos, NavegarAAlumnos, LegajoStore, CicloLectivoStore);
+			return new InscripcionAlumnoViewModel(ServicioCursos, ServicioCursantes, ServicioDivisiones, Dialogos, NavegarAAlumnos, LegajoStore, CicloLectivoStore, new SesionFalsa());
 		}
 
 		/// <summary>
@@ -86,7 +86,7 @@ public class AlumnosInscripcionViewModelTests
 
 		public RegistrarAlumnoViewModel CrearRegistro()
 		{
-			return new RegistrarAlumnoViewModel(ServicioAlumnos, ServicioCursos, ServicioDivisiones, Dialogos, NavegarAAlumnos, CicloLectivoStore);
+			return new RegistrarAlumnoViewModel(ServicioAlumnos, ServicioCursos, ServicioDivisiones, Dialogos, NavegarAAlumnos, CicloLectivoStore, new SesionFalsa());
 		}
 	}
 
