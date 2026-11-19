@@ -450,7 +450,7 @@ public class GestionCursantesViewModelTests
 
 		await contexto.ViewModel.GuardarCalificacionCommandAsync.ExecuteAsync(null);
 
-		_ = contexto.ServicioCursante.Received(1).RegistrarCalificacionAsync(new CrearCalificationRequest(cursante.AlumnoID, CicloDelStore, materia.MateriaID, fecha, nameof(Periodo.PrimerCuatrimestre), false, 8, "bien"));
+		_ = contexto.ServicioCursante.Received(1).RegistrarCalificacionAsync(new CrearCalificacionRequest(cursante.AlumnoID, CicloDelStore, materia.MateriaID, fecha, nameof(Periodo.PrimerCuatrimestre), false, 8, "bien"));
 		contexto.Dialogos.Informaciones.Count.ShouldBe(1);
 		contexto.ViewModel.MostrarCalificacionView.ShouldBeFalse();
 	}
@@ -491,7 +491,7 @@ public class GestionCursantesViewModelTests
 		var contexto = new Contexto();
 		await contexto.PrepararAltaAsync();
 		contexto.ViewModel.Calificacion!.Nota = 6;
-		contexto.ServicioCursante.RegistrarCalificacionAsync(Arg.Any<CrearCalificationRequest>())
+		contexto.ServicioCursante.RegistrarCalificacionAsync(Arg.Any<CrearCalificacionRequest>())
 								 .Returns(Task.FromException<Guid>(new InvalidOperationException("nota repetida")));
 
 		await contexto.ViewModel.GuardarCalificacionCommandAsync.ExecuteAsync(null);

@@ -12,7 +12,7 @@ public interface IServicioCursante
 	Task CambiarDeDivisionAsync(CambiarDivisionCursanteRequest request);
 	Task<IReadOnlyCollection<CursanteResponse>> ListarCursantesAsync(BuscarListadoRequest request);
 	Task<IReadOnlyCollection<InscripcionHistoricaResponse>> ConsultarHistorialDeDivisionesAsync(ConsultarHistorialRequest request);
-	Task<Guid> RegistrarCalificacionAsync(CrearCalificationRequest request);
+	Task<Guid> RegistrarCalificacionAsync(CrearCalificacionRequest request);
 	Task QuitarCalificacionAsync(EliminarCalificacionRequest request);
 	Task<Guid> RegistrarInasistenciaAExamenAsync(RegistrarInasistenciaRequest request);
 	Task ModificarObservacionCalificacionAsync(ModificarObservacionCalificacionRequest request);

@@ -318,7 +318,7 @@ internal class ServicioCursante : IServicio, IServicioCursante
 	#endregion
 
 	#region Calificaciones
-	public async Task<Guid> RegistrarCalificacionAsync(CrearCalificationRequest request)
+	public async Task<Guid> RegistrarCalificacionAsync(CrearCalificacionRequest request)
 	{
 		try
 		{

@@ -11,4 +11,4 @@ namespace Core.ServicioCursantes.DTOs.Requests;
 /// recuperaciones y nota final, "período" nombra al tramo y no al año. Dejar los dos significados
 /// sobre la misma palabra en el mismo record es una confusión garantizada.
 /// </remarks>
-public record CrearCalificationRequest(Guid AlumnoID, string CicloLectivo, Guid MateriaID, DateTime Fecha, string Periodo, bool EsRecuperatorio, double Nota, string? Observacion);
+public record CrearCalificacionRequest(Guid AlumnoID, string CicloLectivo, Guid MateriaID, DateTime Fecha, string Periodo, bool EsRecuperatorio, double Nota, string? Observacion);

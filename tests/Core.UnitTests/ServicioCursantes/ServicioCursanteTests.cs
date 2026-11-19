@@ -509,7 +509,7 @@ public class ServicioCursanteTests
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
 
-		var calificacionID = await _servicio.RegistrarCalificacionAsync(new CrearCalificationRequest(
+		var calificacionID = await _servicio.RegistrarCalificacionAsync(new CrearCalificacionRequest(
 			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, "Buen desempeño"));
 
 		calificacionID.ShouldNotBe(Guid.Empty);
@@ -521,7 +521,7 @@ public class ServicioCursanteTests
 		var periodo = new CicloLectivoBuilder().Build().Periodo;
 
 		await Should.ThrowAsync<CursanteNoEncontradoException>(() => _servicio.RegistrarCalificacionAsync(
-			new CrearCalificationRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, null)));
+			new CrearCalificacionRequest(Guid.NewGuid(), periodo, Guid.NewGuid(), DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, null)));
 	}
 
 	[Fact]
@@ -532,7 +532,7 @@ public class ServicioCursanteTests
 		var cicloLectivo = new CicloLectivoBuilder().Build();
 		var cursante = SembrarCursante(Guid.NewGuid(), alumno.Id, cicloLectivo);
 
-		await _servicio.RegistrarCalificacionAsync(new CrearCalificationRequest(
+		await _servicio.RegistrarCalificacionAsync(new CrearCalificacionRequest(
 			alumno.Id, cicloLectivo.Periodo, materia.Id, DateTime.Today, nameof(Periodo.PrimerCuatrimestre), false, 8, "Buen desempeño"));
 
 		var calificacion = cursante.Calificaciones.ShouldHaveSingleItem();

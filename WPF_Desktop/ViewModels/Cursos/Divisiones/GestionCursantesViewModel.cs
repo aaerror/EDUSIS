@@ -697,7 +697,7 @@ internal partial class GestionCursantesViewModel : ObservableValidator, IUbicaci
 
 		try
 		{
-			var request = new CrearCalificationRequest(AlumnoID: Cursante.AlumnoID,
+			var request = new CrearCalificacionRequest(AlumnoID: Cursante.AlumnoID,
 													   CicloLectivo: _periodoListado,
 													   MateriaID: Materia.MateriaID,
 													   Fecha: Calificacion.Fecha,
