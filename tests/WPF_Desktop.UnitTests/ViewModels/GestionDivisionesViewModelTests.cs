@@ -269,6 +269,24 @@ public class GestionDivisionesViewModelTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
+	public async Task Eliminar_una_division_informa_el_exito_aunque_la_recarga_deje_sin_seleccion()
+	{
+		// La recarga reemplaza la colección y la división borrada deja de existir: la selección queda
+		// en null. El aviso de éxito leía Division.Descripcion después de recargar, así que un borrado
+		// ya confirmado en la base terminaba en "No se pudo eliminar la división" con un
+		// NullReferenceException.
+		var contexto = new Contexto();
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A"));
+
+		await contexto.ViewModel.EliminarCommandAsync.ExecuteAsync("Division");
+
+		contexto.Dialogos.Errores.ShouldBeEmpty();
+		contexto.Dialogos.Informaciones.Single().Mensaje.ShouldContain("A");
+		contexto.ViewModel.Division.ShouldBeNull();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
 	public async Task Un_error_del_servicio_al_eliminar_se_muestra_por_el_dialogo_y_no_se_propaga()
 	{
 		var contexto = new Contexto();
@@ -492,6 +510,20 @@ public class GestionDivisionesViewModelTests
 
 		_ = contexto.ServicioDivision.Received(1).QuitarPreceptorAsync(new EliminarPreceptorRequest(contexto.CursoID, division.DivisionID));
 		_ = contexto.ServicioDivision.DidNotReceive().EliminarDivisionAsync(Arg.Any<EliminarDivisionRequest>());
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Quitar_el_preceptor_informa_el_exito_aunque_la_recarga_deje_sin_seleccion()
+	{
+		// Mismo defecto que el borrado de la división: el aviso leía la selección después de recargar.
+		var contexto = new Contexto();
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("B", Guid.NewGuid(), "Perez, Ana"));
+
+		await contexto.ViewModel.EliminarCommandAsync.ExecuteAsync("Preceptor");
+
+		contexto.Dialogos.Errores.ShouldBeEmpty();
+		contexto.Dialogos.Informaciones.Single().Mensaje.ShouldContain("B");
 	}
 
 	[Fact]

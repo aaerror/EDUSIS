@@ -183,6 +183,11 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 	private async Task CargarDivisionesAsync()
 	{
+		// La colección se reemplaza entera, así que la fila elegida deja de existir. En la app la grilla
+		// ya deja la selección en null al vaciarse; se hace acá también para que el ViewModel no dependa
+		// de la vista para quedar coherente. Consecuencia: quien recarga y después informa algo de la
+		// división tiene que leer sus datos ANTES de recargar.
+		Division = null!;
 		_divisiones.Clear();
 		try
 		{
@@ -308,6 +313,9 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 				// comportamiento inexistente— así que ahora las cifras salen del caso de uso.
 				var requestDivision = new EliminarDivisionRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
 
+				// Se lee antes de recargar: CargarDivisionesAsync deja la selección en null.
+				var divisionEliminada = Division.Descripcion;
+
 				ImpactoEliminacionDivisionResponse impacto;
 				try
 				{
@@ -335,7 +343,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 					await _servicioDivision.EliminarDivisionAsync(requestDivision);
 
 					await CargarDivisionesAsync();
-					_dialogService.MostrarInformacion($"División { Division.Descripcion } de { Grados.Decir(Curso) }.", "División eliminada");
+					_dialogService.MostrarInformacion($"División { divisionEliminada } de { Grados.Decir(Curso) }.", "División eliminada");
 				}
 				catch (Exception ex)
 				{
@@ -354,13 +362,16 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 					return;
 				}
 
+				// Se lee antes de recargar: CargarDivisionesAsync deja la selección en null.
+				var divisionSinPreceptor = Division.Descripcion;
+
 				try
 				{
 					var request = new EliminarPreceptorRequest(_cursoStore.Curso.CursoID, Division.DivisionID);
 					await _servicioDivision.QuitarPreceptorAsync(request);
 
 					await CargarDivisionesAsync();
-					_dialogService.MostrarInformacion($"La división { Division.Descripcion } quedó sin preceptor.", "Preceptor dado de baja");
+					_dialogService.MostrarInformacion($"La división { divisionSinPreceptor } quedó sin preceptor.", "Preceptor dado de baja");
 				}
 				catch (Exception ex)
 				{
