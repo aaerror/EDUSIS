@@ -767,4 +767,65 @@ public class GestionCurriculasViewModelTests
 		vm.CancelarCommand.CanExecute("Editar").ShouldBeTrue();
 	}
 	#endregion
+
+	#region Pantalla cerrada: lo que la vista saliente pide después de navegar
+	/// <remarks>
+	/// Reproduce el recorrido del defecto: al navegar a Cátedras, la grilla de la vista saliente
+	/// dispara <c>SelectionChanged</c> con una currícula todavía elegida en este ViewModel, ya
+	/// liberado. La consulta no tiene que salir.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Con_la_pantalla_cerrada_cargar_materias_no_consulta_nada()
+	{
+		var ctx = new Contexto();
+		await ctx.SeleccionarCurriculaAsync();
+		ctx.ServicioMateria.ClearReceivedCalls();
+		ctx.ServicioCurricula.ClearReceivedCalls();
+
+		ctx.ViewModel.Dispose();
+		await ctx.ViewModel.CargarMateriasCommandAsync.ExecuteAsync(null);
+
+		await ctx.ServicioMateria.DidNotReceiveWithAnyArgs().ListarMateriasSegunCurriculaAsync(default!);
+		await ctx.ServicioCurricula.DidNotReceiveWithAnyArgs().ConsultarOcupacionAsync(default!);
+		ctx.Dialogos.Errores.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// La consulta ya estaba en vuelo cuando se navegó, y falla porque su <c>DbContext</c> se liberó.
+	/// Nadie está mirando esta pantalla: mostrar el error sería mostrar un fallo de algo que el
+	/// usuario ya dejó atrás.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Un_error_que_llega_con_la_pantalla_cerrada_no_se_muestra()
+	{
+		var ctx = new Contexto();
+		await ctx.SeleccionarCurriculaAsync();
+		var enVuelo = new TaskCompletionSource<IReadOnlyCollection<MateriaResponse>>();
+		ctx.ServicioMateria.ListarMateriasSegunCurriculaAsync(Arg.Any<ListarMateriasSegunCurriculaRequest>())
+						   .Returns(enVuelo.Task);
+
+		var carga = ctx.ViewModel.CargarMateriasCommandAsync.ExecuteAsync(null);
+		ctx.ViewModel.Dispose();
+		enVuelo.SetException(new ObjectDisposedException("EdusisDBContext"));
+		await carga;
+
+		ctx.Dialogos.Errores.ShouldBeEmpty();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Con_la_pantalla_abierta_el_error_de_carga_se_sigue_mostrando()
+	{
+		var ctx = new Contexto();
+		await ctx.SeleccionarCurriculaAsync();
+		ctx.ServicioMateria.ListarMateriasSegunCurriculaAsync(Arg.Any<ListarMateriasSegunCurriculaRequest>())
+						   .Returns(Task.FromException<IReadOnlyCollection<MateriaResponse>>(new InvalidOperationException("falla")));
+
+		await ctx.ViewModel.CargarMateriasCommandAsync.ExecuteAsync(null);
+
+		ctx.Dialogos.Errores.ShouldHaveSingleItem();
+	}
+	#endregion
 }

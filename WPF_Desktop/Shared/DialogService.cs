@@ -1,5 +1,7 @@
 using System.Linq;
+using System;
 using System.Windows;
+using System.Windows.Threading;
 using WPF_Desktop.Windows;
 
 namespace WPF_Desktop.Shared;
@@ -52,29 +54,78 @@ internal class DialogService : IDialogService
 	/// Un error sí interrumpe. Un aviso que se va solo a los cinco segundos es exactamente lo
 	/// que no hay que hacer con la única pista de por qué algo no se guardó.
 	/// </summary>
+	/// <remarks>
+	/// Si el diálogo no se puede abrir ahora —ver <see cref="Preguntar"/>— se lo posterga y se lo
+	/// muestra apenas el dispatcher lo permita: un error no se pierde ni se convierte en otro.
+	/// </remarks>
 	public void MostrarError(string mensaje, string titulo)
 	{
-		Preguntar(SolicitudDeDialogo.Error(titulo, mensaje));
+		var solicitud = SolicitudDeDialogo.Error(titulo, mensaje);
+
+		if (Preguntar(solicitud) is null)
+		{
+			Application.Current?.Dispatcher.BeginInvoke(new Action(() => Preguntar(solicitud)), DispatcherPriority.Background);
+		}
 	}
 
 	public bool Confirmar(string mensaje, string titulo)
 	{
-		return Preguntar(SolicitudDeDialogo.Revisar(titulo, mensaje, "Confirmar"));
+		return Preguntar(SolicitudDeDialogo.Revisar(titulo, mensaje, "Confirmar")) is true;
 	}
 
+	/// <remarks>
+	/// Una confirmación no se puede postergar: quien pregunta espera la respuesta para seguir. Si el
+	/// diálogo no se puede abrir, la respuesta es "no", que es la única que no ejecuta nada que el
+	/// usuario no aceptó.
+	/// </remarks>
 	public bool ConfirmarAccion(SolicitudDeDialogo solicitud)
 	{
-		return Preguntar(solicitud);
+		return Preguntar(solicitud) is true;
 	}
 
-	private static bool Preguntar(SolicitudDeDialogo solicitud)
+	/// <summary>
+	/// Abre el diálogo modal y devuelve lo que contestó el usuario, o <see langword="null"/> si en
+	/// este momento WPF no permite abrir un diálogo modal.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <c>ShowDialog</c> necesita un bucle de mensajes anidado, y WPF lo prohíbe mientras el
+	/// dispatcher tiene el procesamiento suspendido —durante una pasada de layout, por ejemplo—:
+	/// lanza <see cref="InvalidOperationException"/> ("No se puede realizar esta operación mientras el
+	/// procesamiento del distribuidor está suspendido"). Pasaba cuando un ViewModel capturaba un error
+	/// en un comando disparado por un evento de la vista durante el layout: el diálogo de error
+	/// lanzaba a su vez, esa excepción escapaba del <c>catch</c> del ViewModel y el manejador global
+	/// cerraba la aplicación por un error que ya estaba atendido.
+	/// </para>
+	/// <para>
+	/// La ventana alcanza a mostrarse antes de que falle el bucle modal, así que se la cierra. El
+	/// cierre se posterga también, porque cerrar una ventana durante el layout puede fallar por el
+	/// mismo motivo.
+	/// </para>
+	/// </remarks>
+	private static bool? Preguntar(SolicitudDeDialogo solicitud)
 	{
 		var dialogo = new ConfirmacionWindow(solicitud)
 		{
 			Owner = VentanaActiva()
 		};
 
-		return dialogo.ShowDialog() is true;
+		try
+		{
+			return dialogo.ShowDialog() is true;
+		}
+		catch (InvalidOperationException)
+		{
+			dialogo.Dispatcher.BeginInvoke(new Action(() =>
+			{
+				if (dialogo.IsLoaded)
+				{
+					dialogo.Close();
+				}
+			}), DispatcherPriority.Background);
+
+			return null;
+		}
 	}
 
 	/// <summary>

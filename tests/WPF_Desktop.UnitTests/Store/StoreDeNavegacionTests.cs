@@ -34,7 +34,7 @@ public class StoreDeNavegacionTests
 		public void Dispose() => Liberada = true;
 	}
 
-	/// <summary>Un ViewModel que NO es <see cref="IDisposable"/>, que es el caso de los 27 reales.</summary>
+	/// <summary>Un ViewModel que NO es <see cref="IDisposable"/>, que es el caso de casi todos los reales.</summary>
 	private sealed class PantallaSinDisposeFalsa : ObservableObject
 	{
 	}
@@ -115,9 +115,8 @@ public class StoreDeNavegacionTests
 	}
 
 	/// <remarks>
-	/// Los 27 ViewModels reales no implementan <see cref="IDisposable"/>, así que el camino normal es
-	/// este: el store libera el scope y no toca el ViewModel. La prueba existe para que el día que
-	/// alguno sí lo implemente no sea una sorpresa.
+	/// Casi ningún ViewModel real implementa <see cref="IDisposable"/>, así que el camino normal es
+	/// este: el store libera el scope y no toca el ViewModel.
 	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
@@ -165,6 +164,86 @@ public class StoreDeNavegacionTests
 
 		scope.Liberado.ShouldBeFalse();
 		pantalla.Liberada.ShouldBeFalse();
+	}
+	#endregion
+
+	#region Liberación postergada hasta que la vista saliente desaparece
+	/// <summary>Un planificador que guarda la liberación en vez de ejecutarla, como el dispatcher.</summary>
+	private sealed class PlanificadorFalso
+	{
+		public List<Action> Pendientes { get; } = new();
+
+		public void Planificar(Action liberar) => Pendientes.Add(liberar);
+
+		public void Ejecutar()
+		{
+			foreach (var pendiente in Pendientes)
+			{
+				pendiente();
+			}
+
+			Pendientes.Clear();
+		}
+	}
+
+	/// <remarks>
+	/// Es la mitad estructural del arreglo: la vista saliente sigue disparando eventos contra su
+	/// ViewModel hasta la siguiente pasada de layout, así que su <c>DbContext</c> tiene que vivir
+	/// hasta entonces.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Al_entrar_otra_pantalla_el_scope_saliente_se_libera_cuando_el_planificador_lo_ejecuta()
+	{
+		var planificador = new PlanificadorFalso();
+		var store = new MainWindowNavigationStore { PlanificarLiberacion = planificador.Planificar };
+		var scopeViejo = new ScopeFalso();
+		store.Reemplazar(new PantallaFalsa(), scopeViejo);
+
+		store.Reemplazar(new PantallaFalsa(), new ScopeFalso());
+
+		scopeViejo.Liberado.ShouldBeFalse();
+
+		planificador.Ejecutar();
+
+		scopeViejo.Liberado.ShouldBeTrue();
+	}
+
+	/// <remarks>
+	/// El ViewModel se libera en el acto aunque el scope espere: es lo que le avisa que su pantalla
+	/// terminó, para que descarte lo que la vista vieja le pida en ese intervalo.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_view_model_saliente_se_libera_sin_esperar_al_planificador()
+	{
+		var planificador = new PlanificadorFalso();
+		var store = new MainWindowNavigationStore { PlanificarLiberacion = planificador.Planificar };
+		var pantallaVieja = new PantallaFalsa();
+		store.Reemplazar(pantallaVieja, new ScopeFalso());
+
+		store.Reemplazar(new PantallaFalsa(), new ScopeFalso());
+
+		pantallaVieja.Liberada.ShouldBeTrue();
+	}
+
+	/// <remarks>
+	/// Vaciar el store no es un traspaso: lo usan el cierre del modal, el fin de sesión y
+	/// <c>App.OnExit</c>, y en el apagado un trabajo postergado al dispatcher no llegaría a correr.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void Vaciar_el_store_libera_el_scope_en_el_acto_aunque_haya_planificador()
+	{
+		var planificador = new PlanificadorFalso();
+		var store = new MainWindowNavigationStore { PlanificarLiberacion = planificador.Planificar };
+		var scope = new ScopeFalso();
+		store.Reemplazar(new PantallaFalsa(), scope);
+
+		store.ViewModel = null!;
+
+		scope.Liberado.ShouldBeTrue();
+		planificador.Pendientes.ShouldBeEmpty();
 	}
 	#endregion
 

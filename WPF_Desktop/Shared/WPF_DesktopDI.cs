@@ -53,9 +53,11 @@ internal static class WPF_DesktopDI
 	#region Stores
 	private static IServiceCollection AddStores(this IServiceCollection services)
 	{
-		services.AddSingleton<MainWindowNavigationStore>();
-		services.AddSingleton<StartupWindowNavigationStore>();
-		services.AddSingleton<ModalWindowNavigationStore>();
+		// El scope de la pantalla saliente se libera cuando WPF terminó de retirar su vista, no al
+		// notificar: hasta entonces esa vista todavía dispara eventos contra su ViewModel.
+		services.AddSingleton(_ => new MainWindowNavigationStore { PlanificarLiberacion = LiberacionTrasElTraspaso.Planificar });
+		services.AddSingleton(_ => new StartupWindowNavigationStore { PlanificarLiberacion = LiberacionTrasElTraspaso.Planificar });
+		services.AddSingleton(_ => new ModalWindowNavigationStore { PlanificarLiberacion = LiberacionTrasElTraspaso.Planificar });
 
 		services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 

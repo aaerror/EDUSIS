@@ -24,9 +24,34 @@ using WPF_Desktop.ViewModels.Cursos.Curriculas.Materias.Catedras;
 
 namespace WPF_Desktop.ViewModels.Cursos.Curriculas;
 
-internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicacion
+internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicacion, IDisposable
 {
 	private readonly ISesionActual _sesion;
+
+	/// <summary>
+	/// La pantalla ya fue reemplazada por otra. Lo marca <see cref="Dispose"/>, que llama
+	/// <c>StoreDeNavegacion.Reemplazar</c> al navegar.
+	/// </summary>
+	/// <remarks>
+	/// La vista saliente sigue viva un instante después de navegar: al cambiarle el
+	/// <c>DataContext</c>, la grilla de currículas se vacía, dispara <c>SelectionChanged</c> y su
+	/// <c>EventTrigger</c> ejecuta <c>CargarMateriasCommandAsync</c> sobre ESTE ViewModel, que
+	/// todavía tiene una <c>Curricula</c> elegida —el <c>OneWayToSource</c> escribe el <c>null</c> en el
+	/// ViewModel entrante—. Esa consulta iba contra un <c>DbContext</c> ya liberado. Con la pantalla
+	/// cerrada las cargas no arrancan, y si ya estaban en vuelo su error se descarta: no hay nadie a
+	/// quien mostrárselo.
+	/// </remarks>
+	private bool _pantallaCerrada;
+
+	public void Dispose()
+	{
+		_pantallaCerrada = true;
+
+		if (Materia is not null)
+		{
+			Materia.ErrorsChanged -= OnErroresDeLaMateriaChanged;
+		}
+	}
 
 	#region Services
 	private readonly INavigationService _gestionCursosNavigationService;
@@ -290,6 +315,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 
 	public async Task CargarCurriculasAsync()
 	{
+		if (_pantallaCerrada)
+		{
+			return;
+		}
+
 		Materias.Clear();
 		Curriculas.Clear();
 		try
@@ -306,6 +336,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 		}
 		catch (Exception ex)
 		{
+			if (_pantallaCerrada)
+			{
+				return;
+			}
+
 			// Un fallo de carga es un error, no una advertencia: es la única pista de por qué la
 			// pantalla está vacía, y un aviso al pie de 8 segundos se pierde de vista.
 			_dialogService.MostrarError($"No se pudieron traer los diseños curriculares del curso. { ex.Message }", "Diseño curricular");
@@ -324,6 +359,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	/// </remarks>
 	public async Task CargarOcupacionAsync()
 	{
+		if (_pantallaCerrada)
+		{
+			return;
+		}
+
 		if (Curricula is null)
 		{
 			EspaciosOcupados = 0;
@@ -371,6 +411,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 		}
 		catch (Exception ex)
 		{
+			if (_pantallaCerrada)
+			{
+				return;
+			}
+
 			_dialogService.MostrarError($"No se pudo calcular el cupo de la currícula. { ex.Message }", "Diseño curricular");
 		}
 	}
@@ -382,6 +427,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 	/// </remarks>
 	public async Task CargarMateriasAsync()
 	{
+		if (_pantallaCerrada)
+		{
+			return;
+		}
+
 		Materias.Clear();
 		if (Curricula is not null)
 		{
@@ -399,6 +449,11 @@ internal partial class GestionCurriculasViewModel : ObservableValidator, IUbicac
 			}
 			catch (Exception ex)
 			{
+				if (_pantallaCerrada)
+				{
+					return;
+				}
+
 				_dialogService.MostrarError($"No se pudieron traer las materias de la currícula. { ex.Message }", "Diseño curricular");
 
 			}
