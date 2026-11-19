@@ -45,12 +45,15 @@
 			producción (decisión #8 del plan).
 
 			Nota de nomenclatura, ya registrada como violación #1 del plan: ese proyecto
-			vive bajo Tests/ pero declara <IsTestProject>false</IsTestProject> y sólo
+			vive bajo tests/ pero declara <IsTestProject>false</IsTestProject> y sólo
 			depende de Domain, así que es una biblioteca de construcción de agregados y
 			no código de prueba. No invierte ninguna dependencia de capas.
+
+			La ruta va en minúscula porque así la registra git: en un checkout
+			case-sensitive "Tests\" no existe y el seeder no compila.
 		-->
 		<ProjectReference Include="..\..\Infrastructure\Infrastructure.csproj" />
-		<ProjectReference Include="..\..\Tests\EDUSIS.TestSupport.Domain\EDUSIS.TestSupport.Domain.csproj" />
+		<ProjectReference Include="..\..\tests\EDUSIS.TestSupport.Domain\EDUSIS.TestSupport.Domain.csproj" />
 
 		<!--
 			Core sólo por IServicioSeguridad: es quien sabe hashear contraseñas, y los
