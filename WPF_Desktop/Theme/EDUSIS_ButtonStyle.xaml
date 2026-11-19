@@ -755,13 +755,4 @@
 	</Style>
 	<!--#endregion-->
 
-	<!--#region COMPATIBILIDAD
-		Nombres viejos del tema, usados por las vistas todavía no reescritas.
-	-->
-	<Style x:Key="Primary" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Primario }"/>
-	<Style x:Key="Secondary" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Secundario }"/>
-	<Style x:Key="Tertiary" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Terciario }"/>
-	<Style x:Key="Icon" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Icono }"/>
-	<Style x:Key="MenuButton" TargetType="{ x:Type Button }" BasedOn="{ StaticResource ResourceKey=Btn.Menu }"/>
-	<!--#endregion-->
 </ResourceDictionary>
