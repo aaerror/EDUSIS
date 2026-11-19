@@ -203,10 +203,18 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 	/// </remarks>
 	public IReadOnlyList<Migaja> Ruta { get; }
 
+	/// <summary>
+	/// La cátedra del store, para armar los requests. Sin cátedra elegida no hay a quién pedirle
+	/// nada: el mensaje dice qué falta en lugar de que <c>Core</c> conteste "no encontrada" a un
+	/// <c>Guid.Empty</c>. Los comandos la leen dentro de su <c>try</c>, así que llega al diálogo.
+	/// </summary>
+	private Guid CatedraElegida =>
+		_catedraStore.Catedra ?? throw new InvalidOperationException("No hay una cátedra elegida: vuelva a la lista de cátedras y elija una.");
+
 	#region CargarCommand
 	private bool CanExecuteCargarCommand()
 	{
-		return _catedraStore.Catedra != Guid.Empty;
+		return _catedraStore.Catedra is not null;
 	}
 
 	private async Task ExecuteCargarCommand()
@@ -227,7 +235,7 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 	/// </summary>
 	private async Task CargarHorariosAsync()
 	{
-		var horarios = await _servicioCatedra.ListarHorariosSegunCatedraAsync(new ListarHorariosRequest(CatedraID: _catedraStore.Catedra));
+		var horarios = await _servicioCatedra.ListarHorariosSegunCatedraAsync(new ListarHorariosRequest(CatedraID: CatedraElegida));
 
 		Horarios.Clear();
 		foreach (var horario in horarios)
@@ -277,7 +285,7 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 	{
 		// !HorasCompletas es el gate del dominio adelantado: con la semana llena AgregarHorario
 		// tira HorasCatedraCompletasException, así que la acción se apaga en lugar de fallar.
-		return _catedraStore.Catedra != Guid.Empty
+		return _catedraStore.Catedra is not null
 			   && !HorasCompletas
 			   && !string.IsNullOrWhiteSpace(Turno)
 			   && !string.IsNullOrWhiteSpace(Dia)
@@ -297,7 +305,7 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 				return;
 			}
 
-			await _servicioCatedra.AgregarHorarioAsync(new AgregarHorarioRequest(CatedraID: _catedraStore.Catedra,
+			await _servicioCatedra.AgregarHorarioAsync(new AgregarHorarioRequest(CatedraID: CatedraElegida,
 																				 Turno: Turno,
 																				 DiaSemana: Dia,
 																				 HoraInicio: hora,
@@ -348,7 +356,7 @@ internal partial class GestionHorariosViewModel : ObservableValidator, IUbicacio
 
 			// HoraInicioValor y DuracionMinutos, no las propiedades string de la grilla: el dominio reconstruye
 			// el horario con el TimeOnly de inicio y la duración en minutos.
-			await _servicioCatedra.QuitarHorarioAsync(new QuitarHorarioRequest(CatedraID: _catedraStore.Catedra,
+			await _servicioCatedra.QuitarHorarioAsync(new QuitarHorarioRequest(CatedraID: CatedraElegida,
 																			   Turno: Horario.Turno,
 																			   DiaSemana: Horario.Dia,
 																			   HoraInicio: Horario.HoraInicioValor,

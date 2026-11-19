@@ -313,6 +313,14 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 	}
 	#endregion
 
+	/// <summary>
+	/// La cátedra del store, para armar los requests. Sin cátedra elegida no hay a quién pedirle
+	/// nada: el mensaje dice qué falta en lugar de que <c>Core</c> conteste "no encontrada" a un
+	/// <c>Guid.Empty</c>. Todos los usos están dentro de un <c>try</c>, así que llega al diálogo.
+	/// </summary>
+	private Guid CatedraElegida =>
+		_catedraStore.Catedra ?? throw new InvalidOperationException("No hay una cátedra elegida: vuelva a la lista de cátedras y elija una.");
+
 	public async Task CargarSituacionRevistasAsync()
 	{
 		try
@@ -324,7 +332,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 			DesignacionesVigentes = 0;
 			DesignacionesHistoricas = 0;
 
-			var request = new ListarSituacionesRevistaRequest(CatedraID: _catedraStore.Catedra);
+			var request = new ListarSituacionesRevistaRequest(CatedraID: CatedraElegida);
 			var situaciones = await _servicioCatedra.ListarSituacionesRevistaAsync(request);
 
 			// SIN EL RETORNO TEMPRANO. Una cátedra sin designaciones apagaba la tarjeta entera y lo
@@ -472,7 +480,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 				{
 					try
 					{
-						var request = new RelevarDeFuncionesRequest(CatedraID: _catedraStore.Catedra);
+						var request = new RelevarDeFuncionesRequest(CatedraID: CatedraElegida);
 						await _servicioCatedra.RelevarDeFuncionesAsync(request);
 
 						_dialogService.MostrarInformacion($"{ SituacionRevistaUPDATE.Docente } ya no está en funciones.", "Docente relevado");
@@ -515,7 +523,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 
 					try
 					{
-						var request = new PasarAInterinoRequest(CatedraID: _catedraStore.Catedra,
+						var request = new PasarAInterinoRequest(CatedraID: CatedraElegida,
 																SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID,
 																FechaFin: termino);
 						await _servicioCatedra.PasarAInterinoAsync(request);
@@ -573,7 +581,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 
 					try
 					{
-						var request = new FinalizarDesignacionRequest(CatedraID: _catedraStore.Catedra,
+						var request = new FinalizarDesignacionRequest(CatedraID: CatedraElegida,
 																	  SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID);
 						await _servicioCatedra.FinalizarDesignacionAsync(request);
 
@@ -634,7 +642,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 				{
 					try
 					{
-						var request = new PonerEnFuncionesRequest(CatedraID: _catedraStore.Catedra,
+						var request = new PonerEnFuncionesRequest(CatedraID: CatedraElegida,
 																  SituacionRevistaID: SituacionRevistaUPDATE.SituacionRevistaID);
 						await _servicioCatedra.PonerEnFuncionesAsync(request);
 
@@ -685,7 +693,7 @@ internal partial class GestionSituacionRevistaViewModel : ObservableValidator, I
 					try
 					{
 						// Sólo el suplente reemplaza a alguien: para titular e interino la cadena de suplencias no aplica.
-						var request = new DesignarDocenteRequest(CatedraID: _catedraStore.Catedra,
+						var request = new DesignarDocenteRequest(CatedraID: CatedraElegida,
 																 DocenteID: SituacionRevistaINSERT.DocenteID,
 																 Cargo: SituacionRevistaINSERT.Cargo,
 																 FechaInicio: SituacionRevistaINSERT.FechaInicio,

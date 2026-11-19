@@ -130,8 +130,22 @@ public class GestionHorariosViewModelTests
 	{
 		var contexto = new Contexto(conCatedra: false);
 
-		contexto.CatedraStore.Catedra.ShouldBe(Guid.Empty);
+		contexto.CatedraStore.Catedra.ShouldBeNull();
 		contexto.ViewModel.CargarCommand.CanExecute(null).ShouldBeFalse();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Sin_catedra_en_el_store_la_carga_explica_que_falta_y_no_consulta_a_Core()
+	{
+		// Con Guid.Empty como centinela el request salía igual y Core contestaba "no encontrada", que
+		// no dice qué hacer. Se ejecuta salteando CanExecute, como lo haría un llamador directo.
+		var contexto = new Contexto(conCatedra: false);
+
+		await contexto.ViewModel.CargarCommand.ExecuteAsync(null);
+
+		contexto.Dialogos.Errores.Single().Mensaje.ShouldContain("cátedra elegida");
+		_ = contexto.ServicioCatedra.DidNotReceive().ListarHorariosSegunCatedraAsync(Arg.Any<ListarHorariosRequest>());
 	}
 
 	[Fact]

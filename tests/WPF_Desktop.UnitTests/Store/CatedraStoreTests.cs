@@ -12,7 +12,7 @@ public class CatedraStoreTests
 	{
 		var store = new CatedraStore();
 
-		store.Catedra.ShouldBe(Guid.Empty);
+		store.Catedra.ShouldBeNull();
 	}
 
 	[Fact]
@@ -27,10 +27,15 @@ public class CatedraStoreTests
 		store.Catedra.ShouldBe(catedraID);
 	}
 
+	/// <summary>
+	/// <c>Guid?</c> y no <c>Guid</c>: con <c>Guid</c> el store nacía en <c>Guid.Empty</c>, un
+	/// centinela que el compilador no distingue de una cátedra real. Fija también que guarda un valor
+	/// y no un ViewModel.
+	/// </summary>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void La_propiedad_guarda_un_Guid_y_no_un_ViewModel()
+	public void La_propiedad_guarda_un_Guid_nulable_y_no_un_ViewModel()
 	{
-		typeof(CatedraStore).GetProperty(nameof(CatedraStore.Catedra))!.PropertyType.ShouldBe(typeof(Guid));
+		typeof(CatedraStore).GetProperty(nameof(CatedraStore.Catedra))!.PropertyType.ShouldBe(typeof(Guid?));
 	}
 }

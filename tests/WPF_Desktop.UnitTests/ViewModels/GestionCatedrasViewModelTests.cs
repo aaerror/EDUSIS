@@ -281,7 +281,7 @@ public class GestionCatedrasViewModelTests
 	{
 		var contexto = new Contexto();
 		var catedra = new CatedraViewModel(CrearCatedra(contexto.MateriaID, Guid.NewGuid()));
-		Guid catedraAlNavegar = Guid.Empty;
+		Guid? catedraAlNavegar = null;
 		contexto.NavegarASituacionRevista.AlNavegar = () => catedraAlNavegar = contexto.CatedraStore.Catedra;
 
 		contexto.ViewModel.SeleccionarCatedraCommand.Execute(catedra);
@@ -324,7 +324,7 @@ public class GestionCatedrasViewModelTests
 		// si el store se escribiera despues, la pantalla naceria con Guid.Empty.
 		var contexto = new Contexto();
 		var catedra = new CatedraViewModel(CrearCatedra(contexto.MateriaID, Guid.NewGuid()));
-		Guid catedraAlNavegar = Guid.Empty;
+		Guid? catedraAlNavegar = null;
 		contexto.NavegarAHorarios.AlNavegar = () => catedraAlNavegar = contexto.CatedraStore.Catedra;
 
 		contexto.ViewModel.VerHorariosCommand.Execute(catedra);
@@ -358,7 +358,7 @@ public class GestionCatedrasViewModelTests
 		contexto.NavegarAMaterias.Llamadas.ShouldBe(1);
 		contexto.NavegarASituacionRevista.Llamadas.ShouldBe(0);
 		contexto.NavegarAHorarios.Llamadas.ShouldBe(0);
-		contexto.CatedraStore.Catedra.ShouldBe(Guid.Empty);
+		contexto.CatedraStore.Catedra.ShouldBeNull();
 	}
 	#endregion
 

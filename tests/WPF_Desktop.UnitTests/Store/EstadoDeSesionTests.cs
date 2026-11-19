@@ -139,13 +139,13 @@ public class EstadoDeSesionTests
 
 	[Fact]
 	[Trait("Categoria", "Unidad")]
-	public void Limpiar_devuelve_la_catedra_al_centinela_vacio()
+	public void Limpiar_deja_el_store_sin_catedra()
 	{
 		var store = new CatedraStore { Catedra = Guid.NewGuid() };
 
 		store.Limpiar();
 
-		store.Catedra.ShouldBe(Guid.Empty);
+		store.Catedra.ShouldBeNull();
 	}
 
 	[Fact]
