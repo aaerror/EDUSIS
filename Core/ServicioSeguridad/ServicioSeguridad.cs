@@ -35,8 +35,6 @@ internal class ServicioSeguridad : IServicio, IServicioSeguridad
         _logger.LogInformation("Contraseña hasheada correctamente.");
         passwordHashed.Add("salt", Convert.ToBase64String(salt));
         passwordHashed.Add("hash", Convert.ToBase64String(hash));
-        _logger.LogInformation("SALT: ", passwordHashed.GetValueOrDefault("salt"));
-        _logger.LogInformation("HASH: ", passwordHashed.GetValueOrDefault("hash"));
 
         return passwordHashed;
     }

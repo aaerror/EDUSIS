@@ -200,9 +200,6 @@ internal class ServicioUsuario : IServicio, IServicioUsuario
 			var salt = passwordHashed.GetValueOrDefault("salt");
 			var hash = passwordHashed.GetValueOrDefault("hash");
 
-			_logger.LogInformation($"SALT: {salt}");
-			_logger.LogInformation($"HASH: {hash}");
-
 			var existeUsuario = await _unitOfWork.Usuarios.ExisteUsuarioDelDocenteAsync(request.DocenteID);
 			if (existeUsuario)
 			{
