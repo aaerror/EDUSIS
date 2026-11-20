@@ -124,9 +124,17 @@
 									  IsChecked="{ Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={ RelativeSource TemplatedParent } }"
 									  Style="{ StaticResource ResourceKey=ComboBoxToggleButton }"/>
 
+						<!--
+							ContentTemplateSelector es el que hace funcionar DisplayMemberPath: WPF no llena
+							ItemTemplate sino que instala un selector en ItemTemplateSelector. Sin él, el
+							presentador busca el DataTemplate implícito del tipo del ítem y, para los
+							ViewModels que tienen uno en DataTemplate.xaml, dibuja la vista entera en el
+							recuadro (el combo de Cátedras mostraba la ficha "DIVISIÓN").
+						-->
 						<ContentPresenter x:Name="Seleccion"
 										  Content="{ TemplateBinding SelectionBoxItem }"
 										  ContentTemplate="{ TemplateBinding SelectionBoxItemTemplate }"
+										  ContentTemplateSelector="{ TemplateBinding ItemTemplateSelector }"
 										  ContentStringFormat="{ TemplateBinding SelectionBoxItemStringFormat }"
 										  HorizontalAlignment="Left"
 										  IsHitTestVisible="False"

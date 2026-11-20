@@ -184,7 +184,70 @@ public class TemaTests
 		});
 	}
 
+	/// <summary>
+	/// El recuadro del combo muestra el campo de <c>DisplayMemberPath</c> y no la vista implícita del
+	/// tipo del ítem.
+	/// </summary>
+	/// <remarks>
+	/// Con <c>DisplayMemberPath</c>, WPF no llena <c>ItemTemplate</c>: instala un selector en
+	/// <c>ItemTemplateSelector</c>. Si la plantilla de <c>Cmb.Campo</c> no se lo pasa al
+	/// <c>ContentPresenter</c> de la selección, éste busca el <c>DataTemplate</c> implícito del tipo, y
+	/// para <c>DivisionViewModel</c> hay uno que dibuja la ficha entera: el combo de Cátedras mostraba
+	/// el encabezado "DIVISIÓN" en lugar de la letra elegida. La lista desplegable se veía bien.
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public void El_combo_muestra_el_campo_elegido_y_no_la_vista_implicita_del_item()
+	{
+		EjecutarEnSTA(() =>
+		{
+			var recursos = ArmarAplicacion().Resources;
+
+			var division = new global::WPF_Desktop.ViewModels.Cursos.Divisiones.DivisionViewModel(
+				new global::Core.ServicioDivisiones.DTOs.Responses.DivisionResponse(Guid.NewGuid(), "B", null, null, 0));
+
+			var combo = new ComboBox
+			{
+				Style = (Style) recursos["Cmb.Campo"],
+				DisplayMemberPath = "Descripcion",
+				ItemsSource = new[] { division }
+			};
+
+			combo.SelectedItem = division;
+			combo.Measure(new Size(300, 34));
+			combo.Arrange(new Rect(0, 0, 300, 34));
+			combo.UpdateLayout();
+
+			var seleccion = combo.Template.FindName("Seleccion", combo) as ContentPresenter;
+			seleccion.ShouldNotBeNull("la plantilla Cmb.Campo tiene que traer el presentador de la selección");
+
+			var dibujado = Descendientes(seleccion!).ToList();
+
+			dibujado.OfType<UserControl>()
+					.Select(x => x.GetType().Name)
+					.ShouldBeEmpty("el recuadro dibujó una vista entera en lugar del campo");
+			dibujado.OfType<TextBlock>()
+					.Select(x => x.Text)
+					.ShouldContain("B");
+		});
+	}
+
 	#region Infraestructura
+	private static IEnumerable<DependencyObject> Descendientes(DependencyObject raiz)
+	{
+		for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(raiz); i++)
+		{
+			var hijo = System.Windows.Media.VisualTreeHelper.GetChild(raiz, i);
+
+			yield return hijo;
+
+			foreach (var nieto in Descendientes(hijo))
+			{
+				yield return nieto;
+			}
+		}
+	}
+
 	/// <summary>
 	/// WPF admite UNA <see cref="Application"/> por dominio, y estas pruebas comparten proceso.
 	/// </summary>
