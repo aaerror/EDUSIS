@@ -1,8 +1,12 @@
 using Core.ServicioCursos.Exceptions;
 using Core.ServicioDivisiones;
 using Core.ServicioDivisiones.DTOs.Requests;
+using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioDivisiones.Exceptions;
 using Core.UnitTests.Infraestructura;
+using Domain.Asistencias;
+using Domain.Catedras.SituacionesRevista;
+using Domain.Cursantes;
 using Domain.Cursantes.Calificaciones;
 using Domain.Cursos;
 using Domain.Divisiones;
@@ -486,6 +490,255 @@ public class ServicioDivisionTests
 	{
 		await Should.ThrowAsync<DivisionNoEncontradaException>(() =>
 			_servicio.QuitarPreceptorAsync(new EliminarPreceptorRequest(Guid.NewGuid(), Guid.NewGuid())));
+	}
+	#endregion
+
+	#region ConsultarResumenDivisionAsync
+	// Mitad del ciclo 2026: hay días anteriores dentro del año para sembrar planillas, y el ciclo
+	// pedido es el año en curso. El reloj se fija dentro de cada prueba (ver Reloj).
+	private static readonly DateTime Hoy = new(2026, 6, 15);
+	private static readonly DateTime InicioDeClases = new(2026, 3, 1);
+	private const string Ciclo = "2026";
+
+	private Task<ResumenDivisionResponse> ConsultarResumen(Guid divisionID, string ciclo = Ciclo) =>
+		_servicio.ConsultarResumenDivisionAsync(new ConsultarResumenDivisionRequest(divisionID, ciclo));
+
+	private Cursante SembrarCursante(Guid divisionID, string ciclo = Ciclo, bool recursante = false, DateTime? baja = null, Guid? alumnoID = null)
+	{
+		var builder = new CursanteBuilder()
+			.ConDivision(divisionID)
+			.ConAlumno(alumnoID ?? Guid.NewGuid())
+			.ConCicloLectivo(new CicloLectivoBuilder().ConPeriodo(ciclo).Build())
+			.ConFechaInicio(InicioDeClases)
+			.ComoRecursante(recursante);
+
+		if (baja.HasValue)
+		{
+			builder.DadoDeBajaEl(baja.Value);
+		}
+
+		var cursante = builder.Build();
+		_host.UnidadDeTrabajo.CursantesFake.Sembrar(cursante);
+		return cursante;
+	}
+
+	/// <summary>
+	/// Siembra la planilla con todos presentes. Las marcas van en <paramref name="marcar"/> y se
+	/// aplican antes de cerrarla, porque una planilla cerrada ya no admite cambios.
+	/// </summary>
+	private void SembrarPlanilla(Guid divisionID, DateTime fecha, bool cerrada, Cursante[] cursantes, Action<PlanillaAsistencia>? marcar = null)
+	{
+		var planilla = new PlanillaAsistenciaBuilder()
+			.ConDivision(divisionID)
+			.ConFecha(fecha)
+			.ConCursantes(cursantes.Select(x => x.Id).ToArray())
+			.Build();
+
+		marcar?.Invoke(planilla);
+
+		if (cerrada)
+		{
+			planilla.Cerrar();
+		}
+
+		_host.UnidadDeTrabajo.PlanillasAsistenciaFake.Sembrar(planilla);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_informa_la_matricula_del_ciclo_con_recursantes_y_bajas()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var division = SembrarDivision(SembrarCurso().Id);
+		SembrarCursante(division.Id);
+		SembrarCursante(division.Id, recursante: true);
+		SembrarCursante(division.Id, baja: new DateTime(2026, 5, 1));
+		SembrarCursante(division.Id, ciclo: "2025");
+
+		var resumen = await ConsultarResumen(division.Id);
+
+		resumen.Inscriptos.ShouldBe(2);
+		resumen.Recursantes.ShouldBe(1);
+		resumen.Bajas.ShouldBe(1);
+		resumen.Cupo.ShouldBe(Division.MAX_ALUMNOS);
+	}
+
+	/// <remarks>
+	/// Criterio A: un alumno con 8 y 6 (promedio 7) y otro con 4 dan 5,5, no 6. El alumno dado de baja
+	/// tiene un 10 que no entra: el resumen habla de la matrícula vigente.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_promedia_a_los_alumnos_y_cuenta_los_que_tienen_materias_desaprobadas()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var division = SembrarDivision(SembrarCurso().Id);
+		var (matematica, lengua) = (Guid.NewGuid(), Guid.NewGuid());
+
+		var bueno = SembrarCursante(division.Id);
+		bueno.RegistrarCalificacion(matematica, Hoy, Periodo.Final, false, 8, null);
+		bueno.RegistrarCalificacion(lengua, Hoy, Periodo.Final, false, 6, null);
+
+		var flojo = SembrarCursante(division.Id);
+		flojo.RegistrarCalificacion(matematica, Hoy, Periodo.Final, false, 4, null);
+		flojo.RegistrarInasistenciaAExamen(lengua, Hoy, Periodo.PrimerCuatrimestre, false, null);
+
+		var dadoDeBaja = SembrarCursante(division.Id, baja: new DateTime(2026, 5, 1));
+		dadoDeBaja.RegistrarCalificacion(matematica, new DateTime(2026, 4, 1), Periodo.PrimerCuatrimestre, false, 10, null);
+
+		var resumen = await ConsultarResumen(division.Id);
+
+		resumen.Promedio.ShouldBe(5.5m);
+		resumen.AlumnosConMateriasDesaprobadas.ShouldBe(1);
+		resumen.AusenciasAExamen.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_informa_la_asistencia_del_ciclo_y_los_alumnos_con_mas_faltas()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var division = SembrarDivision(SembrarCurso().Id);
+		var alumno = new AlumnoBuilder().Build();
+		_host.UnidadDeTrabajo.AlumnosFake.Sembrar(alumno);
+		var faltador = SembrarCursante(division.Id, alumnoID: alumno.Id);
+		var presente = SembrarCursante(division.Id);
+
+		var ambos = new[] { faltador, presente };
+
+		// Tres planillas del ciclo: 6 marcas, una falta (83,3 %) y una tardanza, que cuenta como
+		// asistida. La de 2025 cae fuera del período y no entra a ninguna cifra.
+		SembrarPlanilla(division.Id, new DateTime(2026, 6, 10), cerrada: true, ambos, p => p.MarcarAusencia(faltador.Id));
+		SembrarPlanilla(division.Id, new DateTime(2026, 6, 11), cerrada: false, ambos, p => p.MarcarTardanza(faltador.Id, TimeSpan.FromMinutes(10)));
+		SembrarPlanilla(division.Id, Hoy, cerrada: false, ambos);
+		SembrarPlanilla(division.Id, new DateTime(2025, 11, 1), cerrada: false, ambos, p => p.MarcarAusencia(faltador.Id));
+
+		var resumen = await ConsultarResumen(division.Id);
+
+		resumen.Planillas.ShouldBe(3);
+		resumen.PlanillasSinCerrar.ShouldBe(1);
+		resumen.PlanillaDeHoy.ShouldBe(EstadoPlanillaDelDia.Abierta);
+		resumen.Faltas.ShouldBe(1);
+		resumen.Tardanzas.ShouldBe(1);
+		resumen.PorcentajeAsistencia.ShouldBe(83.3m);
+
+		var conMasFaltas = resumen.AlumnosConMasFaltas.ShouldHaveSingleItem();
+		conMasFaltas.AlumnoID.ShouldBe(alumno.Id);
+		conMasFaltas.NombreCompleto.ShouldBe(alumno.DatosPersonales.NombreCompleto());
+		conMasFaltas.Faltas.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_sin_planillas_no_informa_porcentaje_de_asistencia()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var division = SembrarDivision(SembrarCurso().Id);
+
+		var resumen = await ConsultarResumen(division.Id);
+
+		resumen.PorcentajeAsistencia.ShouldBeNull();
+		resumen.PlanillaDeHoy.ShouldBe(EstadoPlanillaDelDia.SinAbrir);
+		resumen.Promedio.ShouldBeNull();
+	}
+
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_informa_catedras_sin_docente_y_materias_de_la_curricula_sin_catedra()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var curso = SembrarCurso();
+		var division = SembrarDivision(curso.Id);
+
+		var curricula = new CurriculaBuilder().ConCurso(curso.Id).ConFechaInicio(new DateTime(2020, 1, 1)).Build();
+		_host.UnidadDeTrabajo.CurriculasFake.Sembrar(curricula);
+		var matematica = new MateriaBuilder().ConCurricula(curricula.Id).ConDescripcion("Matemática").Build();
+		var lengua = new MateriaBuilder().ConCurricula(curricula.Id).ConDescripcion("Lengua").Build();
+		var historia = new MateriaBuilder().ConCurricula(curricula.Id).ConDescripcion("Historia").Build();
+		_host.UnidadDeTrabajo.MateriasFake.Sembrar(matematica);
+		_host.UnidadDeTrabajo.MateriasFake.Sembrar(lengua);
+		_host.UnidadDeTrabajo.MateriasFake.Sembrar(historia);
+
+		var conDocente = new CatedraBuilder().ConMateria(matematica.Id).ConDivision(division.Id).ConCargaHoraria(4).Build();
+		conDocente.PonerEnFunciones(conDocente.Designar(Guid.NewGuid(), Cargo.Titular, InicioDeClases, null));
+		var sinDocente = new CatedraBuilder().ConMateria(lengua.Id).ConDivision(division.Id).ConCargaHoraria(3).Build();
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(conDocente);
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(sinDocente);
+
+		var resumen = await ConsultarResumen(division.Id);
+
+		resumen.CatedrasSinDocente.ShouldBe(1);
+		resumen.CatedrasConSuplente.ShouldBe(0);
+		resumen.HorasSinAsignar.ShouldBe(7);
+		resumen.MateriasSinCatedra.ShouldBe(new[] { "Historia" });
+	}
+
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_cuenta_la_catedra_atendida_por_un_suplente()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var division = SembrarDivision(SembrarCurso().Id);
+
+		var catedra = new CatedraBuilder().ConDivision(division.Id).Build();
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, InicioDeClases, null);
+		catedra.PonerEnFunciones(catedra.Designar(Guid.NewGuid(), Cargo.Suplente, new DateTime(2026, 6, 1), new DateTime(2026, 7, 31), reemplazaA: titular));
+		_host.UnidadDeTrabajo.CatedrasFake.Sembrar(catedra);
+
+		var resumen = await ConsultarResumen(division.Id);
+
+		resumen.CatedrasSinDocente.ShouldBe(0);
+		resumen.CatedrasConSuplente.ShouldBe(1);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_avisa_que_el_preceptor_esta_de_licencia()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var division = SembrarDivision(SembrarCurso().Id);
+		var preceptor = new DocenteBuilder().Build();
+		_host.UnidadDeTrabajo.DocentesFake.Sembrar(preceptor);
+		division.AsignarPreceptor(preceptor.Id);
+		_host.UnidadDeTrabajo.LicenciasFake.Sembrar(new LicenciaBuilder().ConDocente(preceptor.Id).ConFechaInicio(new DateTime(2026, 6, 1)).Aprobada().Build());
+
+		var resumen = await ConsultarResumen(division.Id);
+
+		resumen.PreceptorDeLicencia.ShouldBe(true);
+	}
+
+	/// <remarks>
+	/// Lo que describe el presente no tiene sentido para un año cerrado: la planilla "de hoy" de 2025
+	/// no existe, y cátedras y licencias no tienen ciclo. Matrícula y asistencia sí se informan.
+	/// </remarks>
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_de_un_ciclo_pasado_no_informa_el_estado_de_hoy()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var division = SembrarDivision(SembrarCurso().Id);
+		var cursante = SembrarCursante(division.Id, ciclo: "2025");
+		SembrarPlanilla(division.Id, new DateTime(2025, 11, 1), cerrada: false, new[] { cursante });
+
+		var resumen = await ConsultarResumen(division.Id, "2025");
+
+		resumen.EsCicloEnCurso.ShouldBeFalse();
+		resumen.Inscriptos.ShouldBe(1);
+		resumen.Planillas.ShouldBe(1);
+		resumen.PlanillasSinCerrar.ShouldBe(1);
+		resumen.PlanillaDeHoy.ShouldBeNull();
+		resumen.PreceptorDeLicencia.ShouldBeNull();
+		resumen.CatedrasSinDocente.ShouldBeNull();
+		resumen.MateriasSinCatedra.ShouldBeNull();
+	}
+
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_es_una_lectura_y_no_guarda()
+	{
+		using var _ = RelojFijo.En(Hoy);
+		var division = SembrarDivision(SembrarCurso().Id);
+
+		await ConsultarResumen(division.Id);
+
+		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
+	}
+
+	[Fact]
+	public async Task ConsultarResumenDivisionAsync_con_una_division_inexistente_lanza_DivisionNoEncontrada()
+	{
+		await Should.ThrowAsync<DivisionNoEncontradaException>(() => ConsultarResumen(Guid.NewGuid()));
 	}
 	#endregion
 }

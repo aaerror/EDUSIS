@@ -191,6 +191,72 @@ public class GestionDivisionesViewModelTests
 	// lleva las inscripciones de todos los ciclos, así que un período no acotaba nada— y con él se
 	// fue lo que afirmaban. El ciclo del store sigue cubierto por las pruebas de
 	// ListarDivisionesAsync, que sí lo usa.
+	#region CargarResumenCommandAsync
+	private static ResumenDivisionResponse CrearResumen(int inscriptos = 0) =>
+		new("1999", false, inscriptos, 35, 0, 0, null, null, null, null, null, null,
+			0, 0, null, 0, 0, Array.Empty<AlumnoConFaltasResponse>(), null, 0, 0);
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Elegir_una_division_pide_su_resumen_con_el_ciclo_del_store()
+	{
+		var contexto = new Contexto();
+		var division = CrearDivision("A");
+		contexto.ServicioDivision.ConsultarResumenDivisionAsync(Arg.Any<ConsultarResumenDivisionRequest>())
+						.Returns(Task.FromResult(CrearResumen(inscriptos: 12)));
+
+		contexto.ViewModel.Division = new DivisionViewModel(division);
+		await contexto.ViewModel.CargarResumenCommandAsync.ExecutionTask!;
+
+		_ = contexto.ServicioDivision.Received(1).ConsultarResumenDivisionAsync(new ConsultarResumenDivisionRequest(division.DivisionID, CicloDelStore));
+		contexto.ViewModel.Resumen.ShouldNotBeNull().Matricula.ShouldBe("12 / 35");
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task Si_falla_el_resumen_se_avisa_en_la_ficha_y_no_con_un_dialogo()
+	{
+		var contexto = new Contexto();
+		contexto.ServicioDivision.ConsultarResumenDivisionAsync(Arg.Any<ConsultarResumenDivisionRequest>())
+						.Returns(Task.FromException<ResumenDivisionResponse>(new InvalidOperationException("Base caída.")));
+
+		contexto.ViewModel.Division = new DivisionViewModel(CrearDivision("A"));
+		await contexto.ViewModel.CargarResumenCommandAsync.ExecutionTask!;
+
+		contexto.ViewModel.Resumen.ShouldBeNull();
+		contexto.ViewModel.AvisoResumen.ShouldNotBeNull().ShouldContain("Base caída.");
+		contexto.Dialogos.Solicitudes.ShouldBeEmpty();
+	}
+
+	/// <remarks>
+	/// Recorrer la grilla con las flechas lanza una consulta por fila: la de "A" responde después de
+	/// que el usuario ya pasó a "B", y no tiene que pisar la ficha de "B".
+	/// </remarks>
+	[Fact]
+	[Trait("Categoria", "Unidad")]
+	public async Task La_respuesta_de_una_division_que_ya_no_esta_elegida_se_descarta()
+	{
+		var contexto = new Contexto();
+		var divisionA = CrearDivision("A");
+		var divisionB = CrearDivision("B");
+		var demorada = new TaskCompletionSource<ResumenDivisionResponse>();
+		contexto.ServicioDivision.ConsultarResumenDivisionAsync(Arg.Is<ConsultarResumenDivisionRequest>(x => x.DivisionID == divisionA.DivisionID))
+						.Returns(demorada.Task);
+		contexto.ServicioDivision.ConsultarResumenDivisionAsync(Arg.Is<ConsultarResumenDivisionRequest>(x => x.DivisionID == divisionB.DivisionID))
+						.Returns(Task.FromResult(CrearResumen(inscriptos: 20)));
+
+		contexto.ViewModel.Division = new DivisionViewModel(divisionA);
+		var consultaDeA = contexto.ViewModel.CargarResumenCommandAsync.ExecutionTask!;
+		contexto.ViewModel.Division = new DivisionViewModel(divisionB);
+		await contexto.ViewModel.CargarResumenCommandAsync.ExecutionTask!;
+
+		demorada.SetResult(CrearResumen(inscriptos: 5));
+		await consultaDeA;
+
+		contexto.ViewModel.Resumen.ShouldNotBeNull().Matricula.ShouldBe("20 / 35");
+	}
+	#endregion
+
 	[Fact]
 	[Trait("Categoria", "Unidad")]
 	public async Task Eliminar_una_division_llama_a_EliminarDivisionAsync_con_el_curso_y_la_division()

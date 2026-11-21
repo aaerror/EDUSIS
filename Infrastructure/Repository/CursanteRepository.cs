@@ -38,6 +38,14 @@ internal class CursanteRepository : Repository<Cursante>, ICursanteRepository
 			.OrderBy(x => x.FechaInicio)
 			.ToListAsync();
 
+	// Sin filtro por FechaFin, a diferencia de BuscarPorDivisionAsync: las cerradas son las bajas y
+	// los traslados del ciclo, que el resumen de la división informa.
+	public async Task<IReadOnlyCollection<Cursante>> BuscarInscripcionesDeDivisionDelCicloAsync(Guid divisionID, CicloLectivo cicloLectivo) =>
+		await Consulta()
+			.Where(x => x.DivisionID == divisionID && x.CicloLectivo.Periodo == cicloLectivo.Periodo)
+			.OrderBy(x => x.FechaInicio)
+			.ToListAsync();
+
 	public async Task<Cursante?> BuscarInscripcionActivaAsync(Guid alumnoID, CicloLectivo cicloLectivo) =>
 		await Consulta()
 			.FirstOrDefaultAsync(x => x.AlumnoID == alumnoID && x.CicloLectivo.Periodo == cicloLectivo.Periodo && x.FechaFin == null);

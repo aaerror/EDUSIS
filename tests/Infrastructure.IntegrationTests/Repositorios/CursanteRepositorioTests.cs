@@ -237,6 +237,41 @@ public sealed class CursanteRepositorioTests : BaseIntegracion
 		cursantesDiv2.Count.ShouldBe(1);
 	}
 
+	/// <remarks>
+	/// Las cuatro inscripciones separan los tres filtros: la activa y la cerrada del ciclo entran; la
+	/// del otro ciclo y la de otra división, no. Con las calificaciones cargadas, porque el resumen
+	/// de la división promedia sobre ellas.
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task BuscarInscripcionesDeDivisionDelCicloAsync_devuelve_activas_y_cerradas_del_ciclo_con_calificaciones()
+	{
+		var cursoID = await SembrarCursoAsync();
+		var divisionID = await SembrarDivisionAsync(cursoID, "A");
+		var otraDivisionID = await SembrarDivisionAsync(cursoID, "B");
+		var materiaID = await SembrarMateriaAsync(await SembrarCurriculaAsync(cursoID));
+		var ciclo = CicloLectivo.Crear("2024");
+		var otroCiclo = CicloLectivo.Crear("2023");
+
+		var activa = new CursanteBuilder().ConAlumno(await SembrarAlumnoAsync()).ConDivision(divisionID).ConCicloLectivo(ciclo).Build();
+		activa.RegistrarCalificacion(materiaID, DateTime.Today, Periodo.Final, false, 8, null);
+		var cerrada = new CursanteBuilder().ConAlumno(await SembrarAlumnoAsync()).ConDivision(divisionID).ConCicloLectivo(ciclo).DadoDeBajaEl(DateTime.Today).Build();
+		var deOtroCiclo = new CursanteBuilder().ConAlumno(await SembrarAlumnoAsync()).ConDivision(divisionID).ConCicloLectivo(otroCiclo).Build();
+		var deOtraDivision = new CursanteBuilder().ConAlumno(await SembrarAlumnoAsync()).ConDivision(otraDivisionID).ConCicloLectivo(ciclo).Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.AddRange(activa, cerrada, deOtroCiclo, deOtraDivision);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var inscripciones = await uow.Cursantes.BuscarInscripcionesDeDivisionDelCicloAsync(divisionID, ciclo);
+
+		inscripciones.Select(x => x.Id).ShouldBe(new[] { activa.Id, cerrada.Id }, ignoreOrder: true);
+		inscripciones.Single(x => x.Id == activa.Id).Calificaciones.ShouldHaveSingleItem();
+	}
+
 	[RequiereSqlServerFact]
 	public async Task BuscarInscriptosEnFechaAsync_devuelve_ids_de_cursantes_dentro_del_rango_de_fechas()
 	{

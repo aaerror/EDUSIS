@@ -508,4 +508,38 @@ public class RendimientoAcademicoTests
 		RendimientoAcademico.PromediarNotasDeCierre(new[] { Ninguna }).ShouldBeNull();
 	}
 	#endregion
+
+	#region PromediarAlumnos
+	/// <remarks>
+	/// Distingue el criterio: un alumno con 8 y 6 (promedio 7) y otro con un solo 4. Promediando los
+	/// alumnos da 5,5; promediando las tres notas de cierre juntas daría 6. Cada alumno pesa una vez.
+	/// </remarks>
+	[Fact]
+	public void El_promedio_de_un_grupo_es_la_media_de_los_promedios_de_sus_alumnos()
+	{
+		var primero = new[]
+		{
+			Libro().Nota(Periodo.Final, 8).Calificaciones,
+			Libro().Nota(Periodo.Final, 6).Calificaciones,
+		};
+		var segundo = new[] { Libro().Nota(Periodo.Final, 4).Calificaciones };
+
+		RendimientoAcademico.PromediarAlumnos(new[] { primero, segundo }).ShouldBe(5.5m);
+	}
+
+	[Fact]
+	public void Un_alumno_sin_promedio_no_entra_al_promedio_del_grupo()
+	{
+		var conNota = new[] { Libro().Nota(Periodo.Final, 9).Calificaciones };
+		var sinRendir = new[] { Libro().Ausente(Periodo.PrimerCuatrimestre).Calificaciones };
+
+		RendimientoAcademico.PromediarAlumnos(new[] { conNota, sinRendir }).ShouldBe(9m);
+	}
+
+	[Fact]
+	public void Sin_alumnos_con_promedio_el_promedio_del_grupo_es_nulo()
+	{
+		RendimientoAcademico.PromediarAlumnos(Array.Empty<IReadOnlyCollection<Calificacion>[]>()).ShouldBeNull();
+	}
+	#endregion
 }

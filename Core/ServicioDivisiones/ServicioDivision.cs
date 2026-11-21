@@ -4,7 +4,9 @@ using Core.ServicioDivisiones.DTOs.Responses;
 using Core.ServicioDivisiones.Exceptions;
 using Core.Shared;
 using Core.Shared.Seguridad;
+using Domain.Asistencias;
 using Domain.Cursantes;
+using Domain.Cursantes.Calificaciones;
 using Domain.Divisiones;
 using Domain.Shared;
 using Domain.Usuarios;
@@ -272,6 +274,196 @@ internal class ServicioDivision : IServicio, IServicioDivision
 			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
 			throw;
 		}
+	}
+	#endregion
+
+	#region Resumen del ciclo
+	/// <summary>
+	/// Cómo está la división en el ciclo lectivo pedido: matrícula, estado de hoy, asistencia y
+	/// rendimiento. Lo consume la ficha de la división elegida.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Es una consulta y no lleva guarda: lo que devuelve son cifras de una división, sin datos
+	/// personales más allá de los nombres de los alumnos con más faltas, que la planilla de
+	/// asistencia ya le muestra a cualquiera que la abre.
+	/// </para>
+	/// <para>
+	/// El ciclo no tiene fechas propias —<see cref="CicloLectivo"/> es sólo el año—, así que el
+	/// período de la asistencia es el año calendario: del 1 de enero hasta hoy si es el año en
+	/// curso, o hasta el 31 de diciembre si ya pasó. Lo que describe el presente y no un ciclo
+	/// (planilla de hoy, licencia del preceptor, cátedras) se informa sólo en el año en curso: ver
+	/// <see cref="ResumenDivisionResponse"/>.
+	/// </para>
+	/// </remarks>
+	public async Task<ResumenDivisionResponse> ConsultarResumenDivisionAsync(ConsultarResumenDivisionRequest request)
+	{
+		try
+		{
+			var division = await _unitOfWork.Divisiones.BuscarPorIDAsync(request.DivisionID);
+			if (division is null)
+			{
+				throw new DivisionNoEncontradaException();
+			}
+
+			var ciclo = CicloLectivo.Crear(request.CicloLectivo);
+			var enCurso = ciclo.AñoEnCurso();
+
+			var inscripciones = await _unitOfWork.Cursantes.BuscarInscripcionesDeDivisionDelCicloAsync(division.Id, ciclo);
+			var activas = inscripciones.Where(x => x.EstaActiva()).ToList();
+
+			var año = int.Parse(ciclo.Periodo);
+			var desde = new DateTime(año, 1, 1);
+			var hasta = enCurso ? Reloj.Hoy : new DateTime(año, 12, 31);
+			var planillas = await _unitOfWork.PlanillasAsistencia.BuscarPorDivisionYRangoAsync(division.Id, desde, hasta);
+			var registros = planillas.SelectMany(x => x.Registros).ToList();
+			var ausencias = registros.Count(x => x.Tipo.Equals(TipoAsistencia.Ausencia));
+			var inasistencias = registros.Count(x => x.Tipo.Equals(TipoAsistencia.Inasistencia));
+
+			// Agrupado una sola vez por alumno y por materia: el promedio y las materias desaprobadas
+			// tienen que mirar los mismos grupos, como en el resumen académico del alumno.
+			var materiasPorAlumno = activas
+				.Select(x => x.Calificaciones.GroupBy(c => c.MateriaID).ToList())
+				.ToList();
+
+			var hoy = enCurso ? await DescribirEstadoDeHoyAsync(division, planillas) : null;
+
+			return new ResumenDivisionResponse(
+				CicloLectivo: ciclo.Periodo,
+				EsCicloEnCurso: enCurso,
+				Inscriptos: activas.Count,
+				Cupo: Division.MAX_ALUMNOS,
+				Recursantes: activas.Count(x => x.EsRecursante),
+				Bajas: inscripciones.Count - activas.Count,
+				PlanillaDeHoy: hoy?.Planilla,
+				PreceptorDeLicencia: hoy?.PreceptorDeLicencia,
+				CatedrasSinDocente: hoy?.CatedrasSinDocente,
+				CatedrasConSuplente: hoy?.CatedrasConSuplente,
+				HorasSinAsignar: hoy?.HorasSinAsignar,
+				MateriasSinCatedra: hoy?.MateriasSinCatedra,
+				Planillas: planillas.Count,
+				// "Sin cerrar" son las de días anteriores: la de hoy abierta es la jornada en curso, y
+				// ya la informa PlanillaDeHoy.
+				PlanillasSinCerrar: planillas.Count(x => !x.Cerrada && x.Fecha.Date < Reloj.Hoy),
+				PorcentajeAsistencia: registros.Count is 0
+					? null
+					: PorcentajeDeAsistencia.Calcular(asistidas: registros.Count - ausencias - inasistencias, sobre: registros.Count),
+				Faltas: ausencias + inasistencias,
+				Tardanzas: registros.Count(x => x.Tipo.Equals(TipoAsistencia.Tardanza)),
+				AlumnosConMasFaltas: await DescribirAlumnosConMasFaltasAsync(activas, registros),
+				Promedio: RendimientoAcademico.PromediarAlumnos(materiasPorAlumno),
+				// Mismo criterio que MateriasDesaprobadas en el perfil del alumno: una materia con
+				// calificaciones y sin cierre aprobado. A mitad de año eso incluye a quien va
+				// desaprobando el primer cuatrimestre, que es justamente a quien hay que mirar.
+				AlumnosConMateriasDesaprobadas: materiasPorAlumno.Count(materias => materias.Any(m => !RendimientoAcademico.EstaAprobada(m))),
+				AusenciasAExamen: RendimientoAcademico.AusenciasAExamen(activas.SelectMany(x => x.Calificaciones)).Count());
+		}
+		catch (Exception ex)
+		{
+			_logger.LogDebug($"\nExcepción generada: { ex.Message }\n");
+			throw;
+		}
+	}
+
+	private sealed record EstadoDeHoy(
+		EstadoPlanillaDelDia Planilla,
+		bool PreceptorDeLicencia,
+		int CatedrasSinDocente,
+		int CatedrasConSuplente,
+		int HorasSinAsignar,
+		IReadOnlyCollection<string> MateriasSinCatedra);
+
+	private async Task<EstadoDeHoy> DescribirEstadoDeHoyAsync(Division division, IReadOnlyCollection<PlanillaAsistencia> planillas)
+	{
+		var deHoy = planillas.FirstOrDefault(x => x.Fecha.Date == Reloj.Hoy);
+		var planilla = deHoy is null
+			? EstadoPlanillaDelDia.SinAbrir
+			: deHoy.Cerrada ? EstadoPlanillaDelDia.Cerrada : EstadoPlanillaDelDia.Abierta;
+
+		var preceptorDeLicencia = false;
+		if (division.Preceptor is not null)
+		{
+			var licencias = await _unitOfWork.Licencias.BuscarLicenciasDeDocenteAsync(division.Preceptor.Value);
+			preceptorDeLicencia = licencias.Any(x => x.EstaActiva());
+		}
+
+		var catedras = await _unitOfWork.Catedras.CatedrasSegunDivisionAsync(division.Id);
+
+		// Con suplente: quien está en funciones reemplaza a otro. Se lee de la designación en
+		// funciones y no de "hay alguna suplencia vigente", porque la cátedra puede tener al
+		// suplente designado y al titular ya repuesto tras la licencia.
+		var conSuplente = catedras.Count(catedra =>
+			catedra.SituacionEnFuncionesID is Guid enFunciones
+			&& catedra.SituacionesRevista.Any(x => x.Id.Equals(enFunciones) && x.ReemplazaA is not null));
+
+		// Las materias salen de la currícula vigente del curso. Sin currícula vigente no hay plan del
+		// que faltar materias, y la lista queda vacía en lugar de inventar una.
+		var curriculas = await _unitOfWork.Curriculas.CurriculasSegunCursoAsync(division.CursoID);
+		var vigente = curriculas.FirstOrDefault(x => x.EstaVigente());
+		var materiasSinCatedra = new List<string>();
+		if (vigente is not null)
+		{
+			var materias = await _unitOfWork.Materias.BuscarMateriasSegunCurriculaAsync(vigente.Id);
+			materiasSinCatedra = materias
+				.Where(materia => !catedras.Any(catedra => catedra.MateriaID.Equals(materia.Id)))
+				.Select(materia => materia.Descripcion)
+				.OrderBy(x => x)
+				.ToList();
+		}
+
+		return new EstadoDeHoy(
+			Planilla: planilla,
+			PreceptorDeLicencia: preceptorDeLicencia,
+			CatedrasSinDocente: catedras.Count(x => x.SituacionEnFuncionesID is null),
+			CatedrasConSuplente: conSuplente,
+			HorasSinAsignar: catedras.Sum(x => x.HorasSinAsignar),
+			MateriasSinCatedra: materiasSinCatedra);
+	}
+
+	/// <summary>
+	/// Los tres alumnos de la matrícula vigente con más faltas en el período, sólo si faltaron.
+	/// </summary>
+	/// <remarks>
+	/// Mismo orden que <c>ServicioAsistencia.ConsultarResumenAsync</c>: más faltas primero y, a igual
+	/// cantidad, el que menos jornadas tuvo, porque las mismas faltas sobre menos días pesan más. Los
+	/// dados de baja quedan afuera: el resumen habla de quién está hoy en la división.
+	/// </remarks>
+	private async Task<IReadOnlyCollection<AlumnoConFaltasResponse>> DescribirAlumnosConMasFaltasAsync(
+		IReadOnlyCollection<Cursante> activas,
+		IReadOnlyCollection<RegistroAsistencia> registros)
+	{
+		const int CANTIDAD = 3;
+
+		var alumnoDe = activas.ToDictionary(x => x.Id, x => x.AlumnoID);
+
+		var conMasFaltas = registros
+			.Where(x => alumnoDe.ContainsKey(x.CursanteID))
+			.GroupBy(x => x.CursanteID)
+			.Select(grupo => new
+			{
+				AlumnoID = alumnoDe[grupo.Key],
+				Jornadas = grupo.Count(),
+				Faltas = grupo.Count(x => x.Tipo.Equals(TipoAsistencia.Ausencia) || x.Tipo.Equals(TipoAsistencia.Inasistencia))
+			})
+			.Where(x => x.Faltas > 0)
+			.OrderByDescending(x => x.Faltas)
+			.ThenBy(x => x.Jornadas)
+			.Take(CANTIDAD)
+			.ToList();
+
+		var respuesta = new List<AlumnoConFaltasResponse>();
+		foreach (var item in conMasFaltas)
+		{
+			var alumno = await _unitOfWork.Alumnos.BuscarPorIDAsync(item.AlumnoID);
+
+			respuesta.Add(new AlumnoConFaltasResponse(
+				AlumnoID: item.AlumnoID,
+				NombreCompleto: alumno?.DatosPersonales.NombreCompleto() ?? "Alumno inexistente",
+				Faltas: item.Faltas,
+				PorcentajeAsistencia: PorcentajeDeAsistencia.Calcular(asistidas: item.Jornadas - item.Faltas, sobre: item.Jornadas)));
+		}
+
+		return respuesta.AsReadOnly();
 	}
 	#endregion
 

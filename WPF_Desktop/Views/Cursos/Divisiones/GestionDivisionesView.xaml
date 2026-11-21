@@ -112,6 +112,7 @@
 					<RowDefinition Height="Auto"/>
 					<RowDefinition Height="*"/>
 					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
 
 				<!--#region FICHA DEL CURSO-->
@@ -213,7 +214,150 @@
 					</DataGrid.Columns>
 				</DataGrid>
 
-				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+				<!--#region RESUMEN DEL CICLO
+					La ficha de la división elegida. Va entre la grilla y las acciones porque habla de
+					la fila seleccionada, igual que los botones de abajo: se lee la fila, se lee cómo
+					está, y se decide qué hacer.
+
+					Tres cifras arriba (matrícula, asistencia, promedio) y dos listas abajo (pendientes
+					y alumnos con más faltas). La planilla de hoy es la cuarta cifra sólo en el año en
+					curso: Core no la informa para un ciclo cerrado.
+				-->
+				<Border Grid.Row="2"
+						Margin="0 16 0 0"
+						Style="{ StaticResource ResourceKey=Superficie.Seccion }"
+						Visibility="{ Binding Path=Division, Mode=OneWay, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+					<StackPanel>
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+								   Text="Trayendo el resumen del ciclo…"
+								   Visibility="{ Binding Path=CargarResumenCommandAsync.IsRunning, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+
+						<TextBlock Style="{ StaticResource ResourceKey=Txt.Error.Campo }"
+								   Text="{ Binding Path=AvisoResumen, Mode=OneWay }"
+								   TextWrapping="Wrap"
+								   Visibility="{ Binding Path=AvisoResumen, Mode=OneWay, Converter={ StaticResource ResourceKey=visibleSiHay } }"/>
+
+						<StackPanel DataContext="{ Binding Path=Resumen, Mode=OneWay }"
+									Visibility="{ Binding Mode=OneWay, Converter={ StaticResource ResourceKey=visibleSiHay } }">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0" Margin="0 0 32 0">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="{ Binding Path=CicloLectivo, Mode=OneWay, StringFormat=MATRÍCULA {0} }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Display }"
+											   Text="{ Binding Path=Matricula, Mode=OneWay }"
+											   ToolTip="Alumnos inscriptos sobre el cupo de la división"/>
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="{ Binding Path=DetalleMatricula, Mode=OneWay }"/>
+								</StackPanel>
+
+								<Rectangle Grid.Column="1"
+										   Margin="0 0 32 0"
+										   Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
+
+								<StackPanel Grid.Column="2" Margin="0 0 32 0">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="{ Binding Path=CicloLectivo, Mode=OneWay, StringFormat=ASISTENCIA {0} }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Display }"
+											   Text="{ Binding Path=PorcentajeAsistencia, Mode=OneWay }"/>
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="{ Binding Path=DetalleAsistencia, Mode=OneWay }"/>
+								</StackPanel>
+
+								<Rectangle Grid.Column="3"
+										   Margin="0 0 32 0"
+										   Style="{ StaticResource ResourceKey=Regla.Vertical }"/>
+
+								<StackPanel Grid.Column="4" Margin="0 0 32 0">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="{ Binding Path=CicloLectivo, Mode=OneWay, StringFormat=PROMEDIO {0} }"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Display }"
+											   Text="{ Binding Path=Promedio, Mode=OneWay }"/>
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="{ Binding Path=DetalleRendimiento, Mode=OneWay }"/>
+								</StackPanel>
+
+								<Rectangle Grid.Column="5"
+										   Margin="0 0 32 0"
+										   Style="{ StaticResource ResourceKey=Regla.Vertical }"
+										   Visibility="{ Binding Path=EsCicloEnCurso, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+
+								<StackPanel Grid.Column="6"
+											Visibility="{ Binding Path=EsCicloEnCurso, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="PLANILLA DE HOY"/>
+									<TextBlock Margin="0 2 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Display }"
+											   Text="{ Binding Path=PlanillaDeHoy, Mode=OneWay }"/>
+								</StackPanel>
+							</Grid>
+
+							<Grid Margin="0 16 0 0">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+
+								<StackPanel Grid.Column="0" Margin="0 0 32 0">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="PENDIENTES"/>
+									<ItemsControl Margin="0 4 0 0"
+												  ItemsSource="{ Binding Path=Pendientes, Mode=OneWay }"
+												  Visibility="{ Binding Path=TienePendientes, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+										<ItemsControl.ItemTemplate>
+											<DataTemplate>
+												<TextBlock Margin="0 2 0 0"
+														   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+														   Text="{ Binding Mode=OneWay }"
+														   TextWrapping="Wrap"/>
+											</DataTemplate>
+										</ItemsControl.ItemTemplate>
+									</ItemsControl>
+									<TextBlock Margin="0 4 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="Nada pendiente en la división."
+											   Visibility="{ Binding Path=TienePendientes, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }"/>
+								</StackPanel>
+
+								<StackPanel Grid.Column="1">
+									<TextBlock Style="{ StaticResource ResourceKey=Txt.Seccion }"
+											   Text="MÁS FALTAS EN EL CICLO"/>
+									<ItemsControl Margin="0 4 0 0"
+												  ItemsSource="{ Binding Path=AlumnosConMasFaltas, Mode=OneWay }"
+												  Visibility="{ Binding Path=TieneAlumnosConFaltas, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+										<ItemsControl.ItemTemplate>
+											<DataTemplate>
+												<TextBlock Margin="0 2 0 0"
+														   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+														   Text="{ Binding Mode=OneWay }"
+														   TextTrimming="CharacterEllipsis"/>
+											</DataTemplate>
+										</ItemsControl.ItemTemplate>
+									</ItemsControl>
+									<TextBlock Margin="0 4 0 0"
+											   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+											   Text="Ningún alumno faltó en el ciclo."
+											   Visibility="{ Binding Path=TieneAlumnosConFaltas, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }"/>
+								</StackPanel>
+							</Grid>
+						</StackPanel>
+					</StackPanel>
+				</Border>
+				<!--#endregion-->
+
+				<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
 					<HeaderedContentControl.Header>
 						<StackPanel Orientation="Horizontal">
 							<Button Command="{ Binding Path=EliminarCommandAsync, IsAsync=True }"

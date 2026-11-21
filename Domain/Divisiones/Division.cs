@@ -6,7 +6,12 @@ namespace Domain.Divisiones;
 
 public sealed class Division : Entity
 {
-	private const int MAX_ALUMNOS = 35;
+	/// <summary>
+	/// Cupo de la división. Es público por el mismo motivo que <c>Calificacion.NOTA_APROBACION</c>:
+	/// la pantalla informa la matrícula contra este número, y una copia en la UI podría separarse
+	/// del que <see cref="ValidarCupoDisponible"/> hace cumplir.
+	/// </summary>
+	public const int MAX_ALUMNOS = 35;
 
 	public Guid CursoID { get; private set; } = Guid.Empty;
 	public string Descripcion { get; private set; } = string.Empty;

@@ -22,6 +22,13 @@ public sealed class CursanteRepositorioFake : RepositorioEnMemoria<Cursante>, IC
 			.OrderBy(x => x.FechaInicio)
 			.ToList());
 
+	// Activas y cerradas de un ciclo: misma semántica que el repositorio real.
+	public Task<IReadOnlyCollection<Cursante>> BuscarInscripcionesDeDivisionDelCicloAsync(Guid divisionID, CicloLectivo cicloLectivo) =>
+		Task.FromResult((IReadOnlyCollection<Cursante>)_entidades
+			.Where(x => x.DivisionID.Equals(divisionID) && x.CicloLectivo.Periodo == cicloLectivo.Periodo)
+			.OrderBy(x => x.FechaInicio)
+			.ToList());
+
 	public Task<Cursante?> BuscarInscripcionActivaAsync(Guid alumnoID, CicloLectivo cicloLectivo) =>
 		Task.FromResult(_entidades.FirstOrDefault(x => x.AlumnoID.Equals(alumnoID) && x.CicloLectivo.Periodo == cicloLectivo.Periodo && x.FechaFin == null));
 

@@ -96,6 +96,19 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 	private ListCollectionView _listCollectionDocentes;
 
 	/// <summary>
+	/// La ficha del ciclo de la división elegida, o <c>null</c> sin división o mientras se trae.
+	/// </summary>
+	[ObservableProperty]
+	private ResumenDivisionViewModel? _resumen;
+
+	/// <summary>
+	/// Por qué no hay ficha cuando la consulta falló. Va en la ficha y no en un diálogo: la consulta
+	/// corre en cada cambio de fila, y con la base caída cada clic en la grilla abriría un cartel.
+	/// </summary>
+	[ObservableProperty]
+	private string? _avisoResumen;
+
+	/// <summary>
 	/// La etiqueta del único botón de preceptor: dice lo que va a pasar con la división elegida.
 	/// </summary>
 	/// <remarks>
@@ -109,6 +122,7 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 
 	#region Commands
 	public IAsyncRelayCommand CargarDivisionesCommandAsync { get; }
+	public IAsyncRelayCommand CargarResumenCommandAsync { get; }
 	public IAsyncRelayCommand EliminarCommandAsync { get; }
 	public IAsyncRelayCommand RegistrarCommandAsync { get; }
 	public IRelayCommand AsignarPreceptorCommand { get; }
@@ -159,6 +173,9 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 		_divisiones = new ObservableCollection<DivisionViewModel>();
 
 		CargarDivisionesCommandAsync = new AsyncRelayCommand(CargarDivisionesAsync);
+		// Concurrente a propósito: cada cambio de fila lanza su consulta, y la que llega tarde se
+		// descarta en CargarResumenAsync en lugar de bloquear la siguiente.
+		CargarResumenCommandAsync = new AsyncRelayCommand(CargarResumenAsync, AsyncRelayCommandOptions.AllowConcurrentExecutions);
 		EliminarCommandAsync = new AsyncRelayCommand<string>(ExecuteEliminarCommandAsync, CanExecuteEliminarCommand);
 		RegistrarCommandAsync = new AsyncRelayCommand<string>(ExecuteRegistrarCommandAsync, _sesion.Permite<string>(Permiso.GestionarCursos, CanExecuteRegistrarCommand));
 
@@ -234,6 +251,48 @@ internal partial class GestionDivisionesViewModel : ObservableValidator, IUbicac
 			Descripcion = string.Empty;
 		}
 	}
+
+	#region CargarResumenCommandAsync
+	partial void OnDivisionChanged(DivisionViewModel value) =>
+		CargarResumenCommandAsync.Execute(null);
+
+	/// <summary>
+	/// Trae la ficha del ciclo de la división elegida, con el ciclo del store.
+	/// </summary>
+	/// <remarks>
+	/// LA FICHA SE DESCARTA SI LA FILA CAMBIÓ MIENTRAS SE TRAÍA. Recorrer la grilla con las flechas
+	/// dispara una consulta por fila, y no terminan en el orden en que salieron: sin la comparación,
+	/// la respuesta de la "A" que llega tarde pisaría la de la "C" que el usuario está mirando.
+	/// </remarks>
+	private async Task CargarResumenAsync()
+	{
+		Resumen = null;
+		AvisoResumen = null;
+
+		var division = Division;
+		if (division is null)
+		{
+			return;
+		}
+
+		try
+		{
+			var resumen = await _servicioDivision.ConsultarResumenDivisionAsync(new ConsultarResumenDivisionRequest(division.DivisionID, _cicloLectivoStore.CicloLectivo));
+
+			if (ReferenceEquals(division, Division) && resumen is not null)
+			{
+				Resumen = new ResumenDivisionViewModel(resumen);
+			}
+		}
+		catch (Exception ex)
+		{
+			if (ReferenceEquals(division, Division))
+			{
+				AvisoResumen = $"No se pudo traer el resumen del ciclo. { ex.Message }";
+			}
+		}
+	}
+	#endregion
 
 	#region AsignarPreceptorCommand
 	/// <summary>

@@ -200,6 +200,27 @@ public static class RendimientoAcademico
 		Promediar(materias.Select(NotaDeCierre));
 
 	/// <summary>
+	/// El promedio de un grupo de alumnos: la media de sus promedios generales.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <strong>CADA ALUMNO PESA UNA VEZ</strong>, tenga muchas materias cerradas o una sola. La
+	/// alternativa —promediar todas las notas de cierre del grupo juntas— da otro número: el alumno
+	/// con más materias cerradas pesaría más, y "el promedio de la división" dejaría de ser el
+	/// promedio de sus alumnos.
+	/// </para>
+	/// <para>
+	/// Recibe, por alumno, sus calificaciones ya agrupadas por materia, igual que
+	/// <see cref="PromediarNotasDeCierre"/>, que es lo que calcula el promedio de cada uno: el
+	/// promedio del grupo es la media de los mismos números que el perfil de cada alumno informa.
+	/// El alumno sin ninguna nota de cierre no entra a la media: no tiene promedio, que no es tener
+	/// cero.
+	/// </para>
+	/// </remarks>
+	public static decimal? PromediarAlumnos(IEnumerable<IEnumerable<IEnumerable<Calificacion>>> alumnos) =>
+		Promediar(alumnos.Select(PromediarNotasDeCierre));
+
+	/// <summary>
 	/// La media de las notas que existen, a dos decimales, o <c>null</c> si no hay ninguna.
 	/// </summary>
 	/// <remarks>

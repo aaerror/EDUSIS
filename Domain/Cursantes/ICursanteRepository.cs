@@ -34,6 +34,18 @@ public interface ICursanteRepository : IRepository<Cursante>
 	/// dar números distintos y el diálogo informaría una cifra mientras el borrado hace otra.
 	/// </remarks>
 	Task<IReadOnlyCollection<Cursante>> BuscarInscripcionesDeDivisionAsync(Guid divisionID);
+
+	/// <summary>
+	/// Inscripciones de la división en un ciclo lectivo, activas <strong>y cerradas</strong>, con
+	/// sus calificaciones cargadas.
+	/// </summary>
+	/// <remarks>
+	/// Está entre <see cref="BuscarPorDivisionAsync"/>, que deja afuera las cerradas, y
+	/// <see cref="BuscarInscripcionesDeDivisionAsync"/>, que trae todos los años. La consume el
+	/// resumen de la división, que necesita las dos mitades del mismo ciclo: las activas son la
+	/// matrícula y las cerradas, las bajas y los traslados del año.
+	/// </remarks>
+	Task<IReadOnlyCollection<Cursante>> BuscarInscripcionesDeDivisionDelCicloAsync(Guid divisionID, CicloLectivo cicloLectivo);
 	Task<Cursante?> BuscarInscripcionActivaAsync(Guid alumnoID, CicloLectivo cicloLectivo);
 
 	/// <summary>
