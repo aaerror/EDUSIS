@@ -208,12 +208,19 @@ internal partial class PerfilAlumnoViewModel : ObservableValidator, IUbicacion
 	}
 	#endregion
 
+	/// <summary>Hay un bloque con la edición abierta.</summary>
+	private bool HayBloqueAbierto => HabilitarEditarContacto || HabilitarEditarDomicilio || HabilitarEditarSexo;
+
 	#region EditarCommand
+	/// <summary>
+	/// Se abre un bloque por vez. Cancelar recarga el perfil entero desde Core: con dos bloques
+	/// abiertos, cancelar uno descartaba en silencio lo tipeado en el otro. Cada
+	/// <c>HabilitarEditar*</c> ya notifica a este comando, así que el "Editar" de los demás
+	/// bloques se apaga apenas se abre uno.
+	/// </summary>
 	private bool EditarCommandCanExecute(object? obj) => obj switch
 	{
-		"Contacto" => !HabilitarEditarContacto,
-		"Domicilio" => !HabilitarEditarDomicilio,
-		"Sexo" => !HabilitarEditarSexo,
+		"Contacto" or "Domicilio" or "Sexo" => !HayBloqueAbierto,
 		_ => false
 	};
 

@@ -122,21 +122,21 @@ internal partial class PerfilDocenteViewModel : ObservableObject, IUbicacion
 		Docente = _docenteTemporal;
 	}
 
+	/// <summary>Hay un bloque con la edición abierta.</summary>
+	private bool HayBloqueAbierto => HabilitarEditarContacto || HabilitarEditarDomicilio || HabilitarEditarSexo;
+
 	#region EditarCommand
-	private bool EditarCommandCanExecute(object? obj)
+	/// <summary>
+	/// Se abre un bloque por vez. Cancelar recarga el perfil entero desde Core: con dos bloques
+	/// abiertos, cancelar uno descartaba en silencio lo tipeado en el otro. Cada
+	/// <c>HabilitarEditar*</c> ya notifica a este comando, así que el "Editar" de los demás
+	/// bloques se apaga apenas se abre uno.
+	/// </summary>
+	private bool EditarCommandCanExecute(object? obj) => obj switch
 	{
-		switch (obj as string)
-		{
-			case "Contacto":
-				return !HabilitarEditarContacto;
-			case "Domicilio":
-				return !HabilitarEditarDomicilio;
-			case "Sexo":
-				return !HabilitarEditarSexo;
-			default:
-				return false;
-		}
-	}
+		"Contacto" or "Domicilio" or "Sexo" => !HayBloqueAbierto,
+		_ => false
+	};
 
 	private void EditarCommandExecute(object? obj)
 	{
