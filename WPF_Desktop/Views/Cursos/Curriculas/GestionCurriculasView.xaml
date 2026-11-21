@@ -307,10 +307,14 @@
 							Los dos motivos por los que esta currícula no acepta materias, cada uno
 							con su salida. Comparten fila porque son excluyentes: una currícula
 							cerrada no se mide por cupo.
+
+							La cerrada va en Info y la del tope en Aviso: un diseño de un ciclo
+							anterior es un estado normal que sólo hay que conocer; el tope es un
+							límite con el que se choca al querer agregar.
 						-->
 						<Border Grid.Row="1"
 								Margin="0 0 0 12"
-								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								Style="{ StaticResource ResourceKey=Superficie.Info }"
 								Visibility="{ Binding Path=CurriculaVigente, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidadInversa } }">
 							<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 									   Text="Este diseño curricular está cerrado: sus materias son el registro de un ciclo anterior y no se pueden agregar, editar ni quitar. Para trabajar, elegí el diseño vigente de la lista de arriba."
@@ -407,10 +411,6 @@
 											Margin="0 0 8 0"
 											Style="{ StaticResource ResourceKey=Btn.Secundario }"
 											ToolTip="Abrir la materia elegida para editarla"/>
-									<Button Command="{ Binding Path=GuardarCommandAsync }"
-											CommandParameter="Update"
-											Content="Guardar materia"
-											Margin="0 0 8 0"
 									<Button Command="{ Binding Path=CancelarCommand }"
 											CommandParameter="Editar"
 											Content="Cancelar"
@@ -418,6 +418,10 @@
 											Style="{ StaticResource ResourceKey=Btn.Terciario }"
 											ToolTip="Descartar los cambios de la materia"
 											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+									<Button Command="{ Binding Path=GuardarCommandAsync }"
+											CommandParameter="Update"
+											Content="Guardar materia"
+											Margin="0 0 8 0"
 											Style="{ StaticResource ResourceKey=Btn.Primario }"
 											ToolTip="Guardar los cambios de la materia"
 											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>

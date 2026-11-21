@@ -343,17 +343,21 @@
 					<!--#region ESTADO
 						Una sola línea al pie: o se está generando, o se cuenta en qué terminó la
 						última emisión. Los errores siguen yendo por IDialogService.
+
+						Familia Info y no Aviso: las dos líneas sólo cuentan qué pasa o qué pasó,
+						no hay riesgo detrás. Con la barra ámbar, "Generando el documento…" se leía
+						como una advertencia.
 					-->
 					<Grid Grid.Row="3" Margin="0 6 0 0">
 						<Border HorizontalAlignment="Left"
-								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								Style="{ StaticResource ResourceKey=Superficie.Info }"
 								Visibility="{ Binding Path=Emitiendo, Converter={ StaticResource ResourceKey=visibilidad }, Mode=OneWay }">
 							<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
 									   Text="Generando el documento…"/>
 						</Border>
 
 						<Border HorizontalAlignment="Left"
-								Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+								Style="{ StaticResource ResourceKey=Superficie.Info }"
 								Visibility="{ Binding Path=Emitiendo, Converter={ StaticResource ResourceKey=visibilidadInversa }, Mode=OneWay }">
 							<TextBlock MaxWidth="700"
 									   Style="{ StaticResource ResourceKey=Txt.Cuerpo }"

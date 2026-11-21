@@ -62,6 +62,15 @@
 	<Color x:Key="Color.Alerta.Suave">#FBEBEA</Color>
 	<Color x:Key="Color.Aviso">#9A5B00</Color>
 	<Color x:Key="Color.Aviso.Suave">#FBF1E3</Color>
+	<!--
+		INFO: lo que sólo informa, sin éxito, riesgo ni error detrás. No podía ser verde porque el
+		verde ya significa acción y éxito. Es el azul de la lapicera sobre la planilla, el mismo
+		papel que el rojo de Alerta cumple como lápiz de corrección. Va un escalón más oscuro que
+		#0075D1: así cumple 4,5:1 también sobre su propio fondo suave (4,89) y no sólo sobre
+		Papel (5,49), igual que el par Aviso/AvisoSuave (4,86).
+	-->
+	<Color x:Key="Color.Info">#006AC0</Color>
+	<Color x:Key="Color.Info.Suave">#EAF3FB</Color>
 	<!--#endregion-->
 
 	<!--#region PINCELES DEL SISTEMA-->
@@ -70,15 +79,6 @@
 	<SolidColorBrush x:Key="PrimarioPress" Color="{ StaticResource ResourceKey=Color.Primario.Press }"/>
 	<SolidColorBrush x:Key="PrimarioSuave" Color="{ StaticResource ResourceKey=Color.Primario.Suave }"/>
 	<SolidColorBrush x:Key="PrimarioBorde" Color="{ StaticResource ResourceKey=Color.Primario.Borde }"/>
-
-	<SolidColorBrush x:Key="Pizarra" Color="{ StaticResource ResourceKey=Color.Pizarra }"/>
-	<SolidColorBrush x:Key="PizarraAlta" Color="{ StaticResource ResourceKey=Color.Pizarra.Alta }"/>
-	<SolidColorBrush x:Key="PizarraBaja" Color="{ StaticResource ResourceKey=Color.Pizarra.Baja }"/>
-
-	<SolidColorBrush x:Key="Tinta" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
-	<SolidColorBrush x:Key="TintaMedia" Color="{ StaticResource ResourceKey=Color.Tinta.Media }"/>
-	<SolidColorBrush x:Key="TintaSuave" Color="{ StaticResource ResourceKey=Color.Tinta.Suave }"/>
-	<SolidColorBrush x:Key="TintaTenue" Color="{ StaticResource ResourceKey=Color.Tinta.Tenue }"/>
 
 	<SolidColorBrush x:Key="BotonPrimario" Color="{ StaticResource ResourceKey=Color.Primario.Boton }"/>
 	<SolidColorBrush x:Key="BotonPrimarioHover" Color="{ StaticResource ResourceKey=Color.Primario.Boton.Hover }"/>
@@ -91,6 +91,15 @@
 		barras e íconos siguen en Primario.
 	-->
 	<SolidColorBrush x:Key="PrimarioTexto" Color="{ StaticResource ResourceKey=Color.Primario.Boton }"/>
+
+	<SolidColorBrush x:Key="Pizarra" Color="{ StaticResource ResourceKey=Color.Pizarra }"/>
+	<SolidColorBrush x:Key="PizarraAlta" Color="{ StaticResource ResourceKey=Color.Pizarra.Alta }"/>
+	<SolidColorBrush x:Key="PizarraBaja" Color="{ StaticResource ResourceKey=Color.Pizarra.Baja }"/>
+
+	<SolidColorBrush x:Key="Tinta" Color="{ StaticResource ResourceKey=Color.Tinta }"/>
+	<SolidColorBrush x:Key="TintaMedia" Color="{ StaticResource ResourceKey=Color.Tinta.Media }"/>
+	<SolidColorBrush x:Key="TintaSuave" Color="{ StaticResource ResourceKey=Color.Tinta.Suave }"/>
+	<SolidColorBrush x:Key="TintaTenue" Color="{ StaticResource ResourceKey=Color.Tinta.Tenue }"/>
 
 	<SolidColorBrush x:Key="Papel" Color="{ StaticResource ResourceKey=Color.Papel }"/>
 	<SolidColorBrush x:Key="Tiza" Color="{ StaticResource ResourceKey=Color.Tiza }"/>
@@ -105,6 +114,8 @@
 	<SolidColorBrush x:Key="AlertaSuave" Color="{ StaticResource ResourceKey=Color.Alerta.Suave }"/>
 	<SolidColorBrush x:Key="Aviso" Color="{ StaticResource ResourceKey=Color.Aviso }"/>
 	<SolidColorBrush x:Key="AvisoSuave" Color="{ StaticResource ResourceKey=Color.Aviso.Suave }"/>
+	<SolidColorBrush x:Key="Info" Color="{ StaticResource ResourceKey=Color.Info }"/>
+	<SolidColorBrush x:Key="InfoSuave" Color="{ StaticResource ResourceKey=Color.Info.Suave }"/>
 
 	<!-- Texto sobre campo oscuro: blanco a tres niveles de énfasis. -->
 	<SolidColorBrush x:Key="SobrePizarra" Color="#FFFFFF" Opacity=".95"/>

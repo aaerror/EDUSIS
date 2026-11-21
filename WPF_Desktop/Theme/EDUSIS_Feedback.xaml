@@ -25,8 +25,9 @@
 		lo que sólo informa no interrumpe (aviso al pie, se va solo), y lo que exige una decisión
 		o no se puede perder de vista sí interrumpe (diálogo con acuse).
 
-		Sin colores nuevos: éxito es la familia Primario, advertencia Aviso, error Alerta. El
-		verde ya significa acción en toda la aplicación, y un éxito ES el resultado de una acción.
+		Éxito es la familia Primario, advertencia Aviso, error Alerta e información Info. El
+		verde ya significa acción en toda la aplicación, y un éxito ES el resultado de una acción;
+		por eso lo que sólo informa no puede ser verde y tiene su propia familia.
 	-->
 
 	<!--#region AVISO AL PIE
@@ -74,6 +75,28 @@
 	<!-- La tercera insignia: los tokens Aviso/AvisoSuave ya existían y no tenían par. -->
 	<Style x:Key="Insignia.Aviso" TargetType="{ x:Type Border }">
 		<Setter Property="Background" Value="{ StaticResource ResourceKey=AvisoSuave }"/>
+		<Setter Property="CornerRadius" Value="2"/>
+		<Setter Property="Padding" Value="7 2 7 3"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+	<!--#endregion-->
+
+	<!--#region INFORMACIÓN
+		El cuarto par, misma anatomía que Aviso y Éxito: fondo suave y barra de 3px, o insignia
+		sobre fondo suave. El texto adentro va en Tinta o TintaMedia; Info es para la barra, un
+		ícono o una palabra corta.
+	-->
+	<Style x:Key="Superficie.Info" TargetType="{ x:Type Border }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=InfoSuave }"/>
+		<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Info }"/>
+		<Setter Property="BorderThickness" Value="3 0 0 0"/>
+		<Setter Property="Padding" Value="12 10"/>
+		<Setter Property="SnapsToDevicePixels" Value="True"/>
+	</Style>
+
+	<Style x:Key="Insignia.Info" TargetType="{ x:Type Border }">
+		<Setter Property="Background" Value="{ StaticResource ResourceKey=InfoSuave }"/>
 		<Setter Property="CornerRadius" Value="2"/>
 		<Setter Property="Padding" Value="7 2 7 3"/>
 		<Setter Property="SnapsToDevicePixels" Value="True"/>
