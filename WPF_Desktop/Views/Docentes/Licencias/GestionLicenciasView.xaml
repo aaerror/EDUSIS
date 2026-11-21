@@ -128,7 +128,7 @@
 								</DataTemplate>
 							</DataGridTemplateColumn.CellTemplate>
 						</DataGridTemplateColumn>
-						<DataGridTextColumn Binding="{ Binding Path=Articulo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+						<DataGridTextColumn Binding="{ Binding Path=Denominacion, Mode=OneWay }"
 											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 											Header="ARTÍCULO"
 											Width="2*"/>

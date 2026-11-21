@@ -35,7 +35,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 				new LicenciaResponse(
 					LicenciaID: x.Id,
 					DocenteID: x.DocenteID,
-					Articulo: x.Articulo.ToString(),
+					Articulo: x.Articulo,
 					Estado: x.Estado.ToString(),
 					Dias: Convert.ToInt32(x.DuracionEn(Domain.Shared.Tiempo.Dia)),
 					FechaInicio: x.Periodo.FechaInicio.Date,

@@ -3,6 +3,7 @@ using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioLicencias;
 using Core.ServicioLicencias.DTOs.Requests;
 using Domain.Catedras.SituacionesRevista;
+using Domain.Licencias;
 using EDUSIS.EndToEndTests.Infraestructura;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Infraestructura;
@@ -44,7 +45,7 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 
 		var licencia = licencias.ShouldHaveSingleItem();
 		licencia.DocenteID.ShouldBe(docente.Id);
-		licencia.Articulo.ShouldBe("AccidenteDeTrabajo");
+		licencia.Articulo.ShouldBe(Articulo.AccidenteDeTrabajo);
 		licencia.Estado.ShouldBe("Pendiente");
 		licencia.FechaInicio.Date.ShouldBe(DateTime.Today);
 		licencia.Observacion.ShouldBe("gripe");

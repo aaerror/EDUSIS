@@ -18,11 +18,16 @@ internal partial class LicenciaViewModel : ObservableValidator
 
 	// Igual que en el puesto: sin ErrorMessage el motivo sale en inglés, y ahora se lee debajo
 	// del campo.
+	// El enumerado y no su nombre: el combo lo enlaza sin conversor y el plazo legal se consulta
+	// sin volver a parsear texto. Nulo mientras no se eligió.
 	[Required(ErrorMessage="Se debe elegir el artículo de la licencia.")]
-	[EnumDataType(typeof(Articulo), ErrorMessage="El artículo no es uno de los admitidos.")]
 	[NotifyDataErrorInfo]
+	[NotifyPropertyChangedFor(nameof(Denominacion))]
+	[NotifyPropertyChangedFor(nameof(ReferenciaLegal))]
+	[NotifyPropertyChangedFor(nameof(AdmiteIndefinida))]
+	[NotifyPropertyChangedFor(nameof(TieneDiasFijos))]
 	[ObservableProperty]
-	private string _articulo = string.Empty;
+	private Articulo? _articulo;
 
 	[Required(ErrorMessage="Se debe indicar el estado de la licencia.")]
 	[EnumDataType(typeof(Estado), ErrorMessage="El estado no es uno de los admitidos.")]
@@ -31,7 +36,9 @@ internal partial class LicenciaViewModel : ObservableValidator
 	private string _estado = string.Empty;
 
 	[Required(AllowEmptyStrings=false, ErrorMessage="Se debe ingresar la cantidad de días de licencia.")]
-	[Range(0, 365, ErrorMessage="La cantidad de días de licencia debe estar comprendida entre un día hasta un año.")]
+	// 730 es el tope más largo del catálogo (enfermedad de largo tratamiento); el de cada artículo
+	// lo valida el dominio al guardar.
+	[Range(0, 730, ErrorMessage="La cantidad de días de licencia no puede superar los 730.")]
 	[RegularExpression(@"^(\d){1,3}$", ErrorMessage="Formato inválido. La cantidad de días debe ser un número.", MatchTimeoutInMilliseconds=2000)]
 	[NotifyPropertyChangedFor(nameof(FechaFin))]
 	[NotifyDataErrorInfo]
@@ -87,6 +94,50 @@ internal partial class LicenciaViewModel : ObservableValidator
 		}
 	}
 
+
+	#region Plazo legal
+	private PlazoLegal? Plazo =>
+		Articulo is null ? null : PlazoLegal.De(Articulo.Value);
+
+	/// <summary>Nombre legal del artículo, para el listado y los diálogos.</summary>
+	public string Denominacion =>
+		Plazo?.Denominacion ?? string.Empty;
+
+	/// <summary>Norma y plazo del artículo elegido, como ayuda debajo del selector.</summary>
+	public string ReferenciaLegal => Plazo switch
+	{
+		null => string.Empty,
+		{ Tipo: TipoDePlazo.Fijo } p => $"{ p.Norma } · { p.Dias } días corridos",
+		{ Tipo: TipoDePlazo.Maximo } p => $"{ p.Norma } · hasta { p.Dias } días corridos",
+		var p => $"{ p.Norma } · sin plazo fijo"
+	};
+
+	public bool AdmiteIndefinida =>
+		Plazo?.AdmiteIndefinida ?? false;
+
+	public bool TieneDiasFijos =>
+		Plazo?.Tipo == TipoDePlazo.Fijo;
+
+	// Al elegir el artículo se ajusta lo que la norma ya decide: los días de un plazo fijo y la
+	// fecha de fin de uno que no admite quedar indefinido. El dominio igual lo valida al guardar.
+	partial void OnArticuloChanged(Articulo? value)
+	{
+		if (Plazo is not { } plazo)
+		{
+			return;
+		}
+
+		if (!plazo.AdmiteIndefinida)
+		{
+			EsIndefinida = false;
+		}
+
+		if (plazo.Tipo == TipoDePlazo.Fijo)
+		{
+			Dias = plazo.Dias;
+		}
+	}
+	#endregion
 
 	partial void OnEsIndefinidaChanged(bool value) =>
 		Dias = value ? 0 : 1;

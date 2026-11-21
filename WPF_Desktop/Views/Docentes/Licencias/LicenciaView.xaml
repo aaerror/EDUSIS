@@ -34,7 +34,7 @@
 		con la fecha de inicio sola, sin un hueco en el medio.
 	-->
 	<UserControl.Resources>
-		<converters:ArticuloConverter x:Key="articuloConverter"/>
+		<converters:DenominacionDeArticuloConverter x:Key="denominacion"/>
 
 		<ObjectDataProvider x:Key="articulos" MethodName="GetValues" ObjectType="{ x:Type sys:Enum }">
 			<ObjectDataProvider.MethodParameters>
@@ -55,6 +55,7 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
 		<TextBlock Grid.ColumnSpan="3" Grid.Row="0"
@@ -66,9 +67,15 @@
 								Header="Artículo"
 								Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 			<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=articulos } }"
-					  SelectedItem="{ Binding Path=Articulo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=articuloConverter } }"
+					  SelectedItem="{ Binding Path=Articulo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 					  Style="{ StaticResource ResourceKey=Cmb.Campo }"
-					  Tag="Elegí el artículo de la licencia"/>
+					  Tag="Elegí el artículo de la licencia">
+				<ComboBox.ItemTemplate>
+					<DataTemplate>
+						<TextBlock Text="{ Binding Converter={ StaticResource ResourceKey=denominacion } }"/>
+					</DataTemplate>
+				</ComboBox.ItemTemplate>
+			</ComboBox>
 		</HeaderedContentControl>
 
 		<!--
@@ -84,15 +91,28 @@
 			</Border>
 		</HeaderedContentControl>
 
+		<!--
+			De dónde sale el plazo: la norma y los días que fija. Va pegada debajo del selector
+			(margen superior negativo contra los 16 del campo) porque describe lo elegido ahí.
+		-->
+		<TextBlock Grid.ColumnSpan="2" Grid.Row="2"
+				   Margin="0 -10 10 16"
+				   Style="{ StaticResource ResourceKey=Txt.Detalle }"
+				   Text="{ Binding Path=ReferenciaLegal, Mode=OneWay }"
+				   TextWrapping="Wrap"
+				   Visibility="{ Binding Path=Articulo, Mode=OneWay, Converter={ StaticResource ResourceKey=visibleSiHay } }"/>
+
+		<!-- Sólo los artículos sin plazo legal pueden quedar sin fecha de fin: para el resto no se ofrece. -->
 		<CheckBox x:Name="esIndefinida"
-				  Grid.ColumnSpan="3" Grid.Row="2"
+				  Grid.ColumnSpan="3" Grid.Row="3"
 				  Content="La licencia es indefinida, sin fecha de fin"
 				  IsChecked="{ Binding Path=EsIndefinida, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
 				  HorizontalAlignment="Left"
 				  Margin="0 0 0 16"
-				  Style="{ StaticResource ResourceKey=Chk.Campo }"/>
+				  Style="{ StaticResource ResourceKey=Chk.Campo }"
+				  Visibility="{ Binding Path=AdmiteIndefinida, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 
-		<HeaderedContentControl Grid.Column="0" Grid.Row="3"
+		<HeaderedContentControl Grid.Column="0" Grid.Row="4"
 								Header="Fecha de inicio"
 								Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 			<DatePicker DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
@@ -103,12 +123,14 @@
 		</HeaderedContentControl>
 
 		<!-- Los días no existen si la licencia es indefinida: se oculta, no se deshabilita. -->
-		<HeaderedContentControl Grid.Column="1" Grid.Row="3"
+		<HeaderedContentControl Grid.Column="1" Grid.Row="4"
 								Header="Días"
 								IsEnabled="{ Binding Path=IsChecked, ElementName=esIndefinida, Mode=OneWay, Converter={ StaticResource ResourceKey=negar } }"
 								Style="{ StaticResource ResourceKey=Campo.Centro }"
 								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-			<TextBox MaxLength="3"
+			<!-- Con plazo fijo los días los pone la norma: se leen, no se escriben. -->
+			<TextBox IsReadOnly="{ Binding Path=TieneDiasFijos, Mode=OneWay }"
+					 MaxLength="3"
 					 Tag="30"
 					 Text="{ Binding Path=Dias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
 					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
@@ -120,7 +142,7 @@
 			que genera el ContentPresenter, y sin él el valor quedaba pegado al rótulo, más arriba
 			que el texto de los campos vecinos.
 		-->
-		<HeaderedContentControl Grid.Column="2" Grid.Row="3"
+		<HeaderedContentControl Grid.Column="2" Grid.Row="4"
 								Header="Fecha de finalización"
 								IsEnabled="{ Binding Path=IsChecked, ElementName=esIndefinida, Mode=OneWay, Converter={ StaticResource ResourceKey=negar } }"
 								Style="{ StaticResource ResourceKey=Dato.Derecha }"
@@ -131,7 +153,7 @@
 					   VerticalAlignment="Center"/>
 		</HeaderedContentControl>
 
-		<HeaderedContentControl Grid.ColumnSpan="3" Grid.Row="4"
+		<HeaderedContentControl Grid.ColumnSpan="3" Grid.Row="5"
 								Header="Observaciones"
 								Margin="0"
 								Style="{ StaticResource ResourceKey=Campo }">

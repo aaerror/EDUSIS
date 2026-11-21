@@ -228,7 +228,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		{
 			case "Aprobar":
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
-						titulo: $"Aprobar la licencia { LicenciaSeleccionada.Articulo }",
+						titulo: $"Aprobar la licencia por { LicenciaSeleccionada.Denominacion.ToLowerInvariant() }",
 						mensaje: $"Quedan concedidos { LicenciaSeleccionada.Dias } días desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy}. "
 							   + "La licencia deja de estar pendiente y ya no se puede editar ni rechazar.",
 						verbo: "Aprobar licencia")))
@@ -243,7 +243,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 																	  Observacion: LicenciaSeleccionada.Observacion);
 					await _servicioLicencia.AprobarLicencia(request);
 
-					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }, { LicenciaSeleccionada.Dias } días desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy}.", "Licencia aprobada");
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Denominacion }, { LicenciaSeleccionada.Dias } días desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy}.", "Licencia aprobada");
 					await ExecuteCargarLicenciasCommand();
 				}
 				catch (Exception ex)
@@ -254,7 +254,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 
 			case "Cancelar":
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
-						titulo: $"Rechazar la licencia { LicenciaSeleccionada.Articulo }",
+						titulo: $"Rechazar la licencia por { LicenciaSeleccionada.Denominacion.ToLowerInvariant() }",
 						mensaje: "La solicitud queda rechazada y deja de estar pendiente: no se puede editar ni aprobar después. "
 							   + "La observación que escribas queda como motivo.",
 						verbo: "Rechazar licencia")))
@@ -269,7 +269,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 																	  Observacion: LicenciaSeleccionada.Observacion);
 					await _servicioLicencia.RechazarLicencia(request);
 
-					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }.", "Licencia rechazada");
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Denominacion }.", "Licencia rechazada");
 					await ExecuteCargarLicenciasCommand();
 				}
 				catch (Exception ex)
@@ -283,13 +283,13 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 				{
 					var request = new ModificarLicenciaRequest(DocenteID: _docenteID,
 															   LicenciaID: LicenciaSeleccionada.LicenciaID,
-															   Articulo: LicenciaSeleccionada.Articulo,
+															   Articulo: LicenciaSeleccionada.Articulo.ToString(),
 															   Dias: LicenciaSeleccionada.Dias,
 															   FechaInicio: LicenciaSeleccionada.FechaInicio,
 															   Observacion: LicenciaSeleccionada.Observacion);
 					await _servicioLicencia.ModificarLicencia(request);
 
-					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }, { LicenciaSeleccionada.Dias } días.", "Licencia actualizada");
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Denominacion }, { LicenciaSeleccionada.Dias } días.", "Licencia actualizada");
 					await ExecuteCargarLicenciasCommand();
 				}
 				catch (Exception ex)
@@ -306,13 +306,13 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 				try
 				{
 					var request = new NuevaSolicitudLicenciaRequest(DocenteID: _docenteID,
-																	Articulo: LicenciaSeleccionada.Articulo,
+																	Articulo: LicenciaSeleccionada.Articulo.ToString(),
 																	FechaInicio: LicenciaSeleccionada.FechaInicio,
 																	Dias: LicenciaSeleccionada.Dias,
 																	Observacion: LicenciaSeleccionada.Observacion);
 					await _servicioLicencia.SolicitarLicencia(request);
 
-					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }, { LicenciaSeleccionada.Dias } días desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy}. Queda pendiente de aprobación.", "Licencia registrada");
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Denominacion }, { LicenciaSeleccionada.Dias } días desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy}. Queda pendiente de aprobación.", "Licencia registrada");
 					await ExecuteCargarLicenciasCommand();
 				}
 				catch (Exception ex)
@@ -327,7 +327,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 
 			case "Eliminar":
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Destructiva(
-						titulo: $"Eliminar la licencia { LicenciaSeleccionada.Articulo }",
+						titulo: $"Eliminar la licencia por { LicenciaSeleccionada.Denominacion.ToLowerInvariant() }",
 						consecuencia: $"Se borran los { LicenciaSeleccionada.Dias } días solicitados desde el { LicenciaSeleccionada.FechaInicio:dd/MM/yyyy} "
 									+ "y la licencia desaparece del legajo. Esta acción no se puede deshacer.",
 						verbo: "Eliminar licencia")))
@@ -341,7 +341,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 															  DocenteID: _docenteID);
 					await _servicioLicencia.EliminarLicencia(request);
 
-					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Articulo }.", "Licencia eliminada");
+					_dialogService.MostrarInformacion($"{ LicenciaSeleccionada.Denominacion }.", "Licencia eliminada");
 					await ExecuteCargarLicenciasCommand();
 				}
 				catch (Exception ex)
