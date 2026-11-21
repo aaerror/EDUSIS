@@ -16,6 +16,7 @@ using WPF_Desktop.ViewModels.Asistencias;
 using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.ViewModels.Docentes;
 using WPF_Desktop.ViewModels.Documentacion;
+using WPF_Desktop.ViewModels.Licencias;
 using WPF_Desktop.ViewModels.Reportes;
 
 namespace WPF_Desktop.ViewModels;
@@ -62,6 +63,7 @@ internal partial class MainViewModel : ObservableRecipient
 	public IRelayCommand GestionAlumnosCommand { get; }
 	public IRelayCommand GestionCursosCommand { get; }
 	public IRelayCommand AsistenciasCommand { get; }
+	public IRelayCommand LicenciasPendientesCommand { get; }
 	public IRelayCommand GestionUsuariosCommand { get; }
 	public IRelayCommand GestionDocumentacionCommand { get; }
 	public IRelayCommand GestionReportesCommand { get; }
@@ -81,6 +83,7 @@ internal partial class MainViewModel : ObservableRecipient
 						 INavigationService<GestionAlumnosViewModel> alumnosNavigationService,
 						 INavigationService<GestionCursosViewModel> cursosNavigationService,
 						 INavigationService<AsistenciasViewModel> asistenciasNavigationService,
+						 INavigationService<LicenciasPendientesViewModel> licenciasPendientesNavigationService,
 						 INavigationService<GestionUsuariosViewModel> usuariosNavigationService,
 						 INavigationService<GestionDocumentacionViewModel> documentacionNavigationService,
 						 INavigationService<GestionReportesViewModel> reportesNavigationService,
@@ -126,6 +129,12 @@ internal partial class MainViewModel : ObservableRecipient
 												   || _sesion.TienePermiso(Permiso.CargarCalificaciones));
 		AsistenciasCommand = new RelayCommand(() => Navegar(asistenciasNavigationService, "Asistencias"),
 											  () => _sesion.TienePermiso(Permiso.TomarAsistencia));
+
+		// OR de los dos permisos de resolución: la bandeja muestra a cada sesión las que puede
+		// decidir, y una sesión con uno solo de los dos tiene qué resolver.
+		LicenciasPendientesCommand = new RelayCommand(() => Navegar(licenciasPendientesNavigationService, "Licencias"),
+													  () => _sesion.TienePermiso(Permiso.ResolverLicencias)
+														 || _sesion.TienePermiso(Permiso.ResolverLicenciasAcademicas));
 
 		// La séptima raíz. AdministrarUsuarios y AsignarRoles no habilitaban ninguna entrada de
 		// menú: los dos casos de uso de roles están guardados por permiso y sólo esta pantalla los llama.
@@ -178,6 +187,7 @@ internal partial class MainViewModel : ObservableRecipient
 		GestionAlumnosCommand.NotifyCanExecuteChanged();
 		GestionCursosCommand.NotifyCanExecuteChanged();
 		AsistenciasCommand.NotifyCanExecuteChanged();
+		LicenciasPendientesCommand.NotifyCanExecuteChanged();
 		GestionUsuariosCommand.NotifyCanExecuteChanged();
 		GestionDocumentacionCommand.NotifyCanExecuteChanged();
 		GestionReportesCommand.NotifyCanExecuteChanged();

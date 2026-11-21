@@ -146,6 +146,16 @@
 							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Asistencias }"
 							ToolTip="Planillas de asistencia por división"/>
 
+					<!--
+						Las licencias de cada docente se deciden también desde su legajo; esta
+						entrada reúne las pendientes de todos para Dirección y Secretaría Académica.
+					-->
+					<Button Command="{ Binding Path=LicenciasPendientesCommand }"
+							Content="Licencias"
+							Style="{ StaticResource ResourceKey=Btn.Menu }"
+							Tag="{ Binding Path=SeccionActual, Converter={ StaticResource ResourceKey=esIgualA }, ConverterParameter=Licencias }"
+							ToolTip="Licencias pendientes de aprobación de todos los docentes"/>
+
 					<TextBlock Margin="20 18 20 10"
 							   Style="{ StaticResource ResourceKey=Txt.SobrePizarra.Seccion }"
 							   Text="EMISIÓN"/>

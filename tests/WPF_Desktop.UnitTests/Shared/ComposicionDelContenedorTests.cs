@@ -152,6 +152,17 @@ public class ComposicionDelContenedorTests
 	/// </remarks>
 	[Fact]
 	[Trait("Categoria", "Unidad")]
+	public void LicenciasPendientesViewModel_se_resuelve_del_contenedor_real()
+	{
+		using var host = ConstruirHost();
+
+		var viewModel = host.Services.GetRequiredService<WPF_Desktop.ViewModels.Licencias.LicenciasPendientesViewModel>();
+
+		viewModel.ShouldNotBeNull();
+	}
+
+	[Fact]
+	[Trait("Categoria", "Unidad")]
 	public void GestionAsistenciasViewModel_se_resuelve_del_contenedor_real()
 	{
 		using var host = ConstruirHost();

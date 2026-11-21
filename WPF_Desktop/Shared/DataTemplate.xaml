@@ -10,6 +10,8 @@
 					xmlns:vDocentes="clr-namespace:WPF_Desktop.Views.Docentes"
 					xmlns:vmLicencias="clr-namespace:WPF_Desktop.ViewModels.Docentes.Licencias"
 					xmlns:vLicencias="clr-namespace:WPF_Desktop.Views.Docentes.Licencias"
+					xmlns:vmBandeja="clr-namespace:WPF_Desktop.ViewModels.Licencias"
+					xmlns:vBandeja="clr-namespace:WPF_Desktop.Views.Licencias"
 					xmlns:vmPuestos="clr-namespace:WPF_Desktop.ViewModels.Docentes.Puestos"
 					xmlns:vPuestos="clr-namespace:WPF_Desktop.Views.Docentes.Puestos"
 					xmlns:vmAlumnos="clr-namespace:WPF_Desktop.ViewModels.Alumnos"
@@ -180,6 +182,16 @@
 	-->
 	<DataTemplate DataType="{ x:Type vmAsistencias:AsistenciasViewModel }">
 		<vAsistencias:AsistenciasView/>
+	</DataTemplate>
+	<!--#endregion-->
+
+	<!--#region LICENCIAS PENDIENTES
+		Raíz de menú propia, no un drill-down de Docentes: reúne las pendientes de todos los
+		docentes para quien las resuelve. Lo que se decide acá es lo mismo que se decide desde la
+		pantalla de licencias de cada docente.
+	-->
+	<DataTemplate DataType="{ x:Type vmBandeja:LicenciasPendientesViewModel }">
+		<vBandeja:LicenciasPendientesView/>
 	</DataTemplate>
 	<!--#endregion-->
 

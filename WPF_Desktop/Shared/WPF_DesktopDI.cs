@@ -29,6 +29,7 @@ using WPF_Desktop.ViewModels.Cursos.Curriculas;
 using WPF_Desktop.ViewModels.Cursos.Divisiones;
 using WPF_Desktop.ViewModels.Cursos;
 using WPF_Desktop.ViewModels.Documentacion;
+using WPF_Desktop.ViewModels.Licencias;
 using WPF_Desktop.ViewModels.Reportes;
 using WPF_Desktop.ViewModels.Docentes.Licencias;
 using WPF_Desktop.ViewModels.Docentes.Puestos;
@@ -141,6 +142,7 @@ internal static class WPF_DesktopDI
 								  Navegacion<GestionAlumnosViewModel, MainWindowNavigationStore>(provider),
 								  Navegacion<GestionCursosViewModel, MainWindowNavigationStore>(provider),
 								  Navegacion<AsistenciasViewModel, MainWindowNavigationStore>(provider),
+								  Navegacion<LicenciasPendientesViewModel, MainWindowNavigationStore>(provider),
 								  Navegacion<GestionUsuariosViewModel, MainWindowNavigationStore>(provider),
 								  Navegacion<GestionDocumentacionViewModel, MainWindowNavigationStore>(provider),
 								  Navegacion<GestionReportesViewModel, MainWindowNavigationStore>(provider),
@@ -193,6 +195,13 @@ internal static class WPF_DesktopDI
 										  Navegacion<GestionDocentesViewModel, MainWindowNavigationStore>(provider),
 										  provider.GetRequiredService<LegajoStore>(),
 										  provider.GetRequiredService<ISesionActual>()));
+		#endregion
+
+		#region Licencias pendientes
+		services.AddTransient<LicenciasPendientesViewModel>(provider =>
+			new LicenciasPendientesViewModel(provider.GetRequiredService<IServicioLicencia>(),
+											 provider.GetRequiredService<IDialogService>(),
+											 provider.GetRequiredService<ISesionActual>()));
 		#endregion
 
 		#region Alumnos

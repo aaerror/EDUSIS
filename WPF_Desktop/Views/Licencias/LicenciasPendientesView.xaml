@@ -1,0 +1,139 @@
+<UserControl x:Class="WPF_Desktop.Views.Licencias.LicenciasPendientesView"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:local="clr-namespace:WPF_Desktop.Views.Licencias"
+			 xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+			 xmlns:components="clr-namespace:WPF_Desktop.Components"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 mc:Ignorable="d">
+	<!--
+		BANDEJA DE LICENCIAS PENDIENTES.
+
+		Una sola tarjeta: el listado de pendientes de todos los docentes y, debajo, la decisión
+		sobre la fila elegida. No repite la pantalla de licencias del docente: acá no se carga ni
+		se edita nada, sólo se aprueba o se rechaza. La observación va con la decisión y arranca
+		con la de la solicitud (ver LicenciasPendientesViewModel).
+
+		Las filas que la sesión no puede resolver no llegan (las filtra Core), así que todo lo que
+		se ve es decidible; los botones igual siguen el permiso del artículo de la fila.
+	-->
+	<behaviors:Interaction.Triggers>
+		<behaviors:EventTrigger EventName="Loaded">
+			<behaviors:InvokeCommandAction Command="{ Binding Path=CargarCommandAsync }"/>
+		</behaviors:EventTrigger>
+	</behaviors:Interaction.Triggers>
+
+	<Grid Margin="28 24 28 24">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!--#region ENCABEZADO-->
+		<components:PaginaComponent Grid.Row="0"
+									Margin="0 0 0 20"
+									Titulo="Licencias pendientes"
+									Subtitulo="Solicitudes de licencia de todos los docentes que esperan tu decisión"/>
+		<!--#endregion-->
+
+		<!--#region AVISO-->
+		<Border Grid.Row="1"
+				IsEnabled="{ Binding Path=BandejaVacia, Mode=OneWay }"
+				Margin="0 0 0 16"
+				Style="{ StaticResource ResourceKey=Superficie.Aviso }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+					   Text="No hay licencias pendientes de tu decisión."
+					   TextWrapping="Wrap"/>
+		</Border>
+		<!--#endregion-->
+
+		<!--#region LISTADO Y DECISIÓN-->
+		<Border Grid.Row="2"
+				IsEnabled="{ Binding Path=BandejaVacia, Mode=OneWay, Converter={ StaticResource ResourceKey=negar } }"
+				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<Grid Margin="20 18">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
+
+				<TextBlock Grid.Row="0"
+						   Margin="0 0 0 12"
+						   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+						   Text="PENDIENTES DE APROBACIÓN"/>
+
+				<!-- La más antigua primero: es la que lleva más tiempo esperando. -->
+				<DataGrid Grid.Row="1"
+						  ItemsSource="{ Binding Path=Pendientes, Mode=OneWay }"
+						  SelectedItem="{ Binding Path=Seleccionada, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+						  MinHeight="160"
+						  Style="{ StaticResource ResourceKey=Grilla }"
+						  Tag="No hay licencias pendientes."
+						  d:ItemsSource="{ d:SampleData ItemCount=5 }">
+					<DataGrid.Columns>
+						<DataGridTextColumn Binding="{ Binding Path=Docente, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+											Header="DOCENTE"
+											Width="2*"/>
+						<DataGridTextColumn Binding="{ Binding Path=Denominacion, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
+											Header="ARTÍCULO"
+											Width="2*"/>
+						<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, StringFormat={}{0:dd/MM/yyyy} }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+											Header="DESDE"
+											Width="*"/>
+						<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneWay, StringFormat={}{0:dd/MM/yyyy}, FallbackValue='Indefinida', TargetNullValue='Indefinida' }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+											Header="HASTA"
+											Width="*"/>
+						<DataGridTextColumn Binding="{ Binding Path=Dias, Mode=OneWay }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+											Header="DÍAS"
+											Width="80"/>
+					</DataGrid.Columns>
+				</DataGrid>
+
+				<!-- La observación de la decisión: aparece con una fila elegida, como el pie de acciones. -->
+				<HeaderedContentControl Grid.Row="2"
+										Header="Observación"
+										Margin="0 16 0 0"
+										Style="{ StaticResource ResourceKey=Campo }"
+										Visibility="{ Binding Path=HaySeleccion, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+					<TextBox MaxLength="250"
+							 Tag="motivo del rechazo, quién autoriza&#x2026;"
+							 Text="{ Binding Path=Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+							 Style="{ StaticResource ResourceKey=Txb.Nota }"/>
+				</HeaderedContentControl>
+
+				<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
+					<StackPanel Orientation="Horizontal">
+						<Button Command="{ Binding Path=RechazarCommandAsync, IsAsync=True }"
+								Content="Rechazar"
+								Margin="0 0 8 0"
+								Style="{ StaticResource ResourceKey=Btn.Secundario }"
+								ToolTip="Rechazar la licencia seleccionada"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						<Button Command="{ Binding Path=AprobarCommandAsync, IsAsync=True }"
+								Content="Aprobar"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Conceder la licencia seleccionada"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+					</StackPanel>
+				</HeaderedContentControl>
+			</Grid>
+		</Border>
+		<!--#endregion-->
+
+		<components:CargandoComponent Grid.Row="0"
+									  Grid.RowSpan="3"
+									  EstaCargando="{ Binding Path=CargarCommandAsync.IsRunning }"
+									  Leyenda="CARGANDO LAS LICENCIAS PENDIENTES"/>
+	</Grid>
+</UserControl>

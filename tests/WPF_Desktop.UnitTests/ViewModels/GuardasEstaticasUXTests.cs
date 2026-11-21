@@ -62,6 +62,7 @@ public class GuardasEstaticasUXTests
 		"WPF_Desktop/Views/Docentes/Licencias/GestionLicenciasView.xaml",
 		"WPF_Desktop/Views/Docentes/Puestos/GestionPuestosView.xaml",
 		"WPF_Desktop/Views/Documentacion/GestionDocumentacionView.xaml",
+		"WPF_Desktop/Views/Licencias/LicenciasPendientesView.xaml",
 		"WPF_Desktop/Views/Reportes/GestionReportesView.xaml",
 	};
 
