@@ -253,6 +253,52 @@
 	</Style>
 
 	<Style TargetType="{ x:Type GroupBox }" BasedOn="{ StaticResource ResourceKey=Seccion }"/>
+
+	<!--
+		Sección con una acción en su renglón: el "Editar" de cada bloque de un perfil. Iba al
+		pie del bloque, lejos del rótulo que nombra lo que se edita, y en una pantalla de tres
+		bloques eran tres botones apilados en la misma columna derecha.
+
+		La acción entra por el Tag, como el texto guía de los campos. Se presenta en su propio
+		ContentPresenter, hermano del del Header y NO dentro de él: el estilo implícito de
+		TextBlock del rótulo alcanzaría al texto del botón y lo volvería versalita.
+
+		El renglón mide lo que un botón (34px) y por eso los márgenes son menores que los de
+		Seccion: el rótulo queda a la misma altura de lectura y el contenido no se aleja.
+	-->
+	<Style x:Key="Seccion.ConAccion" TargetType="{ x:Type GroupBox }" BasedOn="{ StaticResource ResourceKey=Seccion }">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{ x:Type GroupBox }">
+					<StackPanel>
+						<Border BorderBrush="{ StaticResource ResourceKey=Linea }"
+								BorderThickness="0 1 0 0"
+								SnapsToDevicePixels="True">
+							<Grid Margin="0 6 0 0" MinHeight="34">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+
+								<ContentPresenter Grid.Column="0"
+												  ContentSource="Header"
+												  VerticalAlignment="Center">
+									<ContentPresenter.Resources>
+										<Style TargetType="{ x:Type TextBlock }" BasedOn="{ StaticResource ResourceKey=Txt.Seccion }"/>
+									</ContentPresenter.Resources>
+								</ContentPresenter>
+
+								<ContentPresenter Grid.Column="1"
+												  Content="{ TemplateBinding Tag }"
+												  VerticalAlignment="Center"/>
+							</Grid>
+						</Border>
+						<ContentPresenter Margin="0 10 0 0"/>
+					</StackPanel>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
 	<!--#endregion-->
 
 	<!--#region PASOS

@@ -7,8 +7,14 @@
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 mc:Ignorable="d"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+	<!--
+		Tres columnas como datos personales y domicilio, con el correo ocupando dos: así el
+		teléfono cae debajo del apellido y de la calle en lugar de partir la tarjeta por la mitad
+		con una retícula propia.
+	-->
 	<Grid>
 		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
 			<ColumnDefinition Width="*"/>
 			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
@@ -19,16 +25,16 @@
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=contactoData }"
 					 Tag="11 5555 5555"
 					 Text="{ Binding Path=Telefono, ElementName=contactoData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 
-		<HeaderedContentControl Grid.Column="1"
+		<HeaderedContentControl Grid.Column="1" Grid.ColumnSpan="2"
 							   Header="Correo electrónico"
 							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=contactoData }"
 					 Tag="nombre@edu.ar"
 					 Text="{ Binding Path=Email, ElementName=contactoData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 	</Grid>
 </UserControl>

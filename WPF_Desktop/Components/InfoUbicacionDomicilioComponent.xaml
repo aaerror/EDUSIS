@@ -24,7 +24,7 @@
 							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=ubicacionData }"
 					 Text="{ Binding Path=Localidad, ElementName=ubicacionData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 
 		<HeaderedContentControl Grid.Column="1"
@@ -32,7 +32,7 @@
 							   Style="{ StaticResource ResourceKey=Campo.Centro }">
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=ubicacionData }"
 					 Text="{ Binding Path=Provincia, ElementName=ubicacionData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 
 		<HeaderedContentControl Grid.Column="2"
@@ -40,7 +40,7 @@
 							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=ubicacionData }"
 					 Text="{ Binding Path=Pais, ElementName=ubicacionData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 	</Grid>
 </UserControl>

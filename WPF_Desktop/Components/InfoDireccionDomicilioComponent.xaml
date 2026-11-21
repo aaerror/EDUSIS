@@ -41,7 +41,7 @@
 							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=direccionData }"
 					 Text="{ Binding Path=Calle, ElementName=direccionData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 
 		<HeaderedContentControl Grid.Column="1" Grid.Row="0"
@@ -50,7 +50,7 @@
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=direccionData }"
 					 Tag="1234"
 					 Text="{ Binding Path=Altura, ElementName=direccionData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 
 		<HeaderedContentControl Grid.Column="2" Grid.Row="0"
@@ -59,7 +59,7 @@
 			<ComboBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=direccionData }"
 					  ItemsSource="{ Binding Source={ StaticResource ResourceKey=vivienda } }"
 					  SelectedItem="{ Binding Path=Vivienda, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ElementName=direccionData, Converter={ StaticResource ResourceKey=viviendaConverter } }"
-					  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+					  Style="{ StaticResource ResourceKey=Cmb.Dato }"/>
 		</HeaderedContentControl>
 
 		<HeaderedContentControl Grid.ColumnSpan="3" Grid.Row="1"
@@ -67,7 +67,7 @@
 							   Style="{ StaticResource ResourceKey=Campo }">
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=direccionData }"
 					 Text="{ Binding Path=Observacion, ElementName=direccionData }"
-					 Style="{ StaticResource ResourceKey=Txb.Nota }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato.Nota }"/>
 		</HeaderedContentControl>
 	</Grid>
 </UserControl>

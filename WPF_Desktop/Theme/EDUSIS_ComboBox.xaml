@@ -216,6 +216,46 @@
 	</Style>
 	<!--#endregion-->
 
+	<!--#region SELECTOR EN SITIO
+		Par de Txb.Dato (EDUSIS_TextBox.xaml): deshabilitado se lee como dato, sin caja ni
+		flecha; habilitado es Cmb.Campo. El presentador repite el ContentTemplateSelector de
+		Cmb.Campo por el mismo motivo: sin él, un ítem con DataTemplate implícito dibuja su
+		vista entera en lugar del valor.
+	-->
+	<Style x:Key="Cmb.Dato" TargetType="{ x:Type ComboBox }" BasedOn="{ StaticResource ResourceKey=Cmb.Campo }">
+		<Style.Triggers>
+			<Trigger Property="IsEnabled" Value="False">
+				<Setter Property="Template">
+					<Setter.Value>
+						<ControlTemplate TargetType="{ x:Type ComboBox }">
+							<Grid Background="Transparent">
+								<ContentPresenter x:Name="Seleccion"
+												  Content="{ TemplateBinding SelectionBoxItem }"
+												  ContentTemplate="{ TemplateBinding SelectionBoxItemTemplate }"
+												  ContentTemplateSelector="{ TemplateBinding ItemTemplateSelector }"
+												  ContentStringFormat="{ TemplateBinding SelectionBoxItemStringFormat }"
+												  HorizontalAlignment="Left"
+												  VerticalAlignment="Center"/>
+								<TextBlock x:Name="Vacio"
+										   Foreground="{ StaticResource ResourceKey=TintaTenue }"
+										   Text="—"
+										   VerticalAlignment="Center"
+										   Visibility="Collapsed"/>
+							</Grid>
+							<ControlTemplate.Triggers>
+								<Trigger Property="SelectedItem" Value="{ x:Null }">
+									<Setter TargetName="Seleccion" Property="Visibility" Value="Collapsed"/>
+									<Setter TargetName="Vacio" Property="Visibility" Value="Visible"/>
+								</Trigger>
+							</ControlTemplate.Triggers>
+						</ControlTemplate>
+					</Setter.Value>
+				</Setter>
+			</Trigger>
+		</Style.Triggers>
+	</Style>
+	<!--#endregion-->
+
 	<!--#region COMPATIBILIDAD-->
 	<Style x:Key="ComboBoxStyle" TargetType="{ x:Type ComboBox }" BasedOn="{ StaticResource ResourceKey=Cmb.Campo }"/>
 	<!--#endregion-->

@@ -17,8 +17,12 @@
 		La propiedad sigue declarada en el code-behind.
 
 		Documento, fecha de nacimiento y nacionalidad van deshabilitados a propósito: son datos
-		de identidad que no se editan desde el perfil. El fondo Tiza del campo deshabilitado es
-		lo que distingue "no se toca" de "escribí acá", que es la regla del sistema.
+		de identidad que no se editan desde el perfil. Con Txb.Dato se leen como dato, sin caja,
+		también con el bloque abierto: la caja es lo que distingue "escribí acá" de "no se toca".
+
+		Tres columnas, la misma retícula de contacto y domicilio. La primera fila es la que se
+		edita (apellido, nombre, sexo) y la segunda la de identidad: con el bloque abierto las
+		cajas quedan juntas en un renglón, no salteadas entre datos fijos.
 	-->
 	<UserControl.Resources>
 		<converters:SexoConverter x:Key="sexoConverter"/>
@@ -33,60 +37,64 @@
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="*"/>
 			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
+		<!--#region EDITABLES-->
 		<HeaderedContentControl Grid.Column="0" Grid.Row="0"
 							   Header="Apellido"
 							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
 					 Text="{ Binding Path=Apellido, ElementName=personaData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 
 		<HeaderedContentControl Grid.Column="1" Grid.Row="0"
 							   Header="Nombre"
-							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
+							   Style="{ StaticResource ResourceKey=Campo.Centro }">
 			<TextBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
 					 Text="{ Binding Path=Nombre, ElementName=personaData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 
-		<HeaderedContentControl Grid.Column="0" Grid.Row="1"
-							   Header="Documento"
-							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-			<TextBox IsEnabled="False"
-					 Text="{ Binding Path=Documento, ElementName=personaData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
-		</HeaderedContentControl>
-
-		<HeaderedContentControl Grid.Column="1" Grid.Row="1"
+		<HeaderedContentControl Grid.Column="2" Grid.Row="0"
 							   Header="Sexo"
 							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
 			<ComboBox IsEnabled="{ Binding Path=EstaHabilitado, ElementName=personaData }"
 					  ItemsSource="{ Binding Source={ StaticResource ResourceKey=sexos } }"
 					  SelectedItem="{ Binding Path=Sexo, ElementName=personaData, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, Converter={ StaticResource ResourceKey=sexoConverter } }"
-					  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
+					  Style="{ StaticResource ResourceKey=Cmb.Dato }"/>
 		</HeaderedContentControl>
+		<!--#endregion-->
 
-		<HeaderedContentControl Grid.Column="0" Grid.Row="2"
-							   Header="Fecha de nacimiento"
+		<!--#region IDENTIDAD-->
+		<HeaderedContentControl Grid.Column="0" Grid.Row="1"
+							   Header="Documento"
 							   Style="{ StaticResource ResourceKey=Campo.Izquierda }">
 			<TextBox IsEnabled="False"
-					 Text="{ Binding Path=FechaNacimiento, ElementName=personaData, StringFormat=D }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Text="{ Binding Path=Documento, ElementName=personaData }"
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
 
-		<HeaderedContentControl Grid.Column="1" Grid.Row="2"
+		<HeaderedContentControl Grid.Column="1" Grid.Row="1"
+							   Header="Fecha de nacimiento"
+							   Style="{ StaticResource ResourceKey=Campo.Centro }">
+			<TextBox IsEnabled="False"
+					 Text="{ Binding Path=FechaNacimiento, ElementName=personaData, StringFormat=D }"
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
+		</HeaderedContentControl>
+
+		<HeaderedContentControl Grid.Column="2" Grid.Row="1"
 							   Header="Nacionalidad"
 							   Style="{ StaticResource ResourceKey=Campo.Derecha }">
 			<TextBox IsEnabled="False"
 					 Text="{ Binding Path=Nacionalidad, ElementName=personaData }"
-					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+					 Style="{ StaticResource ResourceKey=Txb.Dato }"/>
 		</HeaderedContentControl>
+		<!--#endregion-->
 	</Grid>
 </UserControl>
