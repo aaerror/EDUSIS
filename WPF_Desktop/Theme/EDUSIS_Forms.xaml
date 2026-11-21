@@ -167,9 +167,15 @@
 	<!--#region ACCIONES
 		El pie de un formulario o de una tarjeta.
 
-		Header = lo que sale del flujo o destruye (volver, eliminar, rescindir), a la
-		izquierda. Content = la confirmación, a la derecha. Las dos puntas están lo más
-		separadas posible porque son las dos cosas que no conviene confundir.
+		Header = lo destructivo o ajeno a la edición en curso (eliminar, quitar, rescindir), a
+		la izquierda y aislado. Content = el grupo de la decisión, a la derecha: Cancelar
+		(Btn.Terciario) PEGADO a la confirmación (Btn.Primario), que cierra la fila.
+
+		Cancelar NO va en Header. Ahí quedaba en la otra punta del pie, a todo el ancho de la
+		tarjeta de su par: cancelar y confirmar son las dos respuestas a la misma pregunta y se
+		leen juntas; lo que conviene alejar de la confirmación es lo que destruye. El orden
+		Cancelar → Confirmar es el de los diálogos de la aplicación (ConfirmacionWindow) y el
+		de la edición en sitio de los perfiles.
 
 		Antes cada pantalla lo armaba con un WrapPanel HorizontalAlignment=Right y los
 		márgenes que le parecían (0 0 5 0, 5 0 0 0, 0 10 0 0...), y el destructivo quedaba

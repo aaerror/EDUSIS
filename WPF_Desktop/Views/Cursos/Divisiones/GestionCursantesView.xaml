@@ -765,14 +765,12 @@
 				</HeaderedContentControl>
 
 				<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
-					<HeaderedContentControl.Header>
+					<StackPanel Orientation="Horizontal">
 						<Button Command="{ Binding Path=CancelarCalificacionCommand }"
 								Content="Cancelar"
+								Margin="0 0 8 0"
 								Style="{ StaticResource ResourceKey=Btn.Terciario }"
 								ToolTip="Descartar la calificación"/>
-					</HeaderedContentControl.Header>
-
-					<StackPanel Orientation="Horizontal">
 						<Button Command="{ Binding Path=RegistrarInasistenciaCommandAsync }"
 								Content="Registrar inasistencia"
 								Margin="0 0 8 0"

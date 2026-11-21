@@ -138,24 +138,25 @@
 
 		<!--#region ACCIONES-->
 		<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
-			<HeaderedContentControl.Header>
+			<StackPanel Orientation="Horizontal">
 				<Button Command="{ Binding Path=CancelarCommand }"
 						Content="Cancelar"
 						IsCancel="True"
+						Margin="0 0 8 0"
 						Style="{ StaticResource ResourceKey=Btn.Terciario }"
 						ToolTip="Cerrar sin elegir"/>
-			</HeaderedContentControl.Header>
 
-			<!--
-				El verbo lo pone quien abre. En Divisiones dice "Asignar preceptor" porque este
-				botón TERMINA la transacción; en Situación de Revista dice "Elegir docente" porque
-				después hay cargo y período que cargar. La etiqueta nombra lo que pasa al apretarla,
-				que es lo único que distingue los dos recorridos desde acá adentro.
-			-->
-			<Button Command="{ Binding Path=ElegirCommand }"
-					Content="{ Binding Path=Verbo, Mode=OneTime }"
-					Style="{ StaticResource ResourceKey=Btn.Primario }"
-					ToolTip="Usar el docente seleccionado"/>
+				<!--
+					El verbo lo pone quien abre. En Divisiones dice "Asignar preceptor" porque este
+					botón TERMINA la transacción; en Situación de Revista dice "Elegir docente" porque
+					después hay cargo y período que cargar. La etiqueta nombra lo que pasa al apretarla,
+					que es lo único que distingue los dos recorridos desde acá adentro.
+				-->
+				<Button Command="{ Binding Path=ElegirCommand }"
+						Content="{ Binding Path=Verbo, Mode=OneTime }"
+						Style="{ StaticResource ResourceKey=Btn.Primario }"
+						ToolTip="Usar el docente seleccionado"/>
+			</StackPanel>
 		</HeaderedContentControl>
 		<!--#endregion-->
 	</Grid>

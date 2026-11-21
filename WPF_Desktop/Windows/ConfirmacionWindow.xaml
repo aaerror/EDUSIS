@@ -128,7 +128,7 @@
 								Content="Cancelar"
 								IsCancel="True"
 								Margin="0 0 8 0"
-								Style="{ StaticResource ResourceKey=Btn.Secundario }"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
 								Visibility="{ Binding Path=TieneCancelar, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 
 						<Button x:Name="BotonPeligro"

@@ -569,19 +569,19 @@
 				<!--#endregion-->
 
 				<HeaderedContentControl Grid.Row="4" Style="{ StaticResource ResourceKey=Acciones }">
-					<HeaderedContentControl.Header>
+					<StackPanel Orientation="Horizontal">
 						<Button Command="{ Binding Path=CancelarCommand }"
 								CommandParameter="Insert"
 								Content="Cancelar"
+								Margin="0 0 8 0"
 								Style="{ StaticResource ResourceKey=Btn.Terciario }"
 								ToolTip="Descartar la designación"/>
-					</HeaderedContentControl.Header>
-
-					<Button Command="{ Binding Path=GuardarCommand }"
-							CommandParameter="Insert"
-							Content="Designar docente"
-							Style="{ StaticResource ResourceKey=Btn.Primario }"
-							ToolTip="Guardar la designación"/>
+						<Button Command="{ Binding Path=GuardarCommand }"
+								CommandParameter="Insert"
+								Content="Designar docente"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Guardar la designación"/>
+					</StackPanel>
 				</HeaderedContentControl>
 			</Grid>
 		</Border>

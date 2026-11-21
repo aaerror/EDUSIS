@@ -303,29 +303,27 @@
 				<HeaderedContentControl Grid.Row="1"
 										Margin="20 20 20 18"
 										Style="{ StaticResource ResourceKey=Acciones }">
-					<HeaderedContentControl.Header>
-						<StackPanel Orientation="Horizontal">
-							<Button Command="{ Binding Path=CancelarCommandAsync }"
-									CommandParameter="Nueva"
-									Content="Cancelar"
-									Style="{ StaticResource ResourceKey=Btn.Terciario }"
-									ToolTip="Descartar la licencia nueva"
-									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-							<Button Command="{ Binding Path=CancelarCommandAsync, IsAsync=True }"
-									CommandParameter="Editar"
-									Content="Cancelar"
-									Style="{ StaticResource ResourceKey=Btn.Terciario }"
-									ToolTip="Descartar los cambios"
-									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-						</StackPanel>
-					</HeaderedContentControl.Header>
-
+					<!-- Cada Cancelar va pegado a la confirmación de su modo: sólo un par se ve a la vez. -->
 					<StackPanel Orientation="Horizontal">
+						<Button Command="{ Binding Path=CancelarCommandAsync }"
+								CommandParameter="Nueva"
+								Content="Cancelar"
+								Margin="0 0 8 0"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								ToolTip="Descartar la licencia nueva"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
 								CommandParameter="Nueva"
 								Content="Registrar licencia"
 								Style="{ StaticResource ResourceKey=Btn.Primario }"
 								ToolTip="Registrar la licencia"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						<Button Command="{ Binding Path=CancelarCommandAsync, IsAsync=True }"
+								CommandParameter="Editar"
+								Content="Cancelar"
+								Margin="0 0 8 0"
+								Style="{ StaticResource ResourceKey=Btn.Terciario }"
+								ToolTip="Descartar los cambios"
 								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
 								CommandParameter="Editar"

@@ -252,21 +252,21 @@
 											 DataContext="{ Binding Path=PuestoDocente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"/>
 
 					<HeaderedContentControl Grid.Row="1" Style="{ StaticResource ResourceKey=Acciones }">
-						<HeaderedContentControl.Header>
+						<StackPanel Orientation="Horizontal">
 							<Button Command="{ Binding Path=CancelarCommandAsync, IsAsync=True }"
 									CommandParameter="Nuevo"
 									Content="Cancelar"
+									Margin="0 0 8 0"
 									Style="{ StaticResource ResourceKey=Btn.Terciario }"
 									ToolTip="Descartar los cambios del puesto"
 									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-						</HeaderedContentControl.Header>
-
-						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
-								CommandParameter="Upsert"
-								Content="Guardar puesto"
-								Style="{ StaticResource ResourceKey=Btn.Primario }"
-								ToolTip="Guardar el puesto"
-								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+							<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+									CommandParameter="Upsert"
+									Content="Guardar puesto"
+									Style="{ StaticResource ResourceKey=Btn.Primario }"
+									ToolTip="Guardar el puesto"
+									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						</StackPanel>
 					</HeaderedContentControl>
 				</Grid>
 			</ScrollViewer>

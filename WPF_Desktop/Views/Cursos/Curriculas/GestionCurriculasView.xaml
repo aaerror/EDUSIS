@@ -143,19 +143,19 @@
 				</Grid>
 
 				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
-					<HeaderedContentControl.Header>
+					<StackPanel Orientation="Horizontal">
 						<Button Command="{ Binding Path=CancelarCommand }"
 								CommandParameter="Nueva"
 								Content="Cancelar"
+								Margin="0 0 8 0"
 								Style="{ StaticResource ResourceKey=Btn.Terciario }"
 								ToolTip="Descartar la materia nueva"/>
-					</HeaderedContentControl.Header>
-
-					<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
-							CommandParameter="Materia"
-							Content="Agregar materia"
-							Style="{ StaticResource ResourceKey=Btn.Primario }"
-							ToolTip="Agregar la materia al diseño curricular"/>
+						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+								CommandParameter="Materia"
+								Content="Agregar materia"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Agregar la materia al diseño curricular"/>
+					</StackPanel>
 				</HeaderedContentControl>
 			</Grid>
 		</Border>
@@ -393,20 +393,11 @@
 
 							<HeaderedContentControl Grid.Row="4" Style="{ StaticResource ResourceKey=Acciones }">
 								<HeaderedContentControl.Header>
-									<StackPanel Orientation="Horizontal">
-										<Button Command="{ Binding Path=EliminarCommandAsync }"
-												CommandParameter="Materia"
-												Content="Quitar materia"
-												Margin="0 0 8 0"
-												Style="{ StaticResource ResourceKey=Btn.Peligro }"
-												ToolTip="Quitar la materia elegida del diseño curricular"/>
-										<Button Command="{ Binding Path=CancelarCommand }"
-												CommandParameter="Editar"
-												Content="Cancelar"
-												Style="{ StaticResource ResourceKey=Btn.Terciario }"
-												ToolTip="Descartar los cambios de la materia"
-												Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-									</StackPanel>
+									<Button Command="{ Binding Path=EliminarCommandAsync }"
+											CommandParameter="Materia"
+											Content="Quitar materia"
+											Style="{ StaticResource ResourceKey=Btn.Peligro }"
+											ToolTip="Quitar la materia elegida del diseño curricular"/>
 								</HeaderedContentControl.Header>
 
 								<StackPanel Orientation="Horizontal">
@@ -420,6 +411,13 @@
 											CommandParameter="Update"
 											Content="Guardar materia"
 											Margin="0 0 8 0"
+									<Button Command="{ Binding Path=CancelarCommand }"
+											CommandParameter="Editar"
+											Content="Cancelar"
+											Margin="0 0 8 0"
+											Style="{ StaticResource ResourceKey=Btn.Terciario }"
+											ToolTip="Descartar los cambios de la materia"
+											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 											Style="{ StaticResource ResourceKey=Btn.Primario }"
 											ToolTip="Guardar los cambios de la materia"
 											Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
