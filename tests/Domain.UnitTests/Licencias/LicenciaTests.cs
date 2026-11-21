@@ -22,10 +22,10 @@ public class LicenciaTests
 	{
 		var docenteID = Guid.NewGuid();
 
-		var licencia = new LicenciaBuilder().ConDocente(docenteID).ConArticulo(nameof(Articulo.Enfermedad)).Build();
+		var licencia = new LicenciaBuilder().ConDocente(docenteID).ConArticulo(nameof(Articulo.AccidenteDeTrabajo)).Build();
 
 		licencia.DocenteID.ShouldBe(docenteID);
-		licencia.Articulo.ShouldBe(Articulo.Enfermedad);
+		licencia.Articulo.ShouldBe(Articulo.AccidenteDeTrabajo);
 		licencia.Estado.ShouldBe(Estado.Pendiente);
 		var evento = licencia.Eventos.ShouldHaveSingleItem().ShouldBeOfType<LicenciaSolicitadaEvent>();
 		evento.LicenciaID.ShouldBe(licencia.Id);
@@ -103,24 +103,37 @@ public class LicenciaTests
 
 	#region Modificación del período
 	[Fact]
-	public void ModificarPeriodo_sobre_una_licencia_no_activa_ajusta_el_intervalo()
+	public void ModificarSolicitud_sobre_una_licencia_no_activa_ajusta_articulo_e_intervalo()
 	{
 		var licencia = new LicenciaBuilder().Build();
 
-		licencia.ModificarPeriodo(new DateTime(2026, 5, 1), 10);
+		licencia.ModificarSolicitud(nameof(Articulo.EnfermedadCortoTratamiento), new DateTime(2026, 5, 1), 10);
 
+		licencia.Articulo.ShouldBe(Articulo.EnfermedadCortoTratamiento);
 		licencia.Periodo.FechaInicio.ShouldBe(new DateTime(2026, 5, 1));
 		licencia.Periodo.FechaFin.ShouldBe(new DateTime(2026, 5, 11));
 	}
 
 	[Fact]
-	public void ModificarPeriodo_sobre_una_licencia_activa_lanza_LicenciaActivaException()
+	public void ModificarSolicitud_sobre_una_licencia_activa_lanza_LicenciaActivaException()
 	{
 		var licencia = new LicenciaBuilder().Aprobada().Build();
 
-		var ex = Should.Throw<Exception>(() => licencia.ModificarPeriodo(DateTime.Today, 5));
+		var ex = Should.Throw<Exception>(() => licencia.ModificarSolicitud(nameof(Articulo.OtrasCausas), DateTime.Today, 5));
 
 		ex.GetType().Name.ShouldBe("LicenciaActivaException");
+	}
+
+	[Fact]
+	public void ModificarSolicitud_que_viola_el_plazo_legal_no_cambia_la_licencia()
+	{
+		var licencia = new LicenciaBuilder().Build();
+
+		Should.Throw<PlazoFijoDeLicenciaIncumplidoException>(() =>
+			licencia.ModificarSolicitud(nameof(Articulo.MatrimonioPropio), DateTime.Today, 3));
+
+		licencia.Articulo.ShouldBe(Articulo.AccidenteDeTrabajo);
+		licencia.EsIndefinida().ShouldBeTrue();
 	}
 
 	[Fact]
@@ -195,6 +208,101 @@ public class LicenciaTests
 		var ex = Should.Throw<Exception>(() => licencia.ExtenderLicencia(5));
 
 		ex.GetType().Name.ShouldBe("LicenciaIndefinidaException");
+	}
+	#endregion
+
+	#region Plazo legal
+	[Fact]
+	public void Todo_articulo_tiene_plazo_legal_con_denominacion_y_norma()
+	{
+		foreach (var articulo in Enum.GetValues<Articulo>())
+		{
+			var plazo = PlazoLegal.De(articulo);
+
+			plazo.Denominacion.ShouldNotBeNullOrWhiteSpace();
+			plazo.Norma.ShouldNotBeNullOrWhiteSpace();
+			(plazo.Tipo == TipoDePlazo.Abierto || plazo.Dias > 0).ShouldBeTrue($"{ articulo } tiene plazo sin días");
+		}
+	}
+
+	[Fact]
+	public void Una_licencia_de_plazo_fijo_con_sus_dias_exactos_se_solicita()
+	{
+		var licencia = new Licencia(Guid.NewGuid(), nameof(Articulo.MatrimonioPropio), DateTime.Today, 15, null);
+
+		licencia.Periodo.FechaFin.ShouldBe(DateTime.Today.AddDays(15));
+	}
+
+	[Theory]
+	[InlineData(14)]
+	[InlineData(16)]
+	public void Una_licencia_de_plazo_fijo_con_otros_dias_lanza_PlazoFijoDeLicenciaIncumplidoException(int dias)
+	{
+		Should.Throw<PlazoFijoDeLicenciaIncumplidoException>(() =>
+			new Licencia(Guid.NewGuid(), nameof(Articulo.MatrimonioPropio), DateTime.Today, dias, null));
+	}
+
+	[Fact]
+	public void Una_licencia_de_plazo_maximo_hasta_el_tope_se_solicita()
+	{
+		var licencia = new Licencia(Guid.NewGuid(), nameof(Articulo.AtencionDeFamiliar), DateTime.Today, 10, null);
+
+		licencia.Periodo.FechaFin.ShouldBe(DateTime.Today.AddDays(10));
+	}
+
+	[Fact]
+	public void Una_licencia_que_supera_el_tope_lanza_PlazoMaximoDeLicenciaExcedidoException()
+	{
+		var ex = Should.Throw<PlazoMaximoDeLicenciaExcedidoException>(() =>
+			new Licencia(Guid.NewGuid(), nameof(Articulo.AtencionDeFamiliar), DateTime.Today, 11, null));
+
+		ex.Message.ShouldContain("10 días");
+	}
+
+	[Theory]
+	[InlineData(nameof(Articulo.EnfermedadCortoTratamiento))]
+	[InlineData(nameof(Articulo.MatrimonioPropio))]
+	public void Un_articulo_con_plazo_sin_fecha_de_fin_lanza_LicenciaIndefinidaNoAdmitidaException(string articulo)
+	{
+		Should.Throw<LicenciaIndefinidaNoAdmitidaException>(() =>
+			new Licencia(Guid.NewGuid(), articulo, DateTime.Today, 0, null));
+	}
+
+	[Theory]
+	[InlineData(nameof(Articulo.AccidenteDeTrabajo))]
+	[InlineData(nameof(Articulo.OtrasCausas))]
+	[InlineData(nameof(Articulo.EstudioEncomendado))]
+	public void Un_articulo_de_plazo_abierto_admite_quedar_sin_fecha_de_fin(string articulo)
+	{
+		var licencia = new Licencia(Guid.NewGuid(), articulo, DateTime.Today, 0, null);
+
+		licencia.EsIndefinida().ShouldBeTrue();
+	}
+
+	[Fact]
+	public void ExtenderLicencia_mas_alla_del_tope_lanza_PlazoMaximoDeLicenciaExcedidoException_y_no_la_cambia()
+	{
+		var licencia = new LicenciaBuilder()
+			.ConArticulo(nameof(Articulo.AtencionDeFamiliar))
+			.ConFechaFin(DateTime.Today.AddDays(8))
+			.Aprobada()
+			.Build();
+
+		Should.Throw<PlazoMaximoDeLicenciaExcedidoException>(() => licencia.ExtenderLicencia(3));
+
+		licencia.Periodo.FechaFin.ShouldBe(DateTime.Today.AddDays(8));
+	}
+
+	[Fact]
+	public void EstablecerLicenciaIndefinida_en_un_articulo_con_plazo_lanza_LicenciaIndefinidaNoAdmitidaException()
+	{
+		var licencia = new LicenciaBuilder()
+			.ConArticulo(nameof(Articulo.EnfermedadCortoTratamiento))
+			.ConFechaFin(DateTime.Today.AddDays(5))
+			.Aprobada()
+			.Build();
+
+		Should.Throw<LicenciaIndefinidaNoAdmitidaException>(() => licencia.EstablecerLicenciaIndefinida());
 	}
 	#endregion
 }

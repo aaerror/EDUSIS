@@ -484,7 +484,7 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Articulo")
                         .IsRequired()
-                        .HasColumnType("varchar(15)")
+                        .HasColumnType("varchar(40)")
                         .HasColumnName("articulo");
 
                     b.Property<Guid>("DocenteID")

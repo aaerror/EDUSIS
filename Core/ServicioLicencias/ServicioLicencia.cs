@@ -114,7 +114,7 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 				throw new LicenciaNoEncontradaException();
 			}
 
-			licencia.ModificarPeriodo(request.FechaInicio, request.Dias);
+			licencia.ModificarSolicitud(request.Articulo, request.FechaInicio, request.Dias);
 			licencia.ModificarObservaciones(request.Observacion);
 
 			_unitOfWork.Licencias.Modificar(licencia);
@@ -176,16 +176,9 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 				throw new DocenteNoEncontradoException(nameof(request.DocenteID));
 			}
 
-			Licencia licencia;
-			if (request.Dias > 0)
-			{
-				var fechaFin = request.FechaInicio.AddDays(request.Dias);
-				licencia = new Licencia(request.DocenteID, request.Articulo, request.FechaInicio, fechaFin, request.Observacion);
-			}
-			else
-			{
-				licencia = new Licencia(request.DocenteID, request.Articulo, request.FechaInicio, request.Observacion);
-			}
+			// El período (inicio + días corridos, o sin fin si son cero) y su plazo legal los decide
+			// el agregado: el servicio ya no calcula la fecha de fin ni elige el constructor.
+			var licencia = new Licencia(request.DocenteID, request.Articulo, request.FechaInicio, request.Dias, request.Observacion);
 
 			await _unitOfWork.Licencias.AgregarAsync(licencia);
 			var result = await _unitOfWork.GuardarCambiosAsync();

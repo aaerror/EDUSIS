@@ -31,9 +31,10 @@ internal class LicenciasConfiguration : IEntityTypeConfiguration<Licencia>
 			   .HasConstraintName("FK_LICENCIA_DOCENTE")
 			   .OnDelete(DeleteBehavior.Restrict);
 
+		// 40 y no 15: los nombres del catálogo legal ("FallecimientoDeFamiliarDirecto") no entran en 15.
 		builder.Property(x => x.Articulo)
 			   .HasColumnName("articulo")
-			   .HasColumnType("varchar(15)")
+			   .HasColumnType("varchar(40)")
 			   .HasConversion(toProvider => toProvider.ToString(),
 							  fromProvider => (Articulo) Enum.Parse(typeof(Articulo), fromProvider))
 			   .IsRequired();

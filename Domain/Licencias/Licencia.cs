@@ -1,4 +1,3 @@
-using Domain.Licencias.Exceptions;
 using Domain.Licencias.DomainEvents;
 using Domain.Licencias.Exceptions;
 using Domain.Shared.Exceptions;
@@ -31,6 +30,8 @@ public sealed class Licencia : Entity
 		string? observacion)
 			: this(licenciaID)
 	{
+		ValidarPlazo(articulo, intervalo);
+
 		DocenteID = docenteID;
 		Articulo = articulo;
 		Estado = estado;
@@ -70,9 +71,77 @@ public sealed class Licencia : Entity
 				fechaFin),
 				observacion) { }
 
+	/// <summary>
+	/// Solicitud expresada como la carga el usuario: fecha de inicio y días corridos. Cero días es
+	/// una licencia sin fecha de fin, que sólo admiten los artículos de plazo abierto.
+	/// </summary>
+	public Licencia(
+		Guid docenteID,
+		string articulo,
+		DateTime fechaInicio,
+		int cantidadDias,
+		string? observacion)
+			: this(
+				Guid.NewGuid(),
+				docenteID,
+				ConvertirArticulo(articulo),
+				Estado.Pendiente,
+				PeriodoSegun(fechaInicio, cantidadDias),
+				observacion)
+	{
+		if (fechaInicio.Date > Reloj.Hoy)
+		{
+			throw new FechaDeInicioDeLicenciaFuturaException();
+		}
+	}
+
 	private static Articulo ConvertirArticulo(string articulo) =>
 		Enumerados.Convertir<Articulo>(articulo, valor => new ArticuloInexistenteException(valor));
+
+	// Días corridos (Ley 4356, art. 25): el fin es el inicio más los días.
+	private static RangoFechas PeriodoSegun(DateTime fechaInicio, int cantidadDias) =>
+		cantidadDias > 0
+			? RangoFechas.Create(fechaInicio, fechaInicio.AddDays(cantidadDias))
+			: RangoFechas.Create(fechaInicio);
 	#endregion
+
+	public PlazoLegal PlazoLegal =>
+		PlazoLegal.De(Articulo);
+
+	/// <summary>
+	/// El período tiene que respetar el plazo que la norma asigna al artículo. Se invoca en cada
+	/// operación que cambia el artículo o el período, ANTES de asignarlos: una licencia inválida no
+	/// llega a existir ni a quedar a medio modificar.
+	/// </summary>
+	/// <exception cref="LicenciaIndefinidaNoAdmitidaException">Sin fecha de fin en un artículo con plazo.</exception>
+	/// <exception cref="PlazoFijoDeLicenciaIncumplidoException">Días distintos de los que fija la norma.</exception>
+	/// <exception cref="PlazoMaximoDeLicenciaExcedidoException">Más días que el tope de la norma.</exception>
+	private static void ValidarPlazo(Articulo articulo, RangoFechas periodo)
+	{
+		var plazo = PlazoLegal.De(articulo);
+
+		if (plazo.Tipo == TipoDePlazo.Abierto)
+		{
+			return;
+		}
+
+		if (periodo.EsIndeterminado())
+		{
+			throw new LicenciaIndefinidaNoAdmitidaException(plazo);
+		}
+
+		var dias = (periodo.FechaFin!.Value.Date - periodo.FechaInicio.Date).Days;
+
+		if (plazo.Tipo == TipoDePlazo.Fijo && dias != plazo.Dias)
+		{
+			throw new PlazoFijoDeLicenciaIncumplidoException(plazo);
+		}
+
+		if (plazo.Tipo == TipoDePlazo.Maximo && dias > plazo.Dias)
+		{
+			throw new PlazoMaximoDeLicenciaExcedidoException(plazo);
+		}
+	}
 
 	public bool EstaActiva() =>
 		Estado.Equals(Estado.Activa) && Periodo.EstaVigente();
@@ -165,7 +234,10 @@ public sealed class Licencia : Entity
 			throw new LicenciaConFechaDeFinalizacionException();
 		}
 
-		Periodo = Periodo.ActualizarFechaFin(fechaFin);
+		var nuevoPeriodo = Periodo.ActualizarFechaFin(fechaFin);
+		ValidarPlazo(Articulo, nuevoPeriodo);
+
+		Periodo = nuevoPeriodo;
 	}
 
 	public void EstablecerLicenciaIndefinida()
@@ -180,17 +252,33 @@ public sealed class Licencia : Entity
 			throw new LicenciaIndefinidaException();
 		}
 
-		Periodo = RangoFechas.Create(Periodo.FechaInicio);
+		var nuevoPeriodo = RangoFechas.Create(Periodo.FechaInicio);
+		ValidarPlazo(Articulo, nuevoPeriodo);
+
+		Periodo = nuevoPeriodo;
 	}
 
-	public void ModificarPeriodo(DateTime fechaInicio, int cantidadDias)
+	/// <summary>
+	/// Corrige la solicitud mientras no está activa: artículo, inicio y días se cambian juntos porque
+	/// el plazo válido depende del artículo.
+	/// </summary>
+	/// <remarks>
+	/// Reemplaza a <c>ModificarPeriodo</c>, que no recibía el artículo: la pantalla de edición lo
+	/// dejaba elegir y el cambio se descartaba en silencio.
+	/// </remarks>
+	public void ModificarSolicitud(string articulo, DateTime fechaInicio, int cantidadDias)
 	{
 		if (EstaActiva())
 		{
 			throw new LicenciaActivaException();
 		}
 
-		Periodo = cantidadDias > 0 ? RangoFechas.Create(fechaInicio, fechaInicio.AddDays(cantidadDias)) : RangoFechas.Create(fechaInicio);
+		var nuevoArticulo = ConvertirArticulo(articulo);
+		var nuevoPeriodo = PeriodoSegun(fechaInicio, cantidadDias);
+		ValidarPlazo(nuevoArticulo, nuevoPeriodo);
+
+		Articulo = nuevoArticulo;
+		Periodo = nuevoPeriodo;
 	}
 
 	public void ExtenderLicencia(int cantidadDias)
@@ -210,8 +298,10 @@ public sealed class Licencia : Entity
 			throw new LicenciaIndefinidaException();
 		}
 
-		var nuevaFechaFin = Periodo.FechaFin.Value.AddDays(cantidadDias);
-		Periodo = Periodo.ActualizarFechaFin(nuevaFechaFin);
+		var nuevoPeriodo = Periodo.ActualizarFechaFin(Periodo.FechaFin!.Value.AddDays(cantidadDias));
+		ValidarPlazo(Articulo, nuevoPeriodo);
+
+		Periodo = nuevoPeriodo;
 	}
 
 	public void ModificarObservaciones(string? observacion)

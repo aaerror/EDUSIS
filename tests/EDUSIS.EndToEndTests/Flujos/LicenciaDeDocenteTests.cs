@@ -36,7 +36,7 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 		var docente = await SembrarDocenteAsync(d => d.ConPuesto());
 
 		await EnUnScope(sp => sp.GetRequiredService<IServicioLicencia>().SolicitarLicencia(
-			new NuevaSolicitudLicenciaRequest(docente.Id, "Enfermedad", DateTime.Today, Dias: 0, "gripe")));
+			new NuevaSolicitudLicenciaRequest(docente.Id, "AccidenteDeTrabajo", DateTime.Today, Dias: 0, "gripe")));
 
 		// Scope nuevo: la consulta relee la licencia con otra unidad de trabajo / otro DbContext.
 		var licencias = await EnUnScope(sp =>
@@ -44,7 +44,7 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 
 		var licencia = licencias.ShouldHaveSingleItem();
 		licencia.DocenteID.ShouldBe(docente.Id);
-		licencia.Articulo.ShouldBe("Enfermedad");
+		licencia.Articulo.ShouldBe("AccidenteDeTrabajo");
 		licencia.Estado.ShouldBe("Pendiente");
 		licencia.FechaInicio.Date.ShouldBe(DateTime.Today);
 		licencia.Observacion.ShouldBe("gripe");
@@ -55,7 +55,7 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 	{
 		await Should.ThrowAsync<DocenteNoEncontradoException>(() => EnUnScope(sp =>
 			sp.GetRequiredService<IServicioLicencia>().SolicitarLicencia(
-				new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 0, "gripe"))));
+				new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "AccidenteDeTrabajo", DateTime.Today, Dias: 0, "gripe"))));
 	}
 
 	/// <remarks>
@@ -73,7 +73,7 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 		var (propiaID, ajenaID) = await SembrarCatedrasEnFuncionesAsync(docente.Id, otroDocente.Id);
 
 		await EnUnScope(sp => sp.GetRequiredService<IServicioLicencia>().SolicitarLicencia(
-			new NuevaSolicitudLicenciaRequest(docente.Id, "Enfermedad", DateTime.Today, Dias: 0, "gripe")));
+			new NuevaSolicitudLicenciaRequest(docente.Id, "AccidenteDeTrabajo", DateTime.Today, Dias: 0, "gripe")));
 		var licencia = (await EnUnScope(sp =>
 			sp.GetRequiredService<IServicioLicencia>().BuscarLicenciasSegunDocenteAsync(new DocenteIDRequest(docente.Id))))
 			.ShouldHaveSingleItem();

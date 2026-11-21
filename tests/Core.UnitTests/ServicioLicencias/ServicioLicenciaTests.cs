@@ -71,7 +71,7 @@ public class ServicioLicenciaTests
 		_host.UnidadDeTrabajo.DocentesFake.Sembrar(docente);
 
 		await _servicio.SolicitarLicencia(new NuevaSolicitudLicenciaRequest(
-			docente.Id, "Enfermedad", DateTime.Today, Dias: 0, "Reposo"));
+			docente.Id, "AccidenteDeTrabajo", DateTime.Today, Dias: 0, "Reposo"));
 
 		_host.UnidadDeTrabajo.LicenciasFake.Elementos.ShouldHaveSingleItem();
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
@@ -82,7 +82,7 @@ public class ServicioLicenciaTests
 	public async Task SolicitarLicencia_con_un_docente_inexistente_lanza_DocenteNoEncontrado()
 	{
 		await Should.ThrowAsync<DocenteNoEncontradoException>(() => _servicio.SolicitarLicencia(
-			new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 0, "Reposo")));
+			new NuevaSolicitudLicenciaRequest(Guid.NewGuid(), "AccidenteDeTrabajo", DateTime.Today, Dias: 0, "Reposo")));
 	}
 
 	[Fact]
@@ -93,7 +93,7 @@ public class ServicioLicenciaTests
 
 		var fechaInicio = DateTime.Today;
 		await _servicio.SolicitarLicencia(new NuevaSolicitudLicenciaRequest(
-			docente.Id, "Enfermedad", fechaInicio, Dias: 5, "Reposo"));
+			docente.Id, "EnfermedadCortoTratamiento", fechaInicio, Dias: 5, "Reposo"));
 
 		var licencia = _host.UnidadDeTrabajo.LicenciasFake.Elementos.ShouldHaveSingleItem();
 		licencia.Periodo.FechaFin.ShouldBe(fechaInicio.AddDays(5));
@@ -145,7 +145,7 @@ public class ServicioLicenciaTests
 		var licencia = SembrarLicenciaPendiente();
 
 		await _servicio.ModificarLicencia(new ModificarLicenciaRequest(
-			licencia.Id, licencia.DocenteID, "Enfermedad", DateTime.Today.AddDays(-1), Dias: 3, "Prórroga"));
+			licencia.Id, licencia.DocenteID, "EnfermedadCortoTratamiento", DateTime.Today.AddDays(-1), Dias: 3, "Prórroga"));
 
 		licencia.Observacion.ShouldBe("Prórroga");
 		_host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(1);
@@ -155,7 +155,7 @@ public class ServicioLicenciaTests
 	public async Task ModificarLicencia_con_una_licencia_inexistente_lanza_LicenciaNoEncontrada()
 	{
 		await Should.ThrowAsync<LicenciaNoEncontradaException>(() => _servicio.ModificarLicencia(new ModificarLicenciaRequest(
-			Guid.NewGuid(), Guid.NewGuid(), "Enfermedad", DateTime.Today, Dias: 3, "Prórroga")));
+			Guid.NewGuid(), Guid.NewGuid(), "EnfermedadCortoTratamiento", DateTime.Today, Dias: 3, "Prórroga")));
 	}
 	#endregion
 

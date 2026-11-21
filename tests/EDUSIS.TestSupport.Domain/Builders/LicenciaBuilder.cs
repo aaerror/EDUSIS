@@ -3,15 +3,20 @@ using Domain.Licencias;
 namespace EDUSIS.TestSupport.Builders;
 
 /// <summary>
-/// Builder de <see cref="Licencia"/>. Estado por defecto válido: artículo <c>Enfermedad</c>,
+/// Builder de <see cref="Licencia"/>. Estado por defecto válido: artículo <c>AccidenteDeTrabajo</c>,
 /// inicio hoy, sin fecha de fin, estado <c>Pendiente</c>. La <c>Licencia</c> resultante llega
 /// con el evento <c>LicenciaSolicitadaEvent</c> encolado, como en producción.
 /// </summary>
+/// <remarks>
+/// El artículo por defecto es de plazo abierto (<see cref="TipoDePlazo.Abierto"/>) para que
+/// cualquier combinación de fechas sea válida: un artículo con plazo legal obliga a que la prueba
+/// indique una fecha de fin compatible.
+/// </remarks>
 public sealed class LicenciaBuilder
 {
 	#region ESTADO POR DEFECTO
 	private Guid _docenteID = Guid.NewGuid();
-	private string _articulo = "Enfermedad";
+	private string _articulo = nameof(Articulo.AccidenteDeTrabajo);
 	private DateTime _fechaInicio = DateTime.Today;
 	private DateTime? _fechaFin = null;
 	private string? _observacion = "Reposo por indicación médica";

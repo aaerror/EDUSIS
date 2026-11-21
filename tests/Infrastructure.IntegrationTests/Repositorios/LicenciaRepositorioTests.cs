@@ -23,9 +23,9 @@ public sealed class LicenciaRepositorioTests : BaseIntegracion
 		var docenteA = await SembrarDocenteAsync();
 		var docenteB = await SembrarDocenteAsync();
 
-		var licenciaA1 = new LicenciaBuilder().ConDocente(docenteA).ConArticulo("Enfermedad").Build();
-		var licenciaA2 = new LicenciaBuilder().ConDocente(docenteA).ConArticulo("Particular").Build();
-		var licenciaB1 = new LicenciaBuilder().ConDocente(docenteB).ConArticulo("Matrimonio").Build();
+		var licenciaA1 = new LicenciaBuilder().ConDocente(docenteA).ConArticulo("AccidenteDeTrabajo").Build();
+		var licenciaA2 = new LicenciaBuilder().ConDocente(docenteA).ConArticulo("OtrasCausas").Build();
+		var licenciaB1 = new LicenciaBuilder().ConDocente(docenteB).ConArticulo("EstudioEncomendado").Build();
 
 		await using (var contexto = Fixture.CrearContexto())
 		{
@@ -49,7 +49,7 @@ public sealed class LicenciaRepositorioTests : BaseIntegracion
 		var docenteA = await SembrarDocenteAsync();
 		var docenteB = await SembrarDocenteAsync();
 
-		var licencia = new LicenciaBuilder().ConDocente(docenteA).ConArticulo("Enfermedad").Build();
+		var licencia = new LicenciaBuilder().ConDocente(docenteA).ConArticulo("AccidenteDeTrabajo").Build();
 
 		await using (var contexto = Fixture.CrearContexto())
 		{

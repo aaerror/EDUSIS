@@ -29,7 +29,7 @@ public sealed class MapeoDeLicenciaTests : BaseIntegracion
 
 		var licencia = new LicenciaBuilder()
 			.ConDocente(docenteID)
-			.ConArticulo("Enfermedad")
+			.ConArticulo("EnfermedadCortoTratamiento")
 			.ConFechaInicio(inicio)
 			.ConFechaFin(fin)
 			.ConObservacion("gripe")
@@ -46,7 +46,7 @@ public sealed class MapeoDeLicenciaTests : BaseIntegracion
 			var releida = await contexto.Set<Licencia>()
 				.SingleAsync(x => x.Id == licencia.Id && x.DocenteID == docenteID);
 
-			releida.Articulo.ShouldBe(Articulo.Enfermedad);
+			releida.Articulo.ShouldBe(Articulo.EnfermedadCortoTratamiento);
 			releida.Estado.ShouldBe(Estado.Pendiente);
 			releida.Periodo.FechaInicio.ShouldBe(inicio.Date);
 			releida.Periodo.FechaFin!.Value.Date.ShouldBe(fin.Date);
