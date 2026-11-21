@@ -23,7 +23,17 @@
 		Visibility a su IsEnabled, y el IsEnabled lo decide el CanExecute del comando, que
 		discrimina por CommandParameter ("Aprobar", "Cancelar", "Editar", "Nueva",
 		"Eliminar"). Por eso los dos pares Cancelar/Guardar pueden convivir en el pie: nunca
-		hay más de uno habilitado a la vez.
+		hay más de uno habilitado a la vez. Vale también para "Registrar licencia" del
+		encabezado: con el formulario abierto se oculta, como "Agregar puesto", en lugar de
+		quedar gris arriba a la derecha.
+
+		Listado y formulario comparten la fila estirable porque nunca se ven a la vez. El
+		formulario iba en una fila Auto DEBAJO de la estirable vacía, así que se apoyaba contra
+		el borde inferior de la pantalla con un hueco enorme arriba; y su ScrollViewer con
+		MaxHeight fijo envolvía también el pie, de modo que los botones de guardar quedaban
+		fuera de la vista, detrás de una barra de scroll. Ahora la tarjeta cuelga de arriba,
+		crece con su contenido hasta el alto disponible, sólo los campos scrollean y el pie
+		queda siempre visible.
 	-->
 	<behaviors:Interaction.Triggers>
 		<behaviors:EventTrigger EventName="Loaded">
@@ -36,7 +46,6 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
-			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
 		<!--#region ENCABEZADO-->
@@ -49,7 +58,8 @@
 				<Button Command="{ Binding Path=RegistrarCommand }"
 						CommandParameter="Nueva"
 						Style="{ StaticResource ResourceKey=Btn.Primario }"
-						ToolTip="Registrar una licencia nueva">
+						ToolTip="Registrar una licencia nueva"
+						Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
 					<StackPanel Orientation="Horizontal">
 						<fa:IconBlock FontSize="11"
 									  Icon="Plus"
@@ -101,22 +111,39 @@
 						  Style="{ StaticResource ResourceKey=Grilla }"
 						  Tag="Este docente todavía no tiene licencias. Empezá con &#x201C;Registrar licencia&#x201D;."
 						  d:ItemsSource="{ d:SampleData ItemCount=5 }">
+					<!--
+						El estado es lo que decide qué se puede hacer con la fila (sólo una
+						pendiente se aprueba, rechaza, edita o elimina), así que va primero y como
+						insignia, igual que en el formulario. Las cifras —días y fechas— llevan
+						Celda.Numero para que se comparen en columna.
+					-->
 					<DataGrid.Columns>
-						<DataGridTextColumn Binding="{ Binding Path=Estado, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-											Header="ESTADO"
-											Width="*"/>
+						<DataGridTemplateColumn Header="ESTADO" MinWidth="120" Width="Auto">
+							<DataGridTemplateColumn.CellTemplate>
+								<DataTemplate>
+									<Border HorizontalAlignment="Left" Style="{ StaticResource ResourceKey=Insignia.Licencia }">
+										<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+												   Text="{ Binding Path=Estado, Mode=OneWay }"/>
+									</Border>
+								</DataTemplate>
+							</DataGridTemplateColumn.CellTemplate>
+						</DataGridTemplateColumn>
 						<DataGridTextColumn Binding="{ Binding Path=Articulo, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Texto }"
 											Header="ARTÍCULO"
 											Width="2*"/>
-						<DataGridTextColumn Binding="{ Binding Path=Dias, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-											Header="DÍAS"
-											Width="*"/>
-						<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-AR' }"
+						<DataGridTextColumn Binding="{ Binding Path=FechaInicio, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:dd/MM/yyyy} }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
 											Header="DESDE"
 											Width="*"/>
-						<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Indefinida', TargetNullValue='Indefinida' }"
+						<DataGridTextColumn Binding="{ Binding Path=FechaFin, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:dd/MM/yyyy}, FallbackValue='Indefinida', TargetNullValue='Indefinida' }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
 											Header="HASTA"
 											Width="*"/>
+						<DataGridTextColumn Binding="{ Binding Path=Dias, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
+											ElementStyle="{ StaticResource ResourceKey=Celda.Numero }"
+											Header="DÍAS"
+											Width="80"/>
 					</DataGrid.Columns>
 				</DataGrid>
 
@@ -168,61 +195,67 @@
 		<!--#endregion-->
 
 		<!--#region ALTA Y EDICIÓN-->
-		<Border Grid.Row="3"
+		<Border Grid.Row="2"
 				IsEnabled="{ Binding Path=HabilitarUpsert, Mode=OneWay, UpdateSourceTrigger=PropertyChanged }"
-				Margin="0 16 0 0"
 				Style="{ StaticResource ResourceKey=Superficie.Tarjeta }"
+				VerticalAlignment="Top"
 				Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-			<ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto">
-				<Grid Margin="20 18">
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="Auto"/>
-					</Grid.RowDefinitions>
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
 
-					<vLicencias:LicenciaView Grid.Row="0"
+				<!--
+					El margen va en el contenido y no en el ScrollViewer: así la barra, si
+					aparece, corre pegada al borde de la tarjeta y no encima de los campos.
+				-->
+				<ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+					<vLicencias:LicenciaView Margin="20 18 20 0"
 											 DataContext="{ Binding Path=LicenciaSeleccionada, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"/>
+				</ScrollViewer>
 
-					<HeaderedContentControl Grid.Row="1" Style="{ StaticResource ResourceKey=Acciones }">
-						<HeaderedContentControl.Header>
-							<StackPanel Orientation="Horizontal">
-								<Button Command="{ Binding Path=CancelarCommandAsync }"
-										CommandParameter="Nueva"
-										Content="Cancelar"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Descartar la licencia nueva"
-										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-								<Button Command="{ Binding Path=CancelarCommandAsync, IsAsync=True }"
-										CommandParameter="Editar"
-										Content="Cancelar"
-										Style="{ StaticResource ResourceKey=Btn.Terciario }"
-										ToolTip="Descartar los cambios"
-										Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-							</StackPanel>
-						</HeaderedContentControl.Header>
-
+				<HeaderedContentControl Grid.Row="1"
+										Margin="20 20 20 18"
+										Style="{ StaticResource ResourceKey=Acciones }">
+					<HeaderedContentControl.Header>
 						<StackPanel Orientation="Horizontal">
-							<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+							<Button Command="{ Binding Path=CancelarCommandAsync }"
 									CommandParameter="Nueva"
-									Content="Registrar licencia"
-									Style="{ StaticResource ResourceKey=Btn.Primario }"
-									ToolTip="Registrar la licencia"
+									Content="Cancelar"
+									Style="{ StaticResource ResourceKey=Btn.Terciario }"
+									ToolTip="Descartar la licencia nueva"
 									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
-							<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+							<Button Command="{ Binding Path=CancelarCommandAsync, IsAsync=True }"
 									CommandParameter="Editar"
-									Content="Guardar cambios"
-									Style="{ StaticResource ResourceKey=Btn.Primario }"
-									ToolTip="Guardar los cambios de la licencia"
+									Content="Cancelar"
+									Style="{ StaticResource ResourceKey=Btn.Terciario }"
+									ToolTip="Descartar los cambios"
 									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 						</StackPanel>
-					</HeaderedContentControl>
-				</Grid>
-			</ScrollViewer>
+					</HeaderedContentControl.Header>
+
+					<StackPanel Orientation="Horizontal">
+						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+								CommandParameter="Nueva"
+								Content="Registrar licencia"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Registrar la licencia"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+								CommandParameter="Editar"
+								Content="Guardar cambios"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Guardar los cambios de la licencia"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+					</StackPanel>
+				</HeaderedContentControl>
+			</Grid>
 		</Border>
 		<!--#endregion-->
 
 		<components:CargandoComponent Grid.Row="0"
-									  Grid.RowSpan="4"
+									  Grid.RowSpan="3"
 									  EstaCargando="{ Binding Path=CargarLicenciasCommandAsync.IsRunning }"
 									  Leyenda="CARGANDO LAS LICENCIAS"/>
 	</Grid>

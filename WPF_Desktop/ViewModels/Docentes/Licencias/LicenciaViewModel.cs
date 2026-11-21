@@ -62,6 +62,11 @@ internal partial class LicenciaViewModel : ObservableValidator
 	{
 		Estado = "Pendiente";
 		EsIndefinida = false;
+
+		// EsIndefinida ya nace en false, así que la asignación de arriba no dispara
+		// OnEsIndefinidaChanged: sin esto el alta arrancaba con 0 días y sin fecha de fin en
+		// una licencia que no es indefinida.
+		Dias = 1;
 	}
 
 	public LicenciaViewModel(LicenciaResponse licenciaResponse)
@@ -88,4 +93,9 @@ internal partial class LicenciaViewModel : ObservableValidator
 
 	partial void OnDiasChanged(int value) =>
 		FechaFin = Dias > 0 ? FechaInicio.AddDays(value) : null;
+
+	// NotifyPropertyChangedFor(FechaFin) sólo avisa; no recalcula. Sin esto, mover la fecha de
+	// inicio dejaba a la vista la fecha de fin calculada con la anterior.
+	partial void OnFechaInicioChanged(DateTime value) =>
+		FechaFin = Dias > 0 ? value.AddDays(Dias) : null;
 }

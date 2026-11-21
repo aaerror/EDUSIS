@@ -101,6 +101,23 @@
 		<Setter Property="Background" Value="{ StaticResource ResourceKey=AlertaSuave }"/>
 	</Style>
 
+	<!--
+		Estado de una licencia, leído del propio texto del estado (la cadena del enum que viaja
+		en el Response). La licencia vigente va en verde y la que espera decisión en ámbar;
+		finalizada y cancelada son historia y quedan neutras. Lo usan el listado y el formulario
+		de licencias, por eso vive acá y no en una de las dos vistas.
+	-->
+	<Style x:Key="Insignia.Licencia" TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Insignia }">
+		<Style.Triggers>
+			<DataTrigger Binding="{ Binding Path=Estado }" Value="Activa">
+				<Setter Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
+			</DataTrigger>
+			<DataTrigger Binding="{ Binding Path=Estado }" Value="Pendiente">
+				<Setter Property="Background" Value="{ StaticResource ResourceKey=AvisoSuave }"/>
+			</DataTrigger>
+		</Style.Triggers>
+	</Style>
+
 	<Style x:Key="Txt.Insignia" TargetType="{ x:Type TextBlock }">
 		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Display }"/>
 		<Setter Property="FontStretch" Value="Condensed"/>

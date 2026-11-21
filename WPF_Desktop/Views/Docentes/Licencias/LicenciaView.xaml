@@ -11,16 +11,27 @@
 	<!--
 		LICENCIA — subformulario de alta y edición.
 
-		Dos de los cinco controles no se podían usar: el estado y la fecha de fin venían con
-		IsEnabled="False" porque los decide el sistema (el estado arranca pendiente; la fecha
-		de fin sale de la fecha de inicio más los días). Pasan a Dato: lo que no se edita no
-		se dibuja como un control de entrada.
+		El estado y la fecha de fin los decide el sistema (el estado arranca pendiente; la fecha
+		de fin sale de la fecha de inicio más los días): van como Dato, sin caja, porque lo que
+		no se edita no se dibuja como un control de entrada.
 
 		El estado se enlaza directo, sin el LicenciaEstadoConverter: ese conversor existe para
-		que un ComboBox de valores de enum acepte una cadena, y acá ya no hay ComboBox.
+		que un ComboBox de valores de enum acepte una cadena, y acá no hay ComboBox.
 
-		Se sacó el bloque LicenciaID, que tenía Visibility="Collapsed" fija. Los textos guía
-		eran "####": ahora dicen qué se espera.
+		El rótulo de la sección es un Txt.Seccion suelto y no el GroupBox "Seccion": este
+		formulario es lo único que hay en su tarjeta, y la regla superior del GroupBox quedaba
+		dibujada contra el propio borde de la tarjeta, como una línea huérfana. Es el mismo
+		rótulo que encabeza el listado de la pantalla.
+
+		LA CASILLA VA ANTES QUE LO QUE DECIDE, igual que en el puesto: estaba en la tercera fila,
+		sola en la columna izquierda, frente al campo de días que ella misma esconde. Ahora el
+		formulario se lee en el orden en que se decide: qué artículo, si tiene fin, y recién
+		entonces el período.
+
+		El período es una cuenta y se lee como tal: inicio, días, fin, en una misma fila de tres
+		columnas. Si la licencia es indefinida no hay días ni fin que mostrar —el fin decía "Sin
+		fecha de fin", repitiendo la casilla—, así que los dos se ocultan juntos y la fila queda
+		con la fecha de inicio sola, sin un hueco en el medio.
 	-->
 	<UserControl.Resources>
 		<converters:ArticuloConverter x:Key="articuloConverter"/>
@@ -32,77 +43,102 @@
 		</ObjectDataProvider>
 	</UserControl.Resources>
 
-	<GroupBox Header="DATOS DE LA LICENCIA" Style="{ StaticResource ResourceKey=Seccion }">
-		<Grid>
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
-			</Grid.ColumnDefinitions>
-			<Grid.RowDefinitions>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="Auto"/>
-			</Grid.RowDefinitions>
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
 
-			<HeaderedContentControl Grid.Column="0" Grid.Row="0"
-									Header="Artículo"
-									Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-				<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=articulos } }"
-						  SelectedItem="{ Binding Path=Articulo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=articuloConverter } }"
-						  Style="{ StaticResource ResourceKey=Cmb.Campo }"/>
-			</HeaderedContentControl>
+		<TextBlock Grid.ColumnSpan="3" Grid.Row="0"
+				   Margin="0 0 0 16"
+				   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+				   Text="DATOS DE LA LICENCIA"/>
 
-			<!-- El estado lo decide el circuito de aprobación, no quien carga la licencia. -->
-			<HeaderedContentControl Grid.Column="1" Grid.Row="0"
-									Content="{ Binding Path=Estado, Mode=OneWay, FallbackValue='Pendiente', TargetNullValue='Pendiente' }"
-									Header="Estado"
-									Style="{ StaticResource ResourceKey=Dato.Derecha }"/>
+		<HeaderedContentControl Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
+								Header="Artículo"
+								Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+			<ComboBox ItemsSource="{ Binding Source={ StaticResource ResourceKey=articulos } }"
+					  SelectedItem="{ Binding Path=Articulo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={ StaticResource ResourceKey=articuloConverter } }"
+					  Style="{ StaticResource ResourceKey=Cmb.Campo }"
+					  Tag="Elegí el artículo de la licencia"/>
+		</HeaderedContentControl>
 
-			<HeaderedContentControl Grid.Column="0" Grid.Row="1"
-									Header="Fecha de inicio"
-									Style="{ StaticResource ResourceKey=Campo.Izquierda }">
-				<DatePicker DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-							DisplayDateEnd="{ x:Static sys:DateTime.Today }"
-							DisplayDateStart="01/01/1900"
-							SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-							Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
-			</HeaderedContentControl>
+		<!--
+			El estado lo decide el circuito de aprobación, no quien carga la licencia. Va como
+			insignia, la misma que en el listado, para que se lea como estado y no como texto suelto.
+		-->
+		<HeaderedContentControl Grid.Column="2" Grid.Row="1"
+								Header="Estado"
+								Style="{ StaticResource ResourceKey=Dato.Derecha }">
+			<Border HorizontalAlignment="Left" Style="{ StaticResource ResourceKey=Insignia.Licencia }">
+				<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
+						   Text="{ Binding Path=Estado, Mode=OneWay, FallbackValue='Pendiente', TargetNullValue='Pendiente' }"/>
+			</Border>
+		</HeaderedContentControl>
 
-			<!-- La calcula el sistema: fecha de inicio + días, o nada si es indefinida. -->
-			<HeaderedContentControl Grid.Column="1" Grid.Row="1"
-									Header="Fecha de finalización"
-									Style="{ StaticResource ResourceKey=Dato.Derecha }">
-				<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
-						   Text="{ Binding Path=FechaFin, Mode=OneWay, StringFormat={}{0:d}, ConverterCulture='es-AR', FallbackValue='Sin fecha de fin', TargetNullValue='Sin fecha de fin' }"/>
-			</HeaderedContentControl>
+		<CheckBox x:Name="esIndefinida"
+				  Grid.ColumnSpan="3" Grid.Row="2"
+				  Content="La licencia es indefinida, sin fecha de fin"
+				  IsChecked="{ Binding Path=EsIndefinida, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+				  HorizontalAlignment="Left"
+				  Margin="0 0 0 16"
+				  Style="{ StaticResource ResourceKey=Chk.Campo }"/>
 
-			<CheckBox x:Name="esIndefinida"
-					  Grid.Column="0" Grid.Row="2"
-					  Content="La licencia es indefinida"
-					  IsChecked="{ Binding Path=EsIndefinida, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
-					  Style="{ StaticResource ResourceKey=Chk.Campo.Alineada }"/>
+		<HeaderedContentControl Grid.Column="0" Grid.Row="3"
+								Header="Fecha de inicio"
+								Style="{ StaticResource ResourceKey=Campo.Izquierda }">
+			<DatePicker DisplayDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+						DisplayDateEnd="{ x:Static sys:DateTime.Today }"
+						DisplayDateStart="01/01/1900"
+						SelectedDate="{ Binding Path=FechaInicio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+						Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+		</HeaderedContentControl>
 
-			<!-- Los días no existen si la licencia es indefinida: se oculta, no se deshabilita. -->
-			<HeaderedContentControl Grid.Column="1" Grid.Row="2"
-									Header="Días"
-									IsEnabled="{ Binding Path=IsChecked, ElementName=esIndefinida, Mode=OneWay, Converter={ StaticResource ResourceKey=negar } }"
-									Style="{ StaticResource ResourceKey=Campo.Derecha }"
-									Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
-				<TextBox MaxLength="3"
-						 Tag="30"
-						 Text="{ Binding Path=Dias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
-						 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
-			</HeaderedContentControl>
+		<!-- Los días no existen si la licencia es indefinida: se oculta, no se deshabilita. -->
+		<HeaderedContentControl Grid.Column="1" Grid.Row="3"
+								Header="Días"
+								IsEnabled="{ Binding Path=IsChecked, ElementName=esIndefinida, Mode=OneWay, Converter={ StaticResource ResourceKey=negar } }"
+								Style="{ StaticResource ResourceKey=Campo.Centro }"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<TextBox MaxLength="3"
+					 Tag="30"
+					 Text="{ Binding Path=Dias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+					 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+		</HeaderedContentControl>
 
-			<HeaderedContentControl Grid.ColumnSpan="2" Grid.Row="3"
-									Header="Observaciones"
-									Style="{ StaticResource ResourceKey=Campo }">
-				<TextBox MaxLength="250"
-						 Tag="motivo, certificado presentado, quién autoriza&#x2026;"
-						 Text="{ Binding Path=Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
-						 Style="{ StaticResource ResourceKey=Txb.Nota }"/>
-			</HeaderedContentControl>
-		</Grid>
-	</GroupBox>
+		<!--
+			La calcula el sistema: fecha de inicio + días. Mismo interruptor que los días; el
+			TextBlock propio lleva el centrado porque el estilo implícito de Dato sólo alcanza al
+			que genera el ContentPresenter, y sin él el valor quedaba pegado al rótulo, más arriba
+			que el texto de los campos vecinos.
+		-->
+		<HeaderedContentControl Grid.Column="2" Grid.Row="3"
+								Header="Fecha de finalización"
+								IsEnabled="{ Binding Path=IsChecked, ElementName=esIndefinida, Mode=OneWay, Converter={ StaticResource ResourceKey=negar } }"
+								Style="{ StaticResource ResourceKey=Dato.Derecha }"
+								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }">
+			<TextBlock Style="{ StaticResource ResourceKey=Txt.Cuerpo }"
+					   Text="{ Binding Path=FechaFin, Mode=OneWay, StringFormat={}{0:dd/MM/yyyy}, FallbackValue='—', TargetNullValue='—' }"
+					   Typography.NumeralAlignment="Tabular"
+					   VerticalAlignment="Center"/>
+		</HeaderedContentControl>
+
+		<HeaderedContentControl Grid.ColumnSpan="3" Grid.Row="4"
+								Header="Observaciones"
+								Margin="0"
+								Style="{ StaticResource ResourceKey=Campo }">
+			<TextBox MaxLength="250"
+					 Tag="motivo, certificado presentado, quién autoriza&#x2026;"
+					 Text="{ Binding Path=Observacion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True }"
+					 Style="{ StaticResource ResourceKey=Txb.Nota }"/>
+		</HeaderedContentControl>
+	</Grid>
 </UserControl>
