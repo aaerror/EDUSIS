@@ -2,7 +2,8 @@ namespace Domain.Licencias.Exceptions;
 
 /// <summary>
 /// La licencia no está pendiente de aprobación, y la operación pedida sólo vale sobre una pendiente.
-/// La encarnan <c>AprobarLicencia</c>, <c>CancelarLicencia</c> y <c>ValidarSePuedeEliminar</c>.
+/// La encarnan <c>AprobarLicencia</c>, <c>RechazarLicencia</c>, <c>ModificarSolicitud</c> y
+/// <c>ValidarSePuedeEliminar</c>.
 /// </summary>
 /// <remarks>
 /// Es la única excepción de esta regla: ni el servicio ni el agregado la señalan con una excepción

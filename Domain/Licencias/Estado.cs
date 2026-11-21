@@ -3,7 +3,7 @@ namespace Domain.Licencias;
 public enum Estado
 {
 	Activa,
-	Cancelada,
+	Rechazada,
 	Finalizada,
 	Pendiente
 }

@@ -277,6 +277,25 @@ public class AutorizacionDeCasosDeUsoTests
 		await Should.ThrowAsync<PermisoDenegadoException>(() => servicio.RechazarLicencia(null!));
 	}
 
+	/// <remarks>
+	/// Lo que se hace con una licencia aprobada lo decide quien la resolvió: ni la falta de todo
+	/// permiso ni <see cref="Permiso.GestionarDocentes"/> alcanzan.
+	/// </remarks>
+	[Fact]
+	public async Task Las_operaciones_sobre_una_licencia_aprobada_exigen_un_permiso_de_resolucion()
+	{
+		foreach (var host in new[] { HostSinPermisos(), HostCon(Permiso.GestionarDocentes) })
+		{
+			using var _ = host;
+			var servicio = host.Resolver<IServicioLicencia>();
+
+			await Should.ThrowAsync<PermisoDenegadoException>(() => servicio.FinalizarLicencia(null!));
+			await Should.ThrowAsync<PermisoDenegadoException>(() => servicio.ExtenderLicencia(null!));
+			await Should.ThrowAsync<PermisoDenegadoException>(() => servicio.FijarFechaFinLicencia(null!));
+			await Should.ThrowAsync<PermisoDenegadoException>(() => servicio.DeclararLicenciaIndefinida(null!));
+		}
+	}
+
 	[Fact]
 	public async Task GenerarCertificadoAlumnoRegularAsync_sin_GenerarDocumentos_lanza_PermisoDenegado()
 	{

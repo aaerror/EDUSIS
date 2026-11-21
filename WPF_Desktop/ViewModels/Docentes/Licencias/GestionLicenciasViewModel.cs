@@ -79,6 +79,16 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	[ObservableProperty]
 	private ObservableCollection<LicenciaViewModel> _licencias = new();
 
+	/// <summary>Días que suma la prórroga de la licencia aprobada seleccionada.</summary>
+	[ObservableProperty]
+	[NotifyCanExecuteChangedFor(nameof(GuardarCommandAsync))]
+	private int _diasDeProrroga = 1;
+
+	/// <summary>Último día de licencia que se le fija a una aprobada indefinida.</summary>
+	[ObservableProperty]
+	[NotifyCanExecuteChangedFor(nameof(GuardarCommandAsync))]
+	private DateTime? _fechaDeFin;
+
 	#region Commands
 	public IAsyncRelayCommand CargarLicenciasCommandAsync { get; }
 	public IAsyncRelayCommand CancelarCommandAsync { get; }
@@ -194,16 +204,59 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	}
 	#endregion
 
+	#region Licencia aprobada
+	/// <summary>
+	/// Hay una licencia aprobada y sin finalizar seleccionada en el listado, y la sesión puede
+	/// operar sobre ella. Gobierna el panel de reintegro y prórroga.
+	/// </summary>
+	public bool MostrarLicenciaEnCurso =>
+		PuedeResolver() && HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada.EstaAprobada;
+
+	// Cada acción del panel se ofrece sólo si el dominio la admite para la licencia elegida: la
+	// prórroga suma días a un fin que existe, la fecha de fin se le pone a una indefinida y sólo
+	// un artículo de plazo abierto puede quedar indefinido.
+	public bool PuedeProrrogar =>
+		MostrarLicenciaEnCurso && !LicenciaSeleccionada.EsIndefinida;
+
+	public bool PuedeFijarFechaDeFin =>
+		MostrarLicenciaEnCurso && LicenciaSeleccionada.EsIndefinida;
+
+	public bool PuedeDeclararIndefinida =>
+		MostrarLicenciaEnCurso && !LicenciaSeleccionada.EsIndefinida && LicenciaSeleccionada.AdmiteIndefinida;
+
+	private void NotificarLicenciaEnCurso()
+	{
+		OnPropertyChanged(nameof(MostrarLicenciaEnCurso));
+		OnPropertyChanged(nameof(PuedeProrrogar));
+		OnPropertyChanged(nameof(PuedeFijarFechaDeFin));
+		OnPropertyChanged(nameof(PuedeDeclararIndefinida));
+	}
+
+	partial void OnLicenciaSeleccionadaChanged(LicenciaViewModel value)
+	{
+		DiasDeProrroga = 1;
+		FechaDeFin = null;
+		NotificarLicenciaEnCurso();
+	}
+
+	partial void OnHabilitarDetalleLicenciasChanged(bool value) =>
+		NotificarLicenciaEnCurso();
+
+	partial void OnHabilitarEdicionChanged(bool value) =>
+		NotificarLicenciaEnCurso();
+	#endregion
+
 	#region GuardarCommandAsync
 	/// <summary>
-	/// Si la sesión puede aprobar o rechazar la licencia seleccionada. Es el mismo permiso que
-	/// exige <c>ServicioLicencia</c> según el artículo; la seguridad sigue en <c>Core</c>.
+	/// Si la sesión puede resolver la licencia seleccionada: aprobarla o rechazarla, y una vez
+	/// aprobada, finalizarla o cambiar su duración. Es el mismo permiso que exige
+	/// <c>ServicioLicencia</c> según el artículo; la seguridad sigue en <c>Core</c>.
 	/// </summary>
 	private bool PuedeResolver() =>
 		LicenciaSeleccionada is not null
 		&& _sesion.TienePermiso(LicenciaSeleccionada.ResolucionAcademica ? Permiso.ResolverLicenciasAcademicas : Permiso.ResolverLicencias);
 
-	// Un mismo comando con cinco parámetros y dos permisos distintos: la guarda va por caso y no
+	// Un mismo comando con nueve parámetros y dos permisos distintos: la guarda va por caso y no
 	// envolviendo el CanExecute entero con Permite.
 	private bool CanExecuteGuardarCommand(object? obj)
 	{
@@ -211,8 +264,16 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		{
 			case "Aprobar":
 				return PuedeResolver() && HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada.Estado.Equals(Enum.GetName(Estado.Pendiente));
-			case "Cancelar":
+			case "Rechazar":
 				return PuedeResolver() && HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada.Estado.Equals(Enum.GetName(Estado.Pendiente));
+			case "Finalizar":
+				return MostrarLicenciaEnCurso;
+			case "Prorrogar":
+				return PuedeProrrogar && DiasDeProrroga > 0;
+			case "FijarFin":
+				return PuedeFijarFechaDeFin && FechaDeFin.HasValue && FechaDeFin.Value.Date > DateTime.Today;
+			case "Indefinida":
+				return PuedeDeclararIndefinida;
 			case "Editar":
 				return _sesion.TienePermiso(Permiso.GestionarDocentes) && HabilitarUpsert && HabilitarEdicion && LicenciaSeleccionada is not null && !LicenciaSeleccionada.HasErrors;
 			case "Nueva":
@@ -225,7 +286,8 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	}
 
 	/// <summary>
-	/// Las cinco escrituras de la pantalla: aprobar, rechazar, editar, registrar y eliminar.
+	/// Las escrituras de la pantalla: aprobar, rechazar, editar, registrar y eliminar la solicitud,
+	/// y sobre una aprobada, registrar el reintegro, prorrogarla, fijarle fin o declararla indefinida.
 	/// </summary>
 	/// <remarks>
 	/// <para>
@@ -240,6 +302,9 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	/// <item><b>Editar</b> y <b>registrar</b> no preguntan: el usuario completó el formulario y
 	/// apretó "Guardar"; la licencia queda pendiente y se puede volver a editar.</item>
 	/// <item><b>Eliminar</b> pregunta en rojo y con la consecuencia: no se puede deshacer.</item>
+	/// <item><b>Registrar el reintegro</b> pregunta, sin rojo: cierra la licencia y devuelve al
+	/// docente a sus cátedras. Prorrogar, fijar el fin y declarar indefinida no preguntan: el dato
+	/// se escribió en el panel y se puede volver a cambiar mientras la licencia no se finalice.</item>
 	/// </list>
 	/// </remarks>
 	private async Task ExecuteGuardarCommandAsync(object? obj)
@@ -272,7 +337,45 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 				}
 				break;
 
-			case "Cancelar":
+			case "Finalizar":
+				var mensajeDeReintegro = LicenciaSeleccionada.Vencida
+					? $"La licencia terminó el { LicenciaSeleccionada.FechaFin:dd/MM/yyyy} y queda finalizada con esa fecha. "
+					: "Hoy queda como su último día de licencia. ";
+				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
+						titulo: $"Registrar el reintegro de la licencia por { LicenciaSeleccionada.Denominacion.ToLowerInvariant() }",
+						mensaje: mensajeDeReintegro
+							   + "El docente vuelve a estar al frente de las cátedras que lo esperaban: las que quedaron sin nadie en funciones y las que cubría su suplente.",
+						verbo: "Registrar reintegro")))
+				{
+					return;
+				}
+
+				await OperarSobreAprobadaAsync(
+					() => _servicioLicencia.FinalizarLicencia(new FinalizarLicenciaRequest(LicenciaSeleccionada.LicenciaID, _docenteID)),
+					"Reintegro registrado", "No se pudo registrar el reintegro");
+				break;
+
+			case "Prorrogar":
+				var dias = DiasDeProrroga;
+				await OperarSobreAprobadaAsync(
+					() => _servicioLicencia.ExtenderLicencia(new ExtenderLicenciaRequest(LicenciaSeleccionada.LicenciaID, _docenteID, dias)),
+					"Licencia prorrogada", "No se pudo prorrogar la licencia");
+				break;
+
+			case "FijarFin":
+				var fechaDeFin = FechaDeFin!.Value;
+				await OperarSobreAprobadaAsync(
+					() => _servicioLicencia.FijarFechaFinLicencia(new FijarFechaFinLicenciaRequest(LicenciaSeleccionada.LicenciaID, _docenteID, fechaDeFin)),
+					"Fecha de fin registrada", "No se pudo fijar la fecha de fin");
+				break;
+
+			case "Indefinida":
+				await OperarSobreAprobadaAsync(
+					() => _servicioLicencia.DeclararLicenciaIndefinida(new DeclararLicenciaIndefinidaRequest(LicenciaSeleccionada.LicenciaID, _docenteID)),
+					"Licencia indefinida", "No se pudo declarar indefinida la licencia");
+				break;
+
+			case "Rechazar":
 				if (!_dialogService.ConfirmarAccion(SolicitudDeDialogo.Revisar(
 						titulo: $"Rechazar la licencia por { LicenciaSeleccionada.Denominacion.ToLowerInvariant() }",
 						mensaje: "La solicitud queda rechazada y deja de estar pendiente: no se puede editar ni aprobar después. "
@@ -370,6 +473,31 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 				}
 
 				break;
+		}
+	}
+
+	/// <summary>
+	/// Las cuatro operaciones sobre una licencia aprobada terminan igual: aviso, recarga del listado
+	/// para que se vea el período nuevo, o el motivo del dominio si no se pudo.
+	/// </summary>
+	/// <remarks>
+	/// El aviso nombra el artículo leído ANTES de recargar: la recarga reemplaza la colección y la
+	/// selección del listado deja de apuntar a la licencia operada.
+	/// </remarks>
+	private async Task OperarSobreAprobadaAsync(Func<Task> operacion, string tituloExito, string tituloError)
+	{
+		var denominacion = LicenciaSeleccionada.Denominacion;
+
+		try
+		{
+			await operacion();
+
+			_dialogService.MostrarInformacion($"{ denominacion }.", tituloExito);
+			await ExecuteCargarLicenciasCommand();
+		}
+		catch (Exception ex)
+		{
+			_dialogService.MostrarError(ex.Message, tituloError);
 		}
 	}
 	#endregion

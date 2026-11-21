@@ -1,3 +1,4 @@
+using Domain.Shared;
 using EDUSIS.TestSupport.Builders;
 using EDUSIS.TestSupport.Infraestructura;
 using Infrastructure.IntegrationTests.Infraestructura;
@@ -7,8 +8,8 @@ using Xunit;
 namespace Infrastructure.IntegrationTests.Repositorios;
 
 /// <summary>
-/// <c>LicenciaRepository.BuscarLicenciasDeDocenteAsync</c> devuelve sólo las licencias
-/// del docente indicado sobre datos sembrados.
+/// Consultas de <c>LicenciaRepository</c> contra SQL Server real: por docente, pendientes de todos
+/// los docentes y superposición de períodos.
 /// </summary>
 public sealed class LicenciaRepositorioTests : BaseIntegracion
 {
@@ -65,5 +66,61 @@ public sealed class LicenciaRepositorioTests : BaseIntegracion
 		encontrada.ShouldNotBeNull();
 		encontrada!.Id.ShouldBe(licencia.Id);
 		noEncontrada.ShouldBeNull();
+	}
+
+	/// <remarks>
+	/// La traducción a SQL de <c>Licencia.SeSuperponeCon</c>: los dos extremos son días de licencia,
+	/// un fin nulo no termina, la rechazada no cuenta y la licencia excluida no choca consigo misma.
+	/// Los mismos casos que el dominio, pero contra la consulta que corre EF.
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task ExisteSuperpuestaAsync_traduce_la_regla_de_superposicion_del_dominio()
+	{
+		var docente = await SembrarDocenteAsync();
+		var otroDocente = await SembrarDocenteAsync();
+		var marzo = new DateTime(2026, 3, 1);
+
+		var delUnoAlQuince = new LicenciaBuilder().ConDocente(docente).ConFechaInicio(marzo).ConFechaFin(marzo.AddDays(14)).Build();
+		var rechazada = new LicenciaBuilder().ConDocente(docente).ConFechaInicio(marzo.AddDays(30)).ConFechaFin(marzo.AddDays(40)).Build();
+		rechazada.RechazarLicencia(null);
+		var indefinida = new LicenciaBuilder().ConDocente(otroDocente).ConFechaInicio(marzo).Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.AddRange(delUnoAlQuince, rechazada, indefinida);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		(await uow.Licencias.ExisteSuperpuestaAsync(docente, RangoFechas.Create(marzo.AddDays(14), marzo.AddDays(20)), Guid.Empty)).ShouldBeTrue();
+		(await uow.Licencias.ExisteSuperpuestaAsync(docente, RangoFechas.Create(marzo.AddDays(15), marzo.AddDays(20)), Guid.Empty)).ShouldBeFalse();
+		(await uow.Licencias.ExisteSuperpuestaAsync(docente, RangoFechas.Create(marzo.AddDays(-30)), Guid.Empty)).ShouldBeTrue();
+		(await uow.Licencias.ExisteSuperpuestaAsync(docente, RangoFechas.Create(marzo.AddDays(32), marzo.AddDays(35)), Guid.Empty)).ShouldBeFalse();
+		(await uow.Licencias.ExisteSuperpuestaAsync(docente, RangoFechas.Create(marzo, marzo.AddDays(3)), delUnoAlQuince.Id)).ShouldBeFalse();
+		(await uow.Licencias.ExisteSuperpuestaAsync(otroDocente, RangoFechas.Create(new DateTime(2030, 1, 1), new DateTime(2030, 1, 2)), Guid.Empty)).ShouldBeTrue();
+	}
+
+	[RequiereSqlServerFact]
+	public async Task BuscarPendientesAsync_devuelve_solo_las_pendientes_de_todos_los_docentes()
+	{
+		var docenteA = await SembrarDocenteAsync();
+		var docenteB = await SembrarDocenteAsync();
+
+		var pendienteA = new LicenciaBuilder().ConDocente(docenteA).Build();
+		var pendienteB = new LicenciaBuilder().ConDocente(docenteB).ConFechaInicio(DateTime.Today.AddDays(-3)).Build();
+		var aprobada = new LicenciaBuilder().ConDocente(docenteA).ConFechaInicio(DateTime.Today.AddDays(-30)).ConFechaFin(DateTime.Today.AddDays(-20)).Aprobada().Build();
+
+		await using (var contexto = Fixture.CrearContexto())
+		{
+			contexto.AddRange(pendienteA, pendienteB, aprobada);
+			await contexto.SaveChangesAsync();
+		}
+
+		using var uow = CrearUnidadDeTrabajo();
+
+		var pendientes = await uow.Licencias.BuscarPendientesAsync();
+
+		pendientes.Select(x => x.Id).ShouldBe(new[] { pendienteB.Id, pendienteA.Id });
 	}
 }

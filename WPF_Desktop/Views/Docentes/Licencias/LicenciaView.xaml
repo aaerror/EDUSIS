@@ -12,7 +12,7 @@
 		LICENCIA — subformulario de alta y edición.
 
 		El estado y la fecha de fin los decide el sistema (el estado arranca pendiente; la fecha
-		de fin sale de la fecha de inicio más los días): van como Dato, sin caja, porque lo que
+		de fin es el último día de licencia, contando el de inicio): van como Dato, sin caja, porque lo que
 		no se edita no se dibuja como un control de entrada.
 
 		El estado se enlaza directo, sin el LicenciaEstadoConverter: ese conversor existe para
@@ -137,7 +137,7 @@
 		</HeaderedContentControl>
 
 		<!--
-			La calcula el sistema: fecha de inicio + días. Mismo interruptor que los días; el
+			La calcula el sistema: es el último día de licencia, fecha de inicio + días − 1. Mismo interruptor que los días; el
 			TextBlock propio lleva el centrado porque el estilo implícito de Dato sólo alcanza al
 			que genera el ContentPresenter, y sin él el valor quedaba pegado al rótulo, más arriba
 			que el texto de los campos vecinos.

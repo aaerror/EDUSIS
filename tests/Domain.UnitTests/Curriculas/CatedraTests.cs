@@ -342,6 +342,81 @@ public class CatedraTests
 		evento.CatedraID.ShouldBe(catedra.Id);
 	}
 
+	#region ReponerTrasLicencia
+	[Fact]
+	public void ReponerTrasLicencia_en_una_catedra_sin_nadie_en_funciones_pone_al_docente()
+	{
+		var docente = Guid.NewGuid();
+		var catedra = new CatedraBuilder().Build();
+		var situacion = catedra.Designar(docente, Cargo.Titular, DateTime.Today.AddDays(-30), null);
+
+		catedra.ReponerTrasLicencia(docente);
+
+		catedra.SituacionEnFuncionesID.ShouldBe(situacion);
+	}
+
+	/// <remarks>
+	/// El suplente sigue designado: deja de estar al frente, pero su designación no se toca.
+	/// </remarks>
+	[Fact]
+	public void ReponerTrasLicencia_desplaza_a_su_propio_suplente()
+	{
+		var docente = Guid.NewGuid();
+		var catedra = new CatedraBuilder().Build();
+		var titular = catedra.Designar(docente, Cargo.Titular, DateTime.Today.AddDays(-30), null);
+		var suplente = catedra.Designar(Guid.NewGuid(), Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddDays(20), titular);
+		catedra.PonerEnFunciones(suplente);
+
+		catedra.ReponerTrasLicencia(docente);
+
+		catedra.SituacionEnFuncionesID.ShouldBe(titular);
+		catedra.SituacionesRevista.Single(x => x.Id == suplente).EsCargoVigente().ShouldBeTrue();
+	}
+
+	/// <remarks>
+	/// El docente que vuelve es suplente en esta cátedra y quien está al frente es el titular, al
+	/// que no reemplaza nadie: el regreso no lo desplaza.
+	/// </remarks>
+	[Fact]
+	public void ReponerTrasLicencia_no_desplaza_a_quien_no_es_su_suplente()
+	{
+		var docente = Guid.NewGuid();
+		var catedra = new CatedraBuilder().Build();
+		var titular = catedra.Designar(Guid.NewGuid(), Cargo.Titular, DateTime.Today.AddDays(-30), null);
+		catedra.Designar(docente, Cargo.Suplente, DateTime.Today.AddDays(-5), DateTime.Today.AddDays(20), titular);
+		catedra.PonerEnFunciones(titular);
+
+		catedra.ReponerTrasLicencia(docente);
+
+		catedra.SituacionEnFuncionesID.ShouldBe(titular);
+	}
+
+	[Fact]
+	public void ReponerTrasLicencia_sin_designacion_vigente_del_docente_no_hace_nada()
+	{
+		var docente = Guid.NewGuid();
+		var catedra = new CatedraBuilder().Build();
+		catedra.Designar(docente, Cargo.Interino, DateTime.Today.AddDays(-30), DateTime.Today.AddDays(-1));
+
+		catedra.ReponerTrasLicencia(docente);
+
+		catedra.SituacionEnFuncionesID.ShouldBeNull();
+	}
+
+	[Fact]
+	public void ReponerTrasLicencia_de_quien_ya_esta_en_funciones_no_lanza()
+	{
+		var docente = Guid.NewGuid();
+		var catedra = new CatedraBuilder().Build();
+		var situacion = catedra.Designar(docente, Cargo.Titular, DateTime.Today.AddDays(-30), null);
+		catedra.PonerEnFunciones(situacion);
+
+		Should.NotThrow(() => catedra.ReponerTrasLicencia(docente));
+
+		catedra.SituacionEnFuncionesID.ShouldBe(situacion);
+	}
+	#endregion
+
 	[Fact]
 	public void RelevarDeFunciones_sin_nadie_en_funciones_lanza_DocenteSinCargoException()
 	{

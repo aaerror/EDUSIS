@@ -91,6 +91,40 @@ public sealed class LicenciaDeDocenteTests : BaseE2E
 		ajena.DocenteEnFunciones().ShouldBe(otroDocente.Id);
 	}
 
+	/// <remarks>
+	/// La vuelta del flujo anterior por el despacho real: <c>FinalizarLicencia</c> encola
+	/// <c>LicenciaFinalizadaEvent</c> y <c>LicenciaFinalizadaEventHandler</c> repone al docente en
+	/// el mismo guardado. En la ajena sigue el titular: el docente vuelve sólo donde lo esperaban.
+	/// </remarks>
+	[RequiereSqlServerFact]
+	public async Task FinalizarLicencia_devuelve_al_docente_a_funciones_donde_lo_relevo_la_aprobacion()
+	{
+		var docente = await SembrarDocenteAsync(d => d.ConPuesto());
+		var otroDocente = await SembrarDocenteAsync(d => d.ConPuesto());
+		var (propiaID, ajenaID) = await SembrarCatedrasEnFuncionesAsync(docente.Id, otroDocente.Id);
+
+		await EnUnScope(sp => sp.GetRequiredService<IServicioLicencia>().SolicitarLicencia(
+			new NuevaSolicitudLicenciaRequest(docente.Id, "AccidenteDeTrabajo", DateTime.Today, Dias: 0, "gripe")));
+		var licencia = (await EnUnScope(sp =>
+			sp.GetRequiredService<IServicioLicencia>().BuscarLicenciasSegunDocenteAsync(new DocenteIDRequest(docente.Id))))
+			.ShouldHaveSingleItem();
+		await EnUnScope(sp => sp.GetRequiredService<IServicioLicencia>().AprobarLicencia(
+			new ActualizarEstadoLicenciaRequest(licencia.LicenciaID, docente.Id, "Aprobada")));
+
+		await EnUnScope(sp => sp.GetRequiredService<IServicioLicencia>().FinalizarLicencia(
+			new FinalizarLicenciaRequest(licencia.LicenciaID, docente.Id)));
+
+		await using var contexto = Fixture.CrearContexto();
+		var propia = await contexto.Catedras.Include(x => x.SituacionesRevista).SingleAsync(x => x.Id == propiaID);
+		var ajena = await contexto.Catedras.Include(x => x.SituacionesRevista).SingleAsync(x => x.Id == ajenaID);
+		var finalizada = await contexto.Licencias.SingleAsync(x => x.Id == licencia.LicenciaID);
+
+		propia.DocenteEnFunciones().ShouldBe(docente.Id);
+		ajena.DocenteEnFunciones().ShouldBe(otroDocente.Id);
+		finalizada.Estado.ShouldBe(Estado.Finalizada);
+		finalizada.Periodo.FechaFin!.Value.Date.ShouldBe(DateTime.Today);
+	}
+
 	/// <summary>
 	/// Dos cátedras: en la propia el docente está en funciones; en la ajena está designado como
 	/// suplente pero en funciones está otro. El relevo no tiene que tocar la ajena.

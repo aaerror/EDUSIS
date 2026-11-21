@@ -21,8 +21,9 @@
 
 		Se conserva el idioma de visibilidad de la app: cada botón enlaza su propia
 		Visibility a su IsEnabled, y el IsEnabled lo decide el CanExecute del comando, que
-		discrimina por CommandParameter ("Aprobar", "Cancelar", "Editar", "Nueva",
-		"Eliminar"). Por eso los dos pares Cancelar/Guardar pueden convivir en el pie: nunca
+		discrimina por CommandParameter ("Aprobar", "Rechazar", "Editar", "Nueva",
+		"Eliminar", y los del panel de licencia en curso: "Finalizar", "Prorrogar", "FijarFin",
+		"Indefinida"). Por eso los dos pares Cancelar/Guardar pueden convivir en el pie: nunca
 		hay más de uno habilitado a la vez. Vale también para "Registrar licencia" del
 		encabezado: con el formulario abierto se oculta, como "Agregar puesto", en lugar de
 		quedar gris arriba a la derecha.
@@ -94,6 +95,7 @@
 					<RowDefinition Height="Auto"/>
 					<RowDefinition Height="*"/>
 					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
 
 				<TextBlock Grid.Row="0"
@@ -123,7 +125,7 @@
 								<DataTemplate>
 									<Border HorizontalAlignment="Left" Style="{ StaticResource ResourceKey=Insignia.Licencia }">
 										<TextBlock Style="{ StaticResource ResourceKey=Txt.Insignia }"
-												   Text="{ Binding Path=Estado, Mode=OneWay }"/>
+												   Text="{ Binding Path=EtiquetaEstado, Mode=OneWay }"/>
 									</Border>
 								</DataTemplate>
 							</DataGridTemplateColumn.CellTemplate>
@@ -148,11 +150,94 @@
 				</DataGrid>
 
 				<!--
+					LICENCIA EN CURSO: lo que se hace con una aprobada que todavía no se finalizó.
+					Aparece sólo con una así seleccionada y si la sesión la puede resolver. Cada
+					campo va con su botón y se muestra sólo si el dominio admite esa operación para
+					la licencia elegida (VM: PuedeProrrogar, PuedeFijarFechaDeFin,
+					PuedeDeclararIndefinida); el botón, además, se apaga mientras el dato no sirve.
+					El reintegro es el cierre y va a la derecha, como la acción principal del panel.
+				-->
+				<Border Grid.Row="2"
+						Margin="0 16 0 0"
+						Style="{ StaticResource ResourceKey=Superficie.Seccion }"
+						Visibility="{ Binding Path=MostrarLicenciaEnCurso, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="Auto"/>
+						</Grid.ColumnDefinitions>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+
+						<TextBlock Grid.ColumnSpan="2" Grid.Row="0"
+								   Margin="0 0 0 12"
+								   Style="{ StaticResource ResourceKey=Txt.Seccion }"
+								   Text="LICENCIA EN CURSO"/>
+
+						<WrapPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal">
+							<StackPanel Margin="0 0 24 0"
+										Orientation="Horizontal"
+										Visibility="{ Binding Path=PuedeProrrogar, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+								<HeaderedContentControl Header="Días de prórroga"
+														Margin="0 0 8 0"
+														Style="{ StaticResource ResourceKey=Campo }">
+									<TextBox MaxLength="3"
+											 Tag="5"
+											 Text="{ Binding Path=DiasDeProrroga, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+											 Style="{ StaticResource ResourceKey=Txb.Campo }"/>
+								</HeaderedContentControl>
+								<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+										CommandParameter="Prorrogar"
+										Content="Prorrogar"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Sumarle días a la fecha de fin de la licencia"
+										VerticalAlignment="Center"/>
+							</StackPanel>
+
+							<StackPanel Margin="0 0 24 0"
+										Orientation="Horizontal"
+										Visibility="{ Binding Path=PuedeFijarFechaDeFin, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }">
+								<HeaderedContentControl Header="Último día de licencia"
+														Margin="0 0 8 0"
+														Style="{ StaticResource ResourceKey=Campo }">
+									<DatePicker SelectedDate="{ Binding Path=FechaDeFin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+												Style="{ StaticResource ResourceKey=Dtp.Campo }"/>
+								</HeaderedContentControl>
+								<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+										CommandParameter="FijarFin"
+										Content="Fijar fecha de fin"
+										Style="{ StaticResource ResourceKey=Btn.Secundario }"
+										ToolTip="Ponerle término a la licencia indefinida (una fecha posterior a hoy)"
+										VerticalAlignment="Center"/>
+							</StackPanel>
+
+							<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+									CommandParameter="Indefinida"
+									Content="Declarar indefinida"
+									Style="{ StaticResource ResourceKey=Btn.Terciario }"
+									ToolTip="Quitarle la fecha de fin: sólo los artículos sin plazo legal"
+									VerticalAlignment="Center"
+									Visibility="{ Binding Path=PuedeDeclararIndefinida, Mode=OneWay, Converter={ StaticResource ResourceKey=visibilidad } }"/>
+						</WrapPanel>
+
+						<Button Grid.Column="1" Grid.Row="1"
+								Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
+								CommandParameter="Finalizar"
+								Content="Registrar reintegro"
+								Style="{ StaticResource ResourceKey=Btn.Primario }"
+								ToolTip="Finalizar la licencia: el docente vuelve a sus funciones"
+								VerticalAlignment="Center"/>
+					</Grid>
+				</Border>
+
+				<!--
 					Aprobar y rechazar son las dos caras de la misma decisión y van juntas a
 					la derecha; eliminar la licencia no es lo mismo que rechazarla, así que va
 					del otro lado del pie.
 				-->
-				<HeaderedContentControl Grid.Row="2" Style="{ StaticResource ResourceKey=Acciones }">
+				<HeaderedContentControl Grid.Row="3" Style="{ StaticResource ResourceKey=Acciones }">
 					<HeaderedContentControl.Header>
 						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
 								CommandParameter="Eliminar"
@@ -176,7 +261,7 @@
 								ToolTip="Editar la licencia seleccionada"
 								Visibility="{ Binding Path=IsEnabled, RelativeSource={ RelativeSource Mode=Self }, Converter={ StaticResource ResourceKey=visibilidad } }"/>
 						<Button Command="{ Binding Path=GuardarCommandAsync, IsAsync=True }"
-								CommandParameter="Cancelar"
+								CommandParameter="Rechazar"
 								Content="Rechazar"
 								Margin="0 0 8 0"
 								Style="{ StaticResource ResourceKey=Btn.Secundario }"

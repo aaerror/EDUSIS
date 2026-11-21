@@ -200,6 +200,44 @@ public sealed class Catedra : Entity
 		SituacionEnFuncionesID.HasValue
 			? _situaciones.FirstOrDefault(situacion => situacion.Id.Equals(SituacionEnFuncionesID.Value))?.DocenteID
 			: null;
+
+	/// <summary>
+	/// Devuelve a funciones al docente que vuelve de licencia, si la cátedra lo estaba esperando: no
+	/// hay nadie en funciones, o está su propio suplente. Su suplente sigue designado pero deja de
+	/// estar al frente.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// La cátedra no recuerda a quién relevó, así que la regla se deduce de las designaciones: la
+	/// del docente tiene que estar vigente (sin ella no hay a qué volver) y quien esté en funciones,
+	/// si hay alguien, tiene que reemplazarlo a ÉL (<see cref="SituacionRevista.ReemplazaA"/>). Si
+	/// está otro docente, el que vuelve no lo desplaza: esa cátedra la resuelve Secretaría
+	/// Académica.
+	/// </para>
+	/// <para>
+	/// No lanza cuando no corresponde reponer: la invoca un handler sobre todas las cátedras donde
+	/// el docente tiene alguna designación, y una que no lo esperaba no es un error.
+	/// </para>
+	/// </remarks>
+	public void ReponerTrasLicencia(Guid unDocente)
+	{
+		var designacion = _situaciones.FirstOrDefault(situacion => situacion.DocenteID.Equals(unDocente) && situacion.EsCargoVigente());
+		if (designacion is null || designacion.Id.Equals(SituacionEnFuncionesID))
+		{
+			return;
+		}
+
+		if (SituacionEnFuncionesID.HasValue)
+		{
+			var enFunciones = _situaciones.FirstOrDefault(situacion => situacion.Id.Equals(SituacionEnFuncionesID.Value));
+			if (enFunciones is not null && !designacion.Id.Equals(enFunciones.ReemplazaA))
+			{
+				return;
+			}
+		}
+
+		PonerEnFunciones(designacion.Id);
+	}
 	#endregion
 
 	#region Horarios

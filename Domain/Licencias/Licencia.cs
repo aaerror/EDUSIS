@@ -98,15 +98,34 @@ public sealed class Licencia : Entity
 	private static Articulo ConvertirArticulo(string articulo) =>
 		Enumerados.Convertir<Articulo>(articulo, valor => new ArticuloInexistenteException(valor));
 
-	// Días corridos (Ley 4356, art. 25): el fin es el inicio más los días.
+	// Días corridos (Ley 4356, art. 25) y la fecha de fin es el ÚLTIMO día de licencia: 15 días
+	// desde el 01/03 terminan el 15/03. Sumar los días sin restar uno daba un día de más, y con
+	// él dos licencias consecutivas compartían un día.
 	private static RangoFechas PeriodoSegun(DateTime fechaInicio, int cantidadDias) =>
 		cantidadDias > 0
-			? RangoFechas.Create(fechaInicio, fechaInicio.AddDays(cantidadDias))
-			: RangoFechas.Create(fechaInicio);
+			? RangoFechas.Create(fechaInicio.Date, fechaInicio.Date.AddDays(cantidadDias - 1))
+			: RangoFechas.Create(fechaInicio.Date);
+
+	/// <summary>
+	/// Días de licencia del período, contando el de inicio y el de fin. Cero si es indefinido.
+	/// </summary>
+	/// <remarks>
+	/// No es <c>RangoFechas.Duracion</c>: esa mide la diferencia entre fechas (el día de fin no se
+	/// suma), que es la cuenta de los demás agregados. Una licencia de un día empieza y termina el
+	/// mismo día.
+	/// </remarks>
+	private static int DiasDe(RangoFechas periodo) =>
+		periodo.EsIndeterminado()
+			? 0
+			: (periodo.FechaFin!.Value.Date - periodo.FechaInicio.Date).Days + 1;
 	#endregion
 
 	public PlazoLegal PlazoLegal =>
 		PlazoLegal.De(Articulo);
+
+	/// <summary>Días de licencia, contando el de inicio y el de fin. Cero si es indefinida.</summary>
+	public int Dias =>
+		DiasDe(Periodo);
 
 	/// <summary>
 	/// El período tiene que respetar el plazo que la norma asigna al artículo. Se invoca en cada
@@ -130,7 +149,7 @@ public sealed class Licencia : Entity
 			throw new LicenciaIndefinidaNoAdmitidaException(plazo);
 		}
 
-		var dias = (periodo.FechaFin!.Value.Date - periodo.FechaInicio.Date).Days;
+		var dias = DiasDe(periodo);
 
 		if (plazo.Tipo == TipoDePlazo.Fijo && dias != plazo.Dias)
 		{
@@ -146,8 +165,47 @@ public sealed class Licencia : Entity
 	public bool EstaActiva() =>
 		Estado.Equals(Estado.Activa) && Periodo.EstaVigente();
 
+	/// <summary>
+	/// Aprobada y con la fecha de fin ya pasada, pero sin finalizar: el cierre es manual y la
+	/// licencia sigue <see cref="Estado.Activa"/> hasta que alguien registra el reintegro.
+	/// </summary>
+	public bool EstaVencida() =>
+		Estado.Equals(Estado.Activa) && Periodo.HaFinalizado();
+
 	public bool EsIndefinida() =>
 		Periodo.EsIndeterminado();
+
+	/// <summary>
+	/// Si el período de esta licencia comparte algún día con <paramref name="otro"/>. Los dos
+	/// extremos son días de licencia y un período sin fin se extiende indefinidamente.
+	/// </summary>
+	/// <remarks>
+	/// La regla de que un docente no tenga dos licencias en el mismo período compara licencias entre
+	/// sí, así que no la puede hacer cumplir el agregado: la aplica <c>Core</c> consultando al
+	/// repositorio. Esto es la definición de superposición, para que el repositorio y sus pruebas no
+	/// la reescriban cada uno a su manera.
+	/// </remarks>
+	public bool SeSuperponeCon(RangoFechas otro) =>
+		(otro.EsIndeterminado() || Periodo.FechaInicio.Date <= otro.FechaFin!.Value.Date)
+		&& (Periodo.EsIndeterminado() || otro.FechaInicio.Date <= Periodo.FechaFin!.Value.Date);
+
+	/// <summary>
+	/// Si cuenta para el control de superposición: toda licencia salvo la rechazada, que nunca se
+	/// concedió. Las pendientes cuentan, así dos solicitudes para el mismo período chocan al cargarse.
+	/// </summary>
+	public bool OcupaSuPeriodo() =>
+		!Estado.Equals(Estado.Rechazada);
+
+	// Las operaciones sobre una licencia aprobada piden el ESTADO y no la vigencia: con el cierre
+	// manual, una licencia vencida y sin finalizar todavía se prorroga o se cierra. Exigir
+	// EstaActiva() la dejaba sin salida desde el día siguiente a su fecha de fin.
+	private void ValidarAprobada()
+	{
+		if (!Estado.Equals(Estado.Activa))
+		{
+			throw new LicenciaInactivaException();
+		}
+	}
 
 	#region Estado
 	public void AprobarLicencia(string? observacion)
@@ -163,28 +221,43 @@ public sealed class Licencia : Entity
 		AgregarEvento(new LicenciaActivadaEvent(Id, DocenteID));
 	}
 
-	public void CancelarLicencia(string? observacion)
+	/// <summary>
+	/// Rechaza la solicitud: no se concede. Es la otra cara de <see cref="AprobarLicencia"/> y no una
+	/// cancelación, que supondría una licencia ya concedida.
+	/// </summary>
+	public void RechazarLicencia(string? observacion)
 	{
 		if (!Estado.Equals(Estado.Pendiente))
 		{
 			throw new LicenciaNoPendienteException();
 		}
 
-		Estado = Estado.Cancelada;
+		Estado = Estado.Rechazada;
 		ModificarObservaciones(observacion);
 
-		AgregarEvento(new LicenciaCanceladaEvent(Id, DocenteID));
+		AgregarEvento(new LicenciaRechazadaEvent(Id, DocenteID));
 	}
 
+	/// <summary>
+	/// Registra el reintegro del docente. Si la licencia ya venció conserva su fecha de fin, que es
+	/// la real; si se cierra antes (regreso anticipado o licencia indefinida), hoy pasa a ser su
+	/// último día de licencia.
+	/// </summary>
+	/// <remarks>
+	/// Antes exigía que estuviera vigente y siempre ponía la fecha de hoy: una licencia vencida no se
+	/// podía cerrar, y si se hubiera podido, el legajo habría registrado los días que pasaron entre el
+	/// vencimiento y el cierre como días de licencia.
+	/// </remarks>
 	public void FinalizarLicencia()
 	{
-		if (!EstaActiva())
-		{
-			throw new LicenciaInactivaException();
-		}
+		ValidarAprobada();
 
 		Estado = Estado.Finalizada;
-		Periodo = Periodo.ActualizarFechaFin(Reloj.Hoy);
+
+		if (!Periodo.HaFinalizado())
+		{
+			Periodo = Periodo.ActualizarFechaFin(Reloj.Hoy);
+		}
 
 		AgregarEvento(new LicenciaFinalizadaEvent(Id, DocenteID));
 	}
@@ -224,10 +297,7 @@ public sealed class Licencia : Entity
 			throw new FechaDeFinalizacionNoPosteriorAHoyException();
 		}
 
-		if (!EstaActiva())
-		{
-			throw new LicenciaInactivaException();
-		}
+		ValidarAprobada();
 
 		if (!EsIndefinida())
 		{
@@ -242,10 +312,7 @@ public sealed class Licencia : Entity
 
 	public void EstablecerLicenciaIndefinida()
 	{
-		if (!EstaActiva())
-		{
-			throw new LicenciaInactivaException();
-		}
+		ValidarAprobada();
 
 		if (EsIndefinida())
 		{
@@ -259,18 +326,23 @@ public sealed class Licencia : Entity
 	}
 
 	/// <summary>
-	/// Corrige la solicitud mientras no está activa: artículo, inicio y días se cambian juntos porque
+	/// Corrige la solicitud mientras está pendiente: artículo, inicio y días se cambian juntos porque
 	/// el plazo válido depende del artículo.
 	/// </summary>
 	/// <remarks>
 	/// Reemplaza a <c>ModificarPeriodo</c>, que no recibía el artículo: la pantalla de edición lo
 	/// dejaba elegir y el cambio se descartaba en silencio.
+	/// <para>
+	/// Exige Pendiente, como <see cref="ValidarSePuedeEliminar"/>. Antes rechazaba sólo la licencia
+	/// vigente, así que una rechazada, una finalizada o una aprobada ya vencida se podían reescribir,
+	/// y con ellas un antecedente del legajo.
+	/// </para>
 	/// </remarks>
 	public void ModificarSolicitud(string articulo, DateTime fechaInicio, int cantidadDias)
 	{
-		if (EstaActiva())
+		if (!Estado.Equals(Estado.Pendiente))
 		{
-			throw new LicenciaActivaException();
+			throw new LicenciaNoPendienteException();
 		}
 
 		var nuevoArticulo = ConvertirArticulo(articulo);
@@ -288,10 +360,7 @@ public sealed class Licencia : Entity
 			throw new ExtensionSinDiasException();
 		}
 
-		if (!EstaActiva())
-		{
-			throw new LicenciaInactivaException();
-		}
+		ValidarAprobada();
 
 		if (EsIndefinida())
 		{

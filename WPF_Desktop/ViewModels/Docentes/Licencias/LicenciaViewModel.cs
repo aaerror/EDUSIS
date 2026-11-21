@@ -33,6 +33,8 @@ internal partial class LicenciaViewModel : ObservableValidator
 	[Required(ErrorMessage="Se debe indicar el estado de la licencia.")]
 	[EnumDataType(typeof(Estado), ErrorMessage="El estado no es uno de los admitidos.")]
 	[NotifyDataErrorInfo]
+	[NotifyPropertyChangedFor(nameof(EtiquetaEstado))]
+	[NotifyPropertyChangedFor(nameof(EstaAprobada))]
 	[ObservableProperty]
 	private string _estado = string.Empty;
 
@@ -91,7 +93,12 @@ internal partial class LicenciaViewModel : ObservableValidator
 			FechaFin = _licenciaResponse.FechaFin;
 			EsIndefinida = !_licenciaResponse.FechaFin.HasValue;
 			Dias = _licenciaResponse.Dias;
+			// Después de Dias: OnDiasChanged recalcula el fin desde el inicio, y en una licencia ya
+			// guardada manda el que viene de la base (una finalizada antes de tiempo no es
+			// inicio + días − 1 si se guardó con la cuenta anterior).
+			FechaFin = _licenciaResponse.FechaFin;
 			Observacion = _licenciaResponse.Observacion;
+			Vencida = _licenciaResponse.Vencida;
 		}
 	}
 
@@ -144,14 +151,31 @@ internal partial class LicenciaViewModel : ObservableValidator
 	}
 	#endregion
 
+	#region Licencia aprobada
+	/// <summary>Aprobada, con la fecha de fin pasada y sin finalizar: espera que se registre el reintegro.</summary>
+	[ObservableProperty]
+	[NotifyPropertyChangedFor(nameof(EtiquetaEstado))]
+	private bool _vencida;
+
+	/// <summary>Lo que dice la insignia del listado: el estado, salvo la activa vencida.</summary>
+	public string EtiquetaEstado =>
+		Vencida ? "Vencida" : Estado;
+
+	/// <summary>Aprobada y sin finalizar, vencida o no: admite reintegro, prórroga y cambio de duración.</summary>
+	public bool EstaAprobada =>
+		Estado.Equals(Enum.GetName(Domain.Licencias.Estado.Activa));
+	#endregion
+
 	partial void OnEsIndefinidaChanged(bool value) =>
 		Dias = value ? 0 : 1;
 
+	// La fecha de fin es el último día de licencia: inicio + días − 1, la misma cuenta que el
+	// dominio. Una licencia de un día empieza y termina el mismo día.
 	partial void OnDiasChanged(int value) =>
-		FechaFin = Dias > 0 ? FechaInicio.AddDays(value) : null;
+		FechaFin = Dias > 0 ? FechaInicio.AddDays(value - 1) : null;
 
 	// NotifyPropertyChangedFor(FechaFin) sólo avisa; no recalcula. Sin esto, mover la fecha de
 	// inicio dejaba a la vista la fecha de fin calculada con la anterior.
 	partial void OnFechaInicioChanged(DateTime value) =>
-		FechaFin = Dias > 0 ? value.AddDays(Dias) : null;
+		FechaFin = Dias > 0 ? value.AddDays(Dias - 1) : null;
 }

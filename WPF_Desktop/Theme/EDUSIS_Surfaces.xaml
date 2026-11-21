@@ -104,8 +104,10 @@
 	<!--
 		Estado de una licencia, leído del propio texto del estado (la cadena del enum que viaja
 		en el Response). La licencia vigente va en verde y la que espera decisión en ámbar;
-		finalizada y cancelada son historia y quedan neutras. Lo usan el listado y el formulario
-		de licencias, por eso vive acá y no en una de las dos vistas.
+		finalizada y rechazada son historia y quedan neutras. La vencida (activa con la fecha de
+		fin pasada y sin finalizar) va en alerta: espera que alguien registre el reintegro. Su
+		trigger va último para ganarle al de Activa. Lo usan el listado y el formulario de
+		licencias, por eso vive acá y no en una de las dos vistas.
 	-->
 	<Style x:Key="Insignia.Licencia" TargetType="{ x:Type Border }" BasedOn="{ StaticResource ResourceKey=Insignia }">
 		<Style.Triggers>
@@ -114,6 +116,9 @@
 			</DataTrigger>
 			<DataTrigger Binding="{ Binding Path=Estado }" Value="Pendiente">
 				<Setter Property="Background" Value="{ StaticResource ResourceKey=AvisoSuave }"/>
+			</DataTrigger>
+			<DataTrigger Binding="{ Binding Path=Vencida }" Value="True">
+				<Setter Property="Background" Value="{ StaticResource ResourceKey=AlertaSuave }"/>
 			</DataTrigger>
 		</Style.Triggers>
 	</Style>
