@@ -111,14 +111,18 @@ public class AltoDeLaPlanillaTests
 	/// adentro de <c>ControlTemplate.Triggers</c>, donde <c>RelativeSource TemplatedParent</c> no se
 	/// evalúa— y la fila sigue dibujándose perfecta, sin decir cómo vino marcado el alumno. Que es
 	/// el defecto que los cuatro Btn.Icono idénticos tenían de entrada.
+	///
+	/// La regla y la letra del encendido verde son pinceles distintos: la regla es una marca y le
+	/// alcanza 3:1 con Primario; la letra es texto sobre PrimarioSuave y necesita 4,5:1, que
+	/// Primario no da (3,26) y PrimarioTexto sí (4,74). El rojo de Alerta cumple en los dos.
 	/// </remarks>
 	[Theory]
 	[Trait("Categoria", "Unidad")]
-	[InlineData("Presente", "PRESENTE", "Primario")]
-	[InlineData("Tardanza", "TARDANZA", "Primario")]
-	[InlineData("Ausencia", "AUSENCIA", "Alerta")]
-	[InlineData("Inasistencia", "INASIST.", "Alerta")]
-	public void Se_enciende_el_casillero_del_estado_del_alumno(string estado, string rotuloEncendido, string pincelEncendido)
+	[InlineData("Presente", "PRESENTE", "Primario", "PrimarioTexto")]
+	[InlineData("Tardanza", "TARDANZA", "Primario", "PrimarioTexto")]
+	[InlineData("Ausencia", "AUSENCIA", "Alerta", "Alerta")]
+	[InlineData("Inasistencia", "INASIST.", "Alerta", "Alerta")]
+	public void Se_enciende_el_casillero_del_estado_del_alumno(string estado, string rotuloEncendido, string pincelEncendido, string pincelDeLetra)
 	{
 		EjecutarEnSTA(() =>
 		{
@@ -149,7 +153,7 @@ public class AltoDeLaPlanillaTests
 					.ShouldBe(encendido ? encendidoEsperado : apagado, $"la regla de {donde}");
 
 				((SolidColorBrush) casillero.Foreground).Color
-					.ShouldBe(encendido ? encendidoEsperado : Color("TintaTenue"), $"la letra de {donde}");
+					.ShouldBe(encendido ? Color(pincelDeLetra) : Color("TintaTenue"), $"la letra de {donde}");
 			}
 		});
 	}

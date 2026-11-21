@@ -155,7 +155,7 @@
 		<Setter Property="FontFamily" Value="{ StaticResource ResourceKey=Fuente.Dato }"/>
 		<Setter Property="FontSize" Value="12.5"/>
 		<Setter Property="FontWeight" Value="Bold"/>
-		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+		<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioTexto }"/>
 	</Style>
 
 	<Style x:Key="Txt.Dato" TargetType="{ x:Type TextBlock }">

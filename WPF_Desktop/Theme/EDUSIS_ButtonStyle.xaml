@@ -93,7 +93,7 @@
 			<Setter.Value>
 				<ControlTemplate TargetType="{ x:Type Button }">
 					<Border x:Name="Fondo"
-							Background="{ StaticResource ResourceKey=Primario }"
+							Background="{ StaticResource ResourceKey=BotonPrimario }"
 							CornerRadius="3"
 							Padding="16 0"
 							SnapsToDevicePixels="True">
@@ -101,11 +101,12 @@
 										  VerticalAlignment="Center"/>
 					</Border>
 					<ControlTemplate.Triggers>
+						<!-- Hover y apretado OSCURECEN: aclarar bajaría el contraste del texto blanco. -->
 						<Trigger Property="IsMouseOver" Value="True">
-							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PrimarioHover }"/>
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=BotonPrimarioHover }"/>
 						</Trigger>
 						<Trigger Property="IsPressed" Value="True">
-							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=PrimarioPress }"/>
+							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=BotonPrimarioPress }"/>
 						</Trigger>
 						<Trigger Property="IsEnabled" Value="False">
 							<Setter TargetName="Fondo" Property="Background" Value="{ StaticResource ResourceKey=TizaBaja }"/>
@@ -388,11 +389,11 @@
 					</Grid>
 					<ControlTemplate.Triggers>
 						<Trigger Property="IsMouseOver" Value="True">
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioTexto }"/>
 							<Setter TargetName="Subrayado" Property="Visibility" Value="Visible"/>
 						</Trigger>
 						<Trigger Property="IsKeyboardFocused" Value="True">
-							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioTexto }"/>
 							<Setter TargetName="Subrayado" Property="Visibility" Value="Visible"/>
 						</Trigger>
 						<Trigger Property="IsPressed" Value="True">
@@ -560,7 +561,7 @@
 			<DataTrigger Binding="{ Binding Path=Tag, RelativeSource={ RelativeSource Self } }" Value="True">
 				<Setter Property="Background" Value="{ StaticResource ResourceKey=PrimarioSuave }"/>
 				<Setter Property="BorderBrush" Value="{ StaticResource ResourceKey=Primario }"/>
-				<Setter Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+				<Setter Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioTexto }"/>
 			</DataTrigger>
 		</Style.Triggers>
 	</Style>

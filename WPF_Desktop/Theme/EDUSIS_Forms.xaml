@@ -377,7 +377,7 @@
 						</Trigger>
 						<Trigger Property="IsSelected" Value="True">
 							<Setter TargetName="Marca" Property="Fill" Value="{ StaticResource ResourceKey=Primario }"/>
-							<Setter TargetName="Numero" Property="Foreground" Value="{ StaticResource ResourceKey=Primario }"/>
+							<Setter TargetName="Numero" Property="Foreground" Value="{ StaticResource ResourceKey=PrimarioTexto }"/>
 							<Setter TargetName="Rotulo" Property="Foreground" Value="{ StaticResource ResourceKey=Tinta }"/>
 						</Trigger>
 					</ControlTemplate.Triggers>

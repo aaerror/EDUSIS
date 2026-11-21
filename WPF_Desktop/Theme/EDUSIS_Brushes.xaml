@@ -21,6 +21,20 @@
 	<Color x:Key="Color.Primario.Suave">#E8F5E8</Color>
 	<Color x:Key="Color.Primario.Borde">#A8DCA9</Color>
 
+	<!--
+		RELLENO DEL BOTÓN PRIMARIO. Texto blanco de 13px sobre #119B15 da 3,67:1 y sobre el
+		hover #15B41A 2,77:1: por debajo del 4,5:1 de WCAG AA, justo en la acción más importante
+		de cada pantalla. El relleno sale de los shades del institucional —mismo tono, menos
+		luz— y el hover OSCURECE en lugar de aclarar, así ningún estado baja de 5,3:1 (reposo
+		5,34 · hover 7,86 · apretado 11,50). Entre un estado y el siguiente hay ~1,47:1, lo que
+		hace visible el cambio; un escalón más corto (1,27) apenas se notaba al apuntar.
+		El institucional sigue intacto en reglas, pestañas, marcas y foco: sólo cambia el lugar
+		donde lleva texto blanco encima.
+	-->
+	<Color x:Key="Color.Primario.Boton">#007D00</Color>
+	<Color x:Key="Color.Primario.Boton.Hover">#006000</Color>
+	<Color x:Key="Color.Primario.Boton.Press">#004400</Color>
+
 	<!-- PIZARRA: el campo oscuro (rail, encabezados sobre color) -->
 	<Color x:Key="Color.Pizarra">#0C3A21</Color>
 	<Color x:Key="Color.Pizarra.Alta">#114E2C</Color>
@@ -65,6 +79,18 @@
 	<SolidColorBrush x:Key="TintaMedia" Color="{ StaticResource ResourceKey=Color.Tinta.Media }"/>
 	<SolidColorBrush x:Key="TintaSuave" Color="{ StaticResource ResourceKey=Color.Tinta.Suave }"/>
 	<SolidColorBrush x:Key="TintaTenue" Color="{ StaticResource ResourceKey=Color.Tinta.Tenue }"/>
+
+	<SolidColorBrush x:Key="BotonPrimario" Color="{ StaticResource ResourceKey=Color.Primario.Boton }"/>
+	<SolidColorBrush x:Key="BotonPrimarioHover" Color="{ StaticResource ResourceKey=Color.Primario.Boton.Hover }"/>
+	<SolidColorBrush x:Key="BotonPrimarioPress" Color="{ StaticResource ResourceKey=Color.Primario.Boton.Press }"/>
+
+	<!--
+		VERDE COMO TEXTO. #119B15 da 3,67:1 sobre Papel y 3,26:1 sobre PrimarioSuave: alcanza
+		para reglas, íconos y marcas (3:1) pero no para letras (4,5:1). Para texto va el mismo
+		shade que el relleno del botón: 5,34 sobre Papel y 4,74 sobre PrimarioSuave. Reglas,
+		barras e íconos siguen en Primario.
+	-->
+	<SolidColorBrush x:Key="PrimarioTexto" Color="{ StaticResource ResourceKey=Color.Primario.Boton }"/>
 
 	<SolidColorBrush x:Key="Papel" Color="{ StaticResource ResourceKey=Color.Papel }"/>
 	<SolidColorBrush x:Key="Tiza" Color="{ StaticResource ResourceKey=Color.Tiza }"/>
