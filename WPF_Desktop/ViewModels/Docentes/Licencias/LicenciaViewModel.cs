@@ -26,6 +26,7 @@ internal partial class LicenciaViewModel : ObservableValidator
 	[NotifyPropertyChangedFor(nameof(ReferenciaLegal))]
 	[NotifyPropertyChangedFor(nameof(AdmiteIndefinida))]
 	[NotifyPropertyChangedFor(nameof(TieneDiasFijos))]
+	[NotifyPropertyChangedFor(nameof(ResolucionAcademica))]
 	[ObservableProperty]
 	private Articulo? _articulo;
 
@@ -117,6 +118,10 @@ internal partial class LicenciaViewModel : ObservableValidator
 
 	public bool TieneDiasFijos =>
 		Plazo?.Tipo == TipoDePlazo.Fijo;
+
+	/// <summary>Si la decide sólo Secretaría Académica (exámenes, estudio encomendado, otras causas).</summary>
+	public bool ResolucionAcademica =>
+		Plazo?.ResolucionAcademica ?? false;
 
 	// Al elegir el artículo se ajusta lo que la norma ya decide: los días de un plazo fijo y la
 	// fecha de fin de uno que no admite quedar indefinido. El dominio igual lo valida al guardar.

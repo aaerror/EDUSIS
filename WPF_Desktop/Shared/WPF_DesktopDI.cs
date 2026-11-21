@@ -191,7 +191,8 @@ internal static class WPF_DesktopDI
 			new GestionLicenciasViewModel(provider.GetRequiredService<IServicioLicencia>(),
 										  provider.GetRequiredService<IDialogService>(),
 										  Navegacion<GestionDocentesViewModel, MainWindowNavigationStore>(provider),
-										  provider.GetRequiredService<LegajoStore>()));
+										  provider.GetRequiredService<LegajoStore>(),
+										  provider.GetRequiredService<ISesionActual>()));
 		#endregion
 
 		#region Alumnos

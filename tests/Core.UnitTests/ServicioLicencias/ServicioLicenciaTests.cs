@@ -4,10 +4,13 @@ using Core.ServicioLicencias.Exceptions;
 using Core.ServicioDocentes.DTOs.Requests;
 using Core.ServicioLicencias;
 using Core.ServicioLicencias.DTOs.Requests;
+using Core.Shared.Seguridad;
 using Core.UnitTests.Infraestructura;
 using Domain.Licencias;
+using Domain.Usuarios;
 using EDUSIS.TestSupport;
 using EDUSIS.TestSupport.Builders;
+using EDUSIS.TestSupport.Fakes;
 using Shouldly;
 using Xunit;
 
@@ -135,6 +138,87 @@ public class ServicioLicenciaTests
 	{
 		await Should.ThrowAsync<LicenciaNoEncontradaException>(() => _servicio.RechazarLicencia(
 			new ActualizarEstadoLicenciaRequest(Guid.NewGuid(), Guid.NewGuid(), null)));
+	}
+	#endregion
+
+	#region Quién resuelve según el artículo
+	/// <summary>Host con una sola licencia pendiente del artículo dado y la sesión acotada a los permisos indicados.</summary>
+	private static (HostDeServicios Host, Licencia Licencia) HostConLicencia(string articulo, params Permiso[] permisos)
+	{
+		var licencia = new LicenciaBuilder()
+			.ConArticulo(articulo)
+			.ConFechaInicio(DateTime.Today.AddDays(-2))
+			.ConFechaFin(DateTime.Today.AddDays(3))
+			.Build();
+		var host = new HostDeServicios(uow => uow.LicenciasFake.Sembrar(licencia), SesionDePrueba.Con(permisos));
+
+		return (host, licencia);
+	}
+
+	[Theory]
+	[InlineData(nameof(Articulo.Examen))]
+	[InlineData(nameof(Articulo.EstudioEncomendado))]
+	[InlineData(nameof(Articulo.OtrasCausas))]
+	public async Task Con_ResolverLicencias_no_se_aprueba_una_licencia_academica_y_queda_pendiente(string articulo)
+	{
+		var (host, licencia) = HostConLicencia(articulo, Permiso.ResolverLicencias);
+		using var _ = host;
+
+		await Should.ThrowAsync<PermisoDenegadoException>(() => host.Resolver<IServicioLicencia>().AprobarLicencia(
+			new ActualizarEstadoLicenciaRequest(licencia.Id, licencia.DocenteID, null)));
+
+		licencia.Estado.ShouldBe(Estado.Pendiente);
+		host.UnidadDeTrabajo.CantidadDeGuardados.ShouldBe(0);
+	}
+
+	[Fact]
+	public async Task Con_ResolverLicencias_no_se_rechaza_una_licencia_academica()
+	{
+		var (host, licencia) = HostConLicencia(nameof(Articulo.OtrasCausas), Permiso.ResolverLicencias);
+		using var _ = host;
+
+		await Should.ThrowAsync<PermisoDenegadoException>(() => host.Resolver<IServicioLicencia>().RechazarLicencia(
+			new ActualizarEstadoLicenciaRequest(licencia.Id, licencia.DocenteID, null)));
+
+		licencia.Estado.ShouldBe(Estado.Pendiente);
+	}
+
+	[Fact]
+	public async Task Con_ResolverLicenciasAcademicas_se_aprueba_una_licencia_academica()
+	{
+		var (host, licencia) = HostConLicencia(nameof(Articulo.OtrasCausas), Permiso.ResolverLicenciasAcademicas);
+		using var _ = host;
+
+		await host.Resolver<IServicioLicencia>().AprobarLicencia(
+			new ActualizarEstadoLicenciaRequest(licencia.Id, licencia.DocenteID, null));
+
+		licencia.Estado.ShouldBe(Estado.Activa);
+	}
+
+	[Fact]
+	public async Task Con_ResolverLicencias_se_aprueba_una_licencia_no_academica()
+	{
+		var (host, licencia) = HostConLicencia(nameof(Articulo.AccidenteDeTrabajo), Permiso.ResolverLicencias);
+		using var _ = host;
+
+		await host.Resolver<IServicioLicencia>().AprobarLicencia(
+			new ActualizarEstadoLicenciaRequest(licencia.Id, licencia.DocenteID, null));
+
+		licencia.Estado.ShouldBe(Estado.Activa);
+	}
+
+	/// <remarks>
+	/// El permiso académico no implica el general: son dos atribuciones distintas. Secretaría
+	/// Académica resuelve todas porque tiene los dos, no porque uno contenga al otro.
+	/// </remarks>
+	[Fact]
+	public async Task Con_solo_ResolverLicenciasAcademicas_no_se_aprueba_una_licencia_no_academica()
+	{
+		var (host, licencia) = HostConLicencia(nameof(Articulo.AccidenteDeTrabajo), Permiso.ResolverLicenciasAcademicas);
+		using var _ = host;
+
+		await Should.ThrowAsync<PermisoDenegadoException>(() => host.Resolver<IServicioLicencia>().AprobarLicencia(
+			new ActualizarEstadoLicenciaRequest(licencia.Id, licencia.DocenteID, null)));
 	}
 	#endregion
 

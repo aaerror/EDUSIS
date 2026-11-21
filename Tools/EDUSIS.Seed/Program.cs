@@ -145,10 +145,10 @@ static void Informar(ResumenDeSiembra resumen, TimeSpan duracion)
 	// el array `cuentas` de Sembradora.SembrarUsuariosAsync, hay que tocar las seis líneas de
 	// acá abajo también. Ya quedó desactualizado una vez, al partir los permisos por actor.
 	Console.WriteLine($"  Usuarios (contraseña: {Sembradora.PASSWORD_DEMO})");
-	Console.WriteLine("    admin@edu.ar        — Administrador (los quince permisos)");
-	Console.WriteLine("    direccion@edu.ar    — Dirección (los nueve académicos)");
+	Console.WriteLine("    admin@edu.ar        — Administrador (los diecisiete permisos)");
+	Console.WriteLine("    direccion@edu.ar    — Dirección (los nueve académicos y resolver licencias)");
 	Console.WriteLine("    secretaria@edu.ar   — Secretaría (preceptores, documentos, reportes)");
-	Console.WriteLine("    academica@edu.ar    — Secretaría Académica (divisiones, cursantes, cátedras)");
+	Console.WriteLine("    academica@edu.ar    — Secretaría Académica (divisiones, cursantes, cátedras, resolver licencias)");
 	Console.WriteLine("    preceptoria@edu.ar  — Preceptoría (asistencia y reportes de cursada)");
 	Console.WriteLine("    docente@edu.ar      — Docente (calificaciones)");
 	Console.WriteLine();

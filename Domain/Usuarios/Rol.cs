@@ -76,8 +76,12 @@ public class Rol : Enumeration
 			Permiso.GenerarDocumentos,
 			Permiso.GenerarDocumentosAsistencia,
 			Permiso.GenerarReportes,
-			Permiso.GenerarReportesDeCursada
+			Permiso.GenerarReportesDeCursada,
+			Permiso.ResolverLicencias,
+			Permiso.ResolverLicenciasAcademicas
 		},
+		// ResolverLicencias por decisión de negocio: Dirección decide las licencias del personal,
+		// salvo las de resolución académica, que son de Secretaría Académica en exclusiva.
 		[Direccion.Id] = new[]
 		{
 			Permiso.GestionarDocentes,
@@ -88,7 +92,8 @@ public class Rol : Enumeration
 			Permiso.GestionarCatedras,
 			Permiso.InscribirCursantes,
 			Permiso.CargarCalificaciones,
-			Permiso.TomarAsistencia
+			Permiso.TomarAsistencia,
+			Permiso.ResolverLicencias
 		},
 		// Encargado de Secretaría: CU-04/05/06 (preceptores), CU-28/29 (documentos) y CU-34
 		// (reporte de matrículas). GestionarDocentes y GestionarAlumnos no realizan ningún caso
@@ -106,13 +111,19 @@ public class Rol : Enumeration
 		// CU-17 a CU-27 (cátedras y horarios), CU-31/32/33 (documentos) y CU-37/38 (reportes).
 		// Sin GestionarCurriculas: ningún caso del diagrama diseña la currícula, y las consultas
 		// que necesita para llegar a las cátedras no exigen permiso.
+		//
+		// Los dos permisos de licencias son decisión de negocio, no salen del diagrama: resuelve
+		// todas las licencias y es la única que resuelve las académicas. Sin GestionarDocentes:
+		// decide la solicitud pero no la carga, la edita ni la borra.
 		[SecretariaAcademica.Id] = new[]
 		{
 			Permiso.GestionarCursos,
 			Permiso.GestionarCatedras,
 			Permiso.InscribirCursantes,
 			Permiso.GenerarDocumentos,
-			Permiso.GenerarReportes
+			Permiso.GenerarReportes,
+			Permiso.ResolverLicencias,
+			Permiso.ResolverLicenciasAcademicas
 		},
 		// Encargado de Preceptoría: CU-12 a CU-16 (planillas y toma de asistencia), CU-30
 		// (certificado de asistencia), CU-35/36 (reportes de cursada) y CU-39 (registrar
@@ -134,19 +145,23 @@ public class Rol : Enumeration
 			Permiso.GenerarDocumentosAsistencia,
 			Permiso.GenerarReportesDeCursada
 		},
-		// Docente tiene CRUD total sobre lo académico: los 15 permisos MENOS AdministrarUsuarios y
-		// AsignarRoles. Es una decisión de negocio y NO sale de los diagramas —Docente no es actor
-		// de ninguno de los tres—, así que ninguna de sus atribuciones se deriva de los diagramas de casos de uso.
+		// Docente tiene CRUD total sobre lo académico: todos los permisos MENOS AdministrarUsuarios,
+		// AsignarRoles y los dos de resolver licencias. Es una decisión de negocio y NO sale de los
+		// diagramas —Docente no es actor de ninguno de los tres—, así que ninguna de sus
+		// atribuciones se deriva de los diagramas de casos de uso.
 		//
-		// Las dos que NO tiene son el límite deliberado: sin AdministrarUsuarios no crea cuentas y
-		// sin AsignarRoles no puede ampliarse sus propios permisos ni los de nadie. Eso es lo que
-		// lo mantiene distinto de Admin y lo que mantiene el RBAC gobernable; conceder cualquiera
-		// de las dos vuelve el rol equivalente al administrador y esta tabla, decorativa.
+		// AdministrarUsuarios y AsignarRoles son el límite deliberado: sin el primero no crea
+		// cuentas y sin el segundo no puede ampliarse sus propios permisos ni los de nadie. Eso es
+		// lo que lo mantiene distinto de Admin y lo que mantiene el RBAC gobernable; conceder
+		// cualquiera de las dos vuelve el rol equivalente al administrador y esta tabla, decorativa.
 		//
-		// Consecuencia que conviene tener presente al leer las pruebas: con estos 13, los permisos
-		// de Direccion (9), Secretaria (5), SecretariaAcademica (5) y Preceptoria (4) son todos
-		// subconjuntos de los de Docente. Las pruebas negativas de los otros roles siguen valiendo
-		// —fijan qué NO puede cada uno—, pero ya no hay ninguna asimetría que las respalde acá.
+		// Sin ResolverLicencias ni ResolverLicenciasAcademicas: las licencias las deciden Dirección
+		// y Secretaría Académica, y un docente no puede aprobarse la propia.
+		//
+		// Consecuencia que conviene tener presente al leer las pruebas: Secretaria (5) y
+		// Preceptoria (4) son subconjuntos de los permisos de Docente; Direccion y
+		// SecretariaAcademica ya no, por los de licencias. Las pruebas negativas de los otros roles
+		// siguen valiendo —fijan qué NO puede cada uno—.
 		[Docente.Id] = new[]
 		{
 			Permiso.GestionarDocentes,

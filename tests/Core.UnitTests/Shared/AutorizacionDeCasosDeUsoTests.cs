@@ -246,6 +246,38 @@ public class AutorizacionDeCasosDeUsoTests
 	}
 
 	[Fact]
+	public async Task AprobarLicencia_sin_ningun_permiso_de_resolucion_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioLicencia>().AprobarLicencia(null!));
+	}
+
+	[Fact]
+	public async Task RechazarLicencia_sin_ningun_permiso_de_resolucion_lanza_PermisoDenegado()
+	{
+		using var host = HostSinPermisos();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(
+			() => host.Resolver<IServicioLicencia>().RechazarLicencia(null!));
+	}
+
+	/// <remarks>
+	/// Antes aprobar y rechazar exigían <see cref="Permiso.GestionarDocentes"/>: quien cargaba la
+	/// solicitud la decidía. Ahora son permisos aparte, y cargar no concede decidir.
+	/// </remarks>
+	[Fact]
+	public async Task GestionarDocentes_no_alcanza_para_aprobar_ni_rechazar_licencias()
+	{
+		using var host = HostCon(Permiso.GestionarDocentes);
+		var servicio = host.Resolver<IServicioLicencia>();
+
+		await Should.ThrowAsync<PermisoDenegadoException>(() => servicio.AprobarLicencia(null!));
+		await Should.ThrowAsync<PermisoDenegadoException>(() => servicio.RechazarLicencia(null!));
+	}
+
+	[Fact]
 	public async Task GenerarCertificadoAlumnoRegularAsync_sin_GenerarDocumentos_lanza_PermisoDenegado()
 	{
 		using var host = HostSinPermisos();

@@ -50,17 +50,34 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 		}
 	}
 
+	/// <summary>
+	/// Permiso que exige decidir (aprobar o rechazar) esta licencia: las de resolución académica
+	/// son sólo de Secretaría Académica; el resto, de quien tenga <see cref="Permiso.ResolverLicencias"/>.
+	/// </summary>
+	private static Permiso PermisoParaResolver(Licencia licencia) =>
+		licencia.PlazoLegal.ResolucionAcademica ? Permiso.ResolverLicenciasAcademicas : Permiso.ResolverLicencias;
+
+	private static readonly Permiso[] PERMISOS_DE_RESOLUCION = { Permiso.ResolverLicencias, Permiso.ResolverLicenciasAcademicas };
+
+	/// <remarks>
+	/// La guarda va en dos pasos porque el actor depende del artículo de la licencia, que recién se
+	/// conoce al cargarla. El primero, antes de tocar el request, rechaza a quien no puede resolver
+	/// ninguna (así un rol sin permiso no distingue una licencia inexistente de una ajena); el
+	/// segundo exige el permiso exacto del artículo.
+	/// </remarks>
 	public async Task AprobarLicencia(ActualizarEstadoLicenciaRequest request)
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GestionarDocentes);
+			_sesion.ExigirAlguno(PERMISOS_DE_RESOLUCION);
 
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
 				throw new LicenciaNoEncontradaException();
 			}
+
+			_sesion.Exigir(PermisoParaResolver(licencia));
 
 			licencia.AprobarLicencia(request.Observacion);
 
@@ -76,17 +93,20 @@ internal class ServicioLicencia : IServicio, IServicioLicencia
 		}
 	}
 
+	/// <remarks>Misma guarda en dos pasos que <see cref="AprobarLicencia"/>: quien decide una, decide la otra.</remarks>
 	public async Task RechazarLicencia(ActualizarEstadoLicenciaRequest request)
 	{
 		try
 		{
-			_sesion.Exigir(Permiso.GestionarDocentes);
+			_sesion.ExigirAlguno(PERMISOS_DE_RESOLUCION);
 
 			var licencia = await _unitOfWork.Licencias.BuscarPorIDYDocenteAsync(request.LicenciaID, request.DocenteID);
 			if (licencia is null)
 			{
 				throw new LicenciaNoEncontradaException();
 			}
+
+			_sesion.Exigir(PermisoParaResolver(licencia));
 
 			licencia.CancelarLicencia(request.Observacion);
 

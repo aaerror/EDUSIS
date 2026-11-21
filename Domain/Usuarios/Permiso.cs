@@ -42,6 +42,12 @@ public class Permiso : Enumeration
 	public static readonly Permiso GestionarPreceptores = new(13, "Gestionar preceptores");
 	public static readonly Permiso GenerarDocumentosAsistencia = new(14, "Generar documentos de asistencia");
 	public static readonly Permiso GenerarReportesDeCursada = new(15, "Generar reportes de cursada");
+	// Aprobar o rechazar una licencia. Se separa de GestionarDocentes, que sigue cubriendo la
+	// carga, la edición y la baja de la solicitud: quien la registra no es quien la decide.
+	public static readonly Permiso ResolverLicencias = new(16, "Resolver licencias");
+	// Las licencias que PlazoLegal marca de resolución académica (exámenes, estudio encomendado,
+	// otras causas) las decide sólo Secretaría Académica.
+	public static readonly Permiso ResolverLicenciasAcademicas = new(17, "Resolver licencias académicas");
 
 
 	#region CONSTRUCTOR

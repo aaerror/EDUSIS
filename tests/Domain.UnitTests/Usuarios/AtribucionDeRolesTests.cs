@@ -166,13 +166,20 @@ public class AtribucionDeRolesTests
 	/// <remarks>
 	/// CRUD total sobre lo académico, por decisión de negocio y no por los diagramas: Docente no es
 	/// actor de ninguno de los tres. Se fija el conjunto completo y no permiso por permiso porque lo
-	/// que importa es el total: son los quince menos exactamente dos.
+	/// que importa es el total: todos menos exactamente los dos de administración del RBAC y los
+	/// dos de resolver licencias.
 	/// </remarks>
 	[Fact]
 	public void Docente_tiene_crud_total_sobre_lo_academico()
 	{
 		var esperados = Enumeration.GetAll<Permiso>()
-								   .Except(new[] { Permiso.AdministrarUsuarios, Permiso.AsignarRoles });
+								   .Except(new[]
+								   {
+									   Permiso.AdministrarUsuarios,
+									   Permiso.AsignarRoles,
+									   Permiso.ResolverLicencias,
+									   Permiso.ResolverLicenciasAcademicas
+								   });
 
 		Rol.Docente.Permisos.ShouldBe(esperados, ignoreOrder: true);
 	}
@@ -202,6 +209,48 @@ public class AtribucionDeRolesTests
 	public void Admin_concede_estrictamente_mas_que_Docente()
 	{
 		Rol.Admin.Permisos.Count.ShouldBeGreaterThan(Rol.Docente.Permisos.Count);
+	}
+	#endregion
+
+	#region Resolución de licencias — decisión de negocio, sin caso de uso en los diagramas
+	/// <remarks>
+	/// Aprobar o rechazar una licencia lo deciden Dirección y Secretaría Académica; las de
+	/// resolución académica (exámenes, estudio encomendado, otras causas), sólo Secretaría
+	/// Académica. Cargarla sigue siendo <see cref="Permiso.GestionarDocentes"/>.
+	/// </remarks>
+	[Fact]
+	public void Direccion_y_SecretariaAcademica_resuelven_licencias()
+	{
+		Rol.Direccion.Tiene(Permiso.ResolverLicencias).ShouldBeTrue();
+		Rol.SecretariaAcademica.Tiene(Permiso.ResolverLicencias).ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Solo_SecretariaAcademica_resuelve_las_licencias_academicas()
+	{
+		var roles = Enumeration.GetAll<Rol>()
+							   .Where(rol => rol.Tiene(Permiso.ResolverLicenciasAcademicas))
+							   .ToList();
+
+		roles.ShouldBe(new[] { Rol.Admin, Rol.SecretariaAcademica }, ignoreOrder: true);
+	}
+
+	[Fact]
+	public void Ni_Secretaria_ni_Preceptoria_ni_Docente_resuelven_licencias()
+	{
+		// Secretaría y Docente cargan licencias (GestionarDocentes) pero no las deciden; un
+		// docente, además, no puede aprobarse la propia.
+		foreach (var rol in new[] { Rol.Secretaria, Rol.Preceptoria, Rol.Docente })
+		{
+			rol.Tiene(Permiso.ResolverLicencias).ShouldBeFalse($"{ rol.Descripcion } no debería resolver licencias");
+			rol.Tiene(Permiso.ResolverLicenciasAcademicas).ShouldBeFalse($"{ rol.Descripcion } no debería resolver licencias académicas");
+		}
+	}
+
+	[Fact]
+	public void SecretariaAcademica_resuelve_licencias_pero_no_las_carga()
+	{
+		Rol.SecretariaAcademica.Tiene(Permiso.GestionarDocentes).ShouldBeFalse();
 	}
 	#endregion
 

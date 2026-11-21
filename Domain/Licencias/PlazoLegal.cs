@@ -28,7 +28,13 @@ public enum TipoDePlazo
 /// Los días se cuentan corridos (Ley 4356, art. 25): la fecha de fin es la de inicio más los días.
 /// </para>
 /// </remarks>
-public sealed record PlazoLegal(TipoDePlazo Tipo, int Dias, string Denominacion, string Norma)
+/// <param name="ResolucionAcademica">
+/// La licencia la decide (aprueba o rechaza) sólo Secretaría Académica: exámenes, estudio
+/// encomendado y otras causas. El resto lo deciden Dirección o Secretaría Académica. Decisión de
+/// negocio de la institución, no de la norma; el dominio sólo clasifica y <c>Core</c> traduce la
+/// clasificación a permiso.
+/// </param>
+public sealed record PlazoLegal(TipoDePlazo Tipo, int Dias, string Denominacion, string Norma, bool ResolucionAcademica = false)
 {
 	/// <summary>Si la licencia puede quedar sin fecha de fin.</summary>
 	public bool AdmiteIndefinida =>
@@ -45,9 +51,9 @@ public sealed record PlazoLegal(TipoDePlazo Tipo, int Dias, string Denominacion,
 		Articulo.FallecimientoDeFamiliarDirecto => new(TipoDePlazo.Fijo, 12, "Fallecimiento de cónyuge, padre, madre o hijo", "Ley 4356, art. 14 inc. c"),
 		Articulo.FallecimientoDeHermanoOSuegro => new(TipoDePlazo.Fijo, 6, "Fallecimiento de hermano o suegro", "Ley 4356, art. 14 inc. d"),
 		// TODO: la norma cuenta los días de examen como hábiles; acá se cuentan corridos como el resto.
-		Articulo.Examen => new(TipoDePlazo.Maximo, 15, "Examen", "Ley 4356, art. 15"),
-		Articulo.EstudioEncomendado => new(TipoDePlazo.Abierto, 0, "Estudio encomendado por el Gobierno", "Ley 4356, art. 16"),
-		Articulo.OtrasCausas => new(TipoDePlazo.Abierto, 0, "Otras causas", "Ley 4356, art. 19"),
+		Articulo.Examen => new(TipoDePlazo.Maximo, 15, "Examen", "Ley 4356, art. 15", ResolucionAcademica: true),
+		Articulo.EstudioEncomendado => new(TipoDePlazo.Abierto, 0, "Estudio encomendado por el Gobierno", "Ley 4356, art. 16", ResolucionAcademica: true),
+		Articulo.OtrasCausas => new(TipoDePlazo.Abierto, 0, "Otras causas", "Ley 4356, art. 19", ResolucionAcademica: true),
 		// 180 días en general; 280 por parto múltiple o hijo con discapacidad o enfermedad grave.
 		Articulo.Maternidad => new(TipoDePlazo.Maximo, 280, "Maternidad", "Ley 9905"),
 		Articulo.InterrupcionDelEmbarazo => new(TipoDePlazo.Fijo, 40, "Interrupción del embarazo", "Ley 9905"),

@@ -9,7 +9,10 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using Core.Shared.Seguridad;
+using Domain.Usuarios;
 using WPF_Desktop.Navigation;
+using WPF_Desktop.Security;
 using WPF_Desktop.Shared;
 using WPF_Desktop.Store;
 using Microsoft.IdentityModel.Tokens;
@@ -22,6 +25,7 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	#region Servicios
 	private readonly IServicioLicencia _servicioLicencia;
 	private readonly IDialogService _dialogService;
+	private readonly ISesionActual _sesion;
 	#endregion
 
 	/// <summary>
@@ -90,10 +94,12 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	public GestionLicenciasViewModel(IServicioLicencia servicioLicencia,
 									 IDialogService dialogService,
 									 INavigationService<GestionDocentesViewModel> gestionDocentesNavigationService,
-									 LegajoStore perfilBuscadoStore)
+									 LegajoStore perfilBuscadoStore,
+									 ISesionActual sesion)
 	{
 		_servicioLicencia = servicioLicencia;
 		_dialogService = dialogService;
+		_sesion = sesion;
 		_docenteID = perfilBuscadoStore.PersonaID
 			?? throw new ArgumentNullException(nameof(perfilBuscadoStore), "Error al gestionar las licencias. Primero debe buscar un docente antes de continuar.");
 
@@ -108,8 +114,12 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 		CargarLicenciasCommandAsync = new AsyncRelayCommand(ExecuteCargarLicenciasCommand);
 		CancelarCommandAsync = new AsyncRelayCommand<string>(ExecuteCancelarCommand, CanExecuteCancelarCommand);
 		GuardarCommandAsync = new AsyncRelayCommand<string>(ExecuteGuardarCommandAsync, CanExecuteGuardarCommand);
-		EditarCommand = new RelayCommand<string>(ExecuteEditarCommand, CanExecuteEditarCommand);
-		RegistrarCommand = new RelayCommand<string>(ExecuteRegistrarCommand, CanExecuteRegistrarCommand);
+		// Cargar, editar y borrar la solicitud es GestionarDocentes; aprobarla o rechazarla, el
+		// permiso de resolución que corresponde al artículo (ver PuedeResolver). Secretaría
+		// Académica llega a esta pantalla sólo para resolver: sin esto vería habilitado un
+		// "Registrar licencia" que Core le niega.
+		EditarCommand = new RelayCommand<string>(ExecuteEditarCommand, _sesion.Permite<string>(Permiso.GestionarDocentes, CanExecuteEditarCommand));
+		RegistrarCommand = new RelayCommand<string>(ExecuteRegistrarCommand, _sesion.Permite<string>(Permiso.GestionarDocentes, CanExecuteRegistrarCommand));
 
 		HabilitarUpsert = false;
 		HabilitarRegistro = false;
@@ -185,20 +195,30 @@ internal partial class GestionLicenciasViewModel : ObservableValidator, IUbicaci
 	#endregion
 
 	#region GuardarCommandAsync
+	/// <summary>
+	/// Si la sesión puede aprobar o rechazar la licencia seleccionada. Es el mismo permiso que
+	/// exige <c>ServicioLicencia</c> según el artículo; la seguridad sigue en <c>Core</c>.
+	/// </summary>
+	private bool PuedeResolver() =>
+		LicenciaSeleccionada is not null
+		&& _sesion.TienePermiso(LicenciaSeleccionada.ResolucionAcademica ? Permiso.ResolverLicenciasAcademicas : Permiso.ResolverLicencias);
+
+	// Un mismo comando con cinco parámetros y dos permisos distintos: la guarda va por caso y no
+	// envolviendo el CanExecute entero con Permite.
 	private bool CanExecuteGuardarCommand(object? obj)
 	{
 		switch (obj)
 		{
 			case "Aprobar":
-				return HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada is not null && LicenciaSeleccionada.Estado.Equals(Enum.GetName(Estado.Pendiente));
+				return PuedeResolver() && HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada.Estado.Equals(Enum.GetName(Estado.Pendiente));
 			case "Cancelar":
-				return HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada is not null && LicenciaSeleccionada.Estado.Equals(Enum.GetName(Estado.Pendiente));
+				return PuedeResolver() && HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada.Estado.Equals(Enum.GetName(Estado.Pendiente));
 			case "Editar":
-				return HabilitarUpsert && HabilitarEdicion && LicenciaSeleccionada is not null && !LicenciaSeleccionada.HasErrors;
+				return _sesion.TienePermiso(Permiso.GestionarDocentes) && HabilitarUpsert && HabilitarEdicion && LicenciaSeleccionada is not null && !LicenciaSeleccionada.HasErrors;
 			case "Nueva":
-				return HabilitarUpsert && HabilitarRegistro && LicenciaSeleccionada is not null && !LicenciaSeleccionada.HasErrors;
+				return _sesion.TienePermiso(Permiso.GestionarDocentes) && HabilitarUpsert && HabilitarRegistro && LicenciaSeleccionada is not null && !LicenciaSeleccionada.HasErrors;
 			case "Eliminar":
-				return HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada is not null && LicenciaSeleccionada.Estado.Equals(Enum.GetName(Estado.Pendiente));
+				return _sesion.TienePermiso(Permiso.GestionarDocentes) && HabilitarDetalleLicencias && !HabilitarEdicion && LicenciaSeleccionada is not null && LicenciaSeleccionada.Estado.Equals(Enum.GetName(Estado.Pendiente));
 			default:
 				return false;
 		}

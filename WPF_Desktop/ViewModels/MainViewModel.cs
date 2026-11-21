@@ -100,8 +100,12 @@ internal partial class MainViewModel : ObservableRecipient
 		// Cada entrada del menú se habilita por PERMISO, no por rol: mover una atribución es un
 		// cambio en Domain.Usuarios.Rol y no acá. Sin sesión iniciada no hay permisos, así que
 		// todas quedan deshabilitadas por omisión.
+		// Docentes acepta también ResolverLicencias, por el mismo motivo que Cursos abajo: las
+		// licencias son un drill-down de Docentes, y Secretaría Académica, que las resuelve, no
+		// tiene GestionarDocentes. Adentro, cada comando de legajo sigue exigiendo el suyo.
 		GestionDocentesCommand = new RelayCommand(() => Navegar(docentesNavigationService, "Docentes"),
-												  () => _sesion.TienePermiso(Permiso.GestionarDocentes));
+												  () => _sesion.TienePermiso(Permiso.GestionarDocentes)
+													 || _sesion.TienePermiso(Permiso.ResolverLicencias));
 		GestionAlumnosCommand = new RelayCommand(() => Navegar(alumnosNavigationService, "Alumnos"),
 												 () => _sesion.TienePermiso(Permiso.GestionarAlumnos));
 		// Cursos acepta también CargarCalificaciones: la pantalla de calificaciones es un
